@@ -9,7 +9,8 @@
     "migrate": "tsx --env-file=.env.local scripts/migrate.ts",
     "grant-role": "tsx --env-file=.env.local scripts/grant-role.ts",
     "smoke": "tsx --env-file=.env.local scripts/phase2-smoke.ts",
-    "smoke3": "tsx --env-file=.env.local scripts/phase3-smoke.ts"
+    "smoke3": "tsx --env-file=.env.local scripts/phase3-smoke.ts",
+    "smoke4": "tsx --env-file=.env.local scripts/phase4-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
