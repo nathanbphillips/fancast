@@ -22,12 +22,12 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** sign up, follow, see schedule; scheduled room not enterable; counts increment. *(All verified 2026-06-11 via scripted smoke test (15/15 checks) + browser pass with temp users; founder's real signup on the deployed site still to do.)*
 
 ## Phase 3: Chat + links + moderation (days 6-10)
-- [ ] Ably setup with token auth; chat channel with presence (watching count) and history replay
-- [ ] Chat send + votes on every message (always visible) + rate limit
-- [ ] Weighted flag-to-hide (0.5/1.0 weights, ≥3.0 hides, 10-flag budget, hide log)
-- [ ] Commentator styling variant + instant-hide; admin ban/purge basics
-- [ ] Links feed: submit → server-side OG unfurl → card; votes; 2:1+5 ratio hiding; domain blocklist
-- **Test:** two-browser session covering all of it; blocklisted domain rejected.
+- [x] Ably setup with token auth; chat channel with presence (watching count) and history replay *(per-room subscribe/presence/history tokens; attach uses rewind for replay; clients never publish — API routes persist to DB then publish)*
+- [x] Chat send + votes on every message (always visible) + rate limit *(1/2s burst 3 as a 3-per-6s window)*
+- [x] Weighted flag-to-hide (0.5/1.0 weights, ≥3.0 hides, 10-flag budget, hide log)
+- [x] Commentator styling variant + instant-hide; admin ban/purge basics
+- [x] Links feed: submit → server-side OG unfurl → card; votes; 2:1+5 ratio hiding; domain blocklist
+- **Test:** two-browser session covering all of it; blocklisted domain rejected. *(Verified 2026-06-11 via scripted multi-user simulation — 29/29 checks incl. realtime delivery asserted by an independent Ably subscriber — plus an anonymous browser pass with live presence. Founder two-browser session recommended as final confirmation.)*
 
 ## Phase 4: Room lifecycle + waiting room + interaction surfaces (days 10-14)
 - [ ] Room state machine + control channel; DB as source of truth, replay on reconnect

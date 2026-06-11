@@ -44,6 +44,11 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | `fixtures` table (API-Football cache; absent from ARCHITECTURE data model); dev seeds use negative ids, purged on first real sync | Added Phase 2 | Assumed |
 | Theme conflict: explicit device choice (localStorage) beats account `theme_pref`; account pref fills in on devices with no choice | Phase 2 | Assumed |
 | Fixtures sync trigger: admin-only POST `/api/fixtures/sync`; scheduled trigger deferred to Phase 7 | Phase 2 | Assumed |
+| Vote/flag aggregates denormalized onto `chat_messages`/`links` rows, recomputed from vote rows on every write | Phase 3 | Assumed |
+| Flag weight "established" = account ≥48h AND standing good; the "no session history" criterion waits for `listener_segments` (Phase 9) | Phase 3 | Assumed |
+| Blocklist matches the exact domain and all subdomains | Phase 3 | Assumed |
+| Hide log = `hidden_by`/`hidden_at` columns + flag rows; no separate log table | Phase 3 | Assumed |
+| PostgREST embeds need explicit FK hints (`profiles!<fk_name>`) since junction tables (votes/flags) make joins ambiguous | Phase 3 | Technical note |
 
 ## Where things are specified
 
