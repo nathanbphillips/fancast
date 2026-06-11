@@ -4,11 +4,12 @@ import {
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import { syncFixtures } from "@/lib/fixtures";
+import { isAdmin } from "@/lib/roles";
 
 /** Admin-triggered fixtures sync. A scheduled trigger can come later. */
 export async function POST() {
-  const { profile } = await getCurrentUserAndProfile();
-  if (profile?.role !== "admin") {
+  const { user, profile } = await getCurrentUserAndProfile();
+  if (!isAdmin(user?.id, profile)) {
     return NextResponse.json({ error: "Admins only." }, { status: 403 });
   }
 

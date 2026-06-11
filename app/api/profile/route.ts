@@ -6,6 +6,7 @@ import {
   createServiceClient,
 } from "@/lib/db/server";
 import type { Profile } from "@/lib/db/types";
+import { adminUserIds } from "@/lib/roles";
 
 const usernameSchema = z
   .string()
@@ -22,13 +23,6 @@ const updateSchema = z
     theme_pref: z.enum(["dark", "light"]).nullable().optional(),
   })
   .refine((b) => Object.keys(b).length > 0, { message: "Nothing to update." });
-
-function adminUserIds(): string[] {
-  return (process.env.ADMIN_USER_IDS ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
 
 /** Create the caller's profile (first sign-in username pick). */
 export async function POST(request: NextRequest) {
