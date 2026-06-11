@@ -2,16 +2,16 @@
 
 Rules: one phase at a time, in order. A phase is complete when every box is checked and its acceptance test passes. Check boxes in this file as you go; note deviations inline. iOS Safari gates all audio items.
 
-**Current phase: 1**
+**Current phase: 2** (Phase 1 complete 2026-06-11; production at https://fancast-26.vercel.app)
 
 ## Phase 1: Foundation + layout + theming (days 1-3)
-- [ ] Next.js + TS strict + Tailwind scaffold; deploy pipeline to Vercel *(scaffold ✓ 2026-06-11; Vercel pipeline blocked on founder GitHub/Vercel accounts — SETUP_CHECKLIST "Before Phase 1")*
+- [x] Next.js + TS strict + Tailwind scaffold; deploy pipeline to Vercel *(GitHub repo nathanbphillips/fancast → Vercel auto-deploy on push, live 2026-06-11)*
 - [x] `lib/brand.ts` config (name, file-naming template, email sender)
 - [x] Token system per docs/DESIGN.md as CSS variables; dark + light themes; header toggle, system default, no-flash load
 - [x] Mobile stacked layout shell; desktop three-column shell (stats 25 / chat 50 / links 25)
 - [x] Persistent audio bar shell (listener variant, UI only)
 - [x] Home page shell with placeholder fixture cards
-- **Test:** deployed site renders both themes correctly, responsive at 360px/768px/1280px. *(Verified locally 2026-06-11 at all three widths, both themes, toggle + persistence + no-flash; deployed verification pending Vercel account.)*
+- **Test:** deployed site renders both themes correctly, responsive at 360px/768px/1280px. ✓ *(Verified 2026-06-11: all three widths and both themes locally incl. toggle/persistence/no-flash; deployed build confirmed serving identical pages, theme script, and both token sets.)*
 
 ## Phase 2: Auth + roles + follows + home schedule (days 3-6)
 - [ ] Supabase auth (magic link + one OAuth provider); username flow (unique, 30-day change lock)
@@ -89,5 +89,5 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 
 - 2026-06-11 — Light-theme `--gold` (#9C824A → #806A3C) and `--green` (#1A9E56 → #137A42) darkened: originals fail WCAG AA for small text on white (3.7:1 / 3.5:1). DESIGN.md authorizes adjusting values rather than breaking contrast; its token table is updated. Dark theme unchanged.
 - 2026-06-11 — Audio bar LIVE indicator uses the same white-on-red chip as the match header (red text on dark surface was ~3.9:1).
-- 2026-06-11 — Vercel deploy pipeline not set up: founder accounts (GitHub, Vercel) not yet created. Everything else in Phase 1 complete and verified locally.
-- 2026-06-11 — Repo-local git identity is a placeholder ("Nathan" / natha@example.com); founder should set real name/email before pushing to GitHub.
+- 2026-06-11 — Vercel deploy initially failed ("No Output Directory named 'public'"): project was created from an empty repo so framework detection defaulted to "Other". Fixed with `vercel.json` declaring `"framework": "nextjs"`. Vercel project name is `fancast-26`; production domain https://fancast-26.vercel.app.
+- 2026-06-11 — Git history rewritten before first push to replace the placeholder author with the founder's real identity.
