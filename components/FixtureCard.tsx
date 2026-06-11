@@ -23,7 +23,14 @@ export type FixtureCardData = {
   listeners?: number;
 };
 
-export function FixtureCard({ fixture }: { fixture: FixtureCardData }) {
+export function FixtureCard({
+  fixture,
+  action,
+}: {
+  fixture: FixtureCardData;
+  /** optional extra affordance (e.g. commentator's Open Waiting Room) */
+  action?: React.ReactNode;
+}) {
   const { state } = fixture;
   const accent =
     state === "live"
@@ -87,6 +94,7 @@ export function FixtureCard({ fixture }: { fixture: FixtureCardData }) {
               {state === "live" ? "Join live" : "Join waiting room"}
             </Link>
           )}
+          {action}
         </div>
       </div>
     </article>

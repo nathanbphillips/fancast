@@ -9,6 +9,7 @@ import {
   type FixtureCardData,
   type FixtureCardState,
 } from "@/components/FixtureCard";
+import { OpenWaitingButton } from "@/components/OpenWaitingButton";
 
 /**
  * Home: next fixtures from the DB with enterability gating by room state
@@ -58,7 +59,7 @@ export default async function HomePage() {
     .limit(10)
     .returns<FixtureWithRooms[]>();
 
-  const { user } = await getCurrentUserAndProfile();
+  const { user, profile } = await getCurrentUserAndProfile();
   const followedIds = new Set<string>();
   if (user) {
     const { data: follows } = await supabase
@@ -67,6 +68,8 @@ export default async function HomePage() {
       .eq("follower_id", user.id);
     follows?.forEach((f) => followedIds.add(f.commentator_id));
   }
+
+  const viewerIsCommentator = profile?.role === "commentator";
 
   const withFollowed = (fixtures ?? []).map((f) => {
     const room = f.rooms[0];
@@ -80,16 +83,24 @@ export default async function HomePage() {
       state: cardState(room?.state),
       roomHref: room ? `/room/${room.id}` : undefined,
     };
-    return { card, followed: room ? followedIds.has(room.commentator_id) : false };
+    // commentator's own open-waiting affordance: no open room on this
+    // fixture yet (their scheduled room, or none at all)
+    const ownRoom = f.rooms.find((r) => r.commentator_id === user?.id);
+    const canOpen =
+      viewerIsCommentator && (!ownRoom || ownRoom.state === "scheduled");
+    return {
+      card,
+      canOpen,
+      followed: room ? followedIds.has(room.commentator_id) : false,
+    };
   });
 
   // followed commentators' sessions first (FR-1.3); stable sort keeps
   // kickoff order within each group
   withFollowed.sort((a, b) => Number(b.followed) - Number(a.followed));
-  const cards = withFollowed.map((w) => w.card);
 
-  const live = cards.filter((c) => c.state !== "scheduled");
-  const upcoming = cards.filter((c) => c.state === "scheduled");
+  const live = withFollowed.filter((w) => w.card.state !== "scheduled");
+  const upcoming = withFollowed.filter((w) => w.card.state === "scheduled");
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
@@ -104,8 +115,8 @@ export default async function HomePage() {
             Happening now
           </h2>
           <div className="space-y-3">
-            {live.map((f) => (
-              <FixtureCard key={f.id} fixture={f} />
+            {live.map((w) => (
+              <FixtureCard key={w.card.id} fixture={w.card} />
             ))}
           </div>
         </section>
@@ -121,8 +132,16 @@ export default async function HomePage() {
           </p>
         ) : (
           <div className="space-y-3">
-            {upcoming.map((f) => (
-              <FixtureCard key={f.id} fixture={f} />
+            {upcoming.map((w) => (
+              <FixtureCard
+                key={w.card.id}
+                fixture={w.card}
+                action={
+                  w.canOpen ? (
+                    <OpenWaitingButton fixtureId={w.card.id} />
+                  ) : undefined
+                }
+              />
             ))}
           </div>
         )}
