@@ -8,11 +8,13 @@
     "start": "next start",
     "migrate": "tsx --env-file=.env.local scripts/migrate.ts",
     "grant-role": "tsx --env-file=.env.local scripts/grant-role.ts",
-    "smoke": "tsx --env-file=.env.local scripts/phase2-smoke.ts"
+    "smoke": "tsx --env-file=.env.local scripts/phase2-smoke.ts",
+    "smoke3": "tsx --env-file=.env.local scripts/phase3-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.1",
+    "ably": "^2.22.1",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -47,6 +47,38 @@ export type RoomState =
   | "postgame"
   | "wrapped";
 
+export type ChatMessage = {
+  id: string;
+  room_id: string;
+  user_id: string;
+  body: string;
+  is_waiting_room: boolean;
+  hidden_by: "flags" | "commentator" | "admin" | null;
+  hidden_at: string | null;
+  up_count: number;
+  down_count: number;
+  flag_weight: number;
+  created_at: string;
+  /** embedded author (select alias author:profiles(...)) */
+  author?: Pick<Profile, "username" | "role">;
+};
+
+export type Link = {
+  id: string;
+  room_id: string;
+  user_id: string;
+  url: string;
+  og_title: string | null;
+  og_description: string | null;
+  og_image: string | null;
+  domain: string;
+  hidden: boolean;
+  up_count: number;
+  down_count: number;
+  created_at: string;
+  author?: Pick<Profile, "username" | "role">;
+};
+
 export type Room = {
   id: string;
   fixture_id: number;
