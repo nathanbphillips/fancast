@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Design tokens per docs/DESIGN.md — defined once, both themes.
+ * Light values on :root, dark overrides on .dark (class set before paint
+ * by the inline script in app/layout.tsx; system preference is the default).
+ */
+:root {
+  --bg-base: #fafaf8;
+  --bg-surface: #ffffff;
+  --bg-raised: #f1f0ec;
+  --text-primary: #16181d;
+  --text-secondary: #5e6573;
+  --line: #e4e2dc;
+  --red: #b80005;
+  /* gold/green darkened from DESIGN.md table values (#9c824a / #1a9e56):
+     those fail AA for small text on white; the doc says adjust, not break */
+  --gold: #806a3c;
+  --navy: #023474;
+  --green: #137a42;
+}
+
+.dark {
+  --bg-base: #0d0f14;
+  --bg-surface: #15181f;
+  --bg-raised: #1c2029;
+  --text-primary: #f2f3f5;
+  --text-secondary: #9ba1ac;
+  --line: #262b35;
+  --red: #ef0107;
+  --gold: #c9a864;
+  --navy: #6e9fe0;
+  --green: #27c46d;
+}
+
+/* Tailwind reads the variables; components use bg-base, text-primary, etc. */
+@theme inline {
+  /* "canvas" not "base": text-base must stay the font-size utility */
+  --color-canvas: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-raised: var(--bg-raised);
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-line: var(--line);
+  --color-red: var(--red);
+  --color-gold: var(--gold);
+  --color-navy: var(--navy);
+  --color-green: var(--green);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+}
+
+/* Visible focus everywhere (WCAG); gold ring reads in both themes. */
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* LIVE indicator pulse — motion only on state changes, <200ms feel, calm loop. */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+.animate-live-pulse {
+  animation: live-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
