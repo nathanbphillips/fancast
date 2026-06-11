@@ -28,6 +28,8 @@ type Props = {
   myLinkVotes: Record<string, 1 | -1>;
 };
 
+type ConnState = "connecting" | "connected" | "broken";
+
 const TABS = [
   { id: "chat", label: "Chat" },
   { id: "stats", label: "Stats" },
@@ -40,12 +42,25 @@ export function RealtimeRoom(props: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
   const [watching, setWatching] = useState<number | null>(null);
+  const [conn, setConn] = useState<ConnState>("connecting");
+
+  // sender-side append: own messages render from the POST response,
+  // never waiting on the realtime echo
+  const appendMessage = (m: ChatMessage) =>
+    setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+  const appendLink = (l: Link) =>
+    setLinks((prev) => (prev.some((x) => x.id === l.id) ? prev : [l, ...prev]));
 
   useEffect(() => {
     const client = new Ably.Realtime({
       authUrl: `/api/ably/token?room=${props.roomId}`,
       authMethod: "GET",
     });
+
+    client.connection.on("connected", () => setConn("connected"));
+    client.connection.on(["disconnected", "suspended", "failed"], () =>
+      setConn("broken"),
+    );
 
     const chat = client.channels.get(`room:${props.roomId}:chat`, {
       params: { rewind: "50" },
@@ -55,8 +70,7 @@ export function RealtimeRoom(props: Props) {
     });
 
     chat.subscribe("message", (msg) => {
-      const m = msg.data as ChatMessage;
-      setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+      appendMessage(msg.data as ChatMessage);
     });
     chat.subscribe("vote", (msg) => {
       const { messageId, up, down } = msg.data as {
@@ -81,8 +95,7 @@ export function RealtimeRoom(props: Props) {
     });
 
     linksCh.subscribe("link", (msg) => {
-      const l = msg.data as Link;
-      setLinks((prev) => (prev.some((x) => x.id === l.id) ? prev : [l, ...prev]));
+      appendLink(msg.data as Link);
     });
     linksCh.subscribe("vote", (msg) => {
       const { linkId, up, down, hidden } = msg.data as {
@@ -112,31 +125,6 @@ export function RealtimeRoom(props: Props) {
     };
   }, [props.roomId]);
 
-  const panels = {
-    chat: (
-      <LiveChat
-        roomId={props.roomId}
-        viewer={props.viewer}
-        messages={messages}
-        myVotes={props.myMessageVotes}
-        watching={watching}
-      />
-    ),
-    stats: (
-      <div className="overflow-y-auto">
-        <StatsPanel />
-      </div>
-    ),
-    links: (
-      <LiveLinks
-        roomId={props.roomId}
-        viewer={props.viewer}
-        links={links}
-        myVotes={props.myLinkVotes}
-      />
-    ),
-  };
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <nav aria-label="Room sections" className="flex border-b border-line bg-surface lg:hidden">
@@ -155,17 +143,40 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:hidden">{panels[tab]}</div>
-
-      <div className="mx-auto hidden min-h-0 w-full max-w-7xl flex-1 lg:grid lg:grid-cols-[1fr_2fr_1fr]">
-        <aside aria-label="Stats" className="overflow-y-auto border-r border-line">
+      {/* each panel renders exactly once; tab (mobile) and breakpoint (desktop)
+          control visibility via CSS so input state survives layout changes */}
+      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-[1fr_2fr_1fr]">
+        <aside
+          aria-label="Stats"
+          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
+        >
           <StatsPanel />
         </aside>
-        <section aria-label="Chat" className="flex min-h-0 flex-col">
-          {panels.chat}
+        <section
+          aria-label="Chat"
+          className={`${tab === "chat" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
+        >
+          <LiveChat
+            roomId={props.roomId}
+            viewer={props.viewer}
+            messages={messages}
+            myVotes={props.myMessageVotes}
+            watching={watching}
+            conn={conn}
+            onSent={appendMessage}
+          />
         </section>
-        <aside aria-label="Links" className="overflow-y-auto border-l border-line">
-          {panels.links}
+        <aside
+          aria-label="Links"
+          className={`${tab === "links" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-l lg:border-line`}
+        >
+          <LiveLinks
+            roomId={props.roomId}
+            viewer={props.viewer}
+            links={links}
+            myVotes={props.myLinkVotes}
+            onSubmitted={appendLink}
+          />
         </aside>
       </div>
     </div>
@@ -220,12 +231,16 @@ function LiveChat({
   messages,
   myVotes,
   watching,
+  conn,
+  onSent,
 }: {
   roomId: string;
   viewer: Viewer;
   messages: ChatMessage[];
   myVotes: Record<string, 1 | -1>;
   watching: number | null;
+  conn: ConnState;
+  onSent: (m: ChatMessage) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -251,6 +266,8 @@ function LiveChat({
     });
     setSending(false);
     if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (body.message) onSent(body.message);
       setDraft("");
     } else {
       const body = await res.json().catch(() => ({}));
@@ -297,7 +314,13 @@ function LiveChat({
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
         <span className="text-xs text-secondary tabular-nums">
-          {watching === null ? "connecting…" : `${watching} watching`}
+          {watching !== null
+            ? `${watching} watching`
+            : conn === "connecting"
+              ? "connecting…"
+              : conn === "broken"
+                ? "live updates unavailable — refresh to retry"
+                : "…"}
         </span>
       </div>
 
@@ -434,11 +457,13 @@ function LiveLinks({
   viewer,
   links,
   myVotes,
+  onSubmitted,
 }: {
   roomId: string;
   viewer: Viewer;
   links: Link[];
   myVotes: Record<string, 1 | -1>;
+  onSubmitted: (l: Link) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -457,6 +482,8 @@ function LiveLinks({
     });
     setBusy(false);
     if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (body.link) onSubmitted(body.link);
       setDraft("");
     } else {
       const body = await res.json().catch(() => ({}));
