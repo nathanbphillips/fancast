@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   const { data: room } = await service
     .from("rooms")
-    .select("id, state")
+    .select("id, state, commentator_id")
     .eq("id", roomId)
     .maybeSingle();
   if (!room) {
@@ -35,6 +35,19 @@ export async function POST(request: NextRequest) {
   if (room.state === "wrapped") {
     return NextResponse.json(
       { error: "This room has ended." },
+      { status: 403 },
+    );
+  }
+  if (room.state === "scheduled") {
+    return NextResponse.json(
+      { error: "This room hasn't opened yet." },
+      { status: 403 },
+    );
+  }
+  // waiting room: commentator-only chat (FR-3.2)
+  if (room.state === "waiting" && room.commentator_id !== caller.userId) {
+    return NextResponse.json(
+      { error: "Chat opens when the broadcast starts." },
       { status: 403 },
     );
   }

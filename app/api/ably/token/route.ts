@@ -29,6 +29,30 @@ export async function GET(request: NextRequest) {
     [channels.control(roomId!)]: ["subscribe", "history"],
   };
 
+  // the room's commentator (and admins) may subscribe to the private
+  // channel: questions + talk requests (FR-10.1, FR-4.2)
+  if (user) {
+    const { data: room } = await supabase
+      .from("rooms")
+      .select("commentator_id")
+      .eq("id", roomId!)
+      .maybeSingle();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const admin =
+      profile?.role === "admin" ||
+      (process.env.ADMIN_USER_IDS ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .includes(user.id);
+    if (room?.commentator_id === user.id || admin) {
+      capability[`room:${roomId}:private`] = ["subscribe", "history"];
+    }
+  }
+
   const tokenRequest = await ablyRest().auth.createTokenRequest({
     clientId,
     capability: JSON.stringify(capability),

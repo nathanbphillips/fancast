@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   const { data: room } = await service
     .from("rooms")
-    .select("id, state")
+    .select("id, state, commentator_id")
     .eq("id", parsed.data.roomId)
     .maybeSingle();
   if (!room) {
@@ -54,6 +54,16 @@ export async function POST(request: NextRequest) {
   if (room.state === "wrapped") {
     return NextResponse.json(
       { error: "This room has ended." },
+      { status: 403 },
+    );
+  }
+  // links unlock at Start Broadcast (FR-3.3); commentator may seed earlier
+  if (
+    (room.state === "waiting" || room.state === "scheduled") &&
+    room.commentator_id !== caller.userId
+  ) {
+    return NextResponse.json(
+      { error: "Links open when the broadcast starts." },
       { status: 403 },
     );
   }
