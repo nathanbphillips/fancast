@@ -58,6 +58,9 @@ type Props = {
   mySliderValue: number | null;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
+  initialBroadcastStart: string | null;
+  initialChatOpen: boolean;
+  initialLinksOpen: boolean;
 };
 
 type ConnState = "connecting" | "connected" | "broken";
@@ -93,6 +96,9 @@ export function RealtimeRoom(props: Props) {
   const [sliderAgg, setSliderAgg] = useState<SliderAggregate>(props.sliderAgg);
   const [watching, setWatching] = useState<number | null>(null);
   const [conn, setConn] = useState<ConnState>("connecting");
+  const [broadcastStart, setBroadcastStart] = useState(props.initialBroadcastStart);
+  const [chatOpen, setChatOpen] = useState(props.initialChatOpen);
+  const [linksOpen, setLinksOpen] = useState(props.initialLinksOpen);
 
   const appendMessage = (m: ChatMessage) =>
     setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
@@ -160,11 +166,27 @@ export function RealtimeRoom(props: Props) {
       );
     });
 
+    let lastStateTs = "";
     control.subscribe("state", (msg) => {
-      setRoomState((msg.data as { state: RoomState }).state);
+      const { state, ts } = msg.data as { state: RoomState; ts?: string };
+      // rewind can replay history — never let an older event win
+      if (ts && ts < lastStateTs) return;
+      if (ts) lastStateTs = ts;
+      setRoomState(state);
     });
     control.subscribe("slider", (msg) => {
       setSliderAgg(msg.data as SliderAggregate);
+    });
+    control.subscribe("broadcast_start", (msg) => {
+      setBroadcastStart((msg.data as { broadcastStart: string | null }).broadcastStart);
+    });
+    control.subscribe("features", (msg) => {
+      const { chatOpen: c, linksOpen: l } = msg.data as {
+        chatOpen: boolean;
+        linksOpen: boolean;
+      };
+      setChatOpen(c);
+      setLinksOpen(l);
     });
 
     // private channel: only the room commentator/admin holds the capability
@@ -235,6 +257,9 @@ export function RealtimeRoom(props: Props) {
       state={roomState}
       requests={talkRequests}
       onRequestHandled={handleRequestHandled}
+      broadcastStart={broadcastStart}
+      chatOpen={chatOpen}
+      linksOpen={linksOpen}
     />
   ) : (
     <AudioBar
@@ -258,6 +283,8 @@ export function RealtimeRoom(props: Props) {
       mySliderValue={props.mySliderValue}
       talkConsentGiven={props.talkConsentGiven}
       hasPendingTalk={props.hasPendingTalk}
+      broadcastStart={broadcastStart}
+      chatOpen={chatOpen}
     />
   );
 
@@ -415,6 +442,7 @@ export function RealtimeRoom(props: Props) {
                 viewer={viewer}
                 roomState={roomState}
                 isRoomCommentator={isRoomCommentator}
+                linksOpen={linksOpen}
                 links={links}
                 myVotes={props.myLinkVotes}
                 onSubmitted={appendLink}
@@ -487,6 +515,8 @@ function LiveChat({
   mySliderValue,
   talkConsentGiven,
   hasPendingTalk,
+  broadcastStart,
+  chatOpen,
 }: {
   room: RoomInfo;
   roomState: RoomState;
@@ -500,6 +530,8 @@ function LiveChat({
   mySliderValue: number | null;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
+  broadcastStart: string | null;
+  chatOpen: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -573,7 +605,8 @@ function LiveChat({
   const isRoomCommentator = viewer?.isRoomCommentator ?? false;
   const canType =
     viewer !== null &&
-    (inputsOpen || (roomState === "waiting" && isRoomCommentator));
+    (inputsOpen ||
+      (roomState === "waiting" && (isRoomCommentator || chatOpen)));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -589,7 +622,7 @@ function LiveChat({
         </span>
       </div>
 
-      {roomState === "waiting" && <Countdown kickoffIso={room.scheduledKickoff} />}
+      {roomState === "waiting" && <Countdown targetIso={broadcastStart} />}
 
       <ul ref={listRef} className="flex-1 space-y-1 overflow-y-auto p-2">
         {messages.map((m) => {
@@ -708,8 +741,8 @@ function LiveChat({
       ) : !canType ? (
         <div className="border-t border-line p-3">
           <p className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center text-sm text-secondary">
-            Waiting room — chat, links, and questions open when the broadcast
-            starts.
+            Waiting room — chat opens when the commentator opens it or the
+            broadcast starts.
           </p>
         </div>
       ) : (
@@ -845,6 +878,7 @@ function LiveLinks({
   viewer,
   roomState,
   isRoomCommentator,
+  linksOpen,
   links,
   myVotes,
   onSubmitted,
@@ -853,6 +887,7 @@ function LiveLinks({
   viewer: Viewer;
   roomState: RoomState;
   isRoomCommentator: boolean;
+  linksOpen: boolean;
   links: Link[];
   myVotes: Record<string, 1 | -1>;
   onSubmitted: (l: Link) => void;
@@ -865,7 +900,7 @@ function LiveLinks({
   const canSubmit =
     viewer !== null &&
     (INPUTS_OPEN.includes(roomState) ||
-      (roomState === "waiting" && isRoomCommentator));
+      (roomState === "waiting" && (isRoomCommentator || linksOpen)));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

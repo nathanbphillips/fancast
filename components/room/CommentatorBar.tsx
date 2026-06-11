@@ -30,20 +30,68 @@ const STATUS_LABEL: Partial<Record<RoomState, string>> = {
   wrapped: "Show ended",
 };
 
+/** ISO -> value for <input type="datetime-local"> in the local timezone. */
+function toLocalInputValue(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function CommentatorBar({
   roomId,
   state,
   requests,
   onRequestHandled,
+  broadcastStart,
+  chatOpen,
+  linksOpen,
 }: {
   roomId: string;
   state: RoomState;
   requests: TalkRequest[];
   onRequestHandled: (id: string, status: "accepted" | "dismissed") => void;
+  broadcastStart: string | null;
+  chatOpen: boolean;
+  linksOpen: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [startDraft, setStartDraft] = useState(() =>
+    toLocalInputValue(broadcastStart),
+  );
+
+  async function setBroadcastStart(value: string) {
+    setError(null);
+    const res = await fetch("/api/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "set_broadcast_start",
+        roomId,
+        broadcastStart: value ? new Date(value).toISOString() : null,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Couldn't set the start time.");
+    }
+  }
+
+  async function toggleFeature(feature: "chatOpen" | "linksOpen", next: boolean) {
+    setError(null);
+    const res = await fetch("/api/rooms", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "set_features", roomId, [feature]: next }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Couldn't update that.");
+    }
+    // the control-channel `features` event updates every client incl. us
+  }
 
   async function transition(action: "start" | "end") {
     setBusy(true);
@@ -84,8 +132,53 @@ export function CommentatorBar({
         {error && <p className="text-xs text-red">{error}</p>}
       </div>
 
-      {/* center zone: pending talk requests */}
+      {/* center zone: waiting-room setup, then pending talk requests */}
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        {state === "waiting" && (
+          <>
+            <label className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5 text-xs">
+              <span className="font-semibold text-secondary">Start time</span>
+              <input
+                type="datetime-local"
+                value={startDraft}
+                onChange={(e) => {
+                  setStartDraft(e.target.value);
+                  void setBroadcastStart(e.target.value);
+                }}
+                aria-label="Planned broadcast start time"
+                className="h-8 rounded-md border border-line bg-surface px-2 text-xs tabular-nums"
+              />
+            </label>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={chatOpen}
+              onClick={() => toggleFeature("chatOpen", !chatOpen)}
+              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold ${
+                chatOpen
+                  ? "border-green text-green"
+                  : "border-line bg-raised text-secondary hover:text-primary"
+              }`}
+            >
+              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${chatOpen ? "bg-green" : "bg-line"}`} />
+              Chat {chatOpen ? "open" : "closed"}
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={linksOpen}
+              onClick={() => toggleFeature("linksOpen", !linksOpen)}
+              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold ${
+                linksOpen
+                  ? "border-green text-green"
+                  : "border-line bg-raised text-secondary hover:text-primary"
+              }`}
+            >
+              <span aria-hidden="true" className={`h-2 w-2 rounded-full ${linksOpen ? "bg-green" : "bg-line"}`} />
+              Links {linksOpen ? "open" : "closed"}
+            </button>
+          </>
+        )}
         {live &&
           requests.map((r) => (
             <div

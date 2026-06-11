@@ -72,7 +72,7 @@ export default async function RoomPage({
           Doors aren&apos;t open yet — {room.commentator.username} hasn&apos;t
           opened the waiting room. Check back closer to kickoff.
         </p>
-        <Countdown kickoffIso={room.scheduled_kickoff} />
+        <Countdown targetIso={room.scheduled_kickoff} heading="Kickoff in" />
       </div>
     );
   }
@@ -233,6 +233,9 @@ export default async function RoomPage({
       mySliderValue={mySliderValue}
       talkConsentGiven={talkConsentGiven}
       hasPendingTalk={hasPendingTalk}
+      initialBroadcastStart={room.broadcast_start}
+      initialChatOpen={room.chat_open}
+      initialLinksOpen={room.links_open}
     />
   );
 }

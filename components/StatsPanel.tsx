@@ -3,12 +3,14 @@
  * Live API-Football data, events timeline, and XI tabs arrive in Phase 7.
  */
 
+// pre-match defaults: zeros, possession 50/50 — live values arrive from
+// API-Football at kickoff (Phase 7)
 const PLACEHOLDER_STATS: { label: string; home: number; away: number }[] = [
-  { label: "Possession", home: 58, away: 42 },
-  { label: "Shots", home: 14, away: 7 },
-  { label: "On target", home: 6, away: 2 },
-  { label: "Corners", home: 7, away: 3 },
-  { label: "Fouls", home: 9, away: 12 },
+  { label: "Possession", home: 50, away: 50 },
+  { label: "Shots", home: 0, away: 0 },
+  { label: "On target", home: 0, away: 0 },
+  { label: "Corners", home: 0, away: 0 },
+  { label: "Fouls", home: 0, away: 0 },
 ];
 
 function StatBar({ label, home, away }: { label: string; home: number; away: number }) {
@@ -44,6 +46,9 @@ export function StatsPanel() {
             <StatBar key={s.label} {...s} />
           ))}
         </div>
+        <p className="mt-3 text-xs text-secondary">
+          Live match data arrives at kickoff.
+        </p>
       </section>
       <section aria-label="Lineups" className="rounded-xl border-[0.75px] border-line bg-surface p-4">
         <h2 className="mb-2 text-sm font-bold">Lineups</h2>
