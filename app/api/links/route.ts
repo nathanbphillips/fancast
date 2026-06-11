@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
   const { data: room } = await service
     .from("rooms")
-    .select("id, state, commentator_id")
+    .select("id, state, commentator_id, links_open")
     .eq("id", parsed.data.roomId)
     .maybeSingle();
   if (!room) {
@@ -57,9 +57,11 @@ export async function POST(request: NextRequest) {
       { status: 403 },
     );
   }
-  // links unlock at Start Broadcast (FR-3.3); commentator may seed earlier
+  // links unlock at Start Broadcast (FR-3.3); the commentator may seed
+  // earlier, or open links to everyone early (founder decision 2026-06-11)
   if (
     (room.state === "waiting" || room.state === "scheduled") &&
+    !(room.state === "waiting" && room.links_open) &&
     room.commentator_id !== caller.userId
   ) {
     return NextResponse.json(

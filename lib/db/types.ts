@@ -111,6 +111,11 @@ export type Room = {
   commentator_id: string;
   state: RoomState;
   scheduled_kickoff: string;
+  /** commentator-set planned start; waiting-room countdown targets this */
+  broadcast_start: string | null;
+  /** early access during waiting (founder decision 2026-06-11) */
+  chat_open: boolean;
+  links_open: boolean;
   opened_at: string | null;
   started_at: string | null;
   ended_at: string | null;

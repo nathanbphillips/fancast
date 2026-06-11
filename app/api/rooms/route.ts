@@ -20,6 +20,17 @@ const bodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("open_waiting"), fixtureId: z.number().int() }),
   z.object({ action: z.literal("start"), roomId: z.uuid() }),
   z.object({ action: z.literal("end"), roomId: z.uuid() }),
+  z.object({
+    action: z.literal("set_broadcast_start"),
+    roomId: z.uuid(),
+    broadcastStart: z.iso.datetime().nullable(),
+  }),
+  z.object({
+    action: z.literal("set_features"),
+    roomId: z.uuid(),
+    chatOpen: z.boolean().optional(),
+    linksOpen: z.boolean().optional(),
+  }),
 ]);
 
 const END_FROM: RoomState[] = [
@@ -125,6 +136,45 @@ export async function POST(request: NextRequest) {
       { error: "Only the room's commentator can do that." },
       { status: 403 },
     );
+  }
+
+  if (body.action === "set_broadcast_start") {
+    const { data: updated, error } = await service
+      .from("rooms")
+      .update({ broadcast_start: body.broadcastStart })
+      .eq("id", room.id)
+      .select()
+      .single<Room>();
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    await publish(channels.control(room.id), "broadcast_start", {
+      broadcastStart: body.broadcastStart,
+    });
+    return NextResponse.json({ room: updated });
+  }
+
+  if (body.action === "set_features") {
+    const update: { chat_open?: boolean; links_open?: boolean } = {};
+    if (body.chatOpen !== undefined) update.chat_open = body.chatOpen;
+    if (body.linksOpen !== undefined) update.links_open = body.linksOpen;
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json({ error: "Nothing to update." }, { status: 400 });
+    }
+    const { data: updated, error } = await service
+      .from("rooms")
+      .update(update)
+      .eq("id", room.id)
+      .select()
+      .single<Room>();
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    await publish(channels.control(room.id), "features", {
+      chatOpen: updated.chat_open,
+      linksOpen: updated.links_open,
+    });
+    return NextResponse.json({ room: updated });
   }
 
   if (body.action === "start") {

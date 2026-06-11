@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   const { data: room } = await service
     .from("rooms")
-    .select("id, state, commentator_id")
+    .select("id, state, commentator_id, chat_open")
     .eq("id", roomId)
     .maybeSingle();
   if (!room) {
@@ -44,8 +44,13 @@ export async function POST(request: NextRequest) {
       { status: 403 },
     );
   }
-  // waiting room: commentator-only chat (FR-3.2)
-  if (room.state === "waiting" && room.commentator_id !== caller.userId) {
+  // waiting room: commentator-only chat (FR-3.2) unless the commentator
+  // opened chat early (founder decision 2026-06-11)
+  if (
+    room.state === "waiting" &&
+    !room.chat_open &&
+    room.commentator_id !== caller.userId
+  ) {
     return NextResponse.json(
       { error: "Chat opens when the broadcast starts." },
       { status: 403 },
