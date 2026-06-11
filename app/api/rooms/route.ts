@@ -139,6 +139,16 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "set_broadcast_start") {
+    // a countdown target in the past is always a mistake (60s grace)
+    if (
+      body.broadcastStart !== null &&
+      new Date(body.broadcastStart).getTime() < Date.now() - 60_000
+    ) {
+      return NextResponse.json(
+        { error: "That start time is in the past — pick a future time." },
+        { status: 400 },
+      );
+    }
     const { data: updated, error } = await service
       .from("rooms")
       .update({ broadcast_start: body.broadcastStart })

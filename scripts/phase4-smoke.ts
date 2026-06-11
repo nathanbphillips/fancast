@@ -151,6 +151,12 @@ async function main() {
     broadcastStart: plannedStart,
   });
   check("listener cannot set broadcast start", r.status === 403);
+  r = await api("/api/rooms", cookies.smoke4_kev, {
+    action: "set_broadcast_start",
+    roomId,
+    broadcastStart: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
+  });
+  check("past start time rejected", r.status === 400, r.body.error);
   await sleep(1000);
   check(
     "broadcast_start event on control channel",

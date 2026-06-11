@@ -61,9 +61,28 @@ export function CommentatorBar({
   const [startDraft, setStartDraft] = useState(() =>
     toLocalInputValue(broadcastStart),
   );
+  const [startStatus, setStartStatus] = useState<"idle" | "saved" | "error">(
+    "idle",
+  );
+  const [startError, setStartError] = useState<string | null>(null);
 
-  async function setBroadcastStart(value: string) {
-    setError(null);
+  /** Commit the drafted start time (explicit action — never on keystroke). */
+  async function saveBroadcastStart(value: string | null) {
+    setStartError(null);
+    setStartStatus("idle");
+    if (value) {
+      const parsed = new Date(value);
+      if (Number.isNaN(parsed.getTime())) {
+        setStartError("That doesn't look like a valid time.");
+        setStartStatus("error");
+        return;
+      }
+      if (parsed.getTime() < Date.now()) {
+        setStartError("That time is in the past — pick a future time.");
+        setStartStatus("error");
+        return;
+      }
+    }
     const res = await fetch("/api/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -75,8 +94,13 @@ export function CommentatorBar({
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Couldn't set the start time.");
+      setStartError(body.error ?? "Couldn't set the start time.");
+      setStartStatus("error");
+      return;
     }
+    if (!value) setStartDraft("");
+    setStartStatus("saved");
+    setTimeout(() => setStartStatus("idle"), 2500);
   }
 
   async function toggleFeature(feature: "chatOpen" | "linksOpen", next: boolean) {
@@ -136,19 +160,44 @@ export function CommentatorBar({
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
         {state === "waiting" && (
           <>
-            <label className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5 text-xs">
-              <span className="font-semibold text-secondary">Start time</span>
-              <input
-                type="datetime-local"
-                value={startDraft}
-                onChange={(e) => {
-                  setStartDraft(e.target.value);
-                  void setBroadcastStart(e.target.value);
-                }}
-                aria-label="Planned broadcast start time"
-                className="h-8 rounded-md border border-line bg-surface px-2 text-xs tabular-nums"
-              />
-            </label>
+            <div className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5 text-xs">
+              <label className="flex items-center gap-2">
+                <span className="font-semibold text-secondary">Start time</span>
+                <input
+                  type="datetime-local"
+                  value={startDraft}
+                  min={toLocalInputValue(new Date().toISOString())}
+                  onChange={(e) => setStartDraft(e.target.value)}
+                  aria-label="Planned broadcast start time"
+                  className="h-8 rounded-md border border-line bg-surface px-2 text-xs tabular-nums"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={!startDraft}
+                onClick={() => saveBroadcastStart(startDraft)}
+                className="h-8 rounded-md bg-gold px-2.5 font-bold text-canvas disabled:opacity-60"
+              >
+                Set
+              </button>
+              {broadcastStart && (
+                <button
+                  type="button"
+                  onClick={() => saveBroadcastStart(null)}
+                  className="h-8 rounded-md border border-line px-2 text-secondary hover:text-primary"
+                >
+                  Clear
+                </button>
+              )}
+              {startStatus === "saved" && (
+                <span className="font-semibold text-green">✓ set</span>
+              )}
+              {startStatus === "error" && startError && (
+                <span role="alert" className="max-w-[200px] text-red">
+                  {startError}
+                </span>
+              )}
+            </div>
             <button
               type="button"
               role="switch"
