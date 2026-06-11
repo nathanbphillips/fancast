@@ -51,7 +51,7 @@ export default async function HomePage() {
   const { data: fixtures } = await supabase
     .from("fixtures")
     .select(
-      "*, rooms(id, state, commentator_id, commentator:profiles(username))",
+      "*, rooms(id, state, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
     .order("kickoff_utc", { ascending: true })
@@ -78,8 +78,7 @@ export default async function HomePage() {
       kickoffUtc: f.kickoff_utc,
       commentator: room?.commentator?.username,
       state: cardState(room?.state),
-      // room pages get real routes in Phase 4; the shell stands in until then
-      roomHref: room ? "/room/demo" : undefined,
+      roomHref: room ? `/room/${room.id}` : undefined,
     };
     return { card, followed: room ? followedIds.has(room.commentator_id) : false };
   });
