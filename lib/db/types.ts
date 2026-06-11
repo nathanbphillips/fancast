@@ -79,6 +79,32 @@ export type Link = {
   author?: Pick<Profile, "username" | "role">;
 };
 
+export type Question = {
+  id: string;
+  room_id: string;
+  user_id: string;
+  body: string;
+  status: "new" | "acknowledged" | "dismissed";
+  created_at: string;
+  author?: Pick<Profile, "username" | "role">;
+};
+
+export type TalkRequest = {
+  id: string;
+  room_id: string;
+  user_id: string;
+  topic: string;
+  status: "pending" | "accepted" | "dismissed" | "completed";
+  consent_at: string;
+  created_at: string;
+  author?: Pick<Profile, "username" | "role">;
+};
+
+export type SliderAggregate = {
+  avg: number;
+  count: number;
+};
+
 export type Room = {
   id: string;
   fixture_id: number;
