@@ -14,12 +14,12 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** deployed site renders both themes correctly, responsive at 360px/768px/1280px. ✓ *(Verified 2026-06-11: all three widths and both themes locally incl. toggle/persistence/no-flash; deployed build confirmed serving identical pages, theme script, and both token sets.)*
 
 ## Phase 2: Auth + roles + follows + home schedule (days 3-6)
-- [ ] Supabase auth (magic link + one OAuth provider); username flow (unique, 30-day change lock)
-- [ ] profiles/roles; commentator + admin manual grants
-- [ ] Follow system; counts on profile and room header
-- [ ] API-Football fixtures sync; home schedule with localized kickoff times; enterability gating by room state
-- [ ] Anonymous read access pattern (inputs replaced by join prompt)
-- **Test:** sign up, follow, see schedule; scheduled room not enterable; counts increment.
+- [x] Supabase auth (magic link + one OAuth provider); username flow (unique, 30-day change lock) *(providers enabled + verified via auth settings API; username flow smoke-tested end-to-end incl. lock; founder's real-inbox signup on prod is the remaining acceptance step)*
+- [x] profiles/roles; commentator + admin manual grants *(ADMIN_USER_IDS grants admin at profile creation; `npm run grant-role -- <username> <role>` for manual grants)*
+- [x] Follow system; counts on profile and room header *(profile count live; room header count joins in Phase 4 when real rooms exist)*
+- [ ] API-Football fixtures sync; home schedule with localized kickoff times; enterability gating by room state *(schedule + localization + gating done and verified; sync code built but inactive — APIFOOTBALL_KEY pending founder subscription)*
+- [x] Anonymous read access pattern (inputs replaced by join prompt)
+- **Test:** sign up, follow, see schedule; scheduled room not enterable; counts increment. *(All verified 2026-06-11 via scripted smoke test (15/15 checks) + browser pass with temp users; founder's real signup on the deployed site still to do.)*
 
 ## Phase 3: Chat + links + moderation (days 6-10)
 - [ ] Ably setup with token auth; chat channel with presence (watching count) and history replay
@@ -91,3 +91,5 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - 2026-06-11 — Audio bar LIVE indicator uses the same white-on-red chip as the match header (red text on dark surface was ~3.9:1).
 - 2026-06-11 — Vercel deploy initially failed ("No Output Directory named 'public'"): project was created from an empty repo so framework detection defaulted to "Other". Fixed with `vercel.json` declaring `"framework": "nextjs"`. Vercel project name is `fancast-26`; production domain https://fancast-26.vercel.app.
 - 2026-06-11 — Git history rewritten before first push to replace the placeholder author with the founder's real identity.
+- 2026-06-11 (Phase 2) — Direct DB connection is IPv6-only and this network is IPv4: migrations run through the session pooler (`aws-1-us-east-1.pooler.supabase.com`) via `npm run migrate`.
+- 2026-06-11 (Phase 2) — Added `fixtures` cache table + dev seed fixtures (negative ids) since ARCHITECTURE's data model omitted a fixtures table; first real API-Football sync purges seeds.

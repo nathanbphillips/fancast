@@ -41,6 +41,9 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Recording rights | Commentator owns 100%, no platform license, no exclusivity | Final (policy) |
 | Dump button / broadcast delay for callers | Not built | Final |
 | Chat vote arrows | Visible on every message, always | Final |
+| `fixtures` table (API-Football cache; absent from ARCHITECTURE data model); dev seeds use negative ids, purged on first real sync | Added Phase 2 | Assumed |
+| Theme conflict: explicit device choice (localStorage) beats account `theme_pref`; account pref fills in on devices with no choice | Phase 2 | Assumed |
+| Fixtures sync trigger: admin-only POST `/api/fixtures/sync`; scheduled trigger deferred to Phase 7 | Phase 2 | Assumed |
 
 ## Where things are specified
 
