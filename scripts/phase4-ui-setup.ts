@@ -1,5 +1,6 @@
 /** Temp helper: reset the smoke4 room to `waiting` and print session
  *  cookies for kev (commentator) + alice (listener) for browser checks. */
+import * as Ably from "ably";
 import { createClient, type Session } from "@supabase/supabase-js";
 import "dotenv/config";
 
@@ -27,6 +28,13 @@ async function main() {
     .eq("fixture_id", -4)
     .select("id")
     .single();
+  // publish like the API does — DB first, then the control event — so
+  // rewind subscribers see the reset too
+  const rest = new Ably.Rest({ key: process.env.ABLY_API_KEY! });
+  await rest.channels.get(`room:${room!.id}:control`).publish("state", {
+    state: "waiting",
+    ts: new Date().toISOString(),
+  });
   console.log(`ROOM=${room!.id}`);
 
   for (const who of ["kev", "alice"]) {

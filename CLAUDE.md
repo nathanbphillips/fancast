@@ -50,6 +50,9 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Hide log = `hidden_by`/`hidden_at` columns + flag rows; no separate log table | Phase 3 | Assumed |
 | PostgREST embeds need explicit FK hints (`profiles!<fk_name>`) since junction tables (votes/flags) make joins ambiguous | Phase 3 | Technical note |
 | Link cards are rich previews (wide image, headline, description), overriding the PRD's "compact preview cards" | Founder decision 2026-06-11 | Final |
+| Waiting-room countdown targets a commentator-set broadcast start time (`rooms.broadcast_start`), not kickoff; no time set = calm "show starts soon" card | Founder decision 2026-06-11 | Final |
+| Commentator can open chat and/or links to listeners during waiting (`rooms.chat_open`/`links_open` toggles), relaxing FR-3.2's commentator-only waiting chat | Founder decision 2026-06-11 | Final |
+| Stats panel shows zeros (possession 50/50) until live API-Football data arrives (Phase 7) | Founder decision 2026-06-11 | Final |
 
 ## Where things are specified
 

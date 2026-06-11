@@ -95,3 +95,4 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - 2026-06-11 (Phase 2) — Added `fixtures` cache table + dev seed fixtures (negative ids) since ARCHITECTURE's data model omitted a fixtures table; first real API-Football sync purges seeds.
 - 2026-06-11 (Phase 4) — Start Broadcast's "requires live mic" condition (FR-3.3) deferred to Phase 5: no audio pipeline exists yet, so the button starts the show without a mic check.
 - 2026-06-11 (Phase 4) — FR-3.3's "unlocks widgets" is moot until widgets exist (Phase 9); chat/links/questions/talk/slider all unlock as specified.
+- 2026-06-11 (Phase 4, founder changes) — Waiting-room countdown counts to a commentator-set broadcast start (set in the commentator bar; live-updates via control channel); stats zeroed pre-match; commentator can open chat/links early during waiting via bar toggles. Control-channel `state` handler now ignores out-of-order events (timestamp guard).

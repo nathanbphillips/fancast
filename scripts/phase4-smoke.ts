@@ -137,6 +137,43 @@ async function main() {
   r = await api("/api/links", cookies.smoke4_alice, { roomId, url: "https://example.com" });
   check("listener links blocked in waiting", r.status === 403);
 
+  // --- broadcast start time (founder change 2026-06-11)
+  const plannedStart = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  r = await api("/api/rooms", cookies.smoke4_kev, {
+    action: "set_broadcast_start",
+    roomId,
+    broadcastStart: plannedStart,
+  });
+  check("commentator sets broadcast start", r.status === 200 && r.body.room?.broadcast_start !== null);
+  r = await api("/api/rooms", cookies.smoke4_alice, {
+    action: "set_broadcast_start",
+    roomId,
+    broadcastStart: plannedStart,
+  });
+  check("listener cannot set broadcast start", r.status === 403);
+  await sleep(1000);
+  check(
+    "broadcast_start event on control channel",
+    events.some((e) => e.ch === "control" && e.name === "broadcast_start"),
+  );
+
+  // --- early chat/links toggles (founder change 2026-06-11)
+  r = await api("/api/rooms", cookies.smoke4_kev, { action: "set_features", roomId, chatOpen: true });
+  check("commentator opens chat early", r.status === 200 && r.body.room?.chat_open === true);
+  r = await api("/api/chat", cookies.smoke4_alice, { roomId, body: "early bird" });
+  check("listener can chat once opened early", r.status === 201);
+  r = await api("/api/links", cookies.smoke4_alice, { roomId, url: "https://example.com" });
+  check("links still closed independently", r.status === 403);
+  r = await api("/api/rooms", cookies.smoke4_kev, { action: "set_features", roomId, chatOpen: false });
+  check("commentator closes chat again", r.status === 200 && r.body.room?.chat_open === false);
+  r = await api("/api/chat", cookies.smoke4_alice, { roomId, body: "locked out again?" });
+  check("listener chat blocked after closing", r.status === 403);
+  await sleep(1000);
+  check(
+    "features events on control channel",
+    events.some((e) => e.ch === "control" && e.name === "features"),
+  );
+
   // --- start broadcast
   r = await api("/api/rooms", cookies.smoke4_alice, { action: "start", roomId });
   check("listener cannot start broadcast", r.status === 403);
