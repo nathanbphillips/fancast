@@ -1,14 +1,25 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
-import { AudioBar } from "@/components/AudioBar";
-import { MatchHeader } from "@/components/MatchHeader";
-import { RealtimeRoom, type Viewer } from "@/components/room/RealtimeRoom";
 import {
+  RealtimeRoom,
+  type RoomInfo,
+  type Viewer,
+} from "@/components/room/RealtimeRoom";
+import { Countdown } from "@/components/room/Countdown";
+import {
+  createServiceClient,
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
-import type { ChatMessage, Fixture, Link, Room } from "@/lib/db/types";
+import type {
+  ChatMessage,
+  Fixture,
+  Link,
+  Question,
+  Room,
+  TalkRequest,
+} from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
 type RoomWithJoins = Room & {
@@ -50,6 +61,22 @@ export default async function RoomPage({
   const room = await loadRoom(id);
   if (!room) notFound();
 
+  // FR-3.1/3.5: a scheduled room is listed but not enterable — and never 404s
+  if (room.state === "scheduled") {
+    return (
+      <div className="mx-auto max-w-md px-4 py-10 text-center">
+        <h1 className="text-xl font-bold">
+          {room.fixture.home_team} vs {room.fixture.away_team}
+        </h1>
+        <p className="mt-2 text-sm text-secondary">
+          Doors aren&apos;t open yet — {room.commentator.username} hasn&apos;t
+          opened the waiting room. Check back closer to kickoff.
+        </p>
+        <Countdown kickoffIso={room.scheduled_kickoff} />
+      </div>
+    );
+  }
+
   const supabase = await createSupabaseServerClient();
   const { user, profile } = await getCurrentUserAndProfile();
 
@@ -70,7 +97,6 @@ export default async function RoomPage({
       .returns<Link[]>(),
   ]);
 
-  // the viewer's own votes, for arrow highlighting on first render
   const myMessageVotes: Record<string, 1 | -1> = {};
   const myLinkVotes: Record<string, 1 | -1> = {};
   if (user) {
@@ -96,48 +122,117 @@ export default async function RoomPage({
     lv?.forEach((v) => (myLinkVotes[v.link_id] = v.value as 1 | -1));
   }
 
+  const admin = isAdmin(user?.id, profile);
+  const isRoomCommentator = user?.id === room.commentator_id;
+  const isModerator = isRoomCommentator || admin;
+
   const viewer: Viewer =
     user && profile
       ? {
           userId: user.id,
           username: profile.username,
           role: profile.role,
-          isModerator:
-            room.commentator_id === user.id || isAdmin(user.id, profile),
+          isModerator,
+          isRoomCommentator,
         }
       : null;
 
-  const isLive = ["live_1h", "live_2h", "extra_time"].includes(room.state);
+  // commentator-only initial data (questions + pending talk requests)
+  const service = createServiceClient();
+  let initialQuestions: Question[] = [];
+  let initialTalkRequests: TalkRequest[] = [];
+  if (isModerator) {
+    const [{ data: qs }, { data: trs }] = await Promise.all([
+      service
+        .from("questions")
+        .select("*, author:profiles!questions_user_id_fkey(username, role)")
+        .eq("room_id", room.id)
+        .order("created_at", { ascending: false })
+        .limit(100)
+        .returns<Question[]>(),
+      service
+        .from("talk_requests")
+        .select("*, author:profiles!talk_requests_user_id_fkey(username, role)")
+        .eq("room_id", room.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .returns<TalkRequest[]>(),
+    ]);
+    initialQuestions = qs ?? [];
+    initialTalkRequests = trs ?? [];
+  }
+
+  // slider: public aggregate (service — individual rows are RLS-private),
+  // own value + talk-consent state for the viewer
+  const { data: sliderRows } = await service
+    .from("slider_votes")
+    .select("value")
+    .eq("room_id", room.id);
+  const sliderCount = sliderRows?.length ?? 0;
+  const sliderAgg = {
+    avg:
+      sliderCount === 0
+        ? 50
+        : Math.round(sliderRows!.reduce((s, v) => s + v.value, 0) / sliderCount),
+    count: sliderCount,
+  };
+
+  let mySliderValue: number | null = null;
+  let talkConsentGiven = false;
+  let hasPendingTalk = false;
+  if (user) {
+    const [{ data: mySlider }, { data: anyConsent }, { data: pending }] =
+      await Promise.all([
+        supabase
+          .from("slider_votes")
+          .select("value")
+          .eq("room_id", room.id)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        service
+          .from("talk_requests")
+          .select("id")
+          .eq("user_id", user.id)
+          .limit(1)
+          .maybeSingle(),
+        service
+          .from("talk_requests")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("room_id", room.id)
+          .eq("status", "pending")
+          .maybeSingle(),
+      ]);
+    mySliderValue = mySlider?.value ?? null;
+    talkConsentGiven = anyConsent !== null;
+    hasPendingTalk = pending !== null;
+  }
+
+  const roomInfo: RoomInfo = {
+    id: room.id,
+    state: room.state,
+    scheduledKickoff: room.scheduled_kickoff,
+    home: room.fixture.home_team,
+    away: room.fixture.away_team,
+    homeScore: room.fixture.home_score ?? 0,
+    awayScore: room.fixture.away_score ?? 0,
+    commentatorUsername: room.commentator.username,
+  };
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:pb-[50px]">
-      <MatchHeader
-        home={room.fixture.home_team}
-        away={room.fixture.away_team}
-        homeScore={room.fixture.home_score ?? 0}
-        awayScore={room.fixture.away_score ?? 0}
-        state={room.state}
-        clock={undefined /* event-sourced clock arrives in Phase 6 */}
-      />
-
-      <div className="border-b border-line bg-surface lg:hidden">
-        <AudioBar commentator={room.commentator.username} live={isLive} />
-      </div>
-
-      <RealtimeRoom
-        roomId={room.id}
-        viewer={viewer}
-        initialMessages={messages ?? []}
-        initialLinks={links ?? []}
-        myMessageVotes={myMessageVotes}
-        myLinkVotes={myLinkVotes}
-      />
-
-      <div className="fixed inset-x-0 bottom-0 z-40 hidden h-[50px] border-t border-line bg-surface lg:block">
-        <div className="mx-auto h-full max-w-7xl [&>div]:h-full [&>div]:py-0">
-          <AudioBar commentator={room.commentator.username} live={isLive} />
-        </div>
-      </div>
-    </div>
+    <RealtimeRoom
+      room={roomInfo}
+      viewer={viewer}
+      initialMessages={messages ?? []}
+      initialLinks={links ?? []}
+      myMessageVotes={myMessageVotes}
+      myLinkVotes={myLinkVotes}
+      initialQuestions={initialQuestions}
+      initialTalkRequests={initialTalkRequests}
+      sliderAgg={sliderAgg}
+      mySliderValue={mySliderValue}
+      talkConsentGiven={talkConsentGiven}
+      hasPendingTalk={hasPendingTalk}
+    />
   );
 }

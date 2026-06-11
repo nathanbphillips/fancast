@@ -2,14 +2,28 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as Ably from "ably";
-import type { ChatMessage, Link } from "@/lib/db/types";
+import type {
+  ChatMessage,
+  Link,
+  Question,
+  RoomState,
+  SliderAggregate,
+  TalkRequest,
+} from "@/lib/db/types";
+import { AudioBar } from "@/components/AudioBar";
+import { MatchHeader } from "@/components/MatchHeader";
 import { StatsPanel } from "@/components/StatsPanel";
+import { CommentatorBar } from "./CommentatorBar";
+import { Countdown } from "./Countdown";
+import { InteractionButtons } from "./InteractionButtons";
+import { AggregateMeter, PreferenceSlider } from "./PreferenceSlider";
+import { QuestionsPanel } from "./QuestionsPanel";
 
 /**
- * Live room (Phase 3): chat + links over Ably, DB as source of truth.
- * Subscribe-only realtime; every write POSTs to an API route. Channel
- * attach uses rewind so reconnects replay recent history; id-dedupe makes
- * that safe alongside our own POST responses.
+ * Live room: chat + links + lifecycle over Ably, DB as source of truth.
+ * Control-channel `state` events drive lock/unlock on every client with
+ * no reload (FR-3.3); the commentator's private channel carries questions
+ * and talk requests. Clients are subscribe-only; writes go to API routes.
  */
 
 export type Viewer = {
@@ -17,43 +31,79 @@ export type Viewer = {
   username: string;
   role: "listener" | "commentator" | "admin";
   isModerator: boolean; // room commentator or admin
+  isRoomCommentator: boolean;
 } | null;
 
+export type RoomInfo = {
+  id: string;
+  state: RoomState;
+  scheduledKickoff: string;
+  home: string;
+  away: string;
+  homeScore: number;
+  awayScore: number;
+  commentatorUsername: string;
+};
+
 type Props = {
-  roomId: string;
+  room: RoomInfo;
   viewer: Viewer;
   initialMessages: ChatMessage[];
   initialLinks: Link[];
   myMessageVotes: Record<string, 1 | -1>;
   myLinkVotes: Record<string, 1 | -1>;
+  initialQuestions: Question[];
+  initialTalkRequests: TalkRequest[];
+  sliderAgg: SliderAggregate;
+  mySliderValue: number | null;
+  talkConsentGiven: boolean;
+  hasPendingTalk: boolean;
 };
 
 type ConnState = "connecting" | "connected" | "broken";
 
-const TABS = [
-  { id: "chat", label: "Chat" },
-  { id: "stats", label: "Stats" },
-  { id: "links", label: "Links" },
-] as const;
-type TabId = (typeof TABS)[number]["id"];
+const INPUTS_OPEN: RoomState[] = [
+  "pregame",
+  "live_1h",
+  "halftime",
+  "live_2h",
+  "extra_time",
+  "postgame",
+];
+
+const GRID_CLASS: Record<string, string> = {
+  "open-open": "lg:grid-cols-[1fr_2fr_1fr]",
+  "closed-open": "lg:grid-cols-[2.5rem_2fr_1fr]",
+  "open-closed": "lg:grid-cols-[1fr_2fr_2.5rem]",
+  "closed-closed": "lg:grid-cols-[2.5rem_2fr_2.5rem]",
+};
 
 export function RealtimeRoom(props: Props) {
-  const [tab, setTab] = useState<TabId>("chat");
+  const { room, viewer } = props;
+  const [roomState, setRoomState] = useState<RoomState>(room.state);
+  const [tab, setTab] = useState<"chat" | "stats" | "links" | "questions">("chat");
+  const [centerTab, setCenterTab] = useState<"chat" | "questions">("chat");
+  const [collapsed, setCollapsed] = useState({ stats: false, links: false });
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
+  const [questions, setQuestions] = useState<Question[]>(props.initialQuestions);
+  const [talkRequests, setTalkRequests] = useState<TalkRequest[]>(
+    props.initialTalkRequests,
+  );
+  const [sliderAgg, setSliderAgg] = useState<SliderAggregate>(props.sliderAgg);
   const [watching, setWatching] = useState<number | null>(null);
   const [conn, setConn] = useState<ConnState>("connecting");
 
-  // sender-side append: own messages render from the POST response,
-  // never waiting on the realtime echo
   const appendMessage = (m: ChatMessage) =>
     setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
   const appendLink = (l: Link) =>
     setLinks((prev) => (prev.some((x) => x.id === l.id) ? prev : [l, ...prev]));
 
+  const isRoomCommentator = viewer?.isRoomCommentator ?? false;
+
   useEffect(() => {
     const client = new Ably.Realtime({
-      authUrl: `/api/ably/token?room=${props.roomId}`,
+      authUrl: `/api/ably/token?room=${room.id}`,
       authMethod: "GET",
     });
 
@@ -62,16 +112,17 @@ export function RealtimeRoom(props: Props) {
       setConn("broken"),
     );
 
-    const chat = client.channels.get(`room:${props.roomId}:chat`, {
+    const chat = client.channels.get(`room:${room.id}:chat`, {
       params: { rewind: "50" },
     });
-    const linksCh = client.channels.get(`room:${props.roomId}:links`, {
+    const linksCh = client.channels.get(`room:${room.id}:links`, {
       params: { rewind: "25" },
     });
-
-    chat.subscribe("message", (msg) => {
-      appendMessage(msg.data as ChatMessage);
+    const control = client.channels.get(`room:${room.id}:control`, {
+      params: { rewind: "5" },
     });
+
+    chat.subscribe("message", (msg) => appendMessage(msg.data as ChatMessage));
     chat.subscribe("vote", (msg) => {
       const { messageId, up, down } = msg.data as {
         messageId: string;
@@ -94,9 +145,7 @@ export function RealtimeRoom(props: Props) {
       );
     });
 
-    linksCh.subscribe("link", (msg) => {
-      appendLink(msg.data as Link);
-    });
+    linksCh.subscribe("link", (msg) => appendLink(msg.data as Link));
     linksCh.subscribe("vote", (msg) => {
       const { linkId, up, down, hidden } = msg.data as {
         linkId: string;
@@ -111,7 +160,43 @@ export function RealtimeRoom(props: Props) {
       );
     });
 
-    // presence = watching count (everyone enters, including anonymous)
+    control.subscribe("state", (msg) => {
+      setRoomState((msg.data as { state: RoomState }).state);
+    });
+    control.subscribe("slider", (msg) => {
+      setSliderAgg(msg.data as SliderAggregate);
+    });
+
+    // private channel: only the room commentator/admin holds the capability
+    if (viewer?.isModerator) {
+      const priv = client.channels.get(`room:${room.id}:private`);
+      priv.subscribe("question", (msg) => {
+        const q = msg.data as Question;
+        setQuestions((prev) =>
+          prev.some((x) => x.id === q.id) ? prev : [q, ...prev],
+        );
+      });
+      priv.subscribe("question_update", (msg) => {
+        const { questionId, status } = msg.data as {
+          questionId: string;
+          status: Question["status"];
+        };
+        setQuestions((prev) =>
+          prev.map((q) => (q.id === questionId ? { ...q, status } : q)),
+        );
+      });
+      priv.subscribe("talk_request", (msg) => {
+        const r = msg.data as TalkRequest;
+        setTalkRequests((prev) =>
+          prev.some((x) => x.id === r.id) ? prev : [...prev, r],
+        );
+      });
+      priv.subscribe("talk_update", (msg) => {
+        const { requestId } = msg.data as { requestId: string };
+        setTalkRequests((prev) => prev.filter((r) => r.id !== requestId));
+      });
+    }
+
     const refreshPresence = async () => {
       const members = await chat.presence.get();
       setWatching(members.length);
@@ -123,12 +208,88 @@ export function RealtimeRoom(props: Props) {
       chat.presence.leave().catch(() => {});
       client.close();
     };
-  }, [props.roomId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room.id, viewer?.isModerator]);
+
+  const isLive = ["live_1h", "live_2h", "extra_time"].includes(roomState);
+  const audioLive = INPUTS_OPEN.includes(roomState);
+  const newQuestionCount = questions.filter((q) => q.status === "new").length;
+
+  function handleRequestHandled(id: string, _status: "accepted" | "dismissed") {
+    setTalkRequests((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  type TabId = "chat" | "stats" | "links" | "questions";
+  const mobileTabs: { id: TabId; label: string; badge: number }[] = [
+    { id: "chat", label: "Chat", badge: 0 },
+    ...(isRoomCommentator
+      ? [{ id: "questions" as const, label: "Questions", badge: newQuestionCount }]
+      : []),
+    { id: "stats", label: "Stats", badge: 0 },
+    { id: "links", label: "Links", badge: 0 },
+  ];
+
+  const bar = isRoomCommentator ? (
+    <CommentatorBar
+      roomId={room.id}
+      state={roomState}
+      requests={talkRequests}
+      onRequestHandled={handleRequestHandled}
+    />
+  ) : (
+    <AudioBar
+      commentator={room.commentatorUsername}
+      live={audioLive}
+      radioToggle
+    />
+  );
+
+  const chatPanel = (
+    <LiveChat
+      room={room}
+      roomState={roomState}
+      viewer={viewer}
+      messages={messages}
+      myVotes={props.myMessageVotes}
+      watching={watching}
+      conn={conn}
+      onSent={appendMessage}
+      sliderAgg={sliderAgg}
+      mySliderValue={props.mySliderValue}
+      talkConsentGiven={props.talkConsentGiven}
+      hasPendingTalk={props.hasPendingTalk}
+    />
+  );
+
+  const questionsPanel = (
+    <QuestionsPanel
+      questions={questions}
+      onStatusChange={(id, status) =>
+        setQuestions((prev) =>
+          prev.map((q) => (q.id === id ? { ...q, status } : q)),
+        )
+      }
+    />
+  );
+
+  const gridKey = `${collapsed.stats ? "closed" : "open"}-${collapsed.links ? "closed" : "open"}`;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:pb-[80px]">
+      <MatchHeader
+        home={room.home}
+        away={room.away}
+        homeScore={room.homeScore}
+        awayScore={room.awayScore}
+        state={roomState}
+        listeners={watching ?? undefined}
+      />
+
+      {/* mobile: in-flow strip under the header */}
+      <div className="border-b border-line bg-surface lg:hidden">{bar}</div>
+
       <nav aria-label="Room sections" className="flex border-b border-line bg-surface lg:hidden">
-        {TABS.map((t) => (
+        {mobileTabs.map((t) => (
           <button
             key={t.id}
             type="button"
@@ -139,45 +300,133 @@ export function RealtimeRoom(props: Props) {
             }`}
           >
             {t.label}
+            {t.badge > 0 && (
+              <span className="ml-1.5 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold text-canvas tabular-nums">
+                {t.badge}
+              </span>
+            )}
           </button>
         ))}
       </nav>
 
-      {/* each panel renders exactly once; tab (mobile) and breakpoint (desktop)
-          control visibility via CSS so input state survives layout changes */}
-      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-[1fr_2fr_1fr]">
+      <div
+        className={`flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl ${GRID_CLASS[gridKey]}`}
+      >
         <aside
           aria-label="Stats"
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
         >
-          <StatsPanel />
+          {collapsed.stats ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => ({ ...c, stats: false }))}
+              aria-label="Expand stats panel"
+              className="hidden h-full w-full items-start justify-center pt-3 text-secondary hover:text-primary lg:flex"
+            >
+              »
+            </button>
+          ) : (
+            <>
+              {isRoomCommentator && (
+                <div className="hidden justify-end px-2 pt-2 lg:flex">
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed((c) => ({ ...c, stats: true }))}
+                    aria-label="Collapse stats panel"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-secondary hover:bg-raised hover:text-primary"
+                  >
+                    «
+                  </button>
+                </div>
+              )}
+              <StatsPanel />
+            </>
+          )}
         </aside>
+
         <section
           aria-label="Chat"
-          className={`${tab === "chat" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
+          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
         >
-          <LiveChat
-            roomId={props.roomId}
-            viewer={props.viewer}
-            messages={messages}
-            myVotes={props.myMessageVotes}
-            watching={watching}
-            conn={conn}
-            onSent={appendMessage}
-          />
+          {isRoomCommentator && (
+            <div className="hidden border-b border-line bg-surface lg:flex">
+              {(["chat", "questions"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setCenterTab(t)}
+                  aria-current={centerTab === t ? "page" : undefined}
+                  className={`h-10 px-4 text-sm font-semibold ${
+                    centerTab === t
+                      ? "border-b-2 border-gold text-primary"
+                      : "text-secondary"
+                  }`}
+                >
+                  {t === "chat" ? "Chat" : "Questions"}
+                  {t === "questions" && newQuestionCount > 0 && (
+                    <span className="ml-1.5 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold text-canvas tabular-nums">
+                      {newQuestionCount}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* mobile: driven by the tab bar; desktop: by centerTab */}
+          <div className={`min-h-0 flex-1 ${tab === "questions" ? "overflow-y-auto" : "flex flex-col"} lg:hidden`}>
+            {tab === "questions" ? questionsPanel : chatPanel}
+          </div>
+          <div className={`hidden min-h-0 flex-1 ${centerTab === "questions" ? "overflow-y-auto" : ""} lg:flex lg:flex-col`}>
+            {centerTab === "questions" && isRoomCommentator
+              ? questionsPanel
+              : chatPanel}
+          </div>
         </section>
+
         <aside
           aria-label="Links"
           className={`${tab === "links" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-l lg:border-line`}
         >
-          <LiveLinks
-            roomId={props.roomId}
-            viewer={props.viewer}
-            links={links}
-            myVotes={props.myLinkVotes}
-            onSubmitted={appendLink}
-          />
+          {collapsed.links ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => ({ ...c, links: false }))}
+              aria-label="Expand links panel"
+              className="hidden h-full w-full items-start justify-center pt-3 text-secondary hover:text-primary lg:flex"
+            >
+              «
+            </button>
+          ) : (
+            <>
+              {isRoomCommentator && (
+                <div className="hidden justify-start px-2 pt-2 lg:flex">
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed((c) => ({ ...c, links: true }))}
+                    aria-label="Collapse links panel"
+                    className="flex h-8 w-8 items-center justify-center rounded-md text-secondary hover:bg-raised hover:text-primary"
+                  >
+                    »
+                  </button>
+                </div>
+              )}
+              <LiveLinks
+                roomId={room.id}
+                viewer={viewer}
+                roomState={roomState}
+                isRoomCommentator={isRoomCommentator}
+                links={links}
+                myVotes={props.myLinkVotes}
+                onSubmitted={appendLink}
+              />
+            </>
+          )}
         </aside>
+      </div>
+
+      {/* desktop: fixed bottom bar (~50px listener, ~80px commentator) */}
+      <div className="fixed inset-x-0 bottom-0 z-40 hidden border-t border-line bg-surface lg:block">
+        <div className="mx-auto max-w-7xl">{bar}</div>
       </div>
     </div>
   );
@@ -226,21 +475,31 @@ function VoteArrows({
 }
 
 function LiveChat({
-  roomId,
+  room,
+  roomState,
   viewer,
   messages,
   myVotes,
   watching,
   conn,
   onSent,
+  sliderAgg,
+  mySliderValue,
+  talkConsentGiven,
+  hasPendingTalk,
 }: {
-  roomId: string;
+  room: RoomInfo;
+  roomState: RoomState;
   viewer: Viewer;
   messages: ChatMessage[];
   myVotes: Record<string, 1 | -1>;
   watching: number | null;
   conn: ConnState;
   onSent: (m: ChatMessage) => void;
+  sliderAgg: SliderAggregate;
+  mySliderValue: number | null;
+  talkConsentGiven: boolean;
+  hasPendingTalk: boolean;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -262,7 +521,7 @@ function LiveChat({
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId, body: draft.trim() }),
+      body: JSON.stringify({ roomId: room.id, body: draft.trim() }),
     });
     setSending(false);
     if (res.ok) {
@@ -310,6 +569,12 @@ function LiveChat({
     });
   }
 
+  const inputsOpen = INPUTS_OPEN.includes(roomState);
+  const isRoomCommentator = viewer?.isRoomCommentator ?? false;
+  const canType =
+    viewer !== null &&
+    (inputsOpen || (roomState === "waiting" && isRoomCommentator));
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
@@ -323,6 +588,8 @@ function LiveChat({
                 : "…"}
         </span>
       </div>
+
+      {roomState === "waiting" && <Countdown kickoffIso={room.scheduledKickoff} />}
 
       <ul ref={listRef} className="flex-1 space-y-1 overflow-y-auto p-2">
         {messages.map((m) => {
@@ -391,7 +658,9 @@ function LiveChat({
         })}
         {messages.length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
-            Nothing here yet — say hello.
+            {roomState === "waiting"
+              ? "The commentator will be along shortly."
+              : "Nothing here yet — say hello."}
           </li>
         )}
       </ul>
@@ -410,6 +679,38 @@ function LiveChat({
               Sign in to join
             </a>
           </div>
+          {inputsOpen && (
+            <div className="mt-3">
+              <AggregateMeter agg={sliderAgg} />
+            </div>
+          )}
+        </div>
+      ) : roomState === "wrapped" ? (
+        <div className="border-t border-line p-3">
+          <div className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center">
+            <p className="text-sm">
+              That&apos;s full time on the show.{" "}
+              {!isRoomCommentator && (
+                <>
+                  Follow{" "}
+                  <a
+                    href={`/u/${room.commentatorUsername}`}
+                    className="font-semibold text-gold hover:underline"
+                  >
+                    {room.commentatorUsername}
+                  </a>{" "}
+                  to catch the next one.
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      ) : !canType ? (
+        <div className="border-t border-line p-3">
+          <p className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center text-sm text-secondary">
+            Waiting room — chat, links, and questions open when the broadcast
+            starts.
+          </p>
         </div>
       ) : (
         <div className="border-t border-line p-3">
@@ -424,7 +725,7 @@ function LiveChat({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               maxLength={500}
-              placeholder="Say something"
+              placeholder={roomState === "waiting" ? "Warm the room up" : "Say something"}
               aria-label="Chat message"
               className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
             />
@@ -436,14 +737,26 @@ function LiveChat({
               Send
             </button>
           </form>
-          <div className="mt-2 flex items-center gap-2">
-            <button type="button" disabled title="Phase 4" className="h-11 flex-1 rounded-lg border border-line bg-surface text-sm disabled:opacity-60">
-              Ask Question
-            </button>
-            <button type="button" disabled title="Phase 4" className="h-11 flex-1 rounded-lg border border-line bg-surface text-sm disabled:opacity-60">
-              Request to Talk
-            </button>
-          </div>
+          {inputsOpen && !isRoomCommentator && (
+            <>
+              <InteractionButtons
+                roomId={room.id}
+                consentGiven={talkConsentGiven}
+                hasPendingTalk={hasPendingTalk}
+              />
+              <PreferenceSlider
+                roomId={room.id}
+                myValue={mySliderValue}
+                agg={sliderAgg}
+                enabled
+              />
+            </>
+          )}
+          {inputsOpen && isRoomCommentator && (
+            <div className="mt-3">
+              <AggregateMeter agg={sliderAgg} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -452,11 +765,6 @@ function LiveChat({
 
 /* ----------------------------------------------------------------- links */
 
-/**
- * Rich preview card (founder request, overrides the PRD's "compact" cards):
- * wide image when available, headline, description, domain + votes.
- * Broken or hotlink-blocked images collapse to a text-only card.
- */
 function LinkCard({
   link,
   myVote,
@@ -535,12 +843,16 @@ function LinkCard({
 function LiveLinks({
   roomId,
   viewer,
+  roomState,
+  isRoomCommentator,
   links,
   myVotes,
   onSubmitted,
 }: {
   roomId: string;
   viewer: Viewer;
+  roomState: RoomState;
+  isRoomCommentator: boolean;
   links: Link[];
   myVotes: Record<string, 1 | -1>;
   onSubmitted: (l: Link) => void;
@@ -549,6 +861,11 @@ function LiveLinks({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [votes, setVotes] = useState(myVotes);
+
+  const canSubmit =
+    viewer !== null &&
+    (INPUTS_OPEN.includes(roomState) ||
+      (roomState === "waiting" && isRoomCommentator));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -586,8 +903,8 @@ function LiveLinks({
   }
 
   return (
-    <div className="space-y-2 p-3">
-      {viewer && (
+    <div className="space-y-3 p-3">
+      {canSubmit && (
         <form onSubmit={submit} className="flex gap-2">
           <input
             type="url"
@@ -625,7 +942,7 @@ function LiveLinks({
           ))}
         {links.filter((l) => !l.hidden).length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
-            No links yet{viewer ? " — paste the first one." : "."}
+            No links yet{canSubmit ? " — paste the first one." : "."}
           </li>
         )}
       </ul>
