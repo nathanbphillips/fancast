@@ -13,11 +13,11 @@ Arsenal-derived palette, minimalist, dark and light themes both first-class. Use
 | --text-secondary | #9BA1AC | #5E6573 |
 | --line | #262B35 | #E4E2DC |
 | --red | #EF0107 | #B80005 |
-| --gold | #C9A864 | #9C824A |
+| --gold | #C9A864 | #806A3C |
 | --navy | #6E9FE0 | #023474 |
-| --green | #27C46D | #1A9E56 |
+| --green | #27C46D | #137A42 |
 
-Usage rules: red only for primary actions, LIVE/ON AIR, and downvote-adjacent danger; gold for highlights, commentator identity, supporter badge, selected states (never large fills); green for upvotes/positive/sync-confirmed. Verify AA contrast for every pairing; adjust values rather than breaking contrast.
+Usage rules: red only for primary actions, LIVE/ON AIR, and downvote-adjacent danger; gold for highlights, commentator identity, supporter badge, selected states (never large fills); green for upvotes/positive/sync-confirmed. Verify AA contrast for every pairing; adjust values rather than breaking contrast. (Light gold/green were darkened from the original #9C824A/#1A9E56 in Phase 1 for exactly this reason — both failed AA for small text on white.)
 
 Theme behavior: default = system preference; header toggle + account setting persists (profiles.theme_pref + localStorage for anonymous). No flash on load (inline script sets class before paint).
 
