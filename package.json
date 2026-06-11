@@ -5,19 +5,29 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "migrate": "tsx --env-file=.env.local scripts/migrate.ts",
+    "grant-role": "tsx --env-file=.env.local scripts/grant-role.ts",
+    "smoke": "tsx --env-file=.env.local scripts/phase2-smoke.ts"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.1",
     "next": "^15.3.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
+    "@types/pg": "^8.20.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.21.0",
     "tailwindcss": "^4.1.0",
+    "tsx": "^4.22.4",
     "typescript": "^5.8.0"
   }
 }
