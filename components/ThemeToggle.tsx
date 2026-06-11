@@ -23,6 +23,12 @@ export function ThemeToggle() {
       // private mode etc. — theme still switches for this page view
     }
     setIsDark(next);
+    // persist to the account when signed in; a 401 (anonymous) is expected
+    void fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme_pref: next ? "dark" : "light" }),
+    }).catch(() => {});
   }
 
   return (
