@@ -1,9 +1,11 @@
 /**
- * Persistent audio bar — listener variant, UI shell only (Phase 1).
+ * Persistent audio bar — listener variant, UI shell only.
  * No audio until Phase 5; sync controls become functional in Phase 6.
  * Mobile renders it as a compact in-flow strip under the match header;
  * desktop renders it as the fixed bottom bar (~50px).
  */
+
+import { RadioToggle } from "./RadioToggle";
 
 function PlayButton() {
   return (
@@ -41,9 +43,12 @@ function SyncReadout() {
 export function AudioBar({
   commentator,
   live,
+  radioToggle = false,
 }: {
   commentator: string;
   live: boolean;
+  /** Radio-Only toggle shell (audio behavior arrives in Phase 5) */
+  radioToggle?: boolean;
 }) {
   return (
     <div className="flex items-center gap-3 px-4 py-2">
@@ -60,6 +65,7 @@ export function AudioBar({
           LIVE
         </span>
       )}
+      {radioToggle && <RadioToggle />}
       <SyncReadout />
     </div>
   );
