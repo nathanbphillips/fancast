@@ -49,6 +49,7 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Blocklist matches the exact domain and all subdomains | Phase 3 | Assumed |
 | Hide log = `hidden_by`/`hidden_at` columns + flag rows; no separate log table | Phase 3 | Assumed |
 | PostgREST embeds need explicit FK hints (`profiles!<fk_name>`) since junction tables (votes/flags) make joins ambiguous | Phase 3 | Technical note |
+| Link cards are rich previews (wide image, headline, description), overriding the PRD's "compact preview cards" | Founder decision 2026-06-11 | Final |
 
 ## Where things are specified
 

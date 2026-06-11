@@ -10,7 +10,8 @@ export type Unfurled = {
   image: string | null;
 };
 
-const MAX_BYTES = 512 * 1024;
+// YouTube parks its meta tags ~640KB deep; 1.5MB covers the big offenders
+const MAX_BYTES = 1536 * 1024;
 
 export function isFetchableUrl(url: URL): boolean {
   if (url.protocol !== "https:" && url.protocol !== "http:") return false;
@@ -41,6 +42,21 @@ function metaContent(html: string, property: string): string | null {
   return null;
 }
 
+/** og:image is often relative or junk; resolve against the final page URL
+ *  and only accept http(s) — anything else renders as a no-image card. */
+function resolveImageUrl(raw: string | null, pageUrl: string): string | null {
+  if (!raw) return null;
+  try {
+    const resolved = new URL(raw, pageUrl);
+    if (resolved.protocol !== "https:" && resolved.protocol !== "http:") {
+      return null;
+    }
+    return resolved.toString();
+  } catch {
+    return null;
+  }
+}
+
 function decodeEntities(s: string): string {
   return s
     .replace(/&amp;/g, "&")
@@ -54,7 +70,7 @@ export async function unfurl(url: URL): Promise<Unfurled> {
   const empty: Unfurled = { title: null, description: null, image: null };
   try {
     const res = await fetch(url, {
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(8000),
       redirect: "follow",
       headers: {
         // some sites only serve OG tags to identifiable agents
@@ -84,8 +100,9 @@ export async function unfurl(url: URL): Promise<Unfurled> {
 
     return {
       title,
-      description: metaContent(html, "og:description"),
-      image: metaContent(html, "og:image"),
+      description:
+        metaContent(html, "og:description") ?? metaContent(html, "description"),
+      image: resolveImageUrl(metaContent(html, "og:image"), res.url || url.toString()),
     };
   } catch {
     return empty; // unfurl failure isn't fatal — card renders with the domain

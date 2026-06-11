@@ -452,6 +452,86 @@ function LiveChat({
 
 /* ----------------------------------------------------------------- links */
 
+/**
+ * Rich preview card (founder request, overrides the PRD's "compact" cards):
+ * wide image when available, headline, description, domain + votes.
+ * Broken or hotlink-blocked images collapse to a text-only card.
+ */
+function LinkCard({
+  link,
+  myVote,
+  canVote,
+  onVote,
+}: {
+  link: Link;
+  myVote: 1 | -1 | undefined;
+  canVote: boolean;
+  onVote: (v: 1 | -1 | 0) => void;
+}) {
+  const [imgBroken, setImgBroken] = useState(false);
+  const showImage = link.og_image !== null && !imgBroken;
+
+  return (
+    <li className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
+      <a
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        className="block"
+      >
+        {showImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={link.og_image!}
+            alt=""
+            loading="lazy"
+            onError={() => setImgBroken(true)}
+            className="aspect-video w-full border-b border-line object-cover"
+          />
+        )}
+        <div className="px-3 pt-3">
+          <p className="line-clamp-2 text-sm leading-snug font-semibold hover:underline">
+            {link.og_title ?? link.url}
+          </p>
+          {link.og_description && (
+            <p className="mt-1 line-clamp-2 text-xs leading-snug text-secondary">
+              {link.og_description}
+            </p>
+          )}
+        </div>
+      </a>
+      <div className="flex items-center justify-between px-3 py-2">
+        <span className="truncate text-xs text-secondary">{link.domain}</span>
+        <span className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            aria-label="Upvote link"
+            aria-pressed={myVote === 1}
+            disabled={!canVote}
+            onClick={() => onVote(myVote === 1 ? 0 : 1)}
+            className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold hover:bg-raised ${myVote === 1 ? "text-green" : "text-secondary hover:text-green"}`}
+          >
+            ▲
+          </button>
+          <span className="text-xs font-semibold tabular-nums">
+            {link.up_count - link.down_count}
+          </span>
+          <button
+            type="button"
+            aria-label="Downvote link"
+            aria-pressed={myVote === -1}
+            disabled={!canVote}
+            onClick={() => onVote(myVote === -1 ? 0 : -1)}
+            className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold hover:bg-raised ${myVote === -1 ? "text-red" : "text-secondary hover:text-red"}`}
+          >
+            ▼
+          </button>
+        </span>
+      </div>
+    </li>
+  );
+}
+
 function LiveLinks({
   roomId,
   viewer,
@@ -531,61 +611,17 @@ function LiveLinks({
           {notice}
         </p>
       )}
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {links
           .filter((l) => !l.hidden)
           .map((link) => (
-            <li
+            <LinkCard
               key={link.id}
-              className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-surface p-3"
-            >
-              {link.og_image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={link.og_image}
-                  alt=""
-                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
-                />
-              ) : (
-                <span className="h-10 w-10 shrink-0 rounded-lg bg-raised" aria-hidden="true" />
-              )}
-              <div className="min-w-0 flex-1">
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                  className="block truncate text-sm font-semibold hover:underline"
-                >
-                  {link.og_title ?? link.url}
-                </a>
-                <p className="text-xs text-secondary">{link.domain}</p>
-              </div>
-              <span className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="Upvote link"
-                  aria-pressed={votes[link.id] === 1}
-                  disabled={!viewer}
-                  onClick={() => vote(link.id, votes[link.id] === 1 ? 0 : 1)}
-                  className={`px-1 text-xs font-semibold ${votes[link.id] === 1 ? "text-green" : "text-secondary hover:text-green"}`}
-                >
-                  ▲
-                </button>
-                <span className="text-xs font-semibold tabular-nums">
-                  {link.up_count - link.down_count}
-                </span>
-                <button
-                  type="button"
-                  aria-label="Downvote link"
-                  aria-pressed={votes[link.id] === -1}
-                  disabled={!viewer}
-                  onClick={() => vote(link.id, votes[link.id] === -1 ? 0 : -1)}
-                  className={`px-1 text-xs font-semibold ${votes[link.id] === -1 ? "text-red" : "text-secondary hover:text-red"}`}
-                >
-                  ▼
-                </button>
-              </span>
-            </li>
+              link={link}
+              myVote={votes[link.id]}
+              canVote={viewer !== null}
+              onVote={(v) => vote(link.id, v)}
+            />
           ))}
         {links.filter((l) => !l.hidden).length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
