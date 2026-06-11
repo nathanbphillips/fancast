@@ -78,7 +78,7 @@ function ChatMessage({ message }: { message: Message }) {
   );
 }
 
-export function ChatPanel() {
+export function ChatPanel({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <ul className="flex-1 space-y-1 overflow-y-auto p-2">
@@ -86,7 +86,24 @@ export function ChatPanel() {
           <ChatMessage key={m.id} message={m} />
         ))}
       </ul>
-      <div className="border-t border-line p-3">
+      {!signedIn ? (
+        /* anonymous read access (FR-2.4): inputs replaced by a join prompt */
+        <div className="border-t border-line p-3">
+          <div className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center">
+            <p className="text-sm text-secondary">
+              You&apos;re listening as a guest. Join in to chat, vote, ask
+              questions, and request to talk.
+            </p>
+            <a
+              href="/signin"
+              className="mt-3 inline-flex h-11 items-center rounded-lg bg-red px-5 text-sm font-semibold text-white"
+            >
+              Sign in to join
+            </a>
+          </div>
+        </div>
+      ) : (
+        <div className="border-t border-line p-3">
         <div className="flex gap-2">
           <input
             type="text"
@@ -126,7 +143,8 @@ export function ChatPanel() {
             className="mt-1 h-2 w-full accent-(--gold) disabled:opacity-60"
           />
         </div>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

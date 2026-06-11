@@ -20,7 +20,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function RoomShell() {
+export function RoomShell({ signedIn = false }: { signedIn?: boolean }) {
   const [tab, setTab] = useState<TabId>("chat");
 
   return (
@@ -49,7 +49,7 @@ export function RoomShell() {
 
       {/* Mobile: one panel at a time, chat default */}
       <div className="flex min-h-0 flex-1 flex-col lg:hidden">
-        {tab === "chat" && <ChatPanel />}
+        {tab === "chat" && <ChatPanel signedIn={signedIn} />}
         {tab === "stats" && (
           <div className="overflow-y-auto">
             <StatsPanel />
@@ -68,7 +68,7 @@ export function RoomShell() {
           <StatsPanel />
         </aside>
         <section aria-label="Chat" className="flex min-h-0 flex-col">
-          <ChatPanel />
+          <ChatPanel signedIn={signedIn} />
         </section>
         <aside aria-label="Links" className="overflow-y-auto border-l border-line">
           <LinksPanel />

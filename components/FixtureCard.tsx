@@ -1,27 +1,29 @@
 import Link from "next/link";
+import { KickoffTime } from "./KickoffTime";
 
 /**
  * Fixture card in its three visual states (docs/DESIGN.md, PRD FR-1):
- * - scheduled: informational only, no join affordance
+ * - scheduled: informational only, no join affordance (no room, or room
+ *   still in `scheduled` state — enterability gating per FR-1.2)
  * - waiting: joinable, "Show starts soon", gold accent
- * - live: dominant card, red accent, LIVE pulse + listener count
- * Phase 1: static placeholder data, demo room link only.
+ * - live: dominant card, red accent, LIVE pulse
  */
 
 export type FixtureCardState = "scheduled" | "waiting" | "live";
 
-export type Fixture = {
-  id: string;
+export type FixtureCardData = {
+  id: number;
   home: string;
   away: string;
   competition: string;
-  kickoffLabel: string;
+  kickoffUtc: string;
   commentator?: string;
   state: FixtureCardState;
+  roomHref?: string;
   listeners?: number;
 };
 
-export function FixtureCard({ fixture }: { fixture: Fixture }) {
+export function FixtureCard({ fixture }: { fixture: FixtureCardData }) {
   const { state } = fixture;
   const accent =
     state === "live"
@@ -59,7 +61,7 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
               </>
             ) : (
               <>
-                <span className="tabular-nums">{fixture.kickoffLabel}</span>
+                <KickoffTime iso={fixture.kickoffUtc} />
                 {fixture.commentator && <> · {fixture.commentator}</>}
               </>
             )}
@@ -73,9 +75,9 @@ export function FixtureCard({ fixture }: { fixture: Fixture }) {
               LIVE
             </span>
           )}
-          {state !== "scheduled" && (
+          {state !== "scheduled" && fixture.roomHref && (
             <Link
-              href="/room/demo"
+              href={fixture.roomHref}
               className={`flex h-11 items-center rounded-lg px-4 text-sm font-semibold ${
                 state === "live"
                   ? "bg-red text-white"
