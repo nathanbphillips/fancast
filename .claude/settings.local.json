@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/natha/AppData/Roaming/**)",
+      "Read(//c/Users/natha/AppData/Local/**)",
+      "Read(//c/Users/natha/scoop/**)",
+      "PowerShell($paths = @\\(\"C:\\\\Program Files\\\\nodejs\\\\node.exe\", \"$env:LOCALAPPDATA\\\\Programs\\\\nodejs\\\\node.exe\", \"$env:APPDATA\\\\nvm\", \"$env:LOCALAPPDATA\\\\nvs\", \"$env:LOCALAPPDATA\\\\Volta\", \"$env:USERPROFILE\\\\scoop\\\\shims\\\\node.exe\", \"$env:ProgramFiles\\\\Git\\\\usr\\\\bin\"\\); foreach \\($p in $paths\\) { \"$p : $\\(Test-Path $p\\)\" }; winget --version)"
+    ]
+  }
+}
