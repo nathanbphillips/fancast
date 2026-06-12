@@ -3,6 +3,7 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { setPublishPermission } from "@/lib/livekit";
 import type { RoomState, TalkRequest } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
@@ -62,8 +63,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // eligibility gates (FR-4.4); "never removed from air" joins in Phase 5
-  // when speaker_events exists
+  // eligibility gates (FR-4.4)
+  const { data: removedBefore } = await service
+    .from("speaker_events")
+    .select("id")
+    .eq("user_id", caller.userId)
+    .eq("action", "removed")
+    .limit(1)
+    .maybeSingle();
+  if (removedBefore) {
+    return NextResponse.json(
+      { error: "Call-ins aren't available on this account." },
+      { status: 403 },
+    );
+  }
   const accountAge =
     Date.now() - new Date(caller.profile.created_at).getTime();
   if (accountAge < MIN_ACCOUNT_AGE_MS) {
@@ -150,11 +163,14 @@ export async function PATCH(request: NextRequest) {
   const service = createServiceClient();
   const { data: talkRequest } = await service
     .from("talk_requests")
-    .select("id, room_id, status, room:rooms!talk_requests_room_id_fkey(commentator_id)")
+    .select(
+      "id, room_id, user_id, status, room:rooms!talk_requests_room_id_fkey(commentator_id)",
+    )
     .eq("id", parsed.data.requestId)
     .maybeSingle<{
       id: string;
       room_id: string;
+      user_id: string;
       status: string;
       room: { commentator_id: string };
     }>();
@@ -174,6 +190,21 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  // FR-4.1: max on-air = commentator + 2 guests
+  if (parsed.data.status === "accepted") {
+    const { count: onAir } = await service
+      .from("talk_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("room_id", talkRequest.room_id)
+      .eq("status", "accepted");
+    if ((onAir ?? 0) >= 2) {
+      return NextResponse.json(
+        { error: "Two guests are already on air." },
+        { status: 409 },
+      );
+    }
+  }
+
   const { error } = await service
     .from("talk_requests")
     .update({ status: parsed.data.status })
@@ -182,9 +213,21 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  if (parsed.data.status === "accepted") {
+    // live LiveKit permission elevation (FR-4.2) + on-air history
+    await setPublishPermission(talkRequest.room_id, talkRequest.user_id, true);
+    await service.from("speaker_events").insert({
+      room_id: talkRequest.room_id,
+      user_id: talkRequest.user_id,
+      action: "elevated",
+    });
+  }
+
   await publish(`room:${talkRequest.room_id}:private`, "talk_update", {
     requestId: talkRequest.id,
     status: parsed.data.status,
   });
+  // the accepted listener learns via their own channel-free path: their
+  // LiveKit permissions change live; UI reacts to that event
   return NextResponse.json({ ok: true });
 }
