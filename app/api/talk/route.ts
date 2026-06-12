@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
+import { callerFlagSummary } from "@/lib/callers";
 import { createServiceClient } from "@/lib/db/server";
 import { setPublishPermission } from "@/lib/livekit";
 import type { RoomState, TalkRequest } from "@/lib/db/types";
@@ -63,15 +64,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // eligibility gates (FR-4.4)
-  const { data: removedBefore } = await service
-    .from("speaker_events")
-    .select("id")
+  // eligibility gates (FR-4.4, amended 2026-06-11): the explicit,
+  // reversible block list replaces the old "ever removed from air" rule
+  const { data: blocked } = await service
+    .from("call_in_blocks")
+    .select("user_id")
     .eq("user_id", caller.userId)
-    .eq("action", "removed")
-    .limit(1)
     .maybeSingle();
-  if (removedBefore) {
+  if (blocked) {
     return NextResponse.json(
       { error: "Call-ins aren't available on this account." },
       { status: 403 },
@@ -145,8 +145,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await publish(`room:${room.id}:private`, "talk_request", talkRequest);
-  return NextResponse.json({ request: talkRequest }, { status: 201 });
+  // attach the caller-flag summary so the commentator's request card can
+  // warn about previously flagged callers (commentator-only channel)
+  const withFlags: TalkRequest = {
+    ...talkRequest,
+    caller_flags: await callerFlagSummary(service, caller.userId),
+  };
+
+  await publish(`room:${room.id}:private`, "talk_request", withFlags);
+  return NextResponse.json({ request: withFlags }, { status: 201 });
 }
 
 /** Accept/dismiss (room commentator). Dismissal is silent to the

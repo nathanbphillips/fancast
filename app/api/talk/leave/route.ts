@@ -13,8 +13,10 @@ const bodySchema = z.object({
 });
 
 /**
- * Leave Air (self, instant — FR-4.3) or commentator removal via speaker
- * chip X. Removal permanently bars future call-ins (FR-4.4).
+ * Leave Air (self, instant — FR-4.3) or commentator ending a call via the
+ * speaker chip X. Both are NEUTRAL (founder decision 2026-06-11): no
+ * effect on the caller's profile or future eligibility. Problem callers
+ * are handled separately via /api/callers (flag / block).
  */
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
@@ -64,7 +66,7 @@ export async function POST(request: NextRequest) {
   await service.from("speaker_events").insert({
     room_id: roomId,
     user_id: targetUserId,
-    action: isRemoval ? "removed" : "left_air",
+    action: isRemoval ? "call_ended" : "left_air",
   });
 
   await publish(channels.control(roomId), "speaker_left", {

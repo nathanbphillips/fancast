@@ -98,6 +98,11 @@ export type TalkRequest = {
   consent_at: string;
   created_at: string;
   author?: Pick<Profile, "username" | "role">;
+  /** commentator-only: prior flags on this caller (lib/callers.ts) */
+  caller_flags?: {
+    count: number;
+    notes: { note: string | null; by: string; at: string }[];
+  };
 };
 
 export type SliderAggregate = {
