@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
+import { PWASetup } from "@/components/PWASetup";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ThemeSync } from "@/components/ThemeSync";
 import { UserMenu } from "@/components/UserMenu";
@@ -13,6 +14,7 @@ export default async function AppLayout({
   return (
     <div className="flex min-h-dvh flex-col">
       <ThemeSync themePref={profile?.theme_pref ?? null} />
+      <PWASetup />
       <header className="sticky top-0 z-40 border-b border-line bg-canvas/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
           <Link
