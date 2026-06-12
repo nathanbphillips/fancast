@@ -46,6 +46,9 @@ export function CommentatorBar({
   broadcastStart,
   chatOpen,
   linksOpen,
+  micControls,
+  speakerChips,
+  startDisabled = false,
 }: {
   roomId: string;
   state: RoomState;
@@ -54,6 +57,11 @@ export function CommentatorBar({
   broadcastStart: string | null;
   chatOpen: boolean;
   linksOpen: boolean;
+  /** Phase 5 audio slots */
+  micControls?: React.ReactNode;
+  speakerChips?: React.ReactNode;
+  /** FR-3.3: Start Broadcast requires a live mic */
+  startDisabled?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
@@ -259,13 +267,20 @@ export function CommentatorBar({
           ))}
       </div>
 
+      {speakerChips}
+      {micControls}
+
       <div className="shrink-0">
         {state === "waiting" && (
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || startDisabled}
             onClick={() => transition("start")}
-            title="Mic check arrives in Phase 5 — starting opens chat, links, and questions for everyone"
+            title={
+              startDisabled
+                ? "Start your mic first — the broadcast needs a live mic (FR-3.3)"
+                : "Opens chat, links, and questions for everyone"
+            }
             className="h-11 rounded-lg bg-red px-5 text-sm font-bold text-white disabled:opacity-60"
           >
             Start Broadcast

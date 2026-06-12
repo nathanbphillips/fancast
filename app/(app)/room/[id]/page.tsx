@@ -217,6 +217,7 @@ export default async function RoomPage({
     homeScore: room.fixture.home_score ?? 0,
     awayScore: room.fixture.away_score ?? 0,
     commentatorUsername: room.commentator.username,
+    commentatorId: room.commentator_id,
   };
 
   return (

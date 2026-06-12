@@ -10,9 +10,14 @@ import type {
   SliderAggregate,
   TalkRequest,
 } from "@/lib/db/types";
-import { AudioBar } from "@/components/AudioBar";
 import { MatchHeader } from "@/components/MatchHeader";
 import { StatsPanel } from "@/components/StatsPanel";
+import {
+  ListenerBar,
+  MicControls,
+  SpeakerChips,
+} from "./audio/LiveAudioControls";
+import { useRoomAudio } from "./audio/useRoomAudio";
 import { CommentatorBar } from "./CommentatorBar";
 import { Countdown } from "./Countdown";
 import { InteractionButtons } from "./InteractionButtons";
@@ -43,6 +48,7 @@ export type RoomInfo = {
   homeScore: number;
   awayScore: number;
   commentatorUsername: string;
+  commentatorId: string;
 };
 
 type Props = {
@@ -106,6 +112,56 @@ export function RealtimeRoom(props: Props) {
     setLinks((prev) => (prev.some((x) => x.id === l.id) ? prev : [l, ...prev]));
 
   const isRoomCommentator = viewer?.isRoomCommentator ?? false;
+
+  const audio = useRoomAudio({
+    roomId: room.id,
+    commentatorId: room.commentatorId,
+    viewerId: viewer?.userId ?? null,
+    isRoomCommentator,
+  });
+
+  // lock-screen metadata + controls (FR-5.1)
+  useEffect(() => {
+    if (!("mediaSession" in navigator)) return;
+    if (audio.listenStatus === "live") {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `${room.home} vs ${room.away}`,
+        artist: room.commentatorUsername,
+        artwork: [
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+        ],
+      });
+      navigator.mediaSession.playbackState = "playing";
+      navigator.mediaSession.setActionHandler("pause", () => {
+        void audio.stopListening();
+      });
+      navigator.mediaSession.setActionHandler("play", () => {
+        void audio.startListening();
+      });
+    } else {
+      navigator.mediaSession.playbackState =
+        audio.listenStatus === "idle" ? "paused" : "none";
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audio.listenStatus, room.home, room.away, room.commentatorUsername]);
+
+  async function leaveAir() {
+    await audio.stopMic();
+    await fetch("/api/talk/leave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: room.id }),
+    });
+  }
+
+  async function removeSpeaker(identity: string) {
+    await fetch("/api/talk/leave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: room.id, userId: identity }),
+    });
+  }
 
   useEffect(() => {
     const client = new Ably.Realtime({
@@ -173,6 +229,12 @@ export function RealtimeRoom(props: Props) {
       if (ts && ts < lastStateTs) return;
       if (ts) lastStateTs = ts;
       setRoomState(state);
+      if (state === "wrapped") {
+        // a completed session earns the gentle install prompt (FR-5.2)
+        try {
+          localStorage.setItem("fc_session_completed", "1");
+        } catch {}
+      }
     });
     control.subscribe("slider", (msg) => {
       setSliderAgg(msg.data as SliderAggregate);
@@ -260,12 +322,37 @@ export function RealtimeRoom(props: Props) {
       broadcastStart={broadcastStart}
       chatOpen={chatOpen}
       linksOpen={linksOpen}
+      startDisabled={audio.micStatus !== "live"}
+      micControls={
+        <MicControls
+          micStatus={audio.micStatus}
+          micMuted={audio.micMuted}
+          selfDelay={audio.selfDelay}
+          onStart={() => void audio.startMic()}
+          onStop={() => void audio.stopMic()}
+          onToggleMute={() => void audio.toggleMute()}
+          onDelayChange={audio.setSelfDelay}
+        />
+      }
+      speakerChips={
+        <SpeakerChips speakers={audio.speakers} onRemove={removeSpeaker} />
+      }
     />
   ) : (
-    <AudioBar
+    <ListenerBar
       commentator={room.commentatorUsername}
       live={audioLive}
-      radioToggle
+      listenStatus={audio.listenStatus}
+      onStart={() => void audio.startListening()}
+      onStop={() => void audio.stopListening()}
+      techDifficulties={audio.techDifficulties && audioLive}
+      techSince={audio.techSince}
+      canPublish={viewer !== null && audio.canPublish}
+      micStatus={audio.micStatus}
+      micMuted={audio.micMuted}
+      onGoOnAir={() => void audio.startMic()}
+      onLeaveAir={() => void leaveAir()}
+      onToggleMute={() => void audio.toggleMute()}
     />
   );
 
@@ -303,6 +390,8 @@ export function RealtimeRoom(props: Props) {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:pb-[80px]">
+      {/* detached LiveKit audio elements live here */}
+      <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
       <MatchHeader
         home={room.home}
         away={room.away}
