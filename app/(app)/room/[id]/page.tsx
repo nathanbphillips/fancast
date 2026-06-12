@@ -243,6 +243,7 @@ export default async function RoomPage({
       initialBroadcastStart={room.broadcast_start}
       initialChatOpen={room.chat_open}
       initialLinksOpen={room.links_open}
+      initialHlsUrl={room.hls_url}
     />
   );
 }

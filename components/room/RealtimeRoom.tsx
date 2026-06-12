@@ -67,6 +67,7 @@ type Props = {
   initialBroadcastStart: string | null;
   initialChatOpen: boolean;
   initialLinksOpen: boolean;
+  initialHlsUrl: string | null;
 };
 
 type ConnState = "connecting" | "connected" | "broken";
@@ -105,6 +106,7 @@ export function RealtimeRoom(props: Props) {
   const [broadcastStart, setBroadcastStart] = useState(props.initialBroadcastStart);
   const [chatOpen, setChatOpen] = useState(props.initialChatOpen);
   const [linksOpen, setLinksOpen] = useState(props.initialLinksOpen);
+  const [hlsUrl, setHlsUrl] = useState(props.initialHlsUrl);
 
   const appendMessage = (m: ChatMessage) =>
     setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
@@ -250,6 +252,9 @@ export function RealtimeRoom(props: Props) {
       setChatOpen(c);
       setLinksOpen(l);
     });
+    control.subscribe("radio", (msg) => {
+      setHlsUrl((msg.data as { url: string }).url);
+    });
 
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
@@ -357,6 +362,12 @@ export function RealtimeRoom(props: Props) {
       onGoOnAir={() => void audio.startMic()}
       onLeaveAir={() => void leaveAir()}
       onToggleMute={() => void audio.toggleMute()}
+      radioUrl={hlsUrl}
+      radioActive={audio.radioActive}
+      onRadioToggle={(next) => {
+        if (next && hlsUrl) void audio.enableRadio(hlsUrl);
+        else audio.disableRadio();
+      }}
     />
   );
 

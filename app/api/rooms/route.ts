@@ -3,6 +3,7 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { startHlsEgress, stopHlsEgress } from "@/lib/egress";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
@@ -204,6 +205,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     await publishState(room.id, "pregame");
+
+    // radio mode (FR-5.3): start the continuous HLS mix; never let an
+    // egress problem block the show itself
+    try {
+      const egress = await startHlsEgress(service, room.id);
+      if (egress) {
+        await service
+          .from("rooms")
+          .update({ hls_url: egress.hlsUrl, hls_egress_id: egress.egressId })
+          .eq("id", room.id);
+        await publish(channels.control(room.id), "radio", {
+          url: egress.hlsUrl,
+        });
+      }
+    } catch (err) {
+      console.error("HLS egress start failed:", err);
+    }
     return NextResponse.json({ room: updated });
   }
 
@@ -224,5 +242,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   await publishState(room.id, "wrapped");
+  if (room.hls_egress_id) {
+    await stopHlsEgress(room.hls_egress_id);
+  }
   return NextResponse.json({ room: updated });
 }

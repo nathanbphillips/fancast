@@ -48,6 +48,8 @@ export function useRoomAudio(opts: {
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
   const [techDifficulties, setTechDifficulties] = useState(false);
   const [techSince, setTechSince] = useState<number | null>(null);
+  const [radioActive, setRadioActive] = useState(false);
+  const radioElRef = useRef<HTMLAudioElement | null>(null);
 
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
@@ -233,6 +235,39 @@ export function useRoomAudio(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* ------------------------------------------------- radio mode (HLS) */
+
+  const enableRadio = useCallback(
+    async (url: string) => {
+      await disconnect(); // WebRTC and HLS paths are mutually exclusive
+      let el = radioElRef.current;
+      if (!el) {
+        el = new Audio();
+        el.preload = "none";
+        radioElRef.current = el;
+      }
+      el.src = url;
+      try {
+        await el.play(); // called inside the toggle gesture
+        setRadioActive(true);
+      } catch (err) {
+        console.error("radio playback failed:", err);
+        setRadioActive(false);
+      }
+    },
+    [disconnect],
+  );
+
+  const disableRadio = useCallback(() => {
+    const el = radioElRef.current;
+    if (el) {
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
+    }
+    setRadioActive(false);
+  }, []);
+
   /* --------------------------------------------------------- publisher */
 
   async function stopMicInternal() {
@@ -326,6 +361,8 @@ export function useRoomAudio(opts: {
       roomRef.current?.disconnect();
       roomRef.current = null;
       stopAnalyser();
+      radioElRef.current?.pause();
+      radioElRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.roomId]);
@@ -334,6 +371,9 @@ export function useRoomAudio(opts: {
     listenStatus,
     startListening: connect,
     stopListening: disconnect,
+    radioActive,
+    enableRadio,
+    disableRadio,
     micStatus,
     micMuted,
     startMic,

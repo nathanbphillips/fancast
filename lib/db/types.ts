@@ -121,6 +121,9 @@ export type Room = {
   /** early access during waiting (founder decision 2026-06-11) */
   chat_open: boolean;
   links_open: boolean;
+  /** radio mode (FR-5.3): live HLS playlist; null until egress starts */
+  hls_url: string | null;
+  hls_egress_id: string | null;
   opened_at: string | null;
   started_at: string | null;
   ended_at: string | null;

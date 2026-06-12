@@ -65,7 +65,9 @@ export function AudioBar({
           LIVE
         </span>
       )}
-      {radioToggle && <RadioToggle />}
+      {radioToggle && (
+        <RadioToggle available={false} active={false} onToggle={() => {}} />
+      )}
       <SyncReadout />
     </div>
   );

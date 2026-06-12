@@ -82,6 +82,9 @@ export function ListenerBar({
   onGoOnAir,
   onLeaveAir,
   onToggleMute,
+  radioUrl,
+  radioActive,
+  onRadioToggle,
 }: {
   commentator: string;
   live: boolean;
@@ -96,6 +99,9 @@ export function ListenerBar({
   onGoOnAir: () => void;
   onLeaveAir: () => void;
   onToggleMute: () => void;
+  radioUrl: string | null;
+  radioActive: boolean;
+  onRadioToggle: (next: boolean) => void;
 }) {
   const onAir = canPublish && micStatus === "live";
 
@@ -130,22 +136,38 @@ export function ListenerBar({
 
   return (
     <div className="flex items-center gap-3 px-4 py-2">
-      <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} />
-      {techDifficulties ? (
+      {radioActive ? (
+        <button
+          type="button"
+          aria-label="Stop radio"
+          onClick={() => onRadioToggle(false)}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-canvas"
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
+            <rect x="3" y="3" width="4" height="10" rx="1" />
+            <rect x="9" y="3" width="4" height="10" rx="1" />
+          </svg>
+        </button>
+      ) : (
+        <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} />
+      )}
+      {techDifficulties && !radioActive ? (
         <TechDifficultiesCard since={techSince} />
       ) : (
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{commentator}</p>
           <p className="truncate text-xs text-secondary">
-            {listenStatus === "live"
-              ? "Live commentary"
-              : listenStatus === "connecting"
-                ? "Connecting…"
-                : listenStatus === "error"
-                  ? "Couldn't connect — tap to retry"
-                  : live
-                    ? "Tap to listen"
-                    : "Waiting for the show to start"}
+            {radioActive
+              ? "Radio mode — a few seconds behind live"
+              : listenStatus === "live"
+                ? "Live commentary"
+                : listenStatus === "connecting"
+                  ? "Connecting…"
+                  : listenStatus === "error"
+                    ? "Couldn't connect — tap to retry"
+                    : live
+                      ? "Tap to listen"
+                      : "Waiting for the show to start"}
           </p>
         </div>
       )}
@@ -165,16 +187,23 @@ export function ListenerBar({
           LIVE
         </span>
       )}
-      <RadioToggle />
-      <button
-        type="button"
-        disabled
-        aria-label="Sync to my TV (Phase 6)"
-        className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm disabled:opacity-60"
-      >
-        <span className="text-secondary">Sync</span>
-        <span className="font-semibold tabular-nums">+0.0s</span>
-      </button>
+      <RadioToggle
+        available={radioUrl !== null && live}
+        active={radioActive}
+        onToggle={onRadioToggle}
+      />
+      {/* sync controls hidden in radio mode (FR-6.5) */}
+      {!radioActive && (
+        <button
+          type="button"
+          disabled
+          aria-label="Sync to my TV (Phase 6)"
+          className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm disabled:opacity-60"
+        >
+          <span className="text-secondary">Sync</span>
+          <span className="font-semibold tabular-nums">+0.0s</span>
+        </button>
+      )}
     </div>
   );
 }
