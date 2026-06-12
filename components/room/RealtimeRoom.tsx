@@ -335,7 +335,11 @@ export function RealtimeRoom(props: Props) {
         />
       }
       speakerChips={
-        <SpeakerChips speakers={audio.speakers} onRemove={removeSpeaker} />
+        <SpeakerChips
+          speakers={audio.speakers}
+          roomId={room.id}
+          onEndCall={removeSpeaker}
+        />
       }
     />
   ) : (

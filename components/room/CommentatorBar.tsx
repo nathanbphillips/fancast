@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { RoomState, TalkRequest } from "@/lib/db/types";
+import { CallerActions } from "./CallerActions";
 
 /**
  * Commentator command strip (docs/DESIGN.md: ~70-80px desktop bar).
@@ -242,11 +243,27 @@ export function CommentatorBar({
               key={r.id}
               className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5"
             >
-              <div className="max-w-[180px]">
+              <div className="max-w-[200px]">
                 <p className="truncate text-xs font-semibold">
                   {r.author?.username}
+                  {(r.caller_flags?.count ?? 0) > 0 && (
+                    <span
+                      className="ml-1.5 rounded-sm bg-red px-1 py-0.5 text-[10px] font-bold text-white"
+                      title={r.caller_flags!.notes
+                        .map((n) => `${n.by}: ${n.note ?? "(no note)"}`)
+                        .join("\n")}
+                    >
+                      ⚑ {r.caller_flags!.count}
+                    </span>
+                  )}
                 </p>
                 <p className="truncate text-xs text-secondary">{r.topic}</p>
+                {(r.caller_flags?.count ?? 0) > 0 && r.caller_flags!.notes[0] && (
+                  <p className="truncate text-[10px] text-red">
+                    “{r.caller_flags!.notes[0].note ?? "flagged"}” —{" "}
+                    {r.caller_flags!.notes[0].by}
+                  </p>
+                )}
               </div>
               <button
                 type="button"
@@ -263,6 +280,11 @@ export function CommentatorBar({
               >
                 Dismiss
               </button>
+              <CallerActions
+                userId={r.user_id}
+                username={r.author?.username ?? "caller"}
+                roomId={roomId}
+              />
             </div>
           ))}
       </div>

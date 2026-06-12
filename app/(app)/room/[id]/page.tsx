@@ -7,6 +7,7 @@ import {
   type Viewer,
 } from "@/components/room/RealtimeRoom";
 import { Countdown } from "@/components/room/Countdown";
+import { callerFlagSummary } from "@/lib/callers";
 import {
   createServiceClient,
   createSupabaseServerClient,
@@ -159,7 +160,12 @@ export default async function RoomPage({
         .returns<TalkRequest[]>(),
     ]);
     initialQuestions = qs ?? [];
-    initialTalkRequests = trs ?? [];
+    initialTalkRequests = await Promise.all(
+      (trs ?? []).map(async (tr) => ({
+        ...tr,
+        caller_flags: await callerFlagSummary(service, tr.user_id),
+      })),
+    );
   }
 
   // slider: public aggregate (service — individual rows are RLS-private),

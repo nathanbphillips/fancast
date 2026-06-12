@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RadioToggle } from "@/components/RadioToggle";
+import { CallerActions } from "../CallerActions";
 import type { ListenStatus, MicStatus, Speaker } from "./useRoomAudio";
 
 /**
@@ -249,13 +250,16 @@ export function MicControls({
   );
 }
 
-/** On-air guest chips with removal X (commentator bar, FR-4.3). */
+/** On-air guest chips (commentator bar, FR-4.3). The X ends the call —
+ *  always neutral; ⚑ opens flag/block actions for problem callers. */
 export function SpeakerChips({
   speakers,
-  onRemove,
+  roomId,
+  onEndCall,
 }: {
   speakers: Speaker[];
-  onRemove: (identity: string) => void;
+  roomId: string;
+  onEndCall: (identity: string) => void;
 }) {
   const guests = speakers.filter((s) => !s.isCommentator && s.name !== "you");
   if (guests.length === 0) return null;
@@ -268,11 +272,13 @@ export function SpeakerChips({
         >
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
           {s.name}
+          <CallerActions userId={s.identity} username={s.name} roomId={roomId} />
           <button
             type="button"
-            aria-label={`Remove ${s.name} from air`}
-            onClick={() => onRemove(s.identity)}
-            className="ml-0.5 px-1 text-secondary hover:text-red"
+            aria-label={`End ${s.name}'s call`}
+            title="End call (no effect on their account)"
+            onClick={() => onEndCall(s.identity)}
+            className="px-1 text-secondary hover:text-red"
           >
             ✕
           </button>
