@@ -50,8 +50,8 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** laptop→phone broadcast; call-in cycle; kill commentator network (card <5s, chat alive, auto-resume); 15-min locked-screen radio run on iOS. *(Server/transport layer machine-verified 18/18 on 2026-06-11; real-device walkthroughs are the founder's next session.)*
 
 ## Phase 6: Sync + clock/state component (days 20-23)
-- [ ] 90s Web Audio ring buffer; offset playback; depth-aware UI
-- [ ] Sync sheet: ticking reference clock, tap-Now calibration, live-edge reset, ±0.5s steppers, numeric offset display, per-session persistence
+- [x] 90s Web Audio ring buffer; offset playback; depth-aware UI *(AudioWorklet ring; effective offset clamps to buffered depth and auto-fills toward the request per FR-6.4; graceful fallback to live-edge playback where worklets/autoplay fail)*
+- [x] Sync sheet: ticking reference clock, tap-Now calibration, live-edge reset, ±0.5s steppers, numeric offset display, per-session persistence *(adversarial review: 10 confirmed findings — incl. an iOS false-tech-difficulties bug and a mic-left-capturing-after-drop bug — all fixed; founder's 45s-delayed-feed acceptance test pending)*
 - [x] Clock/state unit per FR-7 (period label + clock during play; state word otherwise; never both); ±1s adjustments; event-sourced derivation; reconnect-safe *(14 unit tests on the pure derivation + 16-check simulated full match cycle incl. ET, exactly-once control events, DB-replay reconnect path — all passing 2026-06-11)*
 - **Test:** align to a deliberately 45s-delayed feed in one calibration pass (≤1s error); full simulated match clock cycle. *(Clock cycle ✓ scripted; sync calibration pending the ring buffer build.)*
 
@@ -99,3 +99,5 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - 2026-06-11 (Phase 5) — Commentator self-delay offers Off in addition to the spec's 1-5s settings (the founder won't always be watching delayed).
 - 2026-06-11 (Phase 6) — Extra-time flow assumed: Stop 2H → postgame, then optional Start ET (postgame → extra_time) and End ET (→ postgame); ARCHITECTURE's clock action list omitted ET so `start_et`/`stop_et` were added.
 - 2026-06-11 (cleanup) — Removed the Phase 1 static demo room (`/room/demo` + AudioBar/RoomShell/ChatPanel/LinksPanel placeholders): superseded by the real live room and drifting from it. Hardened the link unfurler against redirect-based SSRF.
+- 2026-06-12 (Phase 6) — Tap-Now mechanic interpreted as: opening the sheet freezes a target moment (lag = wall time from open to tap, millisecond-precise); the PRD's ticking reference clock shows live beneath the frozen target. A moving target can't be matched by a viewer who is, by definition, behind it.
+- 2026-06-12 (Phase 6) — FR-6.4's "brief toast" replaced by a persistent inline indicator (gold "filling toward your setting" on the bar readout and in the sheet) — strictly more visible than a transient toast while the buffer fills.

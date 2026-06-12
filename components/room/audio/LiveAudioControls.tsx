@@ -85,6 +85,11 @@ export function ListenerBar({
   radioUrl,
   radioActive,
   onRadioToggle,
+  syncRequested,
+  syncEffective,
+  syncSupported,
+  onSyncAdjust,
+  onOpenSync,
 }: {
   commentator: string;
   live: boolean;
@@ -102,6 +107,11 @@ export function ListenerBar({
   radioUrl: string | null;
   radioActive: boolean;
   onRadioToggle: (next: boolean) => void;
+  syncRequested: number;
+  syncEffective: number;
+  syncSupported: boolean;
+  onSyncAdjust: (seconds: number) => void;
+  onOpenSync: () => void;
 }) {
   const onAir = canPublish && micStatus === "live";
 
@@ -135,7 +145,7 @@ export function ListenerBar({
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
       {radioActive ? (
         <button
           type="button"
@@ -193,16 +203,47 @@ export function ListenerBar({
         onToggle={onRadioToggle}
       />
       {/* sync controls hidden in radio mode (FR-6.5) */}
-      {!radioActive && (
-        <button
-          type="button"
-          disabled
-          aria-label="Sync to my TV (Phase 6)"
-          className="flex h-11 shrink-0 items-center gap-2 rounded-lg border border-line bg-surface px-3 text-sm disabled:opacity-60"
-        >
-          <span className="text-secondary">Sync</span>
-          <span className="font-semibold tabular-nums">+0.0s</span>
-        </button>
+      {!radioActive && syncSupported && (
+        <span className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onSyncAdjust(-0.5)}
+            aria-label="Half a second less delay"
+            className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+          >
+            −.5
+          </button>
+          <button
+            type="button"
+            onClick={onOpenSync}
+            aria-label="Sync to my TV"
+            title="Sync to my TV"
+            className={`flex h-11 items-center gap-2 rounded-lg border px-3 text-sm hover:bg-raised ${
+              syncRequested > 0 ? "border-green" : "border-line bg-surface"
+            }`}
+          >
+            <span className="text-secondary">Sync</span>
+            <span
+              className={`font-semibold tabular-nums ${syncRequested > 0 ? "text-green" : ""}`}
+            >
+              +{syncRequested.toFixed(1)}s
+            </span>
+            {/* filling toward the setting (FR-6.4) — only meaningful live */}
+            {listenStatus === "live" && syncRequested > syncEffective + 0.5 && (
+              <span className="text-[10px] text-gold tabular-nums">
+                ⏳{syncEffective.toFixed(0)}s
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onSyncAdjust(0.5)}
+            aria-label="Half a second more delay"
+            className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+          >
+            +.5
+          </button>
+        </span>
       )}
     </div>
   );

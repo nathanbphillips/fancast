@@ -51,6 +51,19 @@ export function useRoomAudio(opts: {
   const [radioActive, setRadioActive] = useState(false);
   const radioElRef = useRef<HTMLAudioElement | null>(null);
 
+  // sync ring buffer (FR-6): requested vs effective offset + buffered depth
+  const [syncRequested, setSyncRequested] = useState(0);
+  const syncRequestedRef = useRef(0);
+  const [syncEffective, setSyncEffective] = useState(0);
+  const [syncAvailable, setSyncAvailable] = useState(0);
+  const [syncSupported, setSyncSupported] = useState(true);
+  const playbackCtxRef = useRef<AudioContext | null>(null);
+  const workletRef = useRef<AudioWorkletNode | null>(null);
+  const playbackElRef = useRef<HTMLAudioElement | null>(null);
+  const trackNodesRef = useRef<
+    Map<string, { src: MediaStreamAudioSourceNode; el: HTMLElement[] }>
+  >(new Map());
+
   const roomRef = useRef<Room | null>(null);
   const audioContainerRef = useRef<HTMLDivElement | null>(null);
   const rawStreamRef = useRef<MediaStream | null>(null);
@@ -69,6 +82,21 @@ export function useRoomAudio(opts: {
     audioContainerRef.current = el;
   }, []);
 
+  // surface the per-session saved offset immediately (it's applied to the
+  // audio graph when listening starts)
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(`fc_sync_${opts.roomId}`);
+      if (saved !== null) {
+        const s = Number(saved);
+        if (Number.isFinite(s) && s > 0) {
+          setSyncRequested(s);
+          syncRequestedRef.current = s;
+        }
+      }
+    } catch {}
+  }, [opts.roomId]);
+
   /* ------------------------------------------------ tech difficulties */
 
   const clearTech = useCallback(() => {
@@ -86,7 +114,11 @@ export function useRoomAudio(opts: {
     commentatorTrackRef.current = track;
     stopAnalyser();
     try {
-      const ctx = new AudioContext();
+      // reuse the gesture-unlocked playback context: a context created
+      // here (post-await, outside the tap) starts suspended on iOS and
+      // would read eternal silence -> false "technical difficulties"
+      const ctx = playbackCtxRef.current;
+      if (!ctx) return;
       const stream = new MediaStream([track.mediaStreamTrack]);
       const src = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
@@ -100,7 +132,9 @@ export function useRoomAudio(opts: {
 
   function stopAnalyser() {
     if (analyserRef.current) {
-      analyserRef.current.ctx.close().catch(() => {});
+      // the context is the shared playback context — never close it here
+      analyserRef.current.src.disconnect();
+      analyserRef.current.analyser.disconnect();
       analyserRef.current = null;
     }
     silentSinceRef.current = null;
@@ -110,7 +144,9 @@ export function useRoomAudio(opts: {
     const id = setInterval(() => {
       const a = analyserRef.current;
       const track = commentatorTrackRef.current;
-      if (!a || !track || track.isMuted) {
+      // a non-running context yields all-zero data — that's "no signal
+      // to judge", never "silence"
+      if (!a || a.ctx.state !== "running" || !track || track.isMuted) {
         silentSinceRef.current = null;
         return;
       }
@@ -131,6 +167,123 @@ export function useRoomAudio(opts: {
     }, 1000);
     return () => clearInterval(id);
   }, [flagTech, clearTech]);
+
+  /* ----------------------------------------------- sync playback graph */
+
+  /**
+   * Listener playback path (FR-6): every remote track feeds one shared
+   * ring-buffer worklet; its output drives a single audible element via
+   * MediaStreamDestination (keeps MediaSession + iOS happy). Falls back
+   * to plain per-track elements when AudioWorklet is unavailable.
+   */
+  function teardownPlaybackGraph() {
+    stopAnalyser(); // its nodes live on this context
+    playbackCtxRef.current?.close().catch(() => {});
+    playbackCtxRef.current = null;
+    workletRef.current = null;
+    if (playbackElRef.current) {
+      playbackElRef.current.pause();
+      playbackElRef.current.srcObject = null;
+    }
+  }
+
+  async function ensurePlaybackGraph(): Promise<boolean> {
+    if (playbackCtxRef.current) {
+      await playbackCtxRef.current.resume().catch(() => {});
+      // iOS can pause the element across interruptions/backgrounding —
+      // a dead audible element means the whole sync path is silent
+      const replayed = await playbackElRef.current
+        ?.play()
+        .then(() => true)
+        .catch(() => false);
+      if (replayed === false) {
+        console.warn("sync playback element blocked on resume — falling back");
+        teardownPlaybackGraph();
+        setSyncSupported(false);
+        return false;
+      }
+      return workletRef.current !== null;
+    }
+    let ctx: AudioContext | null = null;
+    try {
+      ctx = new AudioContext();
+      await ctx.resume();
+      await ctx.audioWorklet.addModule("/ring-delay-worklet.js");
+      const node = new AudioWorkletNode(ctx, "ring-delay", {
+        numberOfInputs: 1,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+      });
+      node.port.onmessage = (e) => {
+        if (e.data?.type === "state") {
+          setSyncAvailable(e.data.availableSeconds as number);
+          setSyncEffective(e.data.effectiveDelaySeconds as number);
+        }
+      };
+      const dest = ctx.createMediaStreamDestination();
+      node.connect(dest);
+      let el = playbackElRef.current;
+      if (!el) {
+        el = new Audio();
+        el.autoplay = true;
+        playbackElRef.current = el;
+      }
+      el.srcObject = dest.stream;
+      // the audible element is the ONLY sound output of the sync path —
+      // if it can't play, fall back to plain attached elements, which
+      // room.startAudio() knows how to rescue
+      await el.play();
+      playbackCtxRef.current = ctx;
+      workletRef.current = node;
+
+      // per-session offset persistence (FR-6.2)
+      try {
+        const saved = sessionStorage.getItem(`fc_sync_${opts.roomId}`);
+        if (saved !== null) {
+          const s = Number(saved);
+          if (Number.isFinite(s) && s > 0) {
+            setSyncRequested(s);
+            syncRequestedRef.current = s;
+            node.port.postMessage({ type: "setDelay", seconds: s });
+          }
+        }
+      } catch {}
+      return true;
+    } catch (err) {
+      console.warn("sync buffer unavailable, falling back to live-edge:", err);
+      ctx?.close().catch(() => {});
+      if (playbackElRef.current) {
+        playbackElRef.current.pause();
+        playbackElRef.current.srcObject = null;
+      }
+      setSyncSupported(false);
+      playbackCtxRef.current = null;
+      workletRef.current = null;
+      return false;
+    }
+  }
+
+  const setSyncOffset = useCallback(
+    (seconds: number) => {
+      const clamped = Math.max(0, Math.min(90, Math.round(seconds * 10) / 10));
+      setSyncRequested(clamped);
+      syncRequestedRef.current = clamped;
+      workletRef.current?.port.postMessage({
+        type: "setDelay",
+        seconds: clamped,
+      });
+      try {
+        sessionStorage.setItem(`fc_sync_${opts.roomId}`, String(clamped));
+      } catch {}
+    },
+    [opts.roomId],
+  );
+
+  /** Ref-backed stepper: rapid taps never read a stale render value. */
+  const adjustSyncOffset = useCallback(
+    (delta: number) => setSyncOffset(syncRequestedRef.current + delta),
+    [setSyncOffset],
+  );
 
   /* -------------------------------------------------------- connection */
 
@@ -153,83 +306,141 @@ export function useRoomAudio(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.commentatorId, opts.viewerId, opts.isRoomCommentator]);
 
+  const connectPromiseRef = useRef<Promise<Room | null> | null>(null);
+
   const connect = useCallback(async (): Promise<Room | null> => {
     if (roomRef.current) return roomRef.current;
+    // overlapping calls (play button, lock-screen play, go-on-air) must
+    // share one attempt — a second Room here would be unstoppable
+    if (connectPromiseRef.current) return connectPromiseRef.current;
+    const attempt = doConnect().finally(() => {
+      connectPromiseRef.current = null;
+    });
+    connectPromiseRef.current = attempt;
+    return attempt;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opts.roomId, opts.commentatorId, opts.isRoomCommentator]);
+
+  async function doConnect(): Promise<Room | null> {
     setListenStatus("connecting");
+    let room: Room | null = null;
     try {
+      // build the sync graph inside the user gesture, before any track
+      // subscription can fire
+      await ensurePlaybackGraph();
       const res = await fetch(`/api/livekit/token?room=${opts.roomId}`);
       if (!res.ok) throw new Error("token request failed");
       const { token, url, canPublish: granted } = await res.json();
       setCanPublish(granted);
 
-      const room = new Room();
-      roomRef.current = room;
+      const r = new Room();
+      room = r;
+      roomRef.current = r;
 
-      room.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
+      r.on(RoomEvent.TrackSubscribed, (track, _pub, participant) => {
         if (track.kind !== Track.Kind.Audio) return;
-        const el = track.attach();
-        audioContainerRef.current?.appendChild(el);
+        const ctx = playbackCtxRef.current;
+        const worklet = workletRef.current;
+        if (ctx && worklet) {
+          // muted element keeps Safari delivering WebRTC frames; audible
+          // output comes from the ring-buffer graph
+          const el = track.attach() as HTMLAudioElement;
+          el.muted = true;
+          audioContainerRef.current?.appendChild(el);
+          const src = ctx.createMediaStreamSource(
+            new MediaStream([track.mediaStreamTrack]),
+          );
+          src.connect(worklet);
+          trackNodesRef.current.set(track.sid ?? participant.identity, {
+            src,
+            el: [el],
+          });
+        } else {
+          // no-worklet fallback: live-edge element playback, no sync
+          const el = track.attach();
+          audioContainerRef.current?.appendChild(el);
+        }
         if (participant.identity === opts.commentatorId) {
           watchCommentatorTrack(track);
           clearTech();
         }
-        refreshSpeakers(room);
+        refreshSpeakers(r);
       });
-      room.on(RoomEvent.TrackUnsubscribed, (track, _pub, participant) => {
+      r.on(RoomEvent.TrackUnsubscribed, (track, _pub, participant) => {
+        const node = trackNodesRef.current.get(
+          track.sid ?? participant.identity,
+        );
+        if (node) {
+          node.src.disconnect();
+          trackNodesRef.current.delete(track.sid ?? participant.identity);
+        }
         track.detach().forEach((el) => el.remove());
         if (participant.identity === opts.commentatorId) {
           stopAnalyser();
           commentatorTrackRef.current = null;
         }
-        refreshSpeakers(room);
+        refreshSpeakers(r);
       });
-      room.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
+      r.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
         if (p.identity === opts.commentatorId && !opts.isRoomCommentator) {
           flagTech();
         }
-        refreshSpeakers(room);
+        refreshSpeakers(r);
       });
-      room.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
+      r.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
         if (p.identity === opts.commentatorId) clearTech();
-        refreshSpeakers(room);
+        refreshSpeakers(r);
       });
-      room.on(RoomEvent.ParticipantPermissionsChanged, () => {
-        const perms = room.localParticipant.permissions;
+      r.on(RoomEvent.ParticipantPermissionsChanged, () => {
+        const perms = r.localParticipant.permissions;
         setCanPublish(perms?.canPublish ?? false);
         if (!(perms?.canPublish ?? false)) {
           void stopMicInternal();
         }
       });
-      room.on(RoomEvent.Disconnected, () => {
-        roomRef.current = null;
+      r.on(RoomEvent.Disconnected, () => {
+        // stop the mic FIRST (it reads roomRef): an unexpected drop must
+        // not leave getUserMedia capturing with the indicator lit
+        void stopMicInternal();
+        if (roomRef.current === r) roomRef.current = null;
         setListenStatus("idle");
-        setMicStatus("off");
         stopAnalyser();
       });
-      room.on(RoomEvent.ConnectionStateChanged, (state) => {
+      r.on(RoomEvent.ConnectionStateChanged, (state) => {
         if (state === ConnectionState.Connected) setListenStatus("live");
         else if (state === ConnectionState.Reconnecting)
           setListenStatus("connecting");
       });
 
-      await room.connect(url, token);
-      await room.startAudio(); // inside the user gesture
+      await r.connect(url, token);
+      await r.startAudio(); // inside the user gesture
       setListenStatus("live");
-      refreshSpeakers(room);
-      return room;
+      refreshSpeakers(r);
+      return r;
     } catch (err) {
       console.error("audio connect failed:", err);
+      // never orphan a half-connected room — its handlers would keep
+      // feeding audio with no way to stop it
+      if (room) {
+        await room.disconnect().catch(() => {});
+      }
+      if (roomRef.current === room) roomRef.current = null;
       setListenStatus("error");
-      roomRef.current = null;
       return null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.roomId, opts.commentatorId, opts.isRoomCommentator]);
+  }
 
   const disconnect = useCallback(async () => {
     await stopMicInternal();
     await roomRef.current?.disconnect();
     roomRef.current = null;
+    trackNodesRef.current.clear();
+    // drop the buffered timeline: resuming later must not replay stale
+    // audio from before the stop
+    workletRef.current?.port.postMessage({ type: "reset" });
+    setSyncAvailable(0);
+    setSyncEffective(0);
+    await playbackCtxRef.current?.suspend().catch(() => {});
     setListenStatus("idle");
     clearTech();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -363,6 +574,12 @@ export function useRoomAudio(opts: {
       stopAnalyser();
       radioElRef.current?.pause();
       radioElRef.current = null;
+      playbackCtxRef.current?.close().catch(() => {});
+      playbackCtxRef.current = null;
+      workletRef.current = null;
+      playbackElRef.current?.pause();
+      playbackElRef.current = null;
+      trackNodesRef.current.clear();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.roomId]);
@@ -374,6 +591,12 @@ export function useRoomAudio(opts: {
     radioActive,
     enableRadio,
     disableRadio,
+    syncRequested,
+    syncEffective,
+    syncAvailable,
+    syncSupported,
+    setSyncOffset,
+    adjustSyncOffset,
     micStatus,
     micMuted,
     startMic,

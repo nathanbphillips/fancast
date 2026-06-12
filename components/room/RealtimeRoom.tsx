@@ -22,6 +22,7 @@ import {
   MicControls,
   SpeakerChips,
 } from "./audio/LiveAudioControls";
+import { SyncSheet } from "./audio/SyncSheet";
 import { useRoomAudio } from "./audio/useRoomAudio";
 import { ClockControls } from "./ClockControls";
 import { CommentatorBar } from "./CommentatorBar";
@@ -118,6 +119,7 @@ export function RealtimeRoom(props: Props) {
     props.initialClockEvents,
   );
   const [clockText, setClockText] = useState<string | undefined>(undefined);
+  const [syncSheetOpen, setSyncSheetOpen] = useState(false);
 
   // tick locally; derivation resyncs whenever an event arrives (FR-7.3)
   useEffect(() => {
@@ -167,6 +169,13 @@ export function RealtimeRoom(props: Props) {
       navigator.mediaSession.playbackState =
         audio.listenStatus === "idle" ? "paused" : "none";
     }
+    return () => {
+      // page-global handlers must die with the room — a lock-screen
+      // "play" after navigating away would resurrect audio with no UI
+      navigator.mediaSession.setActionHandler("play", null);
+      navigator.mediaSession.setActionHandler("pause", null);
+      navigator.mediaSession.metadata = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audio.listenStatus, room.home, room.away, room.commentatorUsername]);
 
@@ -402,6 +411,11 @@ export function RealtimeRoom(props: Props) {
         if (next && hlsUrl) void audio.enableRadio(hlsUrl);
         else audio.disableRadio();
       }}
+      syncRequested={audio.syncRequested}
+      syncEffective={audio.syncEffective}
+      syncSupported={audio.syncSupported}
+      onSyncAdjust={audio.adjustSyncOffset}
+      onOpenSync={() => setSyncSheetOpen(true)}
     />
   );
 
@@ -595,6 +609,19 @@ export function RealtimeRoom(props: Props) {
       <div className="fixed inset-x-0 bottom-0 z-40 hidden border-t border-line bg-surface lg:block">
         <div className="mx-auto max-w-7xl">{bar}</div>
       </div>
+
+      {!isRoomCommentator && (
+        <SyncSheet
+          open={syncSheetOpen}
+          onClose={() => setSyncSheetOpen(false)}
+          clockEvents={clockEvents}
+          requested={audio.syncRequested}
+          effective={audio.syncEffective}
+          available={audio.syncAvailable}
+          onApply={audio.setSyncOffset}
+          onAdjust={audio.adjustSyncOffset}
+        />
+      )}
     </div>
   );
 }
