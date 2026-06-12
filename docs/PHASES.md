@@ -45,7 +45,7 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - [x] Call-in: permission elevation on Accept; ON AIR bar; Leave Air; speaker chips with X; eligibility gates *(elevation/leave lifecycle + 2-guest cap smoke-tested; Start Broadcast now requires a live mic — FR-3.3 deviation resolved. Amended 2026-06-11: ending a call is neutral; commentator-only caller flags + reversible call-in blocks replace the permanent removal bar.)*
 - [x] Technical difficulties card (disconnect or 10s silent-while-unmuted; clears <2s on reconnect; 15-min soft banner) *(detection via participant events + Web Audio RMS analyser; founder network-kill test pending)*
 - [x] MediaSession (lock-screen controls/metadata); PWA manifest + service worker (push-ready) + install prompt
-- [ ] HLS egress while live; radio mode playing HLS in `<audio>` *(blocked on Supabase S3 storage keys — SETUP_CHECKLIST item moved up from Phase 8)*
+- [x] HLS egress while live; radio mode playing HLS in `<audio>` *(verified end-to-end 2026-06-12: real broadcast → egress → rolling playlist + segments served from the public radio bucket; ~100KB segments downloaded. iOS/Android playback check rides with the founder device matrix.)*
 - [ ] iOS Safari + Android Chrome locked-screen matrix: 15-min runs on both paths; record results in this file *(founder devices required)*
 - **Test:** laptop→phone broadcast; call-in cycle; kill commentator network (card <5s, chat alive, auto-resume); 15-min locked-screen radio run on iOS. *(Server/transport layer machine-verified 18/18 on 2026-06-11; real-device walkthroughs are the founder's next session.)*
 

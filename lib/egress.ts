@@ -4,7 +4,7 @@ import {
   SegmentedFileOutput,
 } from "livekit-server-sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { livekitRoomName } from "./livekit";
+import { livekitRoomName, roomService } from "./livekit";
 
 /**
  * Continuous audio-only HLS egress while live (FR-5.3): LiveKit composites
@@ -49,6 +49,14 @@ export async function startHlsEgress(
     return null;
   }
   await ensureRadioBucket(service);
+
+  // LiveKit creates rooms lazily on first join; egress against a
+  // not-yet-existing room 404s, so create it explicitly (idempotent).
+  // Generous empty timeout: the recorder may join before the commentator.
+  await roomService().createRoom({
+    name: livekitRoomName(roomId),
+    emptyTimeout: 60 * 60,
+  });
 
   const prefix = `${roomId}`;
   const info = await egressClient().startRoomCompositeEgress(
