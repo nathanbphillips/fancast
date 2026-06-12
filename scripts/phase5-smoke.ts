@@ -240,7 +240,7 @@ async function main() {
   r = await api(`/api/livekit/token?room=${roomId}`, cookies.smoke5_alice, undefined, "GET");
   check("token reverts to subscribe-only after leaving", r.body.canPublish === false);
 
-  // --- removal bars future call-ins
+  // --- ending a call is NEUTRAL (founder decision 2026-06-11)
   await service.from("chat_messages").insert(
     Array.from({ length: 5 }, (_, i) => ({
       room_id: roomId,
@@ -252,11 +252,54 @@ async function main() {
   const bobRequest = r.body.request?.id;
   await api("/api/talk", cookies.smoke5_kev, { requestId: bobRequest, status: "accepted" }, "PATCH");
   r = await api("/api/talk/leave", cookies.smoke5_kev, { roomId, userId: ids.smoke5_bob });
-  check("commentator removes guest", r.status === 200);
+  check("commentator ends guest call", r.status === 200);
+  const { data: endedEvent } = await service
+    .from("speaker_events")
+    .select("action")
+    .eq("user_id", ids.smoke5_bob)
+    .eq("action", "call_ended")
+    .maybeSingle();
+  check("end-call logged as neutral call_ended", endedEvent !== null);
   r = await api("/api/talk", cookies.smoke5_bob, { roomId, topic: "again?", consent: true });
-  check("removed guest barred from call-ins", r.status === 403, r.body.error);
+  check("ended caller can request again (no penalty)", r.status === 201);
+  const bobRequest2 = r.body.request?.id;
+  await api("/api/talk", cookies.smoke5_kev, { requestId: bobRequest2, status: "dismissed" }, "PATCH");
   r = await api("/api/talk/leave", cookies.smoke5_alice, { roomId, userId: ids.smoke5_bob });
-  check("listener cannot remove others", r.status === 403 || r.status === 404);
+  check("listener cannot end others' calls", r.status === 403 || r.status === 404);
+
+  // --- caller flags (informational, commentator-only)
+  r = await api("/api/callers", cookies.smoke5_alice, { action: "flag", userId: ids.smoke5_bob, note: "nope" });
+  check("listener cannot flag callers", r.status === 403);
+  r = await api("/api/callers", cookies.smoke5_kev, { action: "flag", userId: ids.smoke5_bob, roomId, note: "trolled on air" });
+  check("commentator flags caller", r.status === 201);
+  r = await api("/api/talk", cookies.smoke5_bob, { roomId, topic: "third time", consent: true });
+  check(
+    "new request carries the flag summary",
+    r.status === 201 &&
+      r.body.request?.caller_flags?.count === 1 &&
+      r.body.request?.caller_flags?.notes?.[0]?.note === "trolled on air",
+    JSON.stringify(r.body.request?.caller_flags),
+  );
+  await api("/api/talk", cookies.smoke5_kev, { requestId: r.body.request?.id, status: "dismissed" }, "PATCH");
+  const { data: bobProfile } = await service
+    .from("profiles")
+    .select("standing, role")
+    .eq("user_id", ids.smoke5_bob)
+    .single();
+  check("flag leaves the profile untouched", bobProfile?.standing === "good");
+
+  // --- explicit block: reversible call-in bar, nothing else
+  r = await api("/api/callers", cookies.smoke5_kev, { action: "block", userId: ids.smoke5_bob, reason: "persistent trolling" });
+  check("commentator blocks caller", r.status === 201);
+  r = await api("/api/talk", cookies.smoke5_bob, { roomId, topic: "blocked?", consent: true });
+  check("blocked caller cannot request", r.status === 403, r.body.error);
+  r = await api("/api/chat", cookies.smoke5_bob, { roomId, body: "still chatting though" });
+  check("blocked caller can still chat", r.status === 201);
+  r = await api("/api/callers", cookies.smoke5_kev, { action: "unblock", userId: ids.smoke5_bob });
+  check("unblock works", r.status === 200);
+  r = await api("/api/talk", cookies.smoke5_bob, { roomId, topic: "back again", consent: true });
+  check("unblocked caller can request again", r.status === 201);
+  await api("/api/talk", cookies.smoke5_kev, { requestId: r.body.request?.id, status: "dismissed" }, "PATCH");
 
   // --- 2-guest cap
   await service.from("talk_requests").insert([

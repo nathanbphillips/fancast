@@ -53,6 +53,7 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Waiting-room countdown targets a commentator-set broadcast start time (`rooms.broadcast_start`), not kickoff; no time set = calm "show starts soon" card | Founder decision 2026-06-11 | Final |
 | Commentator can open chat and/or links to listeners during waiting (`rooms.chat_open`/`links_open` toggles), relaxing FR-3.2's commentator-only waiting chat | Founder decision 2026-06-11 | Final |
 | Stats panel shows zeros (possession 50/50) until live API-Football data arrives (Phase 7) | Founder decision 2026-06-11 | Final |
+| Ending a call is neutral (no profile/eligibility effect), replacing FR-4.4's "never removed from air" gate; problem callers handled by commentator-only `caller_flags` (informational, shown on request cards) + reversible `call_in_blocks` (bars call-ins only) | Founder decision 2026-06-11 | Final |
 
 ## Where things are specified
 

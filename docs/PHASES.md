@@ -42,7 +42,7 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 ## Phase 5: Audio + speakers + background listening (days 14-20)
 - [x] LiveKit room per match; token route with role grants; commentator publish (mono), listeners subscribe *(verified end-to-end via @livekit/rtc-node: listener received 400+ non-silent frames published by the commentator; mic-source-only grants; tokens refused for wrapped rooms)*
 - [x] Commentator self-delay (Web Audio delay node, 1-5s setting) *(mic routes through a DelayNode, adjustable live from the commentator bar; browser audio test = founder)*
-- [x] Call-in: permission elevation on Accept; ON AIR bar; Leave Air; speaker chips with X; eligibility gates *(elevation/leave/removal lifecycle + permanent removal bar + 2-guest cap all smoke-tested; Start Broadcast now requires a live mic — FR-3.3 deviation resolved)*
+- [x] Call-in: permission elevation on Accept; ON AIR bar; Leave Air; speaker chips with X; eligibility gates *(elevation/leave lifecycle + 2-guest cap smoke-tested; Start Broadcast now requires a live mic — FR-3.3 deviation resolved. Amended 2026-06-11: ending a call is neutral; commentator-only caller flags + reversible call-in blocks replace the permanent removal bar.)*
 - [x] Technical difficulties card (disconnect or 10s silent-while-unmuted; clears <2s on reconnect; 15-min soft banner) *(detection via participant events + Web Audio RMS analyser; founder network-kill test pending)*
 - [x] MediaSession (lock-screen controls/metadata); PWA manifest + service worker (push-ready) + install prompt
 - [ ] HLS egress while live; radio mode playing HLS in `<audio>` *(blocked on Supabase S3 storage keys — SETUP_CHECKLIST item moved up from Phase 8)*
