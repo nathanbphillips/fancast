@@ -40,14 +40,14 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** full lifecycle walkthrough with two roles in two browsers. *(Verified 2026-06-11: scripted lifecycle 35/35 checks with independent realtime observer + browser walkthrough of both roles. Founder two-browser session recommended.)*
 
 ## Phase 5: Audio + speakers + background listening (days 14-20)
-- [ ] LiveKit room per match; token route with role grants; commentator publish (mono), listeners subscribe
-- [ ] Commentator self-delay (Web Audio delay node, 1-5s setting)
-- [ ] Call-in: permission elevation on Accept; ON AIR bar; Leave Air; speaker chips with X; eligibility gates
-- [ ] Technical difficulties card (disconnect or 10s silent-while-unmuted; clears <2s on reconnect; 15-min soft banner)
-- [ ] MediaSession (lock-screen controls/metadata); PWA manifest + service worker (push-ready) + install prompt
-- [ ] HLS egress while live; radio mode playing HLS in `<audio>`
-- [ ] iOS Safari + Android Chrome locked-screen matrix: 15-min runs on both paths; record results in this file
-- **Test:** laptop→phone broadcast; call-in cycle; kill commentator network (card <5s, chat alive, auto-resume); 15-min locked-screen radio run on iOS.
+- [x] LiveKit room per match; token route with role grants; commentator publish (mono), listeners subscribe *(verified end-to-end via @livekit/rtc-node: listener received 400+ non-silent frames published by the commentator; mic-source-only grants; tokens refused for wrapped rooms)*
+- [x] Commentator self-delay (Web Audio delay node, 1-5s setting) *(mic routes through a DelayNode, adjustable live from the commentator bar; browser audio test = founder)*
+- [x] Call-in: permission elevation on Accept; ON AIR bar; Leave Air; speaker chips with X; eligibility gates *(elevation/leave/removal lifecycle + permanent removal bar + 2-guest cap all smoke-tested; Start Broadcast now requires a live mic — FR-3.3 deviation resolved)*
+- [x] Technical difficulties card (disconnect or 10s silent-while-unmuted; clears <2s on reconnect; 15-min soft banner) *(detection via participant events + Web Audio RMS analyser; founder network-kill test pending)*
+- [x] MediaSession (lock-screen controls/metadata); PWA manifest + service worker (push-ready) + install prompt
+- [ ] HLS egress while live; radio mode playing HLS in `<audio>` *(blocked on Supabase S3 storage keys — SETUP_CHECKLIST item moved up from Phase 8)*
+- [ ] iOS Safari + Android Chrome locked-screen matrix: 15-min runs on both paths; record results in this file *(founder devices required)*
+- **Test:** laptop→phone broadcast; call-in cycle; kill commentator network (card <5s, chat alive, auto-resume); 15-min locked-screen radio run on iOS. *(Server/transport layer machine-verified 18/18 on 2026-06-11; real-device walkthroughs are the founder's next session.)*
 
 ## Phase 6: Sync + clock/state component (days 20-23)
 - [ ] 90s Web Audio ring buffer; offset playback; depth-aware UI
