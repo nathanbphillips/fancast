@@ -49,6 +49,7 @@ export function CommentatorBar({
   linksOpen,
   micControls,
   speakerChips,
+  clockControls,
   startDisabled = false,
 }: {
   roomId: string;
@@ -61,6 +62,8 @@ export function CommentatorBar({
   /** Phase 5 audio slots */
   micControls?: React.ReactNode;
   speakerChips?: React.ReactNode;
+  /** Phase 6 clock controls slot */
+  clockControls?: React.ReactNode;
   /** FR-3.3: Start Broadcast requires a live mic */
   startDisabled?: boolean;
 }) {
@@ -289,6 +292,7 @@ export function CommentatorBar({
           ))}
       </div>
 
+      {clockControls}
       {speakerChips}
       {micControls}
 

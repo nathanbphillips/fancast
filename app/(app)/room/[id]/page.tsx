@@ -81,7 +81,7 @@ export default async function RoomPage({
   const supabase = await createSupabaseServerClient();
   const { user, profile } = await getCurrentUserAndProfile();
 
-  const [{ data: messages }, { data: links }] = await Promise.all([
+  const [{ data: messages }, { data: links }, { data: clockEvents }] = await Promise.all([
     supabase
       .from("chat_messages")
       .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
@@ -96,6 +96,11 @@ export default async function RoomPage({
       .order("created_at", { ascending: false })
       .limit(50)
       .returns<Link[]>(),
+    supabase
+      .from("clock_events")
+      .select("action, server_ts, offset_seconds")
+      .eq("room_id", room.id)
+      .order("server_ts", { ascending: true }),
   ]);
 
   const myMessageVotes: Record<string, 1 | -1> = {};
@@ -244,6 +249,9 @@ export default async function RoomPage({
       initialChatOpen={room.chat_open}
       initialLinksOpen={room.links_open}
       initialHlsUrl={room.hls_url}
+      initialClockEvents={
+        (clockEvents ?? []) as import("@/lib/clock").ClockEventInput[]
+      }
     />
   );
 }

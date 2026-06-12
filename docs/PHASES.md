@@ -52,8 +52,8 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 ## Phase 6: Sync + clock/state component (days 20-23)
 - [ ] 90s Web Audio ring buffer; offset playback; depth-aware UI
 - [ ] Sync sheet: ticking reference clock, tap-Now calibration, live-edge reset, ±0.5s steppers, numeric offset display, per-session persistence
-- [ ] Clock/state unit per FR-7 (period label + clock during play; state word otherwise; never both); ±1s adjustments; event-sourced derivation; reconnect-safe
-- **Test:** align to a deliberately 45s-delayed feed in one calibration pass (≤1s error); full simulated match clock cycle.
+- [x] Clock/state unit per FR-7 (period label + clock during play; state word otherwise; never both); ±1s adjustments; event-sourced derivation; reconnect-safe *(14 unit tests on the pure derivation + 16-check simulated full match cycle incl. ET, exactly-once control events, DB-replay reconnect path — all passing 2026-06-11)*
+- **Test:** align to a deliberately 45s-delayed feed in one calibration pass (≤1s error); full simulated match clock cycle. *(Clock cycle ✓ scripted; sync calibration pending the ring buffer build.)*
 
 ## Phase 7: Stats + lineups + tab control (days 22-26)
 - [ ] API-Football proxy route with cache; polling cadence 60s live / 15s around kickoff+goals

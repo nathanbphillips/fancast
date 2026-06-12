@@ -13,11 +13,17 @@ import type {
 import { MatchHeader } from "@/components/MatchHeader";
 import { StatsPanel } from "@/components/StatsPanel";
 import {
+  deriveClock,
+  formatClock,
+  type ClockEventInput,
+} from "@/lib/clock";
+import {
   ListenerBar,
   MicControls,
   SpeakerChips,
 } from "./audio/LiveAudioControls";
 import { useRoomAudio } from "./audio/useRoomAudio";
+import { ClockControls } from "./ClockControls";
 import { CommentatorBar } from "./CommentatorBar";
 import { Countdown } from "./Countdown";
 import { InteractionButtons } from "./InteractionButtons";
@@ -68,6 +74,7 @@ type Props = {
   initialChatOpen: boolean;
   initialLinksOpen: boolean;
   initialHlsUrl: string | null;
+  initialClockEvents: ClockEventInput[];
 };
 
 type ConnState = "connecting" | "connected" | "broken";
@@ -107,6 +114,21 @@ export function RealtimeRoom(props: Props) {
   const [chatOpen, setChatOpen] = useState(props.initialChatOpen);
   const [linksOpen, setLinksOpen] = useState(props.initialLinksOpen);
   const [hlsUrl, setHlsUrl] = useState(props.initialHlsUrl);
+  const [clockEvents, setClockEvents] = useState<ClockEventInput[]>(
+    props.initialClockEvents,
+  );
+  const [clockText, setClockText] = useState<string | undefined>(undefined);
+
+  // tick locally; derivation resyncs whenever an event arrives (FR-7.3)
+  useEffect(() => {
+    const tick = () => {
+      const d = deriveClock(clockEvents, Date.now());
+      setClockText(d.running ? formatClock(d.elapsedSeconds) : undefined);
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [clockEvents]);
 
   const appendMessage = (m: ChatMessage) =>
     setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
@@ -255,6 +277,17 @@ export function RealtimeRoom(props: Props) {
     control.subscribe("radio", (msg) => {
       setHlsUrl((msg.data as { url: string }).url);
     });
+    control.subscribe("clock", (msg) => {
+      const e = msg.data as ClockEventInput;
+      setClockEvents((prev) =>
+        // rewind can replay events the server already gave us — dedupe
+        prev.some(
+          (x) => x.action === e.action && x.server_ts === e.server_ts,
+        )
+          ? prev
+          : [...prev, e],
+      );
+    });
 
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
@@ -328,6 +361,7 @@ export function RealtimeRoom(props: Props) {
       chatOpen={chatOpen}
       linksOpen={linksOpen}
       startDisabled={audio.micStatus !== "live"}
+      clockControls={<ClockControls roomId={room.id} state={roomState} />}
       micControls={
         <MicControls
           micStatus={audio.micStatus}
@@ -413,6 +447,7 @@ export function RealtimeRoom(props: Props) {
         homeScore={room.homeScore}
         awayScore={room.awayScore}
         state={roomState}
+        clock={clockText}
         listeners={watching ?? undefined}
       />
 
