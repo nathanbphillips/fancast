@@ -2,7 +2,7 @@
 
 Rules: one phase at a time, in order. A phase is complete when every box is checked and its acceptance test passes. Check boxes in this file as you go; note deviations inline. iOS Safari gates all audio items.
 
-**Current phase: 2** (Phase 1 complete 2026-06-11; production at https://fancast-26.vercel.app)
+**Current phase: 6** (Phases 1-4 complete; Phase 5 code complete — founder device matrix + S3 keys outstanding; Phase 6 clock done, sync system in progress. Production: https://fancast-26.vercel.app)
 
 ## Phase 1: Foundation + layout + theming (days 1-3)
 - [x] Next.js + TS strict + Tailwind scaffold; deploy pipeline to Vercel *(GitHub repo nathanbphillips/fancast → Vercel auto-deploy on push, live 2026-06-11)*
@@ -96,3 +96,6 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - 2026-06-11 (Phase 4) — Start Broadcast's "requires live mic" condition (FR-3.3) deferred to Phase 5: no audio pipeline exists yet, so the button starts the show without a mic check.
 - 2026-06-11 (Phase 4) — FR-3.3's "unlocks widgets" is moot until widgets exist (Phase 9); chat/links/questions/talk/slider all unlock as specified.
 - 2026-06-11 (Phase 4, founder changes) — Waiting-room countdown counts to a commentator-set broadcast start (set in the commentator bar; live-updates via control channel); stats zeroed pre-match; commentator can open chat/links early during waiting via bar toggles. Control-channel `state` handler now ignores out-of-order events (timestamp guard).
+- 2026-06-11 (Phase 5) — Commentator self-delay offers Off in addition to the spec's 1-5s settings (the founder won't always be watching delayed).
+- 2026-06-11 (Phase 6) — Extra-time flow assumed: Stop 2H → postgame, then optional Start ET (postgame → extra_time) and End ET (→ postgame); ARCHITECTURE's clock action list omitted ET so `start_et`/`stop_et` were added.
+- 2026-06-11 (cleanup) — Removed the Phase 1 static demo room (`/room/demo` + AudioBar/RoomShell/ChatPanel/LinksPanel placeholders): superseded by the real live room and drifting from it. Hardened the link unfurler against redirect-based SSRF.

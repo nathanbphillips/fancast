@@ -79,6 +79,8 @@ export async function unfurl(url: URL): Promise<Unfurled> {
       },
     });
     if (!res.ok || !res.body) return empty;
+    // redirects could land somewhere the original URL check never saw
+    if (res.url && !isFetchableUrl(new URL(res.url))) return empty;
 
     const reader = res.body.getReader();
     const chunks: Uint8Array[] = [];
