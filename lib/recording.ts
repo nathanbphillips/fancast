@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -13,16 +13,21 @@ import { deriveSegments, type Marker } from "@/lib/markers";
 const run = promisify(execFile);
 const REC_BUCKET = "recordings";
 const FFMPEG = (ffmpegPath as unknown as string) || "ffmpeg";
+// a processing run older than this is presumed dead (crash/timeout) and
+// may be reclaimed
+const STALE_PROCESSING_MS = 10 * 60 * 1000;
 
 /**
- * Post-session processing (FR-13.5/13.7). On End Broadcast the OGG room
- * mix is finalized by egress; this transcodes it to a full MP3, cuts one
- * MP3 per segment at marker offsets (stream-copy — I/O bound, fast), zips
- * everything, and records segment rows. Target <15 min.
+ * Post-session processing (FR-13.5/13.7). On End Broadcast the MP4/AAC room
+ * mix is finalized by egress (MP4 not OGG — codec-compatible with the HLS
+ * radio output of the same composite); this transcodes it to a full MP3,
+ * cuts one MP3 per segment at marker offsets (stream-copy — I/O bound,
+ * fast), zips everything, and records segment rows. Target <15 min.
  *
- * The cut decision (MP3 stream-copy) is per the decision log; the one-time
- * full transcode exists because LiveKit audio egress emits OGG/Opus, not
- * MP3 — so we normalize to MP3 once, then copy-cut from it.
+ * Concurrency: an atomic status claim serializes runs and lets a crashed
+ * run be reclaimed after STALE_PROCESSING_MS. NOTE (decision log): a full
+ * 90-min transcode may exceed the serverless time limit — move to a worker
+ * if that bites; fine for test-length sessions.
  */
 
 /** Fire-and-forget trigger from a request handler (uses next/server after
@@ -55,41 +60,69 @@ function egressClient(): EgressClient {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** Wait for the egress to finish writing the OGG to storage. */
-async function waitForEgress(egressId: string, timeoutMs = 120_000): Promise<boolean> {
+/** Wait for the egress to finish writing the recording to storage.
+ *  Returns { ok } with a reason so a slow finalize and a hard failure are
+ *  distinguishable to the caller. */
+async function waitForEgress(
+  egressId: string,
+  timeoutMs = 180_000,
+): Promise<{ ok: boolean; reason?: string }> {
   const client = egressClient();
   const deadline = Date.now() + timeoutMs;
+  let lastErr = "";
   while (Date.now() < deadline) {
     try {
       const list = await client.listEgress({ egressId });
       const info = list[0];
       if (info) {
-        if (info.status === EgressStatus.EGRESS_COMPLETE) return true;
+        if (info.status === EgressStatus.EGRESS_COMPLETE) return { ok: true };
         if (
           info.status === EgressStatus.EGRESS_FAILED ||
           info.status === EgressStatus.EGRESS_ABORTED
         ) {
-          return false;
+          return { ok: false, reason: `egress ${EgressStatus[info.status]}` };
         }
       }
     } catch (e) {
-      console.warn("listEgress poll failed:", (e as Error).message);
+      lastErr = (e as Error).message;
+      console.warn("listEgress poll failed:", lastErr);
     }
     await sleep(3000);
   }
-  return false;
+  return {
+    ok: false,
+    reason: lastErr
+      ? `egress status unknown (${lastErr})`
+      : "egress still finalizing — try again shortly",
+  };
 }
 
 export async function processRecording(
   service: SupabaseClient,
   roomId: string,
 ): Promise<{ status: string; segments: number }> {
+  // atomic claim: flip to 'processing' only if not already being processed
+  // (or the prior run is stale). A failed claim means another run owns it.
+  const staleBefore = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
   const { data: rec } = await service
     .from("recordings")
-    .select("*")
+    .update({
+      status: "processing",
+      processing_started_at: new Date().toISOString(),
+      error: null,
+    })
     .eq("room_id", roomId)
+    .or(`status.neq.processing,processing_started_at.lt.${staleBefore}`)
+    .select("*")
     .maybeSingle();
-  if (!rec) return { status: "missing", segments: 0 };
+  if (!rec) {
+    const { data: existing } = await service
+      .from("recordings")
+      .select("status")
+      .eq("room_id", roomId)
+      .maybeSingle();
+    return { status: existing ? "busy" : "missing", segments: 0 };
+  }
 
   const fail = async (error: string) => {
     await service
@@ -99,33 +132,33 @@ export async function processRecording(
     return { status: "failed", segments: 0 };
   };
 
-  await service
-    .from("recordings")
-    .update({ status: "processing", error: null })
-    .eq("id", rec.id);
-
-  if (rec.egress_id && !(await waitForEgress(rec.egress_id))) {
-    return fail("egress did not complete");
+  if (rec.egress_id) {
+    const egress = await waitForEgress(rec.egress_id);
+    if (!egress.ok) return fail(egress.reason ?? "egress did not complete");
   }
 
-  const work = join(tmpdir(), `fc-rec-${roomId}`);
-  await mkdir(work, { recursive: true });
+  // per-run unique temp dir so concurrent/sequential runs never share files
+  const work = await mkdtemp(join(tmpdir(), `fc-rec-${roomId}-`));
   const sourceLocal = join(work, "source.mp4");
   const fullLocal = join(work, "full.mp3");
 
   try {
-    // download the OGG room mix
+    // download the MP4 room mix
     const { data: blob, error: dlErr } = await service.storage
       .from(REC_BUCKET)
       .download(rec.source_path!);
     if (dlErr || !blob) return fail(`source download failed: ${dlErr?.message}`);
     const bytes = Buffer.from(await blob.arrayBuffer());
-    if (bytes.length < 256) return markEmpty(service, rec.id);
+    // a real MP4 with audio is many KB even for a short clip; a tiny file
+    // means egress captured nothing
+    if (bytes.length < 4096) return markEmpty(service, rec.id);
     await writeFile(sourceLocal, bytes);
 
     // one-time transcode to the headline full MP3
     await run(FFMPEG, ["-y", "-i", sourceLocal, "-c:a", "libmp3lame", "-q:a", "4", fullLocal]);
     const fullBuf = await readFile(fullLocal);
+    // a near-empty transcode (no real audio) also means an empty session
+    if (fullBuf.length < 2048) return markEmpty(service, rec.id);
     const fullPath = `${roomId}/full.mp3`;
     const up = await service.storage
       .from(REC_BUCKET)

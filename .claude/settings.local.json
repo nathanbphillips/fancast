@@ -10,7 +10,12 @@
       "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); npm run build)",
       "PowerShell(git add package.json package-lock.json tsconfig.json next.config.ts postcss.config.mjs .gitignore .claude/launch.json)",
       "PowerShell(git commit -m \"Scaffold Next.js with strict TypeScript and Tailwind\")",
-      "PowerShell($anon = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3p6YnNyaGx2cGx6bnprbGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjM5OTcsImV4cCI6MjA5NjczOTk5N30._V1WhSuKN0-5EGUdO4qKCO2oiOn-6pz5GmCrPOcDA40\"; $r = Invoke-RestMethod -Uri \"https://twkzzbsrhlvplznzklew.supabase.co/rest/v1/rooms?id=eq.d68d9177-1959-4df2-816c-d1e1ec325b46&select=state,chat_open,links_open,broadcast_start\" -Headers @{ apikey = $anon; Authorization = \"Bearer $anon\" }; $r | ConvertTo-Json)"
+      "PowerShell($anon = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3a3p6YnNyaGx2cGx6bnprbGV3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExNjM5OTcsImV4cCI6MjA5NjczOTk5N30._V1WhSuKN0-5EGUdO4qKCO2oiOn-6pz5GmCrPOcDA40\"; $r = Invoke-RestMethod -Uri \"https://twkzzbsrhlvplznzklew.supabase.co/rest/v1/rooms?id=eq.d68d9177-1959-4df2-816c-d1e1ec325b46&select=state,chat_open,links_open,broadcast_start\" -Headers @{ apikey = $anon; Authorization = \"Bearer $anon\" }; $r | ConvertTo-Json)",
+      "Bash(node -e \"const {crc32}=require\\('node:zlib'\\); const b=Buffer.from\\('123456789'\\); const c=crc32\\(b\\)>>>0; console.log\\('crc32\\(123456789\\)=0x'+c.toString\\(16\\), c\\); console.log\\('expected CRC-32/ISO-HDLC check = 0xcbf43926'\\);\")",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\")",
+      "Bash(cat \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/fcffm-out.txt\")",
+      "Bash(node -e \"console.log\\('ffmpeg-static dep:', require\\('./package.json'\\).dependencies['ffmpeg-static'] || require\\('./package.json'\\).devDependencies?.['ffmpeg-static']\\)\")"
     ]
   }
 }

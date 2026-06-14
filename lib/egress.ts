@@ -11,8 +11,9 @@ import { livekitRoomName, roomService } from "./livekit";
 /**
  * One room-composite egress while live, two outputs (one composite render,
  * so half the LiveKit cost):
- *  - segments: rolling HLS into the public `radio` bucket (FR-5.3)
- *  - file: a single OGG of the room mix into the private `recordings`
+ *  - segments: rolling HLS into the public `radio` bucket (FR-5.3),
+ *    purged on End Broadcast so no public copy outlives the live show
+ *  - file: a single MP4/AAC of the room mix into the private `recordings`
  *    bucket (FR-13/14), Start->End Broadcast, disconnect-proof
  * Fully gated on SUPABASE_S3_* — without storage the lifecycle proceeds
  * and both radio and recording simply stay unavailable.
@@ -56,6 +57,31 @@ async function ensureBucket(
   const { data } = await service.storage.getBucket(name);
   if (!data) {
     await service.storage.createBucket(name, { public: isPublic });
+    return;
+  }
+  // re-assert visibility every time — a recordings bucket that was ever
+  // made public (manual dashboard toggle, name reuse) must not silently
+  // expose recordings (defense in depth for FR-14.2)
+  if (data.public !== isPublic) {
+    await service.storage.updateBucket(name, { public: isPublic });
+  }
+}
+
+/** Remove the entire radio/{roomId}/ prefix from the public bucket.
+ *  Called on End Broadcast — radio is live-only. */
+export async function purgeRadio(
+  service: SupabaseClient,
+  roomId: string,
+): Promise<void> {
+  try {
+    const { data } = await service.storage.from(RADIO_BUCKET).list(roomId);
+    if (data?.length) {
+      await service.storage
+        .from(RADIO_BUCKET)
+        .remove(data.map((o) => `${roomId}/${o.name}`));
+    }
+  } catch (err) {
+    console.warn(`purgeRadio(${roomId}) failed:`, (err as Error).message);
   }
 }
 

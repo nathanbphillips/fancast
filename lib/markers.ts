@@ -118,22 +118,29 @@ export function deriveSegments(
   const effective = (m: { server_ts: string; adjusted_ts: string | null }) =>
     new Date(m.adjusted_ts ?? m.server_ts).getTime();
 
+  const endOffset = Math.max(0, (recordingEndMs - recordingStartMs) / 1000);
   const ordered = [...markers].sort((a, b) => effective(a) - effective(b));
 
   // boundary points in seconds-from-start, each carrying the label of the
-  // segment that begins there (broadcast_end carries null)
+  // segment that begins there (broadcast_end carries null). Every boundary
+  // is hard-clamped into [0, endOffset] so an adjustment past either edge
+  // can never emit a phantom segment or an out-of-range ffmpeg -to.
   type Boundary = { at: number; label: string | null };
   const boundaries: Boundary[] = ordered.map((m) => ({
-    at: Math.max(0, (effective(m) - recordingStartMs) / 1000),
+    at: Math.min(endOffset, Math.max(0, (effective(m) - recordingStartMs) / 1000)),
     label: SEGMENT_LABEL[m.kind as MarkerKind] ?? m.label,
   }));
 
-  // ensure an opening boundary at 0 and a closing boundary at end
+  // ensure an opening boundary at 0 and a closing boundary at end, then
+  // re-sort by position so the close always sorts last and any clamped
+  // boundary lands where its time actually places it
   if (boundaries.length === 0 || boundaries[0].at > 0.5) {
     boundaries.unshift({ at: 0, label: "Pre-game show" });
   }
-  const endOffset = Math.max(0, (recordingEndMs - recordingStartMs) / 1000);
   boundaries.push({ at: endOffset, label: null });
+  // stable sort by position; a labeled boundary tying the close keeps its
+  // place before it (close has label null and is pushed last among ties)
+  boundaries.sort((a, b) => a.at - b.at);
 
   const segments: DerivedSegment[] = [];
   for (let i = 0; i < boundaries.length - 1; i++) {

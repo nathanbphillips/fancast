@@ -59,6 +59,7 @@ async function clean() {
   }
   console.log("clean done");
 }
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 async function rmsOf(url: string, dir: string, tag: string) {
   const mp3 = join(dir, `${tag}.mp3`);
   const raw = join(dir, `${tag}.raw`);
@@ -123,13 +124,22 @@ async function main() {
     await service.from("broadcast_markers").insert(
       offsets.map(([kind, off]) => ({ room_id: roomId, kind, label: labels[kind], source: "auto", server_ts: new Date(startMs + off * 1000).toISOString() })),
     );
-    await service.from("recordings").insert({ room_id: roomId, source_path: sourcePath, started_at: new Date(startMs).toISOString(), ended_at: new Date(startMs + 43_000).toISOString(), status: "processing" });
+    // status 'recording' (not 'processing') — processRecording atomically claims it
+    await service.from("recordings").insert({ room_id: roomId, source_path: sourcePath, started_at: new Date(startMs).toISOString(), ended_at: new Date(startMs + 43_000).toISOString(), status: "recording" });
 
-    // run the real processing pipeline via the API
-    const proc = await api("/api/recordings", cookie, { action: "process", roomId });
-    check("processing returns ready", proc.body.status === "ready", JSON.stringify(proc.body));
-
-    const panel = (await api(`/api/recordings?room=${roomId}`, cookie, undefined, "GET")).body;
+    // trigger the async pipeline, then poll to ready (the real panel flow)
+    const pollReady = async () => {
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline) {
+        const g = (await api(`/api/recordings?room=${roomId}`, cookie, undefined, "GET")).body;
+        if (g.recording?.status === "ready" || g.recording?.status === "failed") return g;
+        await sleep(3000);
+      }
+      return (await api(`/api/recordings?room=${roomId}`, cookie, undefined, "GET")).body;
+    };
+    await api("/api/recordings", cookie, { action: "process", roomId });
+    const panel = await pollReady();
+    check("processing reaches ready", panel.recording?.status === "ready", panel.recording?.status ?? "timeout");
     const files = panel.files ?? [];
     const segLabels = files.slice(1).map((f: { label: string }) => f.label);
     check(
@@ -152,15 +162,41 @@ async function main() {
     check("first half has commentator audio", firstRms > 50, `rms ${Math.round(firstRms)}`);
     check("second half louder (guest audio mixed into the recording)", secondRms > firstRms * 1.3, `first ${Math.round(firstRms)} vs second ${Math.round(secondRms)}`);
 
-    // adjust → recut
+    // adjust → recut (async; poll to ready)
     const htMarker = (panel.markers ?? []).find((m: { label: string }) => m.label === "Halftime show");
     const before = dur("First half");
     await api("/api/recordings", cookie, { action: "adjust", roomId, markerId: htMarker.id, deltaSeconds: -3 });
-    const recut = await api("/api/recordings", cookie, { action: "process", roomId });
-    check("recut succeeds", recut.body.status === "ready");
-    const after = (await api(`/api/recordings?room=${roomId}`, cookie, undefined, "GET")).body;
+    await api("/api/recordings", cookie, { action: "process", roomId });
+    await sleep(2000);
+    const after = await pollReady();
+    check("recut reaches ready", after.recording?.status === "ready", after.recording?.status ?? "timeout");
     const firstAfter = (after.files ?? []).find((f: { label: string; durationSeconds: number }) => f.label === "First half")?.durationSeconds ?? 0;
     check("adjust shortened the first half by ~3s", Math.abs((before - firstAfter) - 3) < 1.5, `before ${before.toFixed(1)} after ${firstAfter.toFixed(1)}`);
+
+    // a marker adjustment cannot cross a neighbour (which would scramble
+    // labels, e.g. Post-game before Second half). An extreme -120s shove on
+    // Halftime clamps to just after kickoff — First half may collapse to a
+    // dropped sliver, but the surviving labels must stay in lifecycle order.
+    await api("/api/recordings", cookie, { action: "adjust", roomId, markerId: htMarker.id, deltaSeconds: -120 });
+    await api("/api/recordings", cookie, { action: "process", roomId });
+    await sleep(2000);
+    const crossed = await pollReady();
+    const crossedLabels = (crossed.files ?? []).slice(1).map((f: { label: string }) => f.label);
+    const canonical = ["Pre-game show", "First half", "Halftime show", "Second half", "Extra time", "Post-game show"];
+    const isSubsequence = (() => {
+      let i = 0;
+      for (const l of crossedLabels) {
+        i = canonical.indexOf(l, i);
+        if (i === -1) return false;
+        i++;
+      }
+      return true;
+    })();
+    check(
+      "labels stay in lifecycle order after an extreme adjust (no scramble)",
+      isSubsequence,
+      crossedLabels.join(" | "),
+    );
   } finally {
     await rm(dir, { recursive: true, force: true }).catch(() => {});
   }

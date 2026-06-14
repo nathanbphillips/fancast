@@ -90,6 +90,36 @@ test("sub-2s slivers are dropped", () => {
   assert.ok(!segs.some((s) => s.label === "First half"));
 });
 
+test("a boundary adjusted past recording end is clamped — no phantom segment, no over-range span", () => {
+  const markers = [
+    m("broadcast_start", 0),
+    m("start_1h", 10),
+    m("stop_1h", 60),
+    m("start_2h", 80),
+    m("stop_2h", 300, 500), // adjusted to 500s, well past the 360s end
+    m("broadcast_end", 360),
+  ];
+  const segs = deriveSegments(markers, T0, T0 + 360_000);
+  // every segment stays inside [0, 360]; none runs past EOF
+  for (const s of segs) {
+    assert.ok(s.startOffset >= 0 && s.endOffset <= 360, `${s.label} ${s.startOffset}-${s.endOffset}`);
+    assert.ok(s.endOffset >= s.startOffset);
+  }
+});
+
+test("a boundary adjusted before recording start is clamped to 0", () => {
+  const markers = [
+    m("broadcast_start", 0),
+    m("start_1h", 60, -30), // adjusted before the recording even began
+    m("stop_1h", 120),
+    m("start_2h", 180),
+    m("stop_2h", 300),
+    m("broadcast_end", 360),
+  ];
+  const segs = deriveSegments(markers, T0, T0 + 360_000);
+  assert.ok(segs.every((s) => s.startOffset >= 0 && s.endOffset <= 360));
+});
+
 test("idx is contiguous after drops/merges", () => {
   const markers = [
     m("broadcast_start", 0),

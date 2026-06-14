@@ -59,13 +59,14 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     void load();
   }, [load]);
 
-  // poll while processing
+  // poll while processing (server status, or a local recut in flight)
   const status = data?.recording?.status;
+  const polling = status === "processing" || recutting;
   useEffect(() => {
-    if (status !== "processing") return;
-    const id = setInterval(load, 5000);
+    if (!polling) return;
+    const id = setInterval(load, 4000);
     return () => clearInterval(id);
-  }, [status, load]);
+  }, [polling, load]);
 
   if (!data) {
     return (
@@ -81,9 +82,17 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     );
   }
 
+  async function triggerProcess() {
+    await fetch("/api/recordings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "process", roomId }),
+    });
+  }
+
   async function recut() {
     setRecutting(true);
-    // apply each pending nudge, then one recut
+    // apply each pending nudge, then one async recut
     for (const [markerId, delta] of Object.entries(pending)) {
       await fetch("/api/recordings", {
         method: "POST",
@@ -91,14 +100,23 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
         body: JSON.stringify({ action: "adjust", roomId, markerId, deltaSeconds: delta }),
       });
     }
-    await fetch("/api/recordings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "process", roomId }),
-    });
     setPending({});
+    await triggerProcess();
+    // wait out the async run: processing flips to processing, then ready
+    const started = Date.now();
+    let sawProcessing = false;
+    while (Date.now() - started < 5 * 60 * 1000) {
+      await new Promise((r) => setTimeout(r, 2500));
+      const res = await fetch(`/api/recordings?room=${roomId}`);
+      if (!res.ok) continue;
+      const fresh: RecData = await res.json();
+      setData(fresh);
+      const s = fresh.recording?.status;
+      if (s === "processing") sawProcessing = true;
+      else if (s === "ready" && (sawProcessing || Date.now() - started > 6000)) break;
+      else if (s === "failed") break;
+    }
     setRecutting(false);
-    await load();
   }
 
   function nudge(markerId: string, server_ts: string, adjusted_ts: string | null, step: number) {
@@ -130,7 +148,16 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
       {rec.status === "processing" && (
         <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
           <span className="h-3 w-3 animate-live-pulse rounded-full bg-gold" aria-hidden="true" />
-          <span className="text-sm">Processing…</span>
+          <span className="flex-1 text-sm">Processing…</span>
+          {/* a crashed/timed-out run is reclaimable after a stale window;
+              this lets the commentator nudge it without a DB edit */}
+          <button
+            type="button"
+            onClick={triggerProcess}
+            className="h-9 shrink-0 rounded-md border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
+          >
+            Retry if stuck
+          </button>
         </div>
       )}
 

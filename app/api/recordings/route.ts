@@ -3,10 +3,13 @@ import { z } from "zod";
 import { brand, recordingFileName } from "@/lib/brand";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
-import { processRecording } from "@/lib/recording";
+import { triggerProcessing } from "@/lib/recording";
 import { isAdmin } from "@/lib/roles";
 
 const REC_BUCKET = "recordings";
+
+// a recut transcode can run for a few minutes
+export const maxDuration = 300;
 
 /** A recording and its files belong to the room's commentator (+admin). */
 async function authorizeRoom(
@@ -176,25 +179,45 @@ export async function POST(request: NextRequest) {
   }
 
   if (body.action === "adjust") {
-    const { data: marker } = await service
+    // all markers in lifecycle (server_ts) order so we can keep the
+    // adjusted marker strictly between its neighbours — a boundary that
+    // crosses another would scramble segment labels (derivation orders by
+    // time but labels are intrinsic to marker kind)
+    const { data: markers } = await service
       .from("broadcast_markers")
-      .select("id, server_ts")
-      .eq("id", body.markerId)
+      .select("id, server_ts, adjusted_ts")
       .eq("room_id", body.roomId)
-      .maybeSingle();
-    if (!marker) {
+      .order("server_ts", { ascending: true });
+    const idx = (markers ?? []).findIndex((m) => m.id === body.markerId);
+    if (idx === -1) {
       return NextResponse.json({ error: "Marker not found." }, { status: 404 });
     }
-    // ±2 min ceiling enforced against the original server time (FR-13.3).
-    // Setting the offset is cheap; the panel batches several nudges then
-    // calls "process" once to recut.
-    const clamped = Math.max(-120, Math.min(120, body.deltaSeconds));
+    const marker = markers![idx];
+    const eff = (m: { server_ts: string; adjusted_ts: string | null }) =>
+      new Date(m.adjusted_ts ?? m.server_ts).getTime();
+    const base = new Date(marker.server_ts).getTime();
+
+    const { data: rec } = await service
+      .from("recordings")
+      .select("started_at, ended_at")
+      .eq("room_id", body.roomId)
+      .maybeSingle();
+
+    // ±2 min ceiling (FR-13.3), then clamp into the open interval between
+    // neighbours and inside the recording's own span
+    const GAP = 250; // keep a small gap so boundaries never coincide
+    let lo = base - 120_000;
+    let hi = base + 120_000;
+    if (idx > 0) lo = Math.max(lo, eff(markers![idx - 1]) + GAP);
+    if (idx < markers!.length - 1) hi = Math.min(hi, eff(markers![idx + 1]) - GAP);
+    if (rec?.started_at) lo = Math.max(lo, new Date(rec.started_at).getTime());
+    if (rec?.ended_at) hi = Math.min(hi, new Date(rec.ended_at).getTime());
+
+    const requested = base + body.deltaSeconds * 1000;
+    const finalTs = Math.min(hi, Math.max(lo, requested));
+    // within ~half a second of the original = no adjustment
     const adjusted =
-      clamped === 0
-        ? null
-        : new Date(
-            new Date(marker.server_ts).getTime() + clamped * 1000,
-          ).toISOString();
+      Math.abs(finalTs - base) < 500 ? null : new Date(finalTs).toISOString();
     await service
       .from("broadcast_markers")
       .update({ adjusted_ts: adjusted })
@@ -202,7 +225,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  // recut from the existing full MP3 / source
-  const result = await processRecording(service, body.roomId);
-  return NextResponse.json(result);
+  // recut asynchronously (atomic claim inside serializes concurrent runs);
+  // the panel polls status to ready
+  triggerProcessing(body.roomId);
+  return NextResponse.json({ triggered: true });
 }

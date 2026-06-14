@@ -3,11 +3,18 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
-import { startBroadcastEgress, stopBroadcastEgress } from "@/lib/egress";
+import {
+  purgeRadio,
+  startBroadcastEgress,
+  stopBroadcastEgress,
+} from "@/lib/egress";
 import { emitMarker } from "@/lib/markers";
 import { triggerProcessing } from "@/lib/recording";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
+
+// recording processing can run for a few minutes on a long session
+export const maxDuration = 300;
 
 /**
  * Room lifecycle (FR-3). Phase 4 transitions:
@@ -266,15 +273,22 @@ export async function POST(request: NextRequest) {
   if (room.hls_egress_id) {
     await stopBroadcastEgress(room.hls_egress_id);
   }
+  // radio is live-only; purge the public HLS copy so a byte-identical
+  // broadcast can't be re-fetched anonymously after the show (the private
+  // recording is the only durable copy — FR-14.2)
+  await purgeRadio(service, room.id);
+
   const { data: rec } = await service
     .from("recordings")
     .select("id")
     .eq("room_id", room.id)
     .maybeSingle();
   if (rec) {
+    // ended_at only — processRecording atomically claims status (so it can
+    // serialize concurrent runs and reclaim a stale one)
     await service
       .from("recordings")
-      .update({ ended_at: endedAt, status: "processing" })
+      .update({ ended_at: endedAt })
       .eq("id", rec.id);
     // process asynchronously — the panel polls status (FR-13.5)
     triggerProcessing(room.id);

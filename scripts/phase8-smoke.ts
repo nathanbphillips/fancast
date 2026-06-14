@@ -270,9 +270,17 @@ async function main() {
       // Halftime show lengthens by ~3s
       const before = files.find((f) => f.label === "First half")?.durationSeconds ?? 0;
       await api("/api/recordings", cookies.rec_kev, { action: "adjust", roomId, markerId: htMarker.id, deltaSeconds: -3 });
-      const recut = await api("/api/recordings", cookies.rec_kev, { action: "process", roomId });
-      check("recut succeeds", recut.body.status === "ready");
-      const after = await api(`/api/recordings?room=${roomId}`, cookies.rec_kev, undefined, "GET");
+      await api("/api/recordings", cookies.rec_kev, { action: "process", roomId });
+      // recut is async now — poll to ready
+      let after = await api(`/api/recordings?room=${roomId}`, cookies.rec_kev, undefined, "GET");
+      const recutDeadline = Date.now() + 120_000;
+      await sleep(2000);
+      while (Date.now() < recutDeadline) {
+        after = await api(`/api/recordings?room=${roomId}`, cookies.rec_kev, undefined, "GET");
+        if (after.body.recording?.status === "ready" || after.body.recording?.status === "failed") break;
+        await sleep(3000);
+      }
+      check("recut reaches ready", after.body.recording?.status === "ready");
       const firstAfter = (after.body.files ?? []).find((f: { label: string; durationSeconds: number }) => f.label === "First half")?.durationSeconds ?? 0;
       check(
         "adjust shortened the first half by ~3s",
