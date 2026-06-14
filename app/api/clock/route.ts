@@ -3,6 +3,7 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { emitClockMarker } from "@/lib/markers";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: stateErr.message }, { status: 500 });
     }
   }
+
+  // clock transitions auto-emit segment markers (FR-13.3)
+  await emitClockMarker(service, room.id, action, serverTs);
 
   // one message per transition — clients resync their derivation on it
   await publish(channels.control(room.id), "clock", {

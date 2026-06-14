@@ -63,11 +63,11 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** during any live fixture, stats render correctly in both themes and radio mode; tab push <1s.
 
 ## Phase 8: Recording + markers + downloads (days 26-29)
-- [ ] Room-composite egress MP3 → Supabase storage, Start→End Broadcast, disconnect-proof
-- [ ] Segment button (next-transition list); auto-markers from clock events; 30s merge rule
-- [ ] ffmpeg cut job on wrapped (stream-copy at marker offsets); per-segment files + zip; signed URLs
-- [ ] Downloads panel: processing status, file list with names/durations/sizes, ±2 min marker adjust + recut, rights notice + courtesy line
-- **Test:** simulated session with two call-ins and all markers → full file + six correct segments including guest audio; adjust recuts.
+- [x] Room-composite egress → Supabase storage, Start→End Broadcast, disconnect-proof *(combined with radio in one egress — one composite render; recording is MP4/AAC for codec-compat with HLS, transcoded to MP3 in processing)*
+- [x] Segment button (next-transition list); auto-markers from clock events; 30s merge rule *(clock transitions auto-emit the full marker set; manual-mark merge rule in `emitMarker`. The clock controls ARE the segment buttons — see deviation log)*
+- [x] ffmpeg cut job on wrapped (stream-copy at marker offsets); per-segment files + zip; signed URLs *(ffmpeg-static transcode + `-c copy` cuts; dependency-free STORE zip; signed URLs with brand download filenames)*
+- [x] Downloads panel: processing status, file list with names/durations/sizes, ±2 min marker adjust + recut, rights notice + courtesy line *(verified rendering in-browser for a wrapped commentator)*
+- **Test:** simulated session with two call-ins and all markers → full file + six correct segments including guest audio; adjust recuts. *(Verified 2026-06-14: marker derivation 5/5 unit tests; processing pipeline 12/12 smoke incl. real audio energy proving guest audio isolated to the 2nd half, six bounded segments, adjust→recut, zip extraction. Live-capture egress proven via smoke:radio + captured MP4 rms. Full single-script e2e — smoke8 — blocked on this machine by a Windows Application Control policy quarantining @livekit/rtc-node's native binding; runs on machines without that policy.)*
 
 ## Phase 9: Widgets + tipping + notifications (days 29-32)
 - [ ] Score predictor, halftime poll, player ratings (one Supabase table + control events each; live aggregates; read-only when closed)
@@ -101,3 +101,7 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - 2026-06-11 (cleanup) — Removed the Phase 1 static demo room (`/room/demo` + AudioBar/RoomShell/ChatPanel/LinksPanel placeholders): superseded by the real live room and drifting from it. Hardened the link unfurler against redirect-based SSRF.
 - 2026-06-12 (Phase 6) — Tap-Now mechanic interpreted as: opening the sheet freezes a target moment (lag = wall time from open to tap, millisecond-precise); the PRD's ticking reference clock shows live beneath the frozen target. A moving target can't be matched by a viewer who is, by definition, behind it.
 - 2026-06-12 (Phase 6) — FR-6.4's "brief toast" replaced by a persistent inline indicator (gold "filling toward your setting" on the bar readout and in the sheet) — strictly more visible than a transient toast while the buffer fills.
+- 2026-06-14 (Phase 8) — Radio HLS and the recording share one room-composite egress (two outputs) to halve LiveKit cost. They must share a codec, so the recording file is MP4/AAC (not OGG/Opus, which collides with HLS's AAC); processing transcodes MP4→MP3.
+- 2026-06-14 (Phase 8) — The clock Start/Stop controls double as the "segment buttons" (each auto-emits its boundary marker); no separate redundant live transition control is built. Post-session ±2min adjust + recut lives in the downloads panel. The 30s auto/manual merge rule is implemented in `emitMarker` for completeness.
+- 2026-06-14 (Phase 8) — Segment derivation drops sub-2s spans and merges adjacent same-label spans, so a prompt Start ET (within the sliver window after Stop 2H) yields exactly six clean segments rather than a spurious tiny post-game.
+- 2026-06-14 (Phase 8) — Dropped the `archiver` dependency for a ~40-line dependency-free STORE-method ZIP writer (`buildZipStore`): archiver's CJS export was unresolvable across Next's bundler interop, and audio is already compressed so STORE is correct anyway. Validated with Windows Expand-Archive.

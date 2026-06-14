@@ -27,6 +27,7 @@ import { useRoomAudio } from "./audio/useRoomAudio";
 import { ClockControls } from "./ClockControls";
 import { CommentatorBar } from "./CommentatorBar";
 import { Countdown } from "./Countdown";
+import { DownloadsPanel } from "./DownloadsPanel";
 import { InteractionButtons } from "./InteractionButtons";
 import { AggregateMeter, PreferenceSlider } from "./PreferenceSlider";
 import { QuestionsPanel } from "./QuestionsPanel";
@@ -370,24 +371,32 @@ export function RealtimeRoom(props: Props) {
       chatOpen={chatOpen}
       linksOpen={linksOpen}
       startDisabled={audio.micStatus !== "live"}
-      clockControls={<ClockControls roomId={room.id} state={roomState} />}
+      clockControls={
+        roomState === "wrapped" ? null : (
+          <ClockControls roomId={room.id} state={roomState} />
+        )
+      }
       micControls={
-        <MicControls
-          micStatus={audio.micStatus}
-          micMuted={audio.micMuted}
-          selfDelay={audio.selfDelay}
-          onStart={() => void audio.startMic()}
-          onStop={() => void audio.stopMic()}
-          onToggleMute={() => void audio.toggleMute()}
-          onDelayChange={audio.setSelfDelay}
-        />
+        roomState === "wrapped" ? null : (
+          <MicControls
+            micStatus={audio.micStatus}
+            micMuted={audio.micMuted}
+            selfDelay={audio.selfDelay}
+            onStart={() => void audio.startMic()}
+            onStop={() => void audio.stopMic()}
+            onToggleMute={() => void audio.toggleMute()}
+            onDelayChange={audio.setSelfDelay}
+          />
+        )
       }
       speakerChips={
-        <SpeakerChips
-          speakers={audio.speakers}
-          roomId={room.id}
-          onEndCall={removeSpeaker}
-        />
+        roomState === "wrapped" ? null : (
+          <SpeakerChips
+            speakers={audio.speakers}
+            roomId={room.id}
+            onEndCall={removeSpeaker}
+          />
+        )
       }
     />
   ) : (
@@ -419,7 +428,14 @@ export function RealtimeRoom(props: Props) {
     />
   );
 
-  const chatPanel = (
+  // wrapped + room commentator: the center becomes the downloads panel
+  const showDownloads = roomState === "wrapped" && isRoomCommentator;
+
+  const chatPanel = showDownloads ? (
+    <div className="min-h-0 flex-1 overflow-y-auto">
+      <DownloadsPanel roomId={room.id} />
+    </div>
+  ) : (
     <LiveChat
       room={room}
       roomState={roomState}

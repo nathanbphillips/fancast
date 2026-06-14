@@ -3,7 +3,9 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
-import { startHlsEgress, stopHlsEgress } from "@/lib/egress";
+import { startBroadcastEgress, stopBroadcastEgress } from "@/lib/egress";
+import { emitMarker } from "@/lib/markers";
+import { triggerProcessing } from "@/lib/recording";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
@@ -195,9 +197,10 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
+    const startedAt = new Date().toISOString();
     const { data: updated, error } = await service
       .from("rooms")
-      .update({ state: "pregame", started_at: new Date().toISOString() })
+      .update({ state: "pregame", started_at: startedAt })
       .eq("id", room.id)
       .select()
       .single<Room>();
@@ -206,21 +209,35 @@ export async function POST(request: NextRequest) {
     }
     await publishState(room.id, "pregame");
 
-    // radio mode (FR-5.3): start the continuous HLS mix; never let an
-    // egress problem block the show itself
+    // recording starts at Start Broadcast (FR-3.3), opening the outermost
+    // segment span (FR-13.2)
+    await emitMarker(service, room.id, "broadcast_start", startedAt, "auto");
+
+    // one egress, two outputs: radio HLS + the OGG recording. Never let
+    // an egress problem block the show itself.
     try {
-      const egress = await startHlsEgress(service, room.id);
+      const egress = await startBroadcastEgress(service, room.id);
       if (egress) {
         await service
           .from("rooms")
           .update({ hls_url: egress.hlsUrl, hls_egress_id: egress.egressId })
           .eq("id", room.id);
+        await service.from("recordings").upsert(
+          {
+            room_id: room.id,
+            egress_id: egress.egressId,
+            source_path: egress.sourcePath,
+            started_at: startedAt,
+            status: "recording",
+          },
+          { onConflict: "room_id" },
+        );
         await publish(channels.control(room.id), "radio", {
           url: egress.hlsUrl,
         });
       }
     } catch (err) {
-      console.error("HLS egress start failed:", err);
+      console.error("broadcast egress start failed:", err);
     }
     return NextResponse.json({ room: updated });
   }
@@ -232,9 +249,10 @@ export async function POST(request: NextRequest) {
       { status: 409 },
     );
   }
+  const endedAt = new Date().toISOString();
   const { data: updated, error } = await service
     .from("rooms")
-    .update({ state: "wrapped", ended_at: new Date().toISOString() })
+    .update({ state: "wrapped", ended_at: endedAt })
     .eq("id", room.id)
     .select()
     .single<Room>();
@@ -242,8 +260,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   await publishState(room.id, "wrapped");
+
+  // close the outermost span (FR-13.2), stop the egress, kick off cutting
+  await emitMarker(service, room.id, "broadcast_end", endedAt, "auto");
   if (room.hls_egress_id) {
-    await stopHlsEgress(room.hls_egress_id);
+    await stopBroadcastEgress(room.hls_egress_id);
+  }
+  const { data: rec } = await service
+    .from("recordings")
+    .select("id")
+    .eq("room_id", room.id)
+    .maybeSingle();
+  if (rec) {
+    await service
+      .from("recordings")
+      .update({ ended_at: endedAt, status: "processing" })
+      .eq("id", rec.id);
+    // process asynchronously — the panel polls status (FR-13.5)
+    triggerProcessing(room.id);
   }
   return NextResponse.json({ room: updated });
 }

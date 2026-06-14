@@ -1,5 +1,7 @@
 import {
   EgressClient,
+  EncodedFileOutput,
+  EncodedFileType,
   S3Upload,
   SegmentedFileOutput,
 } from "livekit-server-sdk";
@@ -7,16 +9,19 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { livekitRoomName, roomService } from "./livekit";
 
 /**
- * Continuous audio-only HLS egress while live (FR-5.3): LiveKit composites
- * the room mix into rolling HLS segments in Supabase storage (public
- * `radio` bucket); radio mode plays the live playlist in a plain <audio>.
- * Fully gated on the SUPABASE_S3_* env vars — without them the lifecycle
- * proceeds normally and radio mode just stays unavailable.
+ * One room-composite egress while live, two outputs (one composite render,
+ * so half the LiveKit cost):
+ *  - segments: rolling HLS into the public `radio` bucket (FR-5.3)
+ *  - file: a single OGG of the room mix into the private `recordings`
+ *    bucket (FR-13/14), Start->End Broadcast, disconnect-proof
+ * Fully gated on SUPABASE_S3_* — without storage the lifecycle proceeds
+ * and both radio and recording simply stay unavailable.
  */
 
-const BUCKET = "radio";
+const RADIO_BUCKET = "radio";
+const REC_BUCKET = "recordings";
 
-function s3Configured(): boolean {
+export function s3Configured(): boolean {
   return Boolean(
     process.env.SUPABASE_S3_ENDPOINT &&
       process.env.SUPABASE_S3_ACCESS_KEY &&
@@ -32,52 +37,73 @@ function egressClient(): EgressClient {
   );
 }
 
-async function ensureRadioBucket(service: SupabaseClient): Promise<void> {
-  const { data } = await service.storage.getBucket(BUCKET);
+function s3(bucket: string): S3Upload {
+  return new S3Upload({
+    endpoint: process.env.SUPABASE_S3_ENDPOINT!,
+    accessKey: process.env.SUPABASE_S3_ACCESS_KEY!,
+    secret: process.env.SUPABASE_S3_SECRET_KEY!,
+    region: process.env.SUPABASE_S3_REGION || "us-east-1",
+    bucket,
+    forcePathStyle: true,
+  });
+}
+
+async function ensureBucket(
+  service: SupabaseClient,
+  name: string,
+  isPublic: boolean,
+): Promise<void> {
+  const { data } = await service.storage.getBucket(name);
   if (!data) {
-    await service.storage.createBucket(BUCKET, { public: true });
+    await service.storage.createBucket(name, { public: isPublic });
   }
 }
 
-/** Returns { egressId, hlsUrl } or null when storage isn't configured. */
-export async function startHlsEgress(
+export type BroadcastEgress = {
+  egressId: string;
+  hlsUrl: string;
+  sourcePath: string;
+};
+
+/** Start the combined radio + recording egress. Null when storage is
+ *  unconfigured. */
+export async function startBroadcastEgress(
   service: SupabaseClient,
   roomId: string,
-): Promise<{ egressId: string; hlsUrl: string } | null> {
+): Promise<BroadcastEgress | null> {
   if (!s3Configured()) {
-    console.warn("HLS egress skipped: SUPABASE_S3_* not configured");
+    console.warn("egress skipped: SUPABASE_S3_* not configured");
     return null;
   }
-  await ensureRadioBucket(service);
+  await ensureBucket(service, RADIO_BUCKET, true);
+  await ensureBucket(service, REC_BUCKET, false);
 
   // LiveKit creates rooms lazily on first join; egress against a
   // not-yet-existing room 404s, so create it explicitly (idempotent).
-  // Generous empty timeout: the recorder may join before the commentator.
   await roomService().createRoom({
     name: livekitRoomName(roomId),
     emptyTimeout: 60 * 60,
   });
 
-  const prefix = `${roomId}`;
+  // both outputs share one composite encode, so they must agree on codec:
+  // HLS segments are AAC, so the recording file is MP4/AAC (not OGG/Opus,
+  // which would fail "no codec compatible with all outputs"). Processing
+  // transcodes the MP4 to MP3 either way.
+  const sourcePath = `${roomId}/broadcast.mp4`;
   const info = await egressClient().startRoomCompositeEgress(
     livekitRoomName(roomId),
     {
       segments: new SegmentedFileOutput({
-        filenamePrefix: `${prefix}/seg`,
-        playlistName: `${prefix}/full.m3u8`,
-        livePlaylistName: `${prefix}/live.m3u8`,
+        filenamePrefix: `${roomId}/seg`,
+        playlistName: `${roomId}/full.m3u8`,
+        livePlaylistName: `${roomId}/live.m3u8`,
         segmentDuration: 4,
-        output: {
-          case: "s3",
-          value: new S3Upload({
-            endpoint: process.env.SUPABASE_S3_ENDPOINT!,
-            accessKey: process.env.SUPABASE_S3_ACCESS_KEY!,
-            secret: process.env.SUPABASE_S3_SECRET_KEY!,
-            region: process.env.SUPABASE_S3_REGION || "us-east-1",
-            bucket: BUCKET,
-            forcePathStyle: true,
-          }),
-        },
+        output: { case: "s3", value: s3(RADIO_BUCKET) },
+      }),
+      file: new EncodedFileOutput({
+        fileType: EncodedFileType.MP4,
+        filepath: sourcePath,
+        output: { case: "s3", value: s3(REC_BUCKET) },
       }),
     },
     { audioOnly: true },
@@ -86,11 +112,12 @@ export async function startHlsEgress(
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   return {
     egressId: info.egressId,
-    hlsUrl: `${base}/storage/v1/object/public/${BUCKET}/${prefix}/live.m3u8`,
+    hlsUrl: `${base}/storage/v1/object/public/${RADIO_BUCKET}/${roomId}/live.m3u8`,
+    sourcePath,
   };
 }
 
-export async function stopHlsEgress(egressId: string): Promise<void> {
+export async function stopBroadcastEgress(egressId: string): Promise<void> {
   try {
     await egressClient().stopEgress(egressId);
   } catch (err) {
