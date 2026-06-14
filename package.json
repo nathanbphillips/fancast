@@ -17,7 +17,8 @@
     "smoke8": "tsx --env-file=.env.local scripts/phase8-smoke.ts",
     "smoke8:proc": "tsx --env-file=.env.local scripts/phase8-proc-smoke.ts",
     "test:clock": "tsx scripts/clock-test.ts",
-    "test:markers": "tsx scripts/markers-test.ts"
+    "test:markers": "tsx scripts/markers-test.ts",
+    "clean:test": "tsx --env-file=.env.local scripts/clean-test-data.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
