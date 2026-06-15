@@ -3,6 +3,18 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/db/server";
 
 /**
+ * Only accept a same-origin absolute path for the post-login redirect (M-2,
+ * audit). Must start with exactly one "/" and NOT "//" or "/\\" — both of
+ * those resolve to an off-origin authority via `new URL(next, origin)` and
+ * are the open-redirect/phishing vector. Anything else falls back to "/".
+ */
+export function safeNextPath(raw: string | null): string {
+  if (!raw || raw[0] !== "/") return "/";
+  if (raw[1] === "/" || raw[1] === "\\") return "/";
+  return raw;
+}
+
+/**
  * Auth landing for both sign-in paths:
  *  - OAuth (Google) and PKCE magic links arrive with ?code=
  *  - token-hash style magic links arrive with ?token_hash=&type=
@@ -14,7 +26,7 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get("code");
   const tokenHash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type") as EmailOtpType | null;
-  const next = url.searchParams.get("next") ?? "/";
+  const next = safeNextPath(url.searchParams.get("next"));
 
   const supabase = await createSupabaseServerClient();
 

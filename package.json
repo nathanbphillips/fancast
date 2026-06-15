@@ -19,8 +19,10 @@
     "test:clock": "tsx scripts/clock-test.ts",
     "test:markers": "tsx scripts/markers-test.ts",
     "test:ssrf": "tsx scripts/ssrf-test.ts",
+    "test:redirect": "tsx scripts/redirect-test.ts",
     "clean:test": "tsx --env-file=.env.local scripts/clean-test-data.ts",
-    "smoke:highfix": "tsx --env-file=.env.local scripts/highfix-smoke.ts"
+    "smoke:highfix": "tsx --env-file=.env.local scripts/highfix-smoke.ts",
+    "smoke:flagbudget": "tsx --env-file=.env.local scripts/flag-budget-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
