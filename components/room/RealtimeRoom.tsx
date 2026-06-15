@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as Ably from "ably";
 import type {
   ChatMessage,
@@ -738,11 +738,53 @@ function LiveChat({
   const [votes, setVotes] = useState(myVotes);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const listRef = useRef<HTMLUListElement>(null);
+  const pinnedRef = useRef(true); // user is at/near the bottom
+  const prevLenRef = useRef(messages.length);
+  const [unread, setUnread] = useState(0);
+  const NEAR_BOTTOM_PX = 64;
 
-  useEffect(() => {
+  function scrollChatToBottom() {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages.length]);
+    pinnedRef.current = true;
+    setUnread(0);
+  }
+  function onChatScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    pinnedRef.current =
+      el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM_PX;
+    if (pinnedRef.current) setUnread(0); // React bails out if already 0
+  }
+
+  // open pinned to the latest message (matches the prior always-scroll behavior)
+  useEffect(() => {
+    scrollChatToBottom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // on new messages: follow only if the user is pinned to the bottom (or it's
+  // their own send); otherwise hold their scroll position and count unread so
+  // reading history during a busy match isn't yanked away (M-12, audit)
+  useLayoutEffect(() => {
+    const el = listRef.current;
+    const prevLen = prevLenRef.current;
+    prevLenRef.current = messages.length;
+    if (!el || messages.length <= prevLen) return; // only react to growth
+    const newest = messages[messages.length - 1];
+    const isOwn = newest?.user_id === viewer?.userId;
+    const visible = el.clientHeight > 0; // chat tab hidden on mobile -> 0
+    if (isOwn || (visible && pinnedRef.current)) {
+      requestAnimationFrame(() => {
+        const e = listRef.current;
+        if (e) e.scrollTop = e.scrollHeight;
+      });
+      setUnread(0);
+    } else {
+      setUnread((n) => n + (messages.length - prevLen));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length, viewer?.userId]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -823,7 +865,11 @@ function LiveChat({
 
       {roomState === "waiting" && <Countdown targetIso={broadcastStart} />}
 
-      <ul ref={listRef} className="flex-1 space-y-1 overflow-y-auto p-2">
+      <ul
+        ref={listRef}
+        onScroll={onChatScroll}
+        className="flex-1 space-y-1 overflow-y-auto p-2"
+      >
         {messages.map((m) => {
           if (m.hidden_by) {
             return (
@@ -896,6 +942,17 @@ function LiveChat({
           </li>
         )}
       </ul>
+
+      {/* new-messages affordance shown only when scrolled away from bottom */}
+      {unread > 0 && (
+        <button
+          type="button"
+          onClick={scrollChatToBottom}
+          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-gold px-3 py-1 text-xs font-semibold text-canvas shadow tabular-nums"
+        >
+          {unread} new {unread === 1 ? "message" : "messages"} ↓
+        </button>
+      )}
 
       {!viewer ? (
         <div className="border-t border-line p-3">
