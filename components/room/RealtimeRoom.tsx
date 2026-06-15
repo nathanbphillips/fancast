@@ -236,8 +236,11 @@ export function RealtimeRoom(props: Props) {
         messageId: string;
         hiddenBy: ChatMessage["hidden_by"];
       };
+      // also blank the body so hidden text doesn't linger in state/DOM
       setMessages((prev) =>
-        prev.map((m) => (m.id === messageId ? { ...m, hidden_by: hiddenBy } : m)),
+        prev.map((m) =>
+          m.id === messageId ? { ...m, hidden_by: hiddenBy, body: "" } : m,
+        ),
       );
     });
 
