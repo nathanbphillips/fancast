@@ -8,19 +8,24 @@ Many items are bounded by the **single-commentator MVP** (founder is the only co
 
 ## HIGH
 
-### H-1. Hidden/flagged/purged chat bodies are shipped to every client (moderation is cosmetic)
+> **All three HIGH findings fixed in commit `9f6f36d` (2026-06-15).** Verified by `scripts/ssrf-test.ts` (24 unit checks), `scripts/highfix-smoke.ts` (9 integration checks), and the Phase 3 suite as regression. Migration 0011 applied to the DB.
+
+### H-1. ✅ FIXED — Hidden/flagged/purged chat bodies are shipped to every client (moderation is cosmetic)
+**Fix:** migration `0011_hide_chat_body_rls.sql` restricts SELECT of hidden rows to the room commentator + admins; `RealtimeRoom` hide handler now blanks `body` in client state.
 `app/(app)/room/[id]/page.tsx:84-91`, `db/migrations/0003:28-30`, `components/room/RealtimeRoom.tsx:811-816`
 - History load selects `*` (incl. `body`) with no `hidden_by IS NULL` filter; the client only swaps the *rendered* text to "Message hidden" — the real body is in the page/flight payload and React state.
 - Worse: the `chat_messages` RLS policy is `using (true)`, so any **anonymous** client with the public anon key can `GET /rest/v1/chat_messages?select=body&hidden_by=not.is.null` and read every hidden/purged message verbatim.
 - Defeats FR-8.3/8.4: "removed" abuse stays fully readable. Fix needs server/RLS redaction of `body` when `hidden_by` is set (except for moderators), not just a client tweak.
 
-### H-2. Link unfurler SSRF (`lib/unfurl.ts`)
+### H-2. ✅ FIXED — Link unfurler SSRF (`lib/unfurl.ts`)
+**Fix:** redirects followed manually with each hop validated *before* the request; every host DNS-resolved and rejected if any address is private/reserved (defeats decimal/hex/octal literals + internal DNS + redirect pivots); https/http only, 4-hop cap.
 Two facets, same file:
 - **Redirect fires before validation** (`:72-83`): `fetch(url,{redirect:"follow"})` issues the request(s) — including to a public URL that 302s to `http://169.254.169.254/...` or an internal host — and only validates `res.url` *after*. The post-hoc check blocks body parsing, not the request.
 - **Weak host blocking** (`:16-24`): blocks only dotted-quad IPs and literal `localhost`/`.local`. Bypassable via decimal/hex/octal IP encodings and internal DNS names (e.g. `metadata.google.internal`).
 - Server-side request forgery against cloud metadata / internal services. Fix: resolve+validate each hop (manual redirect handling), block private ranges after DNS resolution, reject non-public hosts.
 
-### H-3. `chat/hide` is not room-scoped — any commentator can hide messages in any room
+### H-3. ✅ FIXED — `chat/hide` is not room-scoped — any commentator can hide messages in any room
+**Fix:** the route now loads the message's room and requires `room.commentator_id === caller` (or admin); 403 otherwise. Hide is labelled `commentator` vs `admin` accordingly.
 `app/api/chat/hide/route.ts:15-46`
 - Checks only the **global** `profile.role === "commentator"`; never compares the message's room to `caller.userId`. Every other moderation/clock/room route gates on `room.commentator_id === caller.userId`; this one is the outlier.
 - **Severity contested** (verifiers split high/medium): a true authorization hole, but **not exploitable today** because the MVP has one commentator (the founder). Becomes real the moment a second commentator account exists. Fix: load `rooms.commentator_id` for the message's room and require ownership-or-admin.
