@@ -24,44 +24,29 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { data: link } = await service
     .from("links")
-    .select("id, room_id, hidden")
+    .select("id, room_id")
     .eq("id", linkId)
     .maybeSingle();
   if (!link) {
     return NextResponse.json({ error: "Link not found." }, { status: 404 });
   }
 
-  if (value === 0) {
-    await service
-      .from("link_votes")
-      .delete()
-      .eq("link_id", linkId)
-      .eq("user_id", caller.userId);
-  } else {
-    const { error } = await service
-      .from("link_votes")
-      .upsert(
-        { link_id: linkId, user_id: caller.userId, value },
-        { onConflict: "link_id,user_id" },
-      );
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  // Mutate the vote row, recompute counts, and re-evaluate the FR-9.2 hide
+  // threshold atomically under a parent-row lock (M-3, audit).
+  const { data, error } = await service
+    .rpc("cast_link_vote", {
+      p_link_id: linkId,
+      p_user_id: caller.userId,
+      p_value: value,
+    })
+    .single<{ up: number; down: number; is_hidden: boolean }>();
+  if (error || !data) {
+    return NextResponse.json(
+      { error: error?.message ?? "Vote failed." },
+      { status: 500 },
+    );
   }
-
-  const { data: votes } = await service
-    .from("link_votes")
-    .select("value")
-    .eq("link_id", linkId);
-  const up = votes?.filter((v) => v.value === 1).length ?? 0;
-  const down = votes?.filter((v) => v.value === -1).length ?? 0;
-
-  const shouldHide = down > 2 * up && up + down >= 5;
-
-  await service
-    .from("links")
-    .update({ up_count: up, down_count: down, hidden: shouldHide })
-    .eq("id", linkId);
+  const { up, down, is_hidden: shouldHide } = data;
 
   await publish(channels.links(link.room_id), "vote", {
     linkId,

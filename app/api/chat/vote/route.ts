@@ -32,36 +32,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Message not found." }, { status: 404 });
   }
 
-  if (value === 0) {
-    await service
-      .from("message_votes")
-      .delete()
-      .eq("message_id", messageId)
-      .eq("user_id", caller.userId);
-  } else {
-    const { error } = await service
-      .from("message_votes")
-      .upsert(
-        { message_id: messageId, user_id: caller.userId, value },
-        { onConflict: "message_id,user_id" },
-      );
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+  // Mutate the vote row and recompute the denormalized counts atomically
+  // under a parent-row lock (M-3, audit) — vote rows stay the source of truth.
+  const { data, error } = await service
+    .rpc("cast_message_vote", {
+      p_message_id: messageId,
+      p_user_id: caller.userId,
+      p_value: value,
+    })
+    .single<{ up: number; down: number }>();
+  if (error || !data) {
+    return NextResponse.json(
+      { error: error?.message ?? "Vote failed." },
+      { status: 500 },
+    );
   }
-
-  // recompute aggregates (single source of truth: vote rows)
-  const { data: votes } = await service
-    .from("message_votes")
-    .select("value")
-    .eq("message_id", messageId);
-  const up = votes?.filter((v) => v.value === 1).length ?? 0;
-  const down = votes?.filter((v) => v.value === -1).length ?? 0;
-
-  await service
-    .from("chat_messages")
-    .update({ up_count: up, down_count: down })
-    .eq("id", messageId);
+  const { up, down } = data;
 
   await publish(channels.chat(message.room_id), "vote", {
     messageId,

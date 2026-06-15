@@ -6,7 +6,6 @@ import { createServiceClient } from "@/lib/db/server";
 
 const bodySchema = z.object({ messageId: z.uuid() });
 
-const HIDE_THRESHOLD = 3.0;
 const FLAG_BUDGET_PER_MATCH = 10;
 const ESTABLISHED_AFTER_MS = 48 * 60 * 60 * 1000;
 
@@ -68,39 +67,30 @@ export async function POST(request: NextRequest) {
       ? 1.0
       : 0.5;
 
-  const { error } = await service.from("message_flags").insert({
-    message_id: messageId,
-    user_id: caller.userId,
-    weight,
-  });
-  if (error) {
-    if (error.code === "23505") {
+  // Insert the flag, recompute the weighted total, and hide at the threshold
+  // (3.0) atomically under a parent-row lock (M-3, audit). just_hidden is true
+  // only when THIS flag crossed the threshold on a not-yet-hidden message.
+  const { data: result, error } = await service
+    .rpc("cast_message_flag", {
+      p_message_id: messageId,
+      p_user_id: caller.userId,
+      p_weight: weight,
+    })
+    .single<{ weight_total: number; just_hidden: boolean }>();
+  if (error || !result) {
+    if (error?.code === "23505") {
       return NextResponse.json(
         { error: "You already flagged this message." },
         { status: 409 },
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message ?? "Flag failed." },
+      { status: 500 },
+    );
   }
 
-  const { data: flags } = await service
-    .from("message_flags")
-    .select("weight")
-    .eq("message_id", messageId);
-  const totalWeight = (flags ?? []).reduce((s, f) => s + Number(f.weight), 0);
-
-  const crossedThreshold =
-    totalWeight >= HIDE_THRESHOLD && message.hidden_by === null;
-
-  await service
-    .from("chat_messages")
-    .update({
-      flag_weight: totalWeight,
-      ...(crossedThreshold
-        ? { hidden_by: "flags", hidden_at: new Date().toISOString() }
-        : {}),
-    })
-    .eq("id", messageId);
+  const crossedThreshold = result.just_hidden;
 
   if (crossedThreshold) {
     await publish(channels.chat(message.room_id), "hide", {
