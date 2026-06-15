@@ -65,6 +65,18 @@ export async function GET(request: NextRequest) {
       .maybeSingle<Profile>();
     name = profile?.username ?? "guest";
 
+    // A banned user gets no token at all — not even subscribe (M-1, audit).
+    // Mirrors requireParticipant's active-ban predicate; the service client is
+    // required because bans RLS grants SELECT to admins only.
+    const { data: ban } = await service
+      .from("bans")
+      .select("expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (ban && (ban.expires_at === null || new Date(ban.expires_at) > new Date())) {
+      return NextResponse.json({ error: "Your account is banned." }, { status: 403 });
+    }
+
     if (user.id === room.commentator_id || isAdmin(user.id, profile)) {
       canPublish = true;
     } else {
