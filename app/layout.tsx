@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
+import { THEME_COOKIE, themeInitScript, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -20,19 +22,21 @@ export const viewport: Viewport = {
   ],
 };
 
-/**
- * Sets the theme class before first paint: stored choice wins,
- * otherwise system preference. Keep in sync with ThemeToggle.
- */
-const themeInitScript = `(function(){try{var t=localStorage.getItem("theme");var d=t?t==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;document.documentElement.classList.toggle("dark",d);}catch(e){}})();`;
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Bake the signed-in user's account theme into the pre-paint script so it
+  // applies before first paint (M-11). localStorage still wins inside the
+  // script; this only fills in on devices with no explicit choice.
+  const raw = (await cookies()).get(THEME_COOKIE)?.value;
+  const accountPref: ThemeChoice | null =
+    raw === "dark" || raw === "light" ? raw : null;
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script
+          dangerouslySetInnerHTML={{ __html: themeInitScript(accountPref) }}
+        />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         {children}

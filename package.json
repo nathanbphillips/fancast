@@ -20,10 +20,12 @@
     "test:markers": "tsx scripts/markers-test.ts",
     "test:ssrf": "tsx scripts/ssrf-test.ts",
     "test:redirect": "tsx scripts/redirect-test.ts",
+    "test:theme": "tsx scripts/theme-init-test.ts",
     "clean:test": "tsx --env-file=.env.local scripts/clean-test-data.ts",
     "smoke:highfix": "tsx --env-file=.env.local scripts/highfix-smoke.ts",
     "smoke:flagbudget": "tsx --env-file=.env.local scripts/flag-budget-smoke.ts",
-    "smoke:lkban": "tsx --env-file=.env.local scripts/livekit-ban-smoke.ts"
+    "smoke:lkban": "tsx --env-file=.env.local scripts/livekit-ban-smoke.ts",
+    "smoke:theme": "tsx --env-file=.env.local scripts/theme-cookie-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

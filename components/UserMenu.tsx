@@ -10,6 +10,9 @@ export function UserMenu({ username }: { username: string }) {
   async function signOut() {
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
+    // Drop the account-theme cookie so the next anonymous paint uses the
+    // device choice / system theme rather than the signed-out user's (M-11).
+    document.cookie = "fc_theme=; Max-Age=0; path=/";
     router.push("/");
     router.refresh();
   }

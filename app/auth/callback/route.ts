@@ -1,18 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/db/server";
-
-/**
- * Only accept a same-origin absolute path for the post-login redirect (M-2,
- * audit). Must start with exactly one "/" and NOT "//" or "/\\" — both of
- * those resolve to an off-origin authority via `new URL(next, origin)` and
- * are the open-redirect/phishing vector. Anything else falls back to "/".
- */
-export function safeNextPath(raw: string | null): string {
-  if (!raw || raw[0] !== "/") return "/";
-  if (raw[1] === "/" || raw[1] === "\\") return "/";
-  return raw;
-}
+import { safeNextPath } from "@/lib/redirect";
+import { THEME_COOKIE, themeCookieOptions, type ThemeChoice } from "@/lib/theme";
 
 /**
  * Auth landing for both sign-in paths:
@@ -53,16 +43,22 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  let themePref: ThemeChoice | null = null;
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("user_id")
+      .select("user_id, theme_pref")
       .eq("user_id", user.id)
       .maybeSingle();
     if (!profile) {
       return NextResponse.redirect(new URL("/welcome", url.origin));
     }
+    themePref = (profile.theme_pref as ThemeChoice | null) ?? null;
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  // Seed the no-flash cookie from the account theme so a fresh device paints
+  // correctly on the very next load (M-11).
+  const res = NextResponse.redirect(new URL(next, url.origin));
+  if (themePref) res.cookies.set(THEME_COOKIE, themePref, themeCookieOptions);
+  return res;
 }

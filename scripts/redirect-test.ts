@@ -1,5 +1,5 @@
 /** Unit test for the auth-callback open-redirect guard (audit M-2). npm run test:redirect */
-import { safeNextPath } from "../app/auth/callback/route";
+import { safeNextPath } from "../lib/redirect";
 
 let failures = 0;
 function eq(name: string, got: string, want: string) {

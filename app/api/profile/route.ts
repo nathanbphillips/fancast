@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { config } from "@/lib/config";
 import {
@@ -7,6 +8,7 @@ import {
 } from "@/lib/db/server";
 import type { Profile } from "@/lib/db/types";
 import { adminUserIds } from "@/lib/roles";
+import { THEME_COOKIE, themeCookieOptions } from "@/lib/theme";
 
 const usernameSchema = z
   .string()
@@ -149,5 +151,17 @@ export async function PATCH(request: NextRequest) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Mirror the account theme into the readable cookie so the pre-paint script
+  // picks it up on the next load with no flash (M-11). Delete it when cleared.
+  if (parsed.data.theme_pref !== undefined) {
+    const jar = await cookies();
+    if (parsed.data.theme_pref) {
+      jar.set(THEME_COOKIE, parsed.data.theme_pref, themeCookieOptions);
+    } else {
+      jar.delete({ name: THEME_COOKIE, path: "/" });
+    }
+  }
+
   return NextResponse.json({ profile: data });
 }
