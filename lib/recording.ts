@@ -8,6 +8,7 @@ import ffmpegPath from "ffmpeg-static";
 import { EgressClient, EgressStatus } from "livekit-server-sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/db/server";
+import { deleteBroadcastRoom } from "@/lib/egress";
 import { deriveSegments, type Marker } from "@/lib/markers";
 
 const run = promisify(execFile);
@@ -136,6 +137,12 @@ export async function processRecording(
     const egress = await waitForEgress(rec.egress_id);
     if (!egress.ok) return fail(egress.reason ?? "egress did not complete");
   }
+
+  // Egress is terminal and the MP4 is flushed, so it's now safe to delete the
+  // LiveKit room — disconnecting any lingering listener (M-7, audit). Gated on
+  // the egress-ok path above so the recording is never aborted. Idempotent, so
+  // a recut re-entering here is harmless.
+  await deleteBroadcastRoom(roomId);
 
   // per-run unique temp dir so concurrent/sequential runs never share files
   const work = await mkdtemp(join(tmpdir(), `fc-rec-${roomId}-`));

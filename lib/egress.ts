@@ -150,3 +150,20 @@ export async function stopBroadcastEgress(egressId: string): Promise<void> {
     console.warn(`stopEgress(${egressId}) failed:`, (err as Error).message);
   }
 }
+
+/**
+ * Disconnect every participant and delete the LiveKit room (M-7, audit). On
+ * End Broadcast this forcibly cuts any already-connected listener whose client
+ * didn't stop on its own (e.g. tab left open) — deleteRoom fires
+ * RoomEvent.Disconnected, which useRoomAudio already handles. Idempotent: a
+ * 404 on an already-gone room is fine. MUST be called only AFTER the egress
+ * has stopped, or a room-composite egress would be aborted and the recording
+ * lost.
+ */
+export async function deleteBroadcastRoom(roomId: string): Promise<void> {
+  try {
+    await roomService().deleteRoom(livekitRoomName(roomId));
+  } catch (err) {
+    console.warn(`deleteRoom(${roomId}) failed:`, (err as Error).message);
+  }
+}

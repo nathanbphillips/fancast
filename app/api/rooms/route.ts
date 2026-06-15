@@ -4,6 +4,7 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import {
+  deleteBroadcastRoom,
   purgeRadio,
   startBroadcastEgress,
   stopBroadcastEgress,
@@ -97,6 +98,14 @@ export async function POST(request: NextRequest) {
       .eq("commentator_id", caller.userId)
       .maybeSingle<Room>();
 
+    if (existing && existing.state === "wrapped") {
+      // a wrapped room is one-way and can't be reopened — say so clearly
+      // instead of silently handing back the dead room (L-2, audit)
+      return NextResponse.json(
+        { error: "That broadcast has ended. Open a room for the next fixture." },
+        { status: 409 },
+      );
+    }
     if (existing && existing.state !== "scheduled") {
       // already open — just go there
       return NextResponse.json({ room: existing });
@@ -205,14 +214,25 @@ export async function POST(request: NextRequest) {
       );
     }
     const startedAt = new Date().toISOString();
+    // atomic from-state claim (M-5): only the request that actually flips
+    // waiting->pregame proceeds, so a double-tapped/retried start can't launch
+    // two egresses and orphan a recording.
     const { data: updated, error } = await service
       .from("rooms")
       .update({ state: "pregame", started_at: startedAt })
       .eq("id", room.id)
+      .eq("state", "waiting")
       .select()
-      .single<Room>();
+      .maybeSingle<Room>();
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!updated) {
+      // lost the race — another start already claimed it
+      return NextResponse.json(
+        { error: `Can't start from ${room.state}.` },
+        { status: 409 },
+      );
     }
     await publishState(room.id, "pregame");
 
@@ -257,14 +277,23 @@ export async function POST(request: NextRequest) {
     );
   }
   const endedAt = new Date().toISOString();
+  // atomic from-state claim (M-5): a double-tapped End can't run stopEgress /
+  // purge / triggerProcessing twice.
   const { data: updated, error } = await service
     .from("rooms")
     .update({ state: "wrapped", ended_at: endedAt })
     .eq("id", room.id)
+    .in("state", END_FROM)
     .select()
-    .single<Room>();
+    .maybeSingle<Room>();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!updated) {
+    return NextResponse.json(
+      { error: `Can't end from ${room.state}.` },
+      { status: 409 },
+    );
   }
   await publishState(room.id, "wrapped");
 
@@ -290,8 +319,14 @@ export async function POST(request: NextRequest) {
       .from("recordings")
       .update({ ended_at: endedAt })
       .eq("id", rec.id);
-    // process asynchronously — the panel polls status (FR-13.5)
+    // process asynchronously — the panel polls status (FR-13.5). This also
+    // deletes the LiveKit room (M-7) once egress is terminal, so the recording
+    // isn't aborted by tearing the room down too early.
     triggerProcessing(room.id);
+  } else {
+    // no recording to protect (storage unconfigured / radio-only): cut the
+    // LiveKit room loose now so no lingering listener keeps the audio sub (M-7)
+    await deleteBroadcastRoom(room.id);
   }
   return NextResponse.json({ room: updated });
 }

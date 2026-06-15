@@ -77,6 +77,30 @@ export async function POST(request: NextRequest) {
   }
 
   const serverTs = new Date().toISOString();
+
+  // For a state transition, claim the from->to flip atomically (L-1, audit):
+  // only one of two concurrent same-action requests wins, so we don't insert a
+  // duplicate period event that nudges the derived clock backward. `adjust`
+  // has no state change and is intentionally repeatable, so it skips the claim.
+  if (transition.to) {
+    const { data: claimed, error: stateErr } = await service
+      .from("rooms")
+      .update({ state: transition.to })
+      .eq("id", room.id)
+      .in("state", transition.from)
+      .select("id")
+      .maybeSingle();
+    if (stateErr) {
+      return NextResponse.json({ error: stateErr.message }, { status: 500 });
+    }
+    if (!claimed) {
+      return NextResponse.json(
+        { error: `Can't ${action} from ${room.state}.` },
+        { status: 409 },
+      );
+    }
+  }
+
   const { error: insertErr } = await service.from("clock_events").insert({
     room_id: room.id,
     action,
@@ -85,16 +109,6 @@ export async function POST(request: NextRequest) {
   });
   if (insertErr) {
     return NextResponse.json({ error: insertErr.message }, { status: 500 });
-  }
-
-  if (transition.to) {
-    const { error: stateErr } = await service
-      .from("rooms")
-      .update({ state: transition.to })
-      .eq("id", room.id);
-    if (stateErr) {
-      return NextResponse.json({ error: stateErr.message }, { status: 500 });
-    }
   }
 
   // clock transitions auto-emit segment markers (FR-13.3)
