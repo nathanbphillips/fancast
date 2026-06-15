@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Ask Question + Request to Talk (FR-10.1, FR-4.2). Each expands inline
@@ -21,10 +21,13 @@ export function InteractionButtons({
   roomId,
   consentGiven,
   hasPendingTalk,
+  resolvedSignal,
 }: {
   roomId: string;
   consentGiven: boolean;
   hasPendingTalk: boolean;
+  /** bumps when this viewer's talk request is dismissed/accepted/completed */
+  resolvedSignal: number;
 }) {
   const [open, setOpen] = useState<"none" | "question" | "talk">("none");
   const [question, setQuestion] = useState("");
@@ -34,6 +37,17 @@ export function InteractionButtons({
   const [note, setNote] = useState<string | null>(null);
   const [questionSent, setQuestionSent] = useState(false);
   const [talkPending, setTalkPending] = useState(hasPendingTalk);
+
+  // when the server resolves this viewer's request, re-enable the button so
+  // they can request again without a reload (M-10, audit)
+  useEffect(() => {
+    if (resolvedSignal > 0) {
+      setTalkPending(false);
+      setTopic("");
+      setOpen("none");
+      setNote(null);
+    }
+  }, [resolvedSignal]);
 
   async function submitQuestion(e: React.FormEvent) {
     e.preventDefault();

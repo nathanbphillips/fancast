@@ -73,5 +73,11 @@ export async function POST(request: NextRequest) {
     userId: targetUserId,
     removed: isRemoval,
   });
+  // re-enable the (former) caller's Request to Talk button once the call ends
+  // (M-10); userId+requestId only, no status (FR-4.2 privacy)
+  await publish(channels.control(roomId), "talk_resolved", {
+    userId: targetUserId,
+    requestId: accepted.id,
+  });
   return NextResponse.json({ ok: true });
 }

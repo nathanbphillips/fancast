@@ -27,7 +27,8 @@
     "smoke:flagbudget": "tsx --env-file=.env.local scripts/flag-budget-smoke.ts",
     "smoke:lkban": "tsx --env-file=.env.local scripts/livekit-ban-smoke.ts",
     "smoke:theme": "tsx --env-file=.env.local scripts/theme-cookie-smoke.ts",
-    "smoke:votes": "tsx --env-file=.env.local scripts/vote-concurrency-smoke.ts"
+    "smoke:votes": "tsx --env-file=.env.local scripts/vote-concurrency-smoke.ts",
+    "smoke:talkcap": "tsx --env-file=.env.local scripts/talk-cap-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

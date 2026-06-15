@@ -10,6 +10,7 @@ const FUNCS = [
   "public.cast_message_vote(uuid,uuid,smallint)",
   "public.cast_link_vote(uuid,uuid,smallint)",
   "public.cast_message_flag(uuid,uuid,numeric)",
+  "public.accept_talk_request(uuid)",
 ];
 
 async function main() {

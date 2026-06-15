@@ -197,27 +197,40 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // FR-4.1: max on-air = commentator + 2 guests
+  // FR-4.1: max on-air = commentator + 2 guests. The accept path enforces the
+  // cap atomically (M-3/M-6): the RPC re-checks status + count under row locks,
+  // so two concurrent accepts of different requests can't both pass.
   if (parsed.data.status === "accepted") {
-    const { count: onAir } = await service
-      .from("talk_requests")
-      .select("*", { count: "exact", head: true })
-      .eq("room_id", talkRequest.room_id)
-      .eq("status", "accepted");
-    if ((onAir ?? 0) >= 2) {
+    const { data: outcome, error: rpcErr } = await service.rpc(
+      "accept_talk_request",
+      { p_request_id: talkRequest.id },
+    );
+    if (rpcErr) {
+      return NextResponse.json({ error: rpcErr.message }, { status: 500 });
+    }
+    if (outcome === "cap_full") {
       return NextResponse.json(
         { error: "Two guests are already on air." },
         { status: 409 },
       );
     }
-  }
-
-  const { error } = await service
-    .from("talk_requests")
-    .update({ status: parsed.data.status })
-    .eq("id", talkRequest.id);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    if (outcome !== "accepted") {
+      return NextResponse.json(
+        { error: "Request already handled." },
+        { status: 409 },
+      );
+    }
+  } else {
+    // dismissed: no cap; guard the write on still-pending so a concurrent
+    // resolve no-ops instead of clobbering
+    const { error } = await service
+      .from("talk_requests")
+      .update({ status: parsed.data.status })
+      .eq("id", talkRequest.id)
+      .eq("status", "pending");
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
   }
 
   if (parsed.data.status === "accepted") {
@@ -234,7 +247,13 @@ export async function PATCH(request: NextRequest) {
     requestId: talkRequest.id,
     status: parsed.data.status,
   });
-  // the accepted listener learns via their own channel-free path: their
-  // LiveKit permissions change live; UI reacts to that event
+  // Tell the requester (listeners only hold the control channel) their request
+  // left pending so their button re-enables (M-10). Carry userId+requestId
+  // only — omitting status keeps a dismissal indistinguishable to eavesdroppers
+  // on the public channel (FR-4.2).
+  await publish(channels.control(talkRequest.room_id), "talk_resolved", {
+    userId: talkRequest.user_id,
+    requestId: talkRequest.id,
+  });
   return NextResponse.json({ ok: true });
 }

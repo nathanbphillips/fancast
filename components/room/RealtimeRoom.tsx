@@ -121,6 +121,8 @@ export function RealtimeRoom(props: Props) {
   );
   const [clockText, setClockText] = useState<string | undefined>(undefined);
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
+  // bumped when THIS viewer's talk request is resolved, so their button clears
+  const [talkResolvedSignal, setTalkResolvedSignal] = useState(0);
 
   // tick locally; derivation resyncs whenever an event arrives (FR-7.3)
   useEffect(() => {
@@ -301,6 +303,15 @@ export function RealtimeRoom(props: Props) {
           : [...prev, e],
       );
     });
+    // a talk request leaving "pending" (dismiss/accept/complete) — listeners
+    // only hold this channel, so it's how the requester re-enables their button
+    // (M-10). No status is carried; we only react when it targets this viewer.
+    control.subscribe("talk_resolved", (msg) => {
+      const { userId } = msg.data as { userId: string; requestId: string };
+      if (viewer?.userId && userId === viewer.userId) {
+        setTalkResolvedSignal((n) => n + 1);
+      }
+    });
 
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
@@ -344,7 +355,7 @@ export function RealtimeRoom(props: Props) {
       client.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [room.id, viewer?.isModerator]);
+  }, [room.id, viewer?.isModerator, viewer?.userId]);
 
   const isLive = ["live_1h", "live_2h", "extra_time"].includes(roomState);
   const audioLive = INPUTS_OPEN.includes(roomState);
@@ -452,6 +463,7 @@ export function RealtimeRoom(props: Props) {
       mySliderValue={props.mySliderValue}
       talkConsentGiven={props.talkConsentGiven}
       hasPendingTalk={props.hasPendingTalk}
+      talkResolvedSignal={talkResolvedSignal}
       broadcastStart={broadcastStart}
       chatOpen={chatOpen}
     />
@@ -700,6 +712,7 @@ function LiveChat({
   mySliderValue,
   talkConsentGiven,
   hasPendingTalk,
+  talkResolvedSignal,
   broadcastStart,
   chatOpen,
 }: {
@@ -715,6 +728,7 @@ function LiveChat({
   mySliderValue: number | null;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
+  talkResolvedSignal: number;
   broadcastStart: string | null;
   chatOpen: boolean;
 }) {
@@ -961,6 +975,7 @@ function LiveChat({
                 roomId={room.id}
                 consentGiven={talkConsentGiven}
                 hasPendingTalk={hasPendingTalk}
+                resolvedSignal={talkResolvedSignal}
               />
               <PreferenceSlider
                 roomId={room.id}
