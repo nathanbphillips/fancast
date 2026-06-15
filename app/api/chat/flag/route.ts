@@ -42,17 +42,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // flag budget: count this user's flags on this room's messages
-  const { data: roomMessageIds } = await service
-    .from("chat_messages")
-    .select("id")
-    .eq("room_id", message.room_id);
-  const ids = (roomMessageIds ?? []).map((m) => m.id);
-  const { count: used } = await service
+  // flag budget: count this user's flags on this room's messages. Use an
+  // inner-join embed so the count is computed server-side over the full join;
+  // the old id-list round-trip was silently truncated to PostgREST's 1000-row
+  // default in a long match, under-counting the budget (M-8, audit).
+  const { count: used, error: budgetErr } = await service
     .from("message_flags")
-    .select("*", { count: "exact", head: true })
+    .select("*, chat_messages!inner(room_id)", { count: "exact", head: true })
     .eq("user_id", caller.userId)
-    .in("message_id", ids);
+    .eq("chat_messages.room_id", message.room_id);
+  if (budgetErr) {
+    return NextResponse.json({ error: budgetErr.message }, { status: 500 });
+  }
   if ((used ?? 0) >= FLAG_BUDGET_PER_MATCH) {
     return NextResponse.json(
       { error: "You've used all your flags for this match." },
