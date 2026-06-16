@@ -71,6 +71,15 @@ async function main() {
       typeof lkBody.url === "string" && lkBody.url.startsWith("wss://"),
       lkBody.url,
     );
+
+    // reconnect snapshot endpoint (M-4) deployed + serving the public slice
+    const snapRes = await fetch(`${BASE}/api/rooms/${room.id}/snapshot`);
+    const snap = await snapRes.json().catch(() => ({}));
+    check(
+      "reconnect snapshot endpoint live (M-4)",
+      snapRes.status === 200 && typeof snap.state === "string" && Array.isArray(snap.clockEvents),
+      `HTTP ${snapRes.status}`,
+    );
   }
 
   // 4. NEXT_PUBLIC_SUPABASE_ANON_KEY baked into the client bundle, by its

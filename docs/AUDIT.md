@@ -34,7 +34,7 @@ Two facets, same file:
 
 ## MEDIUM
 
-> **Status (2026-06-15):** 10 of 12 fixed and verified — M-1, M-2, M-3, M-5, M-6, M-7, M-8, M-10, M-11, M-12 (commits `7614daf`..`12239f7`). **M-9** is code-complete (pure matcher unit-tested) but its end-to-end purge path can't run until the API-Football account is un-suspended — verification deferred. **M-4** (reconnect rehydrate) was deliberately deferred to be isolated and resolved on its own. Each fix ships with a dedicated smoke/unit test (see `package.json` scripts and `scripts/*`).
+> **Status (2026-06-16):** 11 of 12 fixed and verified — M-1..M-8, M-10, M-11, M-12 (commits `7614daf`..`12239f7`) and **M-4** (commit `ea95c35`). **M-9** is code-complete (pure matcher unit-tested) but its end-to-end purge path can't run until the API-Football account is un-suspended — verification deferred. Each fix ships with a dedicated smoke/unit test (see `package.json` scripts and `scripts/*`).
 
 ### M-1. ✅ FIXED — LiveKit token route never checks bans
 `app/api/livekit/token/route.ts:28-94`
@@ -48,7 +48,8 @@ Two facets, same file:
 `app/api/chat/vote/route.ts:54-64`, `app/api/links/vote/route.ts:52-64`, slider
 - Pattern is read-modify-write across separate round-trips (upsert vote → SELECT all votes → UPDATE counter) with no transaction/lock. Concurrent voters on the same message/link (the live-room norm) interleave and leave `up_count`/`down_count` drifted from the actual vote rows. Cosmetic-ish but visible and self-perpetuating. Fix: atomic SQL recount (RPC/trigger) or `count`-in-DB.
 
-### M-4. ⏸ DEFERRED (isolate + resolve separately) — Reconnect drops realtime events (two facets)
+### M-4. ✅ FIXED — Reconnect drops realtime events (two facets)
+**Fix:** read-only `GET /api/rooms/[id]/snapshot` returns the reconcilable slice; `RealtimeRoom` rehydrates from it on every reconnect (first connect skipped), guarded against overlapping fetches and mid-fetch `state` clobbering; control rewind 5→100, private channel rewind 50. Verified by `scripts/snapshot-smoke.ts` + a browser offline→online reconnect check.
 `components/room/RealtimeRoom.tsx:211-219,304`
 - Control channel uses `rewind:"5"` but multiplexes 6 event types; during voting, `slider` events swamp the 5-message window, so a reconnecting client can **miss the `clock`/`state` event** and never re-derive (no DB re-fetch on reconnect). Clock/score can be stuck wrong until the next transition.
 - Private channel is attached with **no rewind**, so `question`/`talk_request` events arriving during a commentator disconnect are lost (no re-fetch either). Fix: per-event-type channels or larger rewind + a DB rehydrate on `connected`.

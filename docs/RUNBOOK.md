@@ -37,7 +37,7 @@ Operational guide for running a broadcast — pre-flight checks, the live flow, 
 ## If something breaks
 
 - **Your network drops mid-broadcast** → listeners see a "technical difficulties" card within ~5s, **chat stays alive**, and audio **auto-resumes** on reconnect (a soft banner after 15 min). Just get back online; don't End Broadcast.
-- **A listener's clock/score looks stuck or wrong** → until the reconnect-rehydrate fix (audit **M-4**) ships, a listener whose connection blipped during a transition may need to **reload** to re-sync. Tell them to refresh. (M-4 is the next engineering item.)
+- **A listener's clock/score looks stuck or wrong** → clients now rehydrate from the DB automatically on reconnect (audit M-4), so a blip during a transition self-heals within a second or two of reconnecting. If one is still wrong after that, a reload re-derives from the server snapshot.
 - **Audio won't publish / no mic** → Start Broadcast is blocked without a live mic by design. Re-check browser mic permission and the selected input; reload the commentator page if needed.
 - **Recording stuck "processing"** → the Downloads panel has a *Retry if stuck* affordance; a crashed run is reclaimable. A very long (90-min) transcode can exceed serverless limits — fine for test-length sessions (see decision log).
 - **Radio (HLS) silent on a listener device** → it's the fallback path; confirm they're on the radio toggle. iOS/Android locked-screen behavior is the device-matrix gate (PHASES.md Phase 5).
