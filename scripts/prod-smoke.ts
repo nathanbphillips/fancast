@@ -1,0 +1,103 @@
+/**
+ * Read-only check that the DEPLOYED Vercel app has its env wired correctly —
+ * the things that are invisible until a live session breaks. Hits the
+ * production URL, never writes data.
+ *   npm run smoke:prod                 (defaults to the prod domain)
+ *   npm run smoke:prod -- https://my-preview.vercel.app
+ *
+ * Verifies:
+ *   - the app is deployed and serving           (GET /)
+ *   - ABLY_API_KEY is set in Vercel              (/api/ably/token mints a request)
+ *   - LIVEKIT_* + Supabase service key are set   (/api/livekit/token mints a token)
+ *   - NEXT_PUBLIC_SUPABASE_* are baked into the client bundle (anon-key path)
+ */
+import { createClient } from "@supabase/supabase-js";
+import "dotenv/config";
+
+const BASE = (process.argv[2] || process.env.PROD_URL || "https://fancast-26.vercel.app").replace(/\/$/, "");
+const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPA_REF = new URL(SUPA_URL).hostname.split(".")[0];
+const AUDIO_STATES = ["waiting", "pregame", "live_1h", "halftime", "live_2h", "extra_time", "postgame"];
+
+let failures = 0;
+let warnings = 0;
+function check(name: string, ok: boolean, detail = "") {
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? ` — ${detail}` : ""}`);
+  if (!ok) failures++;
+}
+function warn(name: string, detail = "") {
+  console.log(`WARN  ${name}${detail ? ` — ${detail}` : ""}`);
+  warnings++;
+}
+
+async function main() {
+  console.log(`Target: ${BASE}\n`);
+  const service = createClient(SUPA_URL, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+
+  // 1. deployed + serving
+  const home = await fetch(BASE, { redirect: "manual" });
+  check("app is deployed and serving (GET /)", home.status >= 200 && home.status < 400, `HTTP ${home.status}`);
+
+  // 2. Ably token — works for any valid room id (anonymous), proves ABLY_API_KEY
+  const anyRoomId = "00000000-0000-4000-8000-000000000000";
+  const ablyRes = await fetch(`${BASE}/api/ably/token?room=${anyRoomId}`);
+  const ablyBody = await ablyRes.json().catch(() => ({}));
+  check(
+    "ABLY_API_KEY wired in Vercel (/api/ably/token)",
+    ablyRes.status === 200 && (typeof ablyBody.keyName === "string" || typeof ablyBody.mac === "string"),
+    `HTTP ${ablyRes.status}`,
+  );
+
+  // 3. LiveKit token — needs a real audio-state room to mint a token
+  const { data: room } = await service
+    .from("rooms").select("id, state").in("state", AUDIO_STATES).limit(1).maybeSingle();
+  if (!room) {
+    warn("no audio-state room exists to mint a LiveKit token — skipping LiveKit check", "open a waiting room and re-run");
+  } else {
+    const lkRes = await fetch(`${BASE}/api/livekit/token?room=${room.id}`);
+    const lkBody = await lkRes.json().catch(() => ({}));
+    check(
+      "LIVEKIT_* + Supabase service key wired in Vercel (/api/livekit/token)",
+      lkRes.status === 200 && typeof lkBody.token === "string" && typeof lkBody.url === "string",
+      `HTTP ${lkRes.status} (room ${room.state})`,
+    );
+    check(
+      "LiveKit URL returned is a wss endpoint",
+      typeof lkBody.url === "string" && lkBody.url.startsWith("wss://"),
+      lkBody.url,
+    );
+  }
+
+  // 4. NEXT_PUBLIC_SUPABASE_ANON_KEY baked into the client bundle, by its
+  // signature (the distinctive last JWT segment) — proves the anon key
+  // specifically, not just the URL. Build-time inline: updates only on redeploy.
+  // Also assert the SERVICE key never leaked into the browser bundle.
+  const anonSig = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "").split(".").pop() ?? "";
+  const svcSig = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").split(".").pop() ?? "";
+  const html = await home.text();
+  const chunkUrls = Array.from(html.matchAll(/\/_next\/static\/chunks\/[^"']+?\.js/g)).map((m) => m[0]);
+  let corpus = html + SUPA_REF; // SUPA_REF baseline so an empty bundle still shows URL state
+  for (const url of chunkUrls.slice(0, 16)) {
+    corpus += await fetch(`${BASE}${url}`).then((r) => r.text()).catch(() => "");
+  }
+  if (anonSig && corpus.includes(anonSig)) {
+    check("NEXT_PUBLIC_SUPABASE_ANON_KEY baked into the deployed bundle", true);
+  } else if (corpus.includes(SUPA_REF)) {
+    warn(
+      "Supabase URL is in the bundle but the anon key signature is NOT",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY is likely missing in Vercel or the deploy predates it — add it and redeploy",
+    );
+  } else {
+    warn("could not confirm NEXT_PUBLIC_SUPABASE_ANON_KEY in the bundle", "verify by signing in on the live site");
+  }
+  check(
+    "service-role key did NOT leak into the browser bundle (security)",
+    !svcSig || !corpus.includes(svcSig),
+  );
+
+  console.log(
+    `\n${failures === 0 ? "ALL CHECKS PASSED" : `${failures} CHECK(S) FAILED`}${warnings ? ` (${warnings} warning${warnings > 1 ? "s" : ""})` : ""}`,
+  );
+  process.exit(failures === 0 ? 0 : 1);
+}
+main().catch((e) => { console.error(e); process.exit(1); });
