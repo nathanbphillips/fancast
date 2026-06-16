@@ -164,6 +164,13 @@ export function StatsPanel({
                       {showMore && (
                         <div className="mt-3">
                           <StatGroups bars={more} size={size} />
+                          <button
+                            type="button"
+                            onClick={() => setShowMore(false)}
+                            className={`mt-4 w-full rounded-lg border-[0.75px] border-line py-1.5 font-semibold text-secondary hover:bg-raised ${big ? "text-sm" : "text-xs"}`}
+                          >
+                            Hide extra stats
+                          </button>
                         </div>
                       )}
                     </>
