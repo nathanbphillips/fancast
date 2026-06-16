@@ -16,8 +16,13 @@ import "dotenv/config";
 
 const BASE = (process.argv[2] || process.env.PROD_URL || "https://fancast-26.vercel.app").replace(/\/$/, "");
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SUPA_REF = new URL(SUPA_URL).hostname.split(".")[0];
 const AUDIO_STATES = ["waiting", "pregame", "live_1h", "halftime", "live_2h", "extra_time", "postgame"];
+// env vars that may legitimately be absent for a controlled test
+const OPTIONAL_ENV = new Set(["APIFOOTBALL_KEY", "NEXT_PUBLIC_APP_URL"]);
+const PROBE_EMAIL = "fancast.health.probe@example.com";
+const PROBE_PW = "health-Probe-1!";
 
 let failures = 0;
 let warnings = 0;
@@ -94,6 +99,35 @@ async function main() {
     "service-role key did NOT leak into the browser bundle (security)",
     !svcSig || !corpus.includes(svcSig),
   );
+
+  // 5. Definitive env presence via the admin-gated /api/health probe — covers
+  // the S3 + server LiveKit vars a read-only check can't exercise. Uses a
+  // throwaway admin session (cleaned up after).
+  const prior = (await service.auth.admin.listUsers({ perPage: 1000 })).data?.users.find((u) => u.email === PROBE_EMAIL);
+  if (prior) await service.auth.admin.deleteUser(prior.id);
+  const { data: made } = await service.auth.admin.createUser({ email: PROBE_EMAIL, password: PROBE_PW, email_confirm: true });
+  try {
+    await service.from("profiles").insert({ user_id: made!.user!.id, username: "health_probe", role: "admin" });
+    const anon = createClient(SUPA_URL, ANON, { auth: { persistSession: false } });
+    const { data: si } = await anon.auth.signInWithPassword({ email: PROBE_EMAIL, password: PROBE_PW });
+    const cookie = `sb-${SUPA_REF}-auth-token=base64-` + Buffer.from(JSON.stringify(si!.session)).toString("base64url");
+    const res = await fetch(`${BASE}/api/health`, { headers: { Cookie: cookie } });
+    if (res.status === 404) {
+      warn("/api/health not deployed yet", "push and wait for the Vercel redeploy, then re-run smoke:prod for the definitive env list");
+    } else if (res.status !== 200) {
+      warn(`/api/health returned HTTP ${res.status}`, "expected 200 for an admin session");
+    } else {
+      const { env } = (await res.json()) as { env: Record<string, boolean> };
+      console.log("  -- Vercel env presence (booleans, no values) --");
+      for (const [k, present] of Object.entries(env)) {
+        if (present) check(`env present: ${k}`, true);
+        else if (OPTIONAL_ENV.has(k)) warn(`env missing (optional/known): ${k}`);
+        else check(`env present: ${k}`, false, "MISSING in Vercel");
+      }
+    }
+  } finally {
+    await service.auth.admin.deleteUser(made!.user!.id);
+  }
 
   console.log(
     `\n${failures === 0 ? "ALL CHECKS PASSED" : `${failures} CHECK(S) FAILED`}${warnings ? ` (${warnings} warning${warnings > 1 ? "s" : ""})` : ""}`,
