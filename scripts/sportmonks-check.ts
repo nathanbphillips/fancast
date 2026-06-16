@@ -45,14 +45,24 @@ async function main() {
   for (const t of teams.slice(0, 8)) console.log(`  - ${t.id}: ${t.name}`);
   console.log(`config.arsenalTeamId = ${config.arsenalTeamId}`);
 
-  // 3. sample fixtures for Arsenal, raw + mapped
-  const start = `${config.season}-07-01`;
-  const end = `${config.season + 1}-06-30`;
+  // 3. sample fixtures for Arsenal, raw + mapped. Fall back to last season if
+  // the configured one has no fixtures yet (schedule not published), so we can
+  // still confirm the mapping against a real response.
   const include = "participants;scores;state;league;round";
-  const fx = await get(`/fixtures/between/${start}/${end}/${config.arsenalTeamId}?include=${include}&per_page=3`);
-  console.log(`\nsample fixtures (GET /fixtures/between/${start}/${end}/${config.arsenalTeamId}): HTTP ${fx.status}`);
-  const data = (fx.body.data ?? []) as SmFixture[];
-  console.log(`returned ${data.length} fixture(s); pagination.has_more=${fx.body.pagination?.has_more}`);
+  const windows: [number, string, string][] = [
+    [config.season, `${config.season}-07-01`, `${config.season + 1}-06-30`],
+    [config.season - 1, `${config.season - 1}-07-01`, `${config.season}-06-30`],
+  ];
+  let data: SmFixture[] = [];
+  let used = windows[0];
+  for (const w of windows) {
+    const fx = await get(`/fixtures/between/${w[1]}/${w[2]}/${config.arsenalTeamId}?include=${include}&per_page=3`);
+    console.log(`\nsample fixtures (GET /fixtures/between/${w[1]}/${w[2]}/${config.arsenalTeamId}): HTTP ${fx.status}, ${(fx.body.data ?? []).length} returned`);
+    if ((fx.body.data ?? []).length) { data = fx.body.data as SmFixture[]; used = w; break; }
+  }
+  if (used[0] !== config.season) {
+    console.log(`(configured season ${config.season} not published yet — showing ${used[0]} fixtures to verify the mapping)`);
+  }
   if (data[0]) {
     console.log("\n--- raw[0] ---");
     console.log(JSON.stringify(data[0], null, 2).slice(0, 1500));
