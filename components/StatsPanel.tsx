@@ -1,10 +1,10 @@
 /**
  * Stats panel shell (Phase 1: static placeholders).
- * Live API-Football data, events timeline, and XI tabs arrive in Phase 7.
+ * Live Sportmonks data, events timeline, and XI tabs arrive in Phase 7.
  */
 
 // pre-match defaults: zeros, possession 50/50 — live values arrive from
-// API-Football at kickoff (Phase 7)
+// Sportmonks at kickoff (Phase 7)
 const PLACEHOLDER_STATS: { label: string; home: number; away: number }[] = [
   { label: "Possession", home: 50, away: 50 },
   { label: "Shots", home: 0, away: 0 },

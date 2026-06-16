@@ -43,7 +43,7 @@ Source of truth for in-app legal/policy content. Render as static pages: `/guide
 
 **Why (legal bases):** running the service (contract); room safety and ban enforcement (legitimate interest); going-live emails you opted into by following (consent, one-click withdrawal); legal obligations. We do not sell personal data and run no third-party advertising or tracking.
 
-**Processors:** Supabase (database, auth, storage), LiveKit (audio), Ably (realtime), Vercel (hosting), Stripe (payments), Resend (email), API-Football (match data; receives no personal data). Data may be processed in the US under standard contractual clauses.
+**Processors:** Supabase (database, auth, storage), LiveKit (audio), Ably (realtime), Vercel (hosting), Stripe (payments), Resend (email), Sportmonks (match data; receives no personal data). Data may be processed in the US under standard contractual clauses.
 
 **Retention:** room content [12 months]; session recordings and segments 90 days unless pinned by the commentator; moderation logs [24 months]; account data until deletion. Deleting your account removes your profile and identifiers; your voice within a commentator's published recordings is part of their broadcast work (Terms §5).
 

@@ -17,7 +17,7 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - [x] Supabase auth (magic link + one OAuth provider); username flow (unique, 30-day change lock) *(providers enabled + verified via auth settings API; username flow smoke-tested end-to-end incl. lock; founder's real-inbox signup on prod is the remaining acceptance step)*
 - [x] profiles/roles; commentator + admin manual grants *(ADMIN_USER_IDS grants admin at profile creation; `npm run grant-role -- <username> <role>` for manual grants)*
 - [x] Follow system; counts on profile and room header *(profile count live; room header count joins in Phase 4 when real rooms exist)*
-- [ ] API-Football fixtures sync; home schedule with localized kickoff times; enterability gating by room state *(schedule + localization + gating done and verified; sync code built but inactive — APIFOOTBALL_KEY pending founder subscription)*
+- [ ] Sportmonks fixtures sync; home schedule with localized kickoff times; enterability gating by room state *(schedule + localization + gating done and verified; sync code built — switched to Sportmonks 2026-06-16, SPORTMONKS_API_TOKEN pending founder subscription)*
 - [x] Anonymous read access pattern (inputs replaced by join prompt)
 - **Test:** sign up, follow, see schedule; scheduled room not enterable; counts increment. *(All verified 2026-06-11 via scripted smoke test (15/15 checks) + browser pass with temp users; founder's real signup on the deployed site still to do.)*
 
@@ -56,7 +56,7 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** align to a deliberately 45s-delayed feed in one calibration pass (≤1s error); full simulated match clock cycle. *(Clock cycle ✓ scripted; sync calibration pending the ring buffer build.)*
 
 ## Phase 7: Stats + lineups + tab control (days 22-26)
-- [ ] API-Football proxy route with cache; polling cadence 60s live / 15s around kickoff+goals
+- [ ] Sportmonks proxy route with cache; polling cadence 60s live / 15s around kickoff+goals
 - [ ] Compact stat bars, events timeline, Home/Away XI tabs with formations and subs
 - [ ] Commentator push-to-default tab via control channel; listener override
 - [ ] Radio-mode enlarged stats variant
@@ -92,7 +92,8 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - 2026-06-11 — Vercel deploy initially failed ("No Output Directory named 'public'"): project was created from an empty repo so framework detection defaulted to "Other". Fixed with `vercel.json` declaring `"framework": "nextjs"`. Vercel project name is `fancast-26`; production domain https://fancast-26.vercel.app.
 - 2026-06-11 — Git history rewritten before first push to replace the placeholder author with the founder's real identity.
 - 2026-06-11 (Phase 2) — Direct DB connection is IPv6-only and this network is IPv4: migrations run through the session pooler (`aws-1-us-east-1.pooler.supabase.com`) via `npm run migrate`.
-- 2026-06-11 (Phase 2) — Added `fixtures` cache table + dev seed fixtures (negative ids) since ARCHITECTURE's data model omitted a fixtures table; first real API-Football sync purges seeds.
+- 2026-06-11 (Phase 2) — Added `fixtures` cache table + dev seed fixtures (negative ids) since ARCHITECTURE's data model omitted a fixtures table; first real provider sync purges seeds.
+- 2026-06-16 (Phase 2/7) — Match-data provider switched API-Football → **Sportmonks** (v3 football) after API-Football account issues. `lib/fixtures.ts` rewritten for `/fixtures/between/{start}/{end}/{teamId}` (Authorization-header auth, paginated, defensive `mapSportmonksFixture`); env `SPORTMONKS_API_TOKEN`/`SPORTMONKS_BASE`; `lib/config.ts` ids → Arsenal 19 / EPL 8. Verify against the live account with `npm run sportmonks:check`. Mapper unit-tested (`npm run test:sportmonks`).
 - 2026-06-11 (Phase 4) — Start Broadcast's "requires live mic" condition (FR-3.3) deferred to Phase 5: no audio pipeline exists yet, so the button starts the show without a mic check.
 - 2026-06-11 (Phase 4) — FR-3.3's "unlocks widgets" is moot until widgets exist (Phase 9); chat/links/questions/talk/slider all unlock as specified.
 - 2026-06-11 (Phase 4, founder changes) — Waiting-room countdown counts to a commentator-set broadcast start (set in the commentator bar; live-updates via control channel); stats zeroed pre-match; commentator can open chat/links early during waiting via bar toggles. Control-channel `state` handler now ignores out-of-order events (timestamp guard).

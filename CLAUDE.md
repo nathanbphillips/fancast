@@ -14,7 +14,7 @@ FanCast (working name, rename pending) is a live fan-commentary platform for foo
 
 ## Stack (decided, do not re-litigate)
 
-Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgres + Auth + Storage, RLS everywhere). LiveKit Cloud for audio (WebRTC + HLS egress + recording). Ably for chat/control channels. API-Football for match data. Stripe for tipping. Resend for email. Full rationale in `docs/ARCHITECTURE.md`.
+Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgres + Auth + Storage, RLS everywhere). LiveKit Cloud for audio (WebRTC + HLS egress + recording). Ably for chat/control channels. Sportmonks (v3 football) for match data. Stripe for tipping. Resend for email. Full rationale in `docs/ARCHITECTURE.md`.
 
 ## Conventions
 
@@ -41,7 +41,7 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Recording rights | Commentator owns 100%, no platform license, no exclusivity | Final (policy) |
 | Dump button / broadcast delay for callers | Not built | Final |
 | Chat vote arrows | Visible on every message, always | Final |
-| `fixtures` table (API-Football cache; absent from ARCHITECTURE data model); dev seeds use negative ids, purged on first real sync | Added Phase 2 | Assumed |
+| `fixtures` table (Sportmonks cache; absent from ARCHITECTURE data model); dev seeds use negative ids, purged on first real sync | Added Phase 2 | Assumed |
 | Theme conflict: explicit device choice (localStorage) beats account `theme_pref`; account pref fills in on devices with no choice | Phase 2 | Assumed |
 | Fixtures sync trigger: admin-only POST `/api/fixtures/sync`; scheduled trigger deferred to Phase 7 | Phase 2 | Assumed |
 | Vote/flag aggregates denormalized onto `chat_messages`/`links` rows, recomputed from vote rows on every write | Phase 3 | Assumed |
@@ -52,8 +52,9 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Link cards are rich previews (wide image, headline, description), overriding the PRD's "compact preview cards" | Founder decision 2026-06-11 | Final |
 | Waiting-room countdown targets a commentator-set broadcast start time (`rooms.broadcast_start`), not kickoff; no time set = calm "show starts soon" card | Founder decision 2026-06-11 | Final |
 | Commentator can open chat and/or links to listeners during waiting (`rooms.chat_open`/`links_open` toggles), relaxing FR-3.2's commentator-only waiting chat | Founder decision 2026-06-11 | Final |
-| Stats panel shows zeros (possession 50/50) until live API-Football data arrives (Phase 7) | Founder decision 2026-06-11 | Final |
+| Stats panel shows zeros (possession 50/50) until live Sportmonks data arrives (Phase 7) | Founder decision 2026-06-11 | Final |
 | Ending a call is neutral (no profile/eligibility effect), replacing FR-4.4's "never removed from air" gate; problem callers handled by commentator-only `caller_flags` (informational, shown on request cards) + reversible `call_in_blocks` (bars call-ins only) | Founder decision 2026-06-11 | Final |
+| Match-data provider: **Sportmonks** (v3 football) — replaces API-Football after account issues. Env `SPORTMONKS_API_TOKEN`/`SPORTMONKS_BASE`; Arsenal team id 19, EPL league id 8 (in `lib/config.ts`); sync fetches `/fixtures/between/{start}/{end}/{teamId}`. Plan must cover the English Premier League. | Founder decision 2026-06-16 | Final |
 
 ## Where things are specified
 

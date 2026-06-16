@@ -8,7 +8,7 @@
 | Audio | LiveKit Cloud | One platform for WebRTC broadcast, call-in permission elevation, room-composite recording, and HLS egress; ~2.5x cheaper per minute than Agora at scale; Apache-licensed server = self-host escape hatch. Agora is the documented fallback if iOS Safari surprises us in Phase 5 |
 | Realtime messaging | Ably | Channel semantics, presence (watching count), token capabilities for the private commentator channel |
 | DB/auth/storage | Supabase | Postgres + RLS, magic-link/OAuth, recording storage (S3-compatible for egress) |
-| Match data | API-Football Pro ($19/mo) | Free tier (100 req/day) cannot cover one match day |
+| Match data | Sportmonks (v3 football; plan covering the EPL) | Switched from API-Football 2026-06-16 after account issues; plan must include the English Premier League (the free plan does not) |
 | Payments | Stripe | Checkout (one-time) + Billing (recurring); Connect deferred |
 | Email | Resend | Going-live notifications |
 | Segment cutting | ffmpeg-static in a Vercel function | MP3 stream-copy cutting is I/O-bound and fast; move to a small worker only if function limits are hit |
@@ -79,5 +79,5 @@ Nothing changes until ~1,000 concurrent per room (LiveKit SFU broadcast). Beyond
 | Stage | Monthly |
 |---|---|
 | Build (pre-launch) | $0-20 |
-| Testing (10-50 listeners) | $70-110 (LiveKit Ship 50 + API-Football 19 + Vercel Pro 20 + misc) |
+| Testing (10-50 listeners) | $70-110 (LiveKit Ship 50 + Sportmonks plan + Vercel Pro 20 + misc) |
 | 500 concurrent, 4 matches/mo | $250-450 |

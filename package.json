@@ -22,6 +22,8 @@
     "test:redirect": "tsx scripts/redirect-test.ts",
     "test:theme": "tsx scripts/theme-init-test.ts",
     "test:fixtures": "tsx scripts/fixtures-test.ts",
+    "test:sportmonks": "tsx scripts/sportmonks-map-test.ts",
+    "sportmonks:check": "tsx --env-file=.env.local scripts/sportmonks-check.ts",
     "check:grants": "tsx --env-file=.env.local scripts/check-rpc-grants.ts",
     "clean:test": "tsx --env-file=.env.local scripts/clean-test-data.ts",
     "smoke:highfix": "tsx --env-file=.env.local scripts/highfix-smoke.ts",

@@ -10,7 +10,7 @@ Claude Code cannot create accounts or accept terms of service. Complete these yo
 ## Before Phase 2
 - [ ] Supabase project (free tier): grab URL, anon key, service role key
 - [ ] Enable email (magic link) auth; add one OAuth provider (Google recommended)
-- [ ] API-Football subscription: **Pro tier, $19/mo** (free tier cannot cover a match day). Grab key. Note Arsenal team ID and current Premier League season/league IDs in `lib/config.ts` once the build reaches fixtures
+- [ ] Sportmonks football subscription: a plan that **covers the English Premier League** (the free plan does not). From my.sportmonks.com grab the API token. Arsenal team id (19) + EPL league id (8) are in `lib/config.ts`; confirm them with `npm run sportmonks:check`
 - [ ] First signup = you; put your user ID in ADMIN_USER_IDS and grant yourself the commentator role
 
 ## Before Phase 3

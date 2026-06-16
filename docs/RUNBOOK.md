@@ -13,7 +13,7 @@ Operational guide for running a broadcast — pre-flight checks, the live flow, 
 - [ ] **Browser + mic** — use a Chromium browser on the broadcasting machine; grant mic permission and confirm the right input device. (Listeners can be on anything; iOS Safari is the cert target.)
 - [ ] **Your feed** — have your TV/stream up and know its **delay** vs. live (you'll calibrate sync against it).
 - [ ] **Storage/recording** — recording + radio need the Supabase S3 env in Vercel. `npm run smoke:prod` covers LiveKit/token wiring; a quick `tsx --env-file=.env.local scripts/s3-check.ts` confirms storage credentials end to end.
-- [ ] **Stats** — live stats/lineups need an active API-Football key. If it's not active, the stats panel shows zeros/placeholder; the broadcast still runs fully. (Tracked in PHASES.md Phase 7.)
+- [ ] **Stats** — live stats/lineups need an active Sportmonks token (plan covering the EPL). If it's not set, the stats panel shows zeros/placeholder; the broadcast still runs fully. (Tracked in PHASES.md Phase 7.)
 - [ ] **Dashboards open** to watch during the show: Vercel (logs), LiveKit Cloud (room/egress), Ably (connections), Supabase (DB).
 
 ## Going live — the flow

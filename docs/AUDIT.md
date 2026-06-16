@@ -34,7 +34,7 @@ Two facets, same file:
 
 ## MEDIUM
 
-> **Status (2026-06-16):** 11 of 12 fixed and verified — M-1..M-8, M-10, M-11, M-12 (commits `7614daf`..`12239f7`) and **M-4** (commit `ea95c35`). **M-9** is code-complete (pure matcher unit-tested) but its end-to-end purge path can't run until the API-Football account is un-suspended — verification deferred. Each fix ships with a dedicated smoke/unit test (see `package.json` scripts and `scripts/*`).
+> **Status (2026-06-16):** 11 of 12 fixed and verified — M-1..M-8, M-10, M-11, M-12 (commits `7614daf`..`12239f7`) and **M-4** (commit `ea95c35`). **M-9** is code-complete (pure matcher unit-tested) but its end-to-end purge path can't run until the Sportmonks token is configured and a real sync runs — verification deferred. Each fix ships with a dedicated smoke/unit test (see `package.json` scripts and `scripts/*`).
 
 ### M-1. ✅ FIXED — LiveKit token route never checks bans
 `app/api/livekit/token/route.ts:28-94`
@@ -70,9 +70,9 @@ Two facets, same file:
 `app/api/chat/flag/route.ts:46-55`
 - Computes the 10-flags-per-match budget by selecting **all** message ids in the room (no limit) then counting flags `.in(...)`. In a >1000-message match the id list is truncated to 1000, so flags on older messages aren't counted — the budget under-counts and a user can exceed 10. Fix: count flags directly with a room-scoped join/RPC, not an id-list round-trip.
 
-### M-9. ◐ CODE-COMPLETE (e2e verification deferred — API-Football suspended) — Seed-fixture purge can fail silently and is swallowed
+### M-9. ◐ CODE-COMPLETE (e2e verification deferred — pending Sportmonks token) — Seed-fixture purge can fail silently and is swallowed
 `lib/fixtures.ts:72`, `db/migrations/0001:83`
-- First real API-Football sync does `delete().lt("id",0)` and discards the result. `rooms.fixture_id` FK has no `on delete` (defaults to RESTRICT), and rooms can be opened against seed fixtures, so if any room references a seed the delete errors — silently — and seeds never get cleaned (negative-id placeholders linger alongside real fixtures). Fix: capture the error; reassign/handle rooms on seeds, or block seed deletion meaningfully.
+- First real fixtures sync does `delete().lt("id",0)` and discards the result. `rooms.fixture_id` FK has no `on delete` (defaults to RESTRICT), and rooms can be opened against seed fixtures, so if any room references a seed the delete errors — silently — and seeds never get cleaned (negative-id placeholders linger alongside real fixtures). Fix: capture the error; reassign/handle rooms on seeds, or block seed deletion meaningfully.
 
 ### M-10. ✅ FIXED — "Request to Talk" button stuck disabled for the listener
 `components/room/InteractionButtons.tsx:77,105,117`; `app/api/talk/route.ts:233`

@@ -20,7 +20,7 @@ const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SUPA_REF = new URL(SUPA_URL).hostname.split(".")[0];
 const AUDIO_STATES = ["waiting", "pregame", "live_1h", "halftime", "live_2h", "extra_time", "postgame"];
 // env vars that may legitimately be absent for a controlled test
-const OPTIONAL_ENV = new Set(["APIFOOTBALL_KEY", "NEXT_PUBLIC_APP_URL"]);
+const OPTIONAL_ENV = new Set(["SPORTMONKS_API_TOKEN", "NEXT_PUBLIC_APP_URL"]);
 const PROBE_EMAIL = "fancast.health.probe@example.com";
 const PROBE_PW = "health-Probe-1!";
 

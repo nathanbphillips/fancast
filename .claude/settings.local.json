@@ -15,7 +15,9 @@
       "Bash(node -e ' *)",
       "Bash(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\")",
       "Bash(cat \"$\\(node -e \"console.log\\(require\\('os'\\).tmpdir\\(\\)\\)\"\\)/fcffm-out.txt\")",
-      "Bash(node -e \"console.log\\('ffmpeg-static dep:', require\\('./package.json'\\).dependencies['ffmpeg-static'] || require\\('./package.json'\\).devDependencies?.['ffmpeg-static']\\)\")"
+      "Bash(node -e \"console.log\\('ffmpeg-static dep:', require\\('./package.json'\\).dependencies['ffmpeg-static'] || require\\('./package.json'\\).devDependencies?.['ffmpeg-static']\\)\")",
+      "WebSearch",
+      "WebFetch(domain:docs.sportmonks.com)"
     ]
   }
 }

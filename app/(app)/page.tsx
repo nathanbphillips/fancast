@@ -14,7 +14,7 @@ import { OpenWaitingButton } from "@/components/OpenWaitingButton";
 /**
  * Home: next fixtures from the DB with enterability gating by room state
  * (FR-1). Followed commentators' sessions sort first for signed-in users
- * (FR-1.3). Live data replaces the seeds when API-Football sync runs.
+ * (FR-1.3). Live data replaces the seeds when the Sportmonks sync runs.
  */
 
 type FixtureWithRooms = Fixture & {

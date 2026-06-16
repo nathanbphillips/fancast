@@ -8,7 +8,7 @@ Room states: `scheduled → waiting → pregame → live_1h → halftime → liv
 
 ## FR-1: Home page and schedule
 
-- 1.1 Home shows the next Arsenal fixture prominently plus all known upcoming fixtures (API-Football): date, kickoff localized to viewer timezone, competition, assigned commentator.
+- 1.1 Home shows the next Arsenal fixture prominently plus all known upcoming fixtures (Sportmonks): date, kickoff localized to viewer timezone, competition, assigned commentator.
 - 1.2 Rooms are enterable only in `waiting` or later. Scheduled fixtures render without a join action. A live room renders as the dominant card with LIVE indicator and listener count.
 - 1.3 Logged-in users see followed commentators' upcoming sessions first.
 - 1.4 When a followed commentator's room enters `waiting`: email to followers (Resend) + in-app notification.
@@ -106,7 +106,7 @@ One component, two presentations, never both:
 
 ## FR-11: Stats, lineups, tab control
 
-- 11.1 API-Football polling (60s live; 15s around kickoff and goal events): score, events timeline, compact stacked stat bars; Home XI / Away XI tabs with formations and subs.
+- 11.1 Sportmonks polling (60s live; 15s around kickoff and goal events): score, events timeline, compact stacked stat bars; Home XI / Away XI tabs with formations and subs.
 - 11.2 Commentator pushes a tab to all listeners (silent, control channel); listeners can switch back.
 - 11.3 Radio mode renders stats larger with more visible refresh.
 
