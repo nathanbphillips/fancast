@@ -123,6 +123,10 @@ export function RealtimeRoom(props: Props) {
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
   // bumped when THIS viewer's talk request is resolved, so their button clears
   const [talkResolvedSignal, setTalkResolvedSignal] = useState(0);
+  // reconnect resilience (M-4): rehydrate room state from the DB on a *re*connect
+  const lastStateTsRef = useRef(""); // newest `state` event ts seen
+  const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
+  const rehydratingRef = useRef(false); // guard against overlapping rehydrates
 
   // tick locally; derivation resyncs whenever an event arrives (FR-7.3)
   useEffect(() => {
@@ -205,7 +209,65 @@ export function RealtimeRoom(props: Props) {
       authMethod: "GET",
     });
 
-    client.connection.on("connected", () => setConn("connected"));
+    // Rebuild reconcilable state from the DB after a reconnect (M-4, golden
+    // rule 5). Control/private rewind covers brief blips; this covers longer
+    // drops where the rewind window was overrun.
+    const rehydrate = async () => {
+      if (rehydratingRef.current) return;
+      rehydratingRef.current = true;
+      const tsBefore = lastStateTsRef.current;
+      try {
+        const res = await fetch(`/api/rooms/${room.id}/snapshot`, {
+          cache: "no-store",
+        });
+        if (!res.ok) return;
+        const s = (await res.json()) as {
+          state: RoomState;
+          sliderAgg: SliderAggregate;
+          broadcastStart: string | null;
+          chatOpen: boolean;
+          linksOpen: boolean;
+          hlsUrl: string | null;
+          clockEvents: ClockEventInput[];
+          questions: Question[];
+          talkRequests: TalkRequest[];
+        };
+        // don't clobber a newer `state` control event that landed mid-fetch
+        if (lastStateTsRef.current === tsBefore) setRoomState(s.state);
+        setSliderAgg(s.sliderAgg);
+        setBroadcastStart(s.broadcastStart);
+        setChatOpen(s.chatOpen);
+        setLinksOpen(s.linksOpen);
+        setHlsUrl(s.hlsUrl);
+        setClockEvents((prev) => {
+          const merged = [...prev];
+          for (const e of s.clockEvents ?? []) {
+            if (
+              !merged.some(
+                (x) => x.action === e.action && x.server_ts === e.server_ts,
+              )
+            )
+              merged.push(e);
+          }
+          return merged;
+        });
+        if (viewer?.isModerator) {
+          setQuestions(s.questions ?? []);
+          setTalkRequests(s.talkRequests ?? []);
+        }
+      } catch {
+        // best-effort; channel rewind also helps recover
+      } finally {
+        rehydratingRef.current = false;
+      }
+    };
+
+    client.connection.on("connected", () => {
+      setConn("connected");
+      // skip the very first connect — SSR already delivered fresh state
+      if (hasConnectedRef.current) void rehydrate();
+      hasConnectedRef.current = true;
+    });
     client.connection.on(["disconnected", "suspended", "failed"], () =>
       setConn("broken"),
     );
@@ -217,7 +279,9 @@ export function RealtimeRoom(props: Props) {
       params: { rewind: "25" },
     });
     const control = client.channels.get(`room:${room.id}:control`, {
-      params: { rewind: "5" },
+      // 6 event types multiplex here; a small window drops the state/clock
+      // event under slider churn, so replay deep enough to recover (M-4)
+      params: { rewind: "100" },
     });
 
     chat.subscribe("message", (msg) => appendMessage(msg.data as ChatMessage));
@@ -261,12 +325,12 @@ export function RealtimeRoom(props: Props) {
       );
     });
 
-    let lastStateTs = "";
     control.subscribe("state", (msg) => {
       const { state, ts } = msg.data as { state: RoomState; ts?: string };
-      // rewind can replay history — never let an older event win
-      if (ts && ts < lastStateTs) return;
-      if (ts) lastStateTs = ts;
+      // rewind can replay history — never let an older event win. The ts lives
+      // in a ref so rehydrate() can tell if a newer state landed mid-fetch (M-4)
+      if (ts && ts < lastStateTsRef.current) return;
+      if (ts) lastStateTsRef.current = ts;
       setRoomState(state);
       if (state === "wrapped") {
         // a completed session earns the gentle install prompt (FR-5.2)
@@ -315,7 +379,11 @@ export function RealtimeRoom(props: Props) {
 
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
-      const priv = client.channels.get(`room:${room.id}:private`);
+      const priv = client.channels.get(`room:${room.id}:private`, {
+        // rewind so question/talk events sent during a brief commentator drop
+        // are replayed on reattach (M-4); the token grants history on private
+        params: { rewind: "50" },
+      });
       priv.subscribe("question", (msg) => {
         const q = msg.data as Question;
         setQuestions((prev) =>

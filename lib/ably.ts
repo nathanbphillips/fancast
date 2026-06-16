@@ -23,6 +23,7 @@ export const channels = {
   chat: (roomId: string) => `room:${roomId}:chat`,
   links: (roomId: string) => `room:${roomId}:links`,
   control: (roomId: string) => `room:${roomId}:control`,
+  private: (roomId: string) => `room:${roomId}:private`,
 };
 
 /** Publish an event; failures are logged, not thrown — the DB write

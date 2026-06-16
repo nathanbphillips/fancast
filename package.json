@@ -31,7 +31,8 @@
     "smoke:votes": "tsx --env-file=.env.local scripts/vote-concurrency-smoke.ts",
     "smoke:talkcap": "tsx --env-file=.env.local scripts/talk-cap-smoke.ts",
     "smoke:lifecycle": "tsx --env-file=.env.local scripts/room-lifecycle-smoke.ts",
-    "smoke:prod": "tsx --env-file=.env.local scripts/prod-smoke.ts"
+    "smoke:prod": "tsx --env-file=.env.local scripts/prod-smoke.ts",
+    "smoke:snapshot": "tsx --env-file=.env.local scripts/snapshot-smoke.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
