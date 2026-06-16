@@ -44,12 +44,12 @@ export function matchSeedToReal(
 /** Subset of the Sportmonks v3 fixture shape we consume (with the includes
  *  participants;scores;state;league;round). Parsed defensively. */
 type SmNamed = { name?: string | null };
-type SmParticipant = {
+export type SmParticipant = {
   id: number;
   name?: string | null;
   meta?: { location?: "home" | "away" | string };
 };
-type SmScore = {
+export type SmScore = {
   description?: string | null;
   score?: { goals?: number | null; participant?: "home" | "away" | string };
 };

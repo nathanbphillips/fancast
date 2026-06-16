@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useFixtureStats } from "@/lib/hooks/useFixtureStats";
+import type { StatTab } from "@/lib/stats";
 import * as Ably from "ably";
 import type {
   ChatMessage,
@@ -57,6 +59,7 @@ export type RoomInfo = {
   awayScore: number;
   commentatorUsername: string;
   commentatorId: string;
+  fixtureId: number; // Sportmonks fixture id (negative for dev seeds)
 };
 
 type Props = {
@@ -123,6 +126,9 @@ export function RealtimeRoom(props: Props) {
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
   // bumped when THIS viewer's talk request is resolved, so their button clears
   const [talkResolvedSignal, setTalkResolvedSignal] = useState(0);
+  // commentator-pushed stats tab (Phase 7); nonce re-applies repeated pushes
+  const [pushedStatsTab, setPushedStatsTab] = useState<StatTab | null>(null);
+  const [statsPushNonce, setStatsPushNonce] = useState(0);
   // reconnect resilience (M-4): rehydrate room state from the DB on a *re*connect
   const lastStateTsRef = useRef(""); // newest `state` event ts seen
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
@@ -376,6 +382,13 @@ export function RealtimeRoom(props: Props) {
         setTalkResolvedSignal((n) => n + 1);
       }
     });
+    // commentator pushed a stats tab to everyone (Phase 7); bump the nonce on
+    // every push so re-pushing the same tab still re-applies
+    control.subscribe("stats_tab", (msg) => {
+      const { tab } = msg.data as { tab: StatTab; ts?: string };
+      setPushedStatsTab(tab);
+      setStatsPushNonce((n) => n + 1);
+    });
 
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
@@ -428,6 +441,16 @@ export function RealtimeRoom(props: Props) {
   const isLive = ["live_1h", "live_2h", "extra_time"].includes(roomState);
   const audioLive = INPUTS_OPEN.includes(roomState);
   const newQuestionCount = questions.filter((q) => q.status === "new").length;
+
+  // Phase 7: poll live match detail (faster cadence while live); push a tab
+  const { stats: matchStats } = useFixtureStats({ fixtureId: room.fixtureId, live: isLive });
+  const pushStatsTab = (tab: StatTab) => {
+    void fetch("/api/stats-tab", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: room.id, tab }),
+    }).catch(() => {});
+  };
 
   function handleRequestHandled(id: string, _status: "accepted" | "dismissed") {
     setTalkRequests((prev) => prev.filter((r) => r.id !== id));
@@ -618,7 +641,15 @@ export function RealtimeRoom(props: Props) {
                   </button>
                 </div>
               )}
-              <StatsPanel />
+              <StatsPanel
+                data={matchStats}
+                radio={audio.radioActive}
+                isRoomCommentator={isRoomCommentator}
+                roomId={room.id}
+                pushedTab={pushedStatsTab}
+                pushNonce={statsPushNonce}
+                onPushTab={pushStatsTab}
+              />
             </>
           )}
         </aside>

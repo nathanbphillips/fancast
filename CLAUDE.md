@@ -55,6 +55,8 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | Stats panel shows zeros (possession 50/50) until live Sportmonks data arrives (Phase 7) | Founder decision 2026-06-11 | Final |
 | Ending a call is neutral (no profile/eligibility effect), replacing FR-4.4's "never removed from air" gate; problem callers handled by commentator-only `caller_flags` (informational, shown on request cards) + reversible `call_in_blocks` (bars call-ins only) | Founder decision 2026-06-11 | Final |
 | Match-data provider: **Sportmonks** (v3 football) — replaces API-Football after account issues. Env `SPORTMONKS_API_TOKEN`/`SPORTMONKS_BASE`; Arsenal team id 19, EPL league id 8 (in `lib/config.ts`); sync fetches `/fixtures/between/{start}/{end}/{teamId}`. Plan must cover the English Premier League. | Founder decision 2026-06-16 | Final |
+| Match-stats proxy: public `GET /api/stats/[fixtureId]` (reading is open) with a hardcoded Sportmonks include and a `globalThis` TTL(10s) cache + in-flight coalescing + last-good fallback; seed/invalid id (≤0) returns the zeros contract with no upstream call | Phase 7 | Assumed |
+| `stats_tab` is a transient control-channel hint (commentator→listeners via `POST /api/stats-tab`), not persisted (no DB row); recovered on reconnect via the control channel's rewind window; a listener's local tab tap overrides until the next push | Phase 7 | Assumed |
 
 ## Where things are specified
 
