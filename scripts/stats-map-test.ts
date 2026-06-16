@@ -34,7 +34,9 @@ const raw: SmFixtureDetail = {
     ...stat("ball-possession", "Ball Possession %", 61, 39),
     ...stat("shots-total", "Shots Total", 22, 9),
     ...stat("corners", "Corners", 3, 4),
-    ...stat("some-unlisted-stat", "Ignored", 5, 5), // not in allow-list -> dropped
+    ...stat("passes", "Passes", 520, 410),
+    ...stat("shots-insidebox", "Shots Insidebox", 14, 5),
+    ...stat("some-unlisted-stat", "Ignored", 5, 5), // not in catalogue -> dropped
   ],
   events: [
     { minute: 55, extra_minute: null, participant_id: 14, player_id: 1, player_name: "Amad Diallo", related_player_name: "Diogo Dalot", result: null, info: null, sort_order: 1, type_id: 18, type: { id: 18, code: "substitution", name: "Substitution" } },
@@ -60,9 +62,15 @@ eq("away team", [m.away.id, m.away.name], [19, "Arsenal"]);
 eq("score from CURRENT", m.score, { home: 0, away: 1 });
 eq("status label", m.status.short, "FT");
 
-eq("stat bars ordered + curated (unlisted dropped)", m.stats.map((s) => s.code), ["ball-possession", "shots-total", "corners"]);
-eq("possession is a pct bar 61/39", [m.stats[0].home, m.stats[0].away, m.stats[0].unit], [61, 39, "pct"]);
-eq("shots is a count bar 22/9", [m.stats[1].home, m.stats[1].away, m.stats[1].unit], [22, 9, "count"]);
+eq("stat bars in catalogue order, unlisted dropped", m.stats.map((s) => s.code), ["shots-total", "corners", "ball-possession", "passes", "shots-insidebox"]);
+const poss = m.stats.find((s) => s.code === "ball-possession")!;
+eq("possession is a pct bar 61/39", [poss.home, poss.away, poss.unit], [61, 39, "pct"]);
+const shots = m.stats.find((s) => s.code === "shots-total")!;
+eq("shots is a count bar 22/9", [shots.home, shots.away, shots.unit], [22, 9, "count"]);
+const pass = m.stats.find((s) => s.code === "passes")!;
+eq("total passes -> default tier, Possession & passing", [pass.tier, pass.group], ["default", "Possession & passing"]);
+const sib = m.stats.find((s) => s.code === "shots-insidebox")!;
+eq("shots in box -> more tier, Shooting", [sib.tier, sib.group], ["more", "Shooting"]);
 
 ok("unknown event dropped, 2 kept", m.events.length === 2, `${m.events.length}`);
 eq("events sorted ascending by minute (goal@13 first)", m.events.map((e) => e.minute), [13, 55]);

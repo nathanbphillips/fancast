@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { StatBars } from "@/components/stats/StatBars";
 import { EventsTimeline } from "@/components/stats/EventsTimeline";
 import { LineupTabs } from "@/components/stats/LineupTabs";
+import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
 
 /**
@@ -20,14 +21,31 @@ const TABS: { id: StatTab; label: string }[] = [
   { id: "lineups", label: "Line-ups" },
 ];
 
-// pre-match defaults: zeros, possession 50/50 (founder decision)
-const PLACEHOLDER: StatBar[] = [
-  { code: "ball-possession", label: "Possession", home: 50, away: 50, unit: "pct" },
-  { code: "shots-total", label: "Shots", home: 0, away: 0, unit: "count" },
-  { code: "shots-on-target", label: "On target", home: 0, away: 0, unit: "count" },
-  { code: "corners", label: "Corners", home: 0, away: 0, unit: "count" },
-  { code: "fouls", label: "Fouls", home: 0, away: 0, unit: "count" },
-];
+/** Render stat bars grouped by their `group`, with a subheader per group. */
+function StatGroups({ bars, size }: { bars: StatBar[]; size: "compact" | "radio" }) {
+  const groups: { name: string; items: StatBar[] }[] = [];
+  for (const b of bars) {
+    let g = groups.find((x) => x.name === b.group);
+    if (!g) {
+      g = { name: b.group, items: [] };
+      groups.push(g);
+    }
+    g.items.push(b);
+  }
+  const big = size === "radio";
+  return (
+    <>
+      {groups.map((g, i) => (
+        <div key={g.name} className={i === 0 ? "" : "mt-4"}>
+          <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
+            {g.name}
+          </p>
+          <StatBars stats={g.items} size={size} />
+        </div>
+      ))}
+    </>
+  );
+}
 
 export function StatsPanel({
   data,
@@ -47,6 +65,7 @@ export function StatsPanel({
   onPushTab?: (tab: StatTab) => void;
 }) {
   const [override, setOverride] = useState<StatTab | null>(null);
+  const [showMore, setShowMore] = useState(false);
   const [pushed, setPushed] = useState(false);
   const pushedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -120,16 +139,38 @@ export function StatsPanel({
 
         <div className="p-4">
           {effectiveTab === "stats" &&
-            (hasStats ? (
-              <StatBars stats={data!.stats} size={size} />
-            ) : (
-              <>
-                <StatBars stats={PLACEHOLDER} size={size} />
-                <p className={`mt-3 text-secondary ${big ? "text-sm" : "text-xs"}`}>
-                  Live match data arrives at kickoff.
-                </p>
-              </>
-            ))}
+            (() => {
+              const bars = hasStats ? data!.stats : placeholderStats();
+              const def = bars.filter((b) => b.tier === "default");
+              const more = bars.filter((b) => b.tier === "more");
+              return (
+                <>
+                  <StatGroups bars={def} size={size} />
+                  {!hasStats && (
+                    <p className={`mt-3 text-secondary ${big ? "text-sm" : "text-xs"}`}>
+                      Live match data arrives at kickoff.
+                    </p>
+                  )}
+                  {more.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowMore((v) => !v)}
+                        aria-expanded={showMore}
+                        className={`mt-4 w-full rounded-lg border-[0.75px] border-line py-1.5 font-semibold text-secondary hover:bg-raised ${big ? "text-sm" : "text-xs"}`}
+                      >
+                        {showMore ? "Hide extra stats" : `More stats (${more.length})`}
+                      </button>
+                      {showMore && (
+                        <div className="mt-3">
+                          <StatGroups bars={more} size={size} />
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              );
+            })()}
 
           {effectiveTab === "events" && (
             <EventsTimeline events={data?.events ?? []} size={size} />

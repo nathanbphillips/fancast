@@ -11,6 +11,8 @@ import type { SmParticipant, SmScore } from "@/lib/fixtures";
 export type Side = "home" | "away";
 export type StatUnit = "count" | "pct";
 export type StatTab = "stats" | "events" | "lineups";
+/** default = always-visible grouped bars; more = behind the "More stats" toggle */
+export type StatTier = "default" | "more";
 
 export type StatBar = {
   code: string;
@@ -19,6 +21,8 @@ export type StatBar = {
   away: number;
   /** pct: bar width is the raw home value; count: width = home/(home+away) */
   unit: StatUnit;
+  group: string;
+  tier: StatTier;
 };
 
 export type EventKind =
@@ -116,18 +120,56 @@ export type SmFixtureDetail = {
   state?: { state?: string; short_name?: string | null; name?: string | null };
 };
 
-/** Curated, ordered stat bars. First five mirror the old placeholder so the
- *  live panel is a drop-in upgrade. A code absent from the payload is dropped. */
-const STAT_ALLOW: { code: string; label: string; unit: StatUnit }[] = [
-  { code: "ball-possession", label: "Possession", unit: "pct" },
-  { code: "shots-total", label: "Shots", unit: "count" },
-  { code: "shots-on-target", label: "On target", unit: "count" },
-  { code: "corners", label: "Corners", unit: "count" },
-  { code: "fouls", label: "Fouls", unit: "count" },
-  { code: "yellowcards", label: "Yellow cards", unit: "count" },
-  { code: "offsides", label: "Offsides", unit: "count" },
-  { code: "saves", label: "Saves", unit: "count" },
-  { code: "successful-passes-percentage", label: "Pass accuracy", unit: "pct" },
+/** Full stat catalogue (Phase 7). tier "default" = the 13 always-visible
+ *  grouped bars; tier "more" = behind the "More stats" expander. Array order
+ *  is render order; a code absent from the payload is dropped. Exported for
+ *  the placeholder + unit tests. */
+export const STAT_DEFS: {
+  code: string;
+  label: string;
+  unit: StatUnit;
+  group: string;
+  tier: StatTier;
+}[] = [
+  // --- default (always visible), 13 ---
+  { code: "shots-total", label: "Shots", unit: "count", group: "Attacking", tier: "default" },
+  { code: "shots-on-target", label: "On target", unit: "count", group: "Attacking", tier: "default" },
+  { code: "big-chances-created", label: "Big chances", unit: "count", group: "Attacking", tier: "default" },
+  { code: "corners", label: "Corners", unit: "count", group: "Attacking", tier: "default" },
+  { code: "offsides", label: "Offsides", unit: "count", group: "Attacking", tier: "default" },
+  { code: "ball-possession", label: "Possession", unit: "pct", group: "Possession & passing", tier: "default" },
+  { code: "passes", label: "Total passes", unit: "count", group: "Possession & passing", tier: "default" },
+  { code: "successful-passes", label: "Passes completed", unit: "count", group: "Possession & passing", tier: "default" },
+  { code: "successful-passes-percentage", label: "Pass completion %", unit: "pct", group: "Possession & passing", tier: "default" },
+  { code: "tackles", label: "Tackles", unit: "count", group: "Defending & discipline", tier: "default" },
+  { code: "fouls", label: "Fouls", unit: "count", group: "Defending & discipline", tier: "default" },
+  { code: "yellowcards", label: "Yellow cards", unit: "count", group: "Defending & discipline", tier: "default" },
+  { code: "saves", label: "Saves", unit: "count", group: "Defending & discipline", tier: "default" },
+  // --- more (behind the expander), 24 ---
+  { code: "shots-insidebox", label: "Shots in box", unit: "count", group: "Shooting", tier: "more" },
+  { code: "shots-outsidebox", label: "Shots outside box", unit: "count", group: "Shooting", tier: "more" },
+  { code: "shots-off-target", label: "Off target", unit: "count", group: "Shooting", tier: "more" },
+  { code: "shots-blocked", label: "Blocked shots", unit: "count", group: "Shooting", tier: "more" },
+  { code: "goal-attempts", label: "Goal attempts", unit: "count", group: "Shooting", tier: "more" },
+  { code: "hit-woodwork", label: "Woodwork", unit: "count", group: "Shooting", tier: "more" },
+  { code: "key-passes", label: "Key passes", unit: "count", group: "Passing & crossing", tier: "more" },
+  { code: "total-crosses", label: "Crosses", unit: "count", group: "Passing & crossing", tier: "more" },
+  { code: "accurate-crosses", label: "Accurate crosses", unit: "count", group: "Passing & crossing", tier: "more" },
+  { code: "long-passes", label: "Long passes", unit: "count", group: "Passing & crossing", tier: "more" },
+  { code: "successful-long-passes", label: "Long passes completed", unit: "count", group: "Passing & crossing", tier: "more" },
+  { code: "successful-long-passes-percentage", label: "Long pass %", unit: "pct", group: "Passing & crossing", tier: "more" },
+  { code: "dribble-attempts", label: "Dribbles attempted", unit: "count", group: "Dribbles & duels", tier: "more" },
+  { code: "successful-dribbles", label: "Dribbles completed", unit: "count", group: "Dribbles & duels", tier: "more" },
+  { code: "successful-dribbles-percentage", label: "Dribble success %", unit: "pct", group: "Dribbles & duels", tier: "more" },
+  { code: "duels-won", label: "Duels won", unit: "count", group: "Dribbles & duels", tier: "more" },
+  { code: "successful-headers", label: "Headers won", unit: "count", group: "Dribbles & duels", tier: "more" },
+  { code: "interceptions", label: "Interceptions", unit: "count", group: "Defending & tempo", tier: "more" },
+  { code: "free-kicks", label: "Free kicks", unit: "count", group: "Defending & tempo", tier: "more" },
+  { code: "attacks", label: "Attacks", unit: "count", group: "Defending & tempo", tier: "more" },
+  { code: "dangerous-attacks", label: "Dangerous attacks", unit: "count", group: "Defending & tempo", tier: "more" },
+  { code: "ball-safe", label: "Ball safe", unit: "count", group: "Defending & tempo", tier: "more" },
+  { code: "throwins", label: "Throw-ins", unit: "count", group: "Defending & tempo", tier: "more" },
+  { code: "goals-kicks", label: "Goal kicks", unit: "count", group: "Defending & tempo", tier: "more" },
 ];
 
 const EVENT_KIND: Record<string, EventKind> = {
@@ -167,12 +209,20 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
 
   const allStats = raw.statistics ?? [];
   const stats: StatBar[] = [];
-  for (const def of STAT_ALLOW) {
+  for (const def of STAT_DEFS) {
     const rows = allStats.filter((s) => s.type?.code === def.code);
     if (rows.length === 0) continue;
     const val = (loc: Side) =>
       Number(rows.find((r) => r.location === loc)?.data?.value ?? 0) || 0;
-    stats.push({ code: def.code, label: def.label, home: val("home"), away: val("away"), unit: def.unit });
+    stats.push({
+      code: def.code,
+      label: def.label,
+      home: val("home"),
+      away: val("away"),
+      unit: def.unit,
+      group: def.group,
+      tier: def.tier,
+    });
   }
 
   const events: TimelineEvent[] = [];
@@ -240,6 +290,19 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     events,
     lineups: { home: buildSide("home", home), away: buildSide("away", away) },
   };
+}
+
+/** The 13 default bars as zeros (possession 50/50) — pre-match placeholder. */
+export function placeholderStats(): StatBar[] {
+  return STAT_DEFS.filter((d) => d.tier === "default").map((d) => ({
+    code: d.code,
+    label: d.label,
+    unit: d.unit,
+    group: d.group,
+    tier: d.tier,
+    home: d.code === "ball-possession" ? 50 : 0,
+    away: d.code === "ball-possession" ? 50 : 0,
+  }));
 }
 
 /** Pre-match / unknown / seed-fixture (id <= 0) zeros — no upstream call. */
