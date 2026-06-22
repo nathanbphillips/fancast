@@ -63,6 +63,34 @@ export type SideLineup = {
   bench: LineupPlayer[];
 };
 
+/** Deeper stats shown in the desktop expanded panel / mobile "Advanced" box.
+ *  Distilled SERVER-SIDE from heavy includes (player details, trends, periods)
+ *  so the client payload stays small. */
+export type NamedValue = { name: string; value: number };
+export type XgPlayer = { side: Side; name: string; xg: number };
+export type Goalkeeper = {
+  name: string;
+  saves: number | null;
+  conceded: number | null;
+  insideBoxSaves: number | null;
+};
+export type MomentumBucket = { minute: number; home: number; away: number };
+export type HalfStat = {
+  code: string;
+  label: string;
+  first: { home: number; away: number };
+  second: { home: number; away: number };
+};
+export type GameState = { homeLed: number; level: number; awayLed: number };
+export type DeepStats = {
+  xg: { home: number; away: number; top: XgPlayer[] };
+  ratings: { home: NamedValue[]; away: NamedValue[] };
+  goalkeepers: { home: Goalkeeper | null; away: Goalkeeper | null };
+  momentum: MomentumBucket[];
+  perHalf: HalfStat[];
+  gameState: GameState | null;
+};
+
 export type FixtureStats = {
   fixtureId: number;
   fetchedAt: string; // ISO
@@ -74,6 +102,7 @@ export type FixtureStats = {
   stats: StatBar[]; // [] before kickoff
   events: TimelineEvent[]; // ascending (minute, sortOrder); UI reverses
   lineups: { home: SideLineup | null; away: SideLineup | null };
+  deep: DeepStats | null; // null pre-match / when detail unavailable
 };
 
 // ---- raw Sportmonks shapes (probed live; parsed defensively) ----
@@ -96,6 +125,7 @@ type SmEvent = {
   type_id: number;
   type?: { id: number; code: string; name: string };
 };
+type SmDetail = { type?: { code?: string }; data?: { value?: number | string | null } };
 type SmLineup = {
   team_id: number;
   player_id: number;
@@ -107,8 +137,11 @@ type SmLineup = {
   jersey_number?: number | null;
   player?: { display_name?: string | null; position_id?: number | null };
   type?: { code?: string };
+  details?: SmDetail[];
 };
 type SmFormation = { participant_id: number; formation?: string | null; location: Side | string };
+type SmTrend = { participant_id: number; minute: number; value?: number | null; type?: { code?: string } };
+type SmPeriod = { statistics?: SmStat[] };
 export type SmFixtureDetail = {
   id: number;
   statistics?: SmStat[];
@@ -118,6 +151,8 @@ export type SmFixtureDetail = {
   participants?: SmParticipant[];
   scores?: SmScore[];
   state?: { state?: string; short_name?: string | null; name?: string | null };
+  trends?: SmTrend[];
+  periods?: SmPeriod[];
 };
 
 /** Full stat catalogue (Phase 7). tier "default" = the 13 always-visible
@@ -186,6 +221,150 @@ const EVENT_KIND: Record<string, EventKind> = {
   var: "var",
   "var-card": "var",
 };
+
+const GK_POSITION_ID = 24; // Sportmonks goalkeeper position
+const PERHALF_CODES: { code: string; label: string }[] = [
+  { code: "ball-possession", label: "Possession" },
+  { code: "shots-total", label: "Shots" },
+  { code: "shots-on-target", label: "On target" },
+];
+const num = (v: unknown): number | null => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+};
+type SideTeam = { id: number | null; name: string };
+
+/** dangerous-attacks per ~15' bucket (delta of the cumulative trend), per side. */
+function buildMomentum(trends: SmTrend[], home: SideTeam, away: SideTeam): MomentumBucket[] {
+  const da = trends.filter((t) => t.type?.code === "dangerous-attacks");
+  if (da.length === 0) return [];
+  const BUCKET = 15;
+  const N = 6; // 0-15 … 75-90
+  const sideOf = (id: number): Side | null => (id === home.id ? "home" : id === away.id ? "away" : null);
+  const cum = (s: Side, endMin: number) =>
+    da.filter((t) => sideOf(t.participant_id) === s && t.minute <= endMin)
+      .reduce((m, t) => Math.max(m, Number(t.value ?? 0)), 0);
+  const out: MomentumBucket[] = [];
+  let prevH = 0, prevA = 0;
+  for (let b = 1; b <= N; b++) {
+    const h = cum("home", b * BUCKET);
+    const a = cum("away", b * BUCKET);
+    out.push({ minute: b * BUCKET, home: Math.max(0, h - prevH), away: Math.max(0, a - prevA) });
+    prevH = h; prevA = a;
+  }
+  return out;
+}
+
+/** minutes spent home-leading / level / away-leading, from goal `result` values. */
+function buildGameState(events: SmEvent[], _home: SideTeam, _away: SideTeam): GameState | null {
+  if (events.length === 0) return null;
+  const goalCodes = new Set(["goal", "penalty", "penalty-goal", "owngoal", "own-goal"]);
+  const goals = events
+    .filter((e) => e.type?.code && goalCodes.has(e.type.code) && e.result)
+    .sort((a, b) => a.minute - b.minute || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const maxMin = Math.max(90, ...events.map((e) => e.minute + (e.extra_minute ?? 0)));
+  let h = 0, a = 0, prev = 0, homeLed = 0, level = 0, awayLed = 0;
+  const add = (mins: number) => {
+    if (mins <= 0) return;
+    if (h > a) homeLed += mins;
+    else if (h < a) awayLed += mins;
+    else level += mins;
+  };
+  for (const g of goals) {
+    add(g.minute - prev);
+    prev = g.minute;
+    const m = (g.result ?? "").match(/(\d+)\D+(\d+)/);
+    if (m) { h = Number(m[1]); a = Number(m[2]); }
+  }
+  add(maxMin - prev);
+  return { homeLed, level, awayLed };
+}
+
+/** Distill the heavy includes (player details, trends, periods) + events into
+ *  the compact DeepStats. Server-side only; returns null pre-match. */
+function normalizeDeep(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): DeepStats | null {
+  const lineups = raw.lineups ?? [];
+  const sideOf = (teamId: number): Side | null => (teamId === home.id ? "home" : teamId === away.id ? "away" : null);
+  const detail = (l: SmLineup, code: string): number | null => {
+    const d = (l.details ?? []).find((x) => x.type?.code === code);
+    return d ? num(d.data?.value) : null;
+  };
+  const nameOf = (l: SmLineup) => l.player?.display_name ?? l.player_name ?? "—";
+
+  let xgHome = 0, xgAway = 0;
+  const xgTop: XgPlayer[] = [];
+  const ratingsHome: NamedValue[] = [];
+  const ratingsAway: NamedValue[] = [];
+  let gkHome: Goalkeeper | null = null;
+  let gkAway: Goalkeeper | null = null;
+
+  for (const l of lineups) {
+    const side = sideOf(l.team_id);
+    if (!side) continue;
+    const xg = detail(l, "expected-goals");
+    if (xg != null) {
+      if (side === "home") xgHome += xg; else xgAway += xg;
+      if (xg > 0) xgTop.push({ side, name: nameOf(l), xg: Math.round(xg * 100) / 100 });
+    }
+    const rating = detail(l, "rating");
+    if (rating != null) (side === "home" ? ratingsHome : ratingsAway).push({ name: nameOf(l), value: rating });
+    const posGk = (l.position_id ?? l.player?.position_id) === GK_POSITION_ID;
+    const hasGkStats = detail(l, "saves") != null && detail(l, "goalkeeper-goals-conceded") != null;
+    if (posGk || hasGkStats) {
+      const gk: Goalkeeper = {
+        name: nameOf(l),
+        saves: detail(l, "saves"),
+        conceded: detail(l, "goalkeeper-goals-conceded") ?? detail(l, "goals-conceded"),
+        insideBoxSaves: detail(l, "saves-insidebox"),
+      };
+      if (side === "home" && !gkHome) gkHome = gk;
+      if (side === "away" && !gkAway) gkAway = gk;
+    }
+  }
+  xgTop.sort((x, y) => y.xg - x.xg);
+  ratingsHome.sort((x, y) => y.value - x.value);
+  ratingsAway.sort((x, y) => y.value - x.value);
+
+  const momentum = buildMomentum(raw.trends ?? [], home, away);
+
+  const periods = raw.periods ?? [];
+  const perHalf: HalfStat[] = [];
+  if (periods.length >= 1) {
+    const pVal = (p: SmPeriod | undefined, code: string, loc: Side) => {
+      const pid = loc === "home" ? home.id : away.id;
+      const st = (p?.statistics ?? []).find(
+        (s) => s.type?.code === code && (s.location === loc || s.participant_id === pid),
+      );
+      return num(st?.data?.value) ?? 0;
+    };
+    for (const def of PERHALF_CODES) {
+      if (!periods.some((p) => (p.statistics ?? []).some((s) => s.type?.code === def.code))) continue;
+      perHalf.push({
+        code: def.code,
+        label: def.label,
+        first: { home: pVal(periods[0], def.code, "home"), away: pVal(periods[0], def.code, "away") },
+        second: { home: pVal(periods[1], def.code, "home"), away: pVal(periods[1], def.code, "away") },
+      });
+    }
+  }
+
+  const gameState = buildGameState(raw.events ?? [], home, away);
+
+  const empty =
+    xgHome === 0 && xgAway === 0 && xgTop.length === 0 &&
+    ratingsHome.length === 0 && ratingsAway.length === 0 &&
+    !gkHome && !gkAway && momentum.length === 0 && perHalf.length === 0 && !gameState;
+  if (empty) return null;
+
+  return {
+    xg: { home: Math.round(xgHome * 100) / 100, away: Math.round(xgAway * 100) / 100, top: xgTop.slice(0, 6) },
+    ratings: { home: ratingsHome.slice(0, 5), away: ratingsAway.slice(0, 5) },
+    goalkeepers: { home: gkHome, away: gkAway },
+    momentum,
+    perHalf,
+    gameState,
+  };
+}
 
 /** Pure: map a raw Sportmonks fixture detail to FixtureStats. Tolerates any
  *  missing include (defaults to empty), skips unknown event kinds, and drops
@@ -289,6 +468,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     stats,
     events,
     lineups: { home: buildSide("home", home), away: buildSide("away", away) },
+    deep: normalizeDeep(raw, home, away),
   };
 }
 
@@ -317,6 +497,7 @@ export function emptyStats(id: number): FixtureStats {
     stats: [],
     events: [],
     lineups: { home: null, away: null },
+    deep: null,
   };
 }
 
@@ -340,7 +521,8 @@ async function fetchFixtureRaw(id: number): Promise<SmFixtureDetail> {
   if (!token) throw new Error("SPORTMONKS_API_TOKEN not configured");
   const base = process.env.SPORTMONKS_BASE ?? "https://api.sportmonks.com/v3/football";
   // include set is HARDCODED — never accept an include/URL from the client
-  const include = "statistics.type;events.type;lineups.player;lineups.type;formations;participants;scores;state";
+  const include =
+    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type";
   const res = await fetch(`${base}/fixtures/${id}?include=${include}`, {
     headers: { Authorization: token },
     cache: "no-store",

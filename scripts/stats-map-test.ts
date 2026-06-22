@@ -44,8 +44,8 @@ const raw: SmFixtureDetail = {
     { minute: 70, extra_minute: 2, participant_id: 14, player_id: 3, player_name: "Bruno", related_player_name: null, result: null, info: null, sort_order: 1, type_id: 999, type: { id: 999, code: "mystery-event", name: "Mystery" } }, // unknown -> dropped
   ],
   lineups: [
-    { team_id: 14, player_id: 100, formation_field: "1:1", type_id: 11, player_name: "GK", jersey_number: 1, player: { display_name: "Goalkeeper" }, type: { code: "lineup" } },
-    { team_id: 14, player_id: 101, formation_field: "2:2", type_id: 11, player_name: "Def", jersey_number: 4, player: { display_name: "Defender" }, type: { code: "lineup" } },
+    { team_id: 14, player_id: 100, formation_field: "1:1", type_id: 11, position_id: 24, player_name: "GK", jersey_number: 1, player: { display_name: "Goalkeeper" }, type: { code: "lineup" }, details: [{ type: { code: "saves" }, data: { value: 3 } }, { type: { code: "goalkeeper-goals-conceded" }, data: { value: 1 } }] },
+    { team_id: 14, player_id: 101, formation_field: "2:2", type_id: 11, player_name: "Def", jersey_number: 4, player: { display_name: "Defender" }, type: { code: "lineup" }, details: [{ type: { code: "expected-goals" }, data: { value: 0.5 } }, { type: { code: "rating" }, data: { value: 7.5 } }] },
     { team_id: 14, player_id: 102, type_id: 12, player_name: "Sub", jersey_number: 30, player: { display_name: "Sub Guy" }, type: { code: "bench" } },
     { team_id: 19, player_id: 200, formation_field: "1:1", type_id: 11, player_name: "ArsGK", jersey_number: 1, player: { display_name: "Arsenal GK" }, type: { code: "lineup" } },
   ],
@@ -84,6 +84,14 @@ eq("home formation", m.lineups.home!.formation, "4-2-3-1");
 eq("home starters (by line, GK first) names", m.lineups.home!.starters.map((p) => p.name), ["Goalkeeper", "Defender"]);
 eq("home bench separated", m.lineups.home!.bench.map((p) => p.name), ["Sub Guy"]);
 eq("away formation", m.lineups.away!.formation, "4-3-3");
+
+// deep stats (distilled from player details + the goal event)
+ok("deep present (has detail + events)", !!m.deep);
+eq("team xG summed from player expected-goals", m.deep!.xg.home, 0.5);
+eq("top xG contributor", m.deep!.xg.top[0]?.name, "Defender");
+eq("player rating captured", m.deep!.ratings.home[0], { name: "Defender", value: 7.5 });
+eq("goalkeeper detected with saves/conceded", [m.deep!.goalkeepers.home?.name, m.deep!.goalkeepers.home?.saves, m.deep!.goalkeepers.home?.conceded], ["Goalkeeper", 3, 1]);
+ok("game state: away led after the 13' goal", (m.deep!.gameState?.awayLed ?? 0) > 0 && m.deep!.gameState?.homeLed === 0);
 
 // empty / seed-fixture contract
 const e = emptyStats(-1);
