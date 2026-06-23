@@ -8,7 +8,10 @@ const domainSchema = z
   .string()
   .trim()
   .toLowerCase()
-  .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/, "Enter a bare domain like example.com");
+  .regex(/^[a-z0-9.-]+\.[a-z]{2,}$/, "Enter a bare domain like example.com")
+  // store the bare registrable form: link submit strips a leading www. before
+  // matching, so a stored "www.example.com" would never match (audit polish)
+  .transform((d) => d.replace(/^www\./, ""));
 
 /** Admin-editable domain blocklist (FR-9.3). */
 export async function POST(request: NextRequest) {

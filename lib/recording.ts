@@ -185,9 +185,21 @@ export async function processRecording(
       endMs,
     );
 
-    // cut each segment by stream-copy, upload, collect for the zip
-    await service.from("recording_segments").delete().eq("recording_id", rec.id);
+    // cut each segment by stream-copy + upload, COLLECTING rows + zip entries.
+    // We delete+insert the segment rows only AFTER every cut/upload succeeds, so
+    // a mid-run failure (return fail) leaves the prior segments intact instead of
+    // wiping them up front (audit polish — a recut no longer has a zero-row window).
     const zipEntries: { name: string; data: Buffer }[] = [{ name: "full.mp3", data: fullBuf }];
+    const segRows: {
+      recording_id: string;
+      idx: number;
+      label: string;
+      start_offset: number;
+      end_offset: number;
+      storage_path: string;
+      size_bytes: number;
+      duration_seconds: number;
+    }[] = [];
     for (const seg of segments) {
       const local = join(work, `seg-${seg.idx}.mp3`);
       await run(FFMPEG, [
@@ -204,7 +216,7 @@ export async function processRecording(
         .from(REC_BUCKET)
         .upload(storagePath, buf, { contentType: "audio/mpeg", upsert: true });
       if (segUp.error) return fail(`segment upload failed: ${segUp.error.message}`);
-      await service.from("recording_segments").insert({
+      segRows.push({
         recording_id: rec.id,
         idx: seg.idx,
         label: seg.label,
@@ -215,6 +227,12 @@ export async function processRecording(
         duration_seconds: seg.endOffset - seg.startOffset,
       });
       zipEntries.push({ name: `${String(seg.idx).padStart(2, "0")} ${seg.label}.mp3`, data: buf });
+    }
+    // every segment cut + uploaded — now swap the rows (narrow delete→insert window)
+    await service.from("recording_segments").delete().eq("recording_id", rec.id);
+    if (segRows.length) {
+      const segIns = await service.from("recording_segments").insert(segRows);
+      if (segIns.error) return fail(`segment rows insert failed: ${segIns.error.message}`);
     }
 
     // zip everything for one-click download — non-fatal: a zip hiccup

@@ -449,6 +449,17 @@ export function useRoomAudio(opts: {
     await stopMicInternal();
     await roomRef.current?.disconnect();
     roomRef.current = null;
+    // explicitly disconnect each source node before dropping the map — a
+    // TrackUnsubscribed that lands after room.disconnect() would otherwise miss
+    // its entry and leave an orphaned MediaStreamAudioSourceNode on the worklet
+    // (audit polish — slow leak across stop/restart cycles)
+    trackNodesRef.current.forEach((n) => {
+      try {
+        n.src.disconnect();
+      } catch {
+        /* already disconnected */
+      }
+    });
     trackNodesRef.current.clear();
     // drop the buffered timeline: resuming later must not replay stale
     // audio from before the stop

@@ -54,6 +54,15 @@ export async function POST(request: NextRequest) {
       { onConflict: "follower_id,commentator_id", ignoreDuplicates: true },
     );
   if (error) {
+    // a signed-in user who hasn't created their profile yet (the /welcome
+    // state) has no profiles row, so the follower_id FK fails — return a clean
+    // 409 instead of leaking the raw Postgres error (audit polish)
+    if (error.code === "23503") {
+      return NextResponse.json(
+        { error: "Finish setting up your profile first." },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true }, { status: 201 });
