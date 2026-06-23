@@ -37,25 +37,27 @@ export function LineupTabs({
 
   return (
     <div>
-      <div className="mb-3 flex gap-1" role="tablist" aria-label="Lineups">
-        {([["home", home], ["away", away]] as const).map(([key, l]) =>
-          l ? (
+      <div className="mb-3 flex gap-1" role="group" aria-label="Choose team">
+        {([["home", home], ["away", away]] as const).map(([key, l]) => {
+          if (!l) return null;
+          const isActive =
+            side === key || (side === "home" && !home) || (side === "away" && !away);
+          return (
             <button
               key={key}
               type="button"
-              role="tab"
-              aria-selected={side === key}
+              aria-pressed={isActive}
               onClick={() => setSide(key)}
               className={`flex-1 truncate border-b-2 pb-1.5 font-semibold ${big ? "text-base" : "text-sm"} ${
-                (side === key || (side === "home" && !home) || (side === "away" && !away))
+                isActive
                   ? "border-gold text-primary"
                   : "border-transparent text-secondary hover:text-primary"
               }`}
             >
               {l.teamName}
             </button>
-          ) : null,
-        )}
+          );
+        })}
       </div>
 
       <p className={`mb-2 text-secondary ${big ? "text-sm" : "text-xs"}`}>

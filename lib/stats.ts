@@ -236,6 +236,9 @@ type SideTeam = { id: number | null; name: string };
 
 /** dangerous-attacks per ~15' bucket (delta of the cumulative trend), per side. */
 function buildMomentum(trends: SmTrend[], home: SideTeam, away: SideTeam): MomentumBucket[] {
+  // without resolved participant ids trends can't be attributed to a side —
+  // return empty rather than silently mis-bucket (audit polish)
+  if (home.id == null || away.id == null) return [];
   const da = trends.filter((t) => t.type?.code === "dangerous-attacks");
   if (da.length === 0) return [];
   const BUCKET = 15;
@@ -261,7 +264,13 @@ function buildGameState(events: SmEvent[], _home: SideTeam, _away: SideTeam): Ga
   const goalCodes = new Set(["goal", "penalty", "penalty-goal", "owngoal", "own-goal"]);
   const goals = events
     .filter((e) => e.type?.code && goalCodes.has(e.type.code) && e.result)
-    .sort((a, b) => a.minute - b.minute || (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    // sort by the SAME effective minute used to accumulate below, so a 45+2'
+    // goal never sorts ahead of a plain 46' and yields a dropped negative span
+    .sort(
+      (a, b) =>
+        a.minute + (a.extra_minute ?? 0) - (b.minute + (b.extra_minute ?? 0)) ||
+        (a.sort_order ?? 0) - (b.sort_order ?? 0),
+    );
   const maxMin = Math.max(90, ...events.map((e) => e.minute + (e.extra_minute ?? 0)));
   let h = 0, a = 0, prev = 0, homeLed = 0, level = 0, awayLed = 0;
   const add = (mins: number) => {
@@ -271,8 +280,11 @@ function buildGameState(events: SmEvent[], _home: SideTeam, _away: SideTeam): Ga
     else level += mins;
   };
   for (const g of goals) {
-    add(g.minute - prev);
-    prev = g.minute;
+    // include stoppage time so a 90+3 goal shifts the lead boundary correctly
+    // and matches maxMin's extra_minute basis (audit polish)
+    const gm = g.minute + (g.extra_minute ?? 0);
+    add(gm - prev);
+    prev = gm;
     const m = (g.result ?? "").match(/(\d+)\D+(\d+)/);
     if (m) { h = Number(m[1]); a = Number(m[2]); }
   }

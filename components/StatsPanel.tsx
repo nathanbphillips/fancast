@@ -141,7 +141,9 @@ export function StatsPanel({
                 key={t.id}
                 type="button"
                 role="tab"
+                id={`stats-tab-${t.id}`}
                 aria-selected={active}
+                aria-controls="stats-tabpanel"
                 onClick={() => setOverride(t.id)}
                 className={`flex-1 border-b-2 font-semibold ${big ? "h-12 text-base" : "h-10 text-sm"} ${
                   active
@@ -177,7 +179,12 @@ export function StatsPanel({
           )
         )}
 
-        <div className="p-4">
+        <div
+          className="p-4"
+          role="tabpanel"
+          id="stats-tabpanel"
+          aria-labelledby={`stats-tab-${effectiveTab}`}
+        >
           {effectiveTab === "stats" &&
             (() => {
               if (!hasStats) {

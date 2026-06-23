@@ -126,8 +126,8 @@ function RatingList({ title, rows, big }: { title: string; rows: { name: string;
     <div>
       <p className={`mb-1 text-secondary ${big ? "text-xs" : "text-[11px]"}`}>{title}</p>
       <ul className="space-y-0.5">
-        {rows.map((r) => (
-          <li key={r.name} className={`flex justify-between ${big ? "text-sm" : "text-[13px]"}`}>
+        {rows.map((r, i) => (
+          <li key={`${r.name}-${i}`} className={`flex justify-between ${big ? "text-sm" : "text-[13px]"}`}>
             <span className="truncate">{r.name}</span>
             <span className="ml-2 shrink-0 font-semibold tabular-nums">{r.value.toFixed(1)}</span>
           </li>
@@ -177,8 +177,8 @@ export function DeeperStats({
         <Bar label="Team xG" home={deep.xg.home} away={deep.xg.away} fmt={(n) => n.toFixed(2)} big />
         {deep.xg.top.length > 0 && (
           <ul className="mt-1 space-y-0.5">
-            {deep.xg.top.slice(0, 5).map((p) => (
-              <li key={`${p.side}-${p.name}`} className={`flex items-center justify-between ${big ? "text-sm" : "text-[13px]"}`}>
+            {deep.xg.top.slice(0, 5).map((p, i) => (
+              <li key={`${p.side}-${p.name}-${i}`} className={`flex items-center justify-between ${big ? "text-sm" : "text-[13px]"}`}>
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${p.side === "home" ? "bg-red" : "bg-navy"}`} />
                   <span className="truncate">{p.name}</span>
