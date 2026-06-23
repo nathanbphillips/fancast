@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { StatBars } from "@/components/stats/StatBars";
 import { EventsTimeline } from "@/components/stats/EventsTimeline";
 import { LineupTabs } from "@/components/stats/LineupTabs";
+import { DeeperStats } from "@/components/stats/DeeperStats";
 import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
 
@@ -55,6 +56,7 @@ export function StatsPanel({
   pushedTab = null,
   pushNonce = 0,
   onPushTab,
+  expanded = false,
 }: {
   data: FixtureStats | null;
   radio?: boolean;
@@ -63,9 +65,11 @@ export function StatsPanel({
   pushedTab?: StatTab | null;
   pushNonce?: number;
   onPushTab?: (tab: StatTab) => void;
+  /** desktop only: render the deeper-stats sections inline below the 13.
+   *  On mobile the deeper sections always show (this only gates the ≥lg view). */
+  expanded?: boolean;
 }) {
   const [override, setOverride] = useState<StatTab | null>(null);
-  const [showMore, setShowMore] = useState(false);
   const [pushed, setPushed] = useState(false);
   const pushedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -140,41 +144,31 @@ export function StatsPanel({
         <div className="p-4">
           {effectiveTab === "stats" &&
             (() => {
-              const bars = hasStats ? data!.stats : placeholderStats();
-              const def = bars.filter((b) => b.tier === "default");
-              const more = bars.filter((b) => b.tier === "more");
-              return (
-                <>
-                  <StatGroups bars={def} size={size} />
-                  {!hasStats && (
+              if (!hasStats) {
+                return (
+                  <>
+                    <StatGroups bars={placeholderStats()} size={size} />
                     <p className={`mt-3 text-secondary ${big ? "text-sm" : "text-xs"}`}>
                       Live match data arrives at kickoff.
                     </p>
-                  )}
-                  {more.length > 0 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setShowMore((v) => !v)}
-                        aria-expanded={showMore}
-                        className={`mt-4 w-full rounded-lg border-[0.75px] border-line py-1.5 font-semibold text-secondary hover:bg-raised ${big ? "text-sm" : "text-xs"}`}
-                      >
-                        {showMore ? "Hide extra stats" : `More stats (${more.length})`}
-                      </button>
-                      {showMore && (
-                        <div className="mt-3">
-                          <StatGroups bars={more} size={size} />
-                          <button
-                            type="button"
-                            onClick={() => setShowMore(false)}
-                            className={`mt-4 w-full rounded-lg border-[0.75px] border-line py-1.5 font-semibold text-secondary hover:bg-raised ${big ? "text-sm" : "text-xs"}`}
-                          >
-                            Hide extra stats
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  </>
+                );
+              }
+              const def = data!.stats.filter((b) => b.tier === "default");
+              const more = data!.stats.filter((b) => b.tier === "more");
+              return (
+                <>
+                  <StatGroups bars={def} size={size} />
+                  {/* deeper stats: always on mobile, desktop only when expanded */}
+                  <div className={`mt-3 ${expanded ? "" : "lg:hidden"}`}>
+                    <DeeperStats
+                      deep={data!.deep}
+                      extended={more}
+                      homeName={data!.home.name}
+                      awayName={data!.away.name}
+                      size={size}
+                    />
+                  </div>
                 </>
               );
             })()}

@@ -93,19 +93,21 @@ const INPUTS_OPEN: RoomState[] = [
   "postgame",
 ];
 
-const GRID_CLASS: Record<string, string> = {
-  "open-open": "lg:grid-cols-[1fr_2fr_1fr]",
-  "closed-open": "lg:grid-cols-[2.5rem_2fr_1fr]",
-  "open-closed": "lg:grid-cols-[1fr_2fr_2.5rem]",
-  "closed-closed": "lg:grid-cols-[2.5rem_2fr_2.5rem]",
-};
+// default = 3 columns (25/50/25); expanded = 2 columns (50/50, stats + companion).
+const GRID_DEFAULT = "lg:grid-cols-[1fr_2fr_1fr]";
+const GRID_EXPANDED = "lg:grid-cols-[1fr_1fr]";
 
 export function RealtimeRoom(props: Props) {
   const { room, viewer } = props;
   const [roomState, setRoomState] = useState<RoomState>(room.state);
   const [tab, setTab] = useState<"chat" | "stats" | "links" | "questions">("chat");
   const [centerTab, setCenterTab] = useState<"chat" | "questions">("chat");
-  const [collapsed, setCollapsed] = useState({ stats: false, links: false });
+  // desktop layout is a personal, local choice (not commentator-pushed, not saved):
+  //   default  → stats 25 / chat 50 / links 25
+  //   expanded → stats 50 / companion 50  (companion swaps between chat & links)
+  // expanding stats keeps chat (priority); expanding links pushes chat behind links.
+  const [deskLayout, setDeskLayout] = useState<"default" | "expanded">("default");
+  const [companion, setCompanion] = useState<"chat" | "links">("chat");
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
   const [questions, setQuestions] = useState<Question[]>(props.initialQuestions);
@@ -571,7 +573,38 @@ export function RealtimeRoom(props: Props) {
     />
   );
 
-  const gridKey = `${collapsed.stats ? "closed" : "open"}-${collapsed.links ? "closed" : "open"}`;
+  const expandedView = deskLayout === "expanded";
+  // in expanded mode only the chosen companion occupies the right column on desktop
+  const chatDesktopHidden = expandedView && companion === "links";
+  const linksDesktopHidden = expandedView && companion === "chat";
+
+  // desktop-only control bar shown atop whichever panel is the companion (right column)
+  const companionBar = (
+    <div className="hidden items-center gap-2 border-b border-line bg-surface px-3 py-2 lg:flex">
+      <div className="flex rounded-lg border-[0.75px] border-line p-0.5 text-xs font-semibold">
+        {(["chat", "links"] as const).map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setCompanion(c)}
+            aria-pressed={companion === c}
+            className={`rounded-md px-3 py-1 capitalize transition-colors ${
+              companion === c ? "bg-raised text-primary" : "text-secondary hover:text-primary"
+            }`}
+          >
+            {c}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={() => setDeskLayout("default")}
+        className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
+      >
+        Minimize <span aria-hidden>»«</span>
+      </button>
+    </div>
+  );
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:pb-[80px]">
@@ -612,52 +645,56 @@ export function RealtimeRoom(props: Props) {
       </nav>
 
       <div
-        className={`flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl ${GRID_CLASS[gridKey]}`}
+        className={`flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl ${
+          expandedView ? GRID_EXPANDED : GRID_DEFAULT
+        }`}
       >
         <aside
           aria-label="Stats"
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
         >
-          {collapsed.stats ? (
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => ({ ...c, stats: false }))}
-              aria-label="Expand stats panel"
-              className="hidden h-full w-full items-start justify-center pt-3 text-secondary hover:text-primary lg:flex"
-            >
-              »
-            </button>
-          ) : (
-            <>
-              {isRoomCommentator && (
-                <div className="hidden justify-end px-2 pt-2 lg:flex">
-                  <button
-                    type="button"
-                    onClick={() => setCollapsed((c) => ({ ...c, stats: true }))}
-                    aria-label="Collapse stats panel"
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-secondary hover:bg-raised hover:text-primary"
-                  >
-                    «
-                  </button>
-                </div>
-              )}
-              <StatsPanel
-                data={matchStats}
-                radio={audio.radioActive}
-                isRoomCommentator={isRoomCommentator}
-                roomId={room.id}
-                pushedTab={pushedStatsTab}
-                pushNonce={statsPushNonce}
-                onPushTab={pushStatsTab}
-              />
-            </>
-          )}
+          {/* desktop expand/minimize control — personal layout choice */}
+          <div className="hidden items-center justify-end px-2 pt-2 lg:flex">
+            {expandedView ? (
+              <button
+                type="button"
+                onClick={() => setDeskLayout("default")}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
+              >
+                Minimize <span aria-hidden>»«</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setCompanion("chat");
+                  setDeskLayout("expanded");
+                }}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
+              >
+                Expand stats <span aria-hidden>«»</span>
+              </button>
+            )}
+          </div>
+          <StatsPanel
+            data={matchStats}
+            radio={audio.radioActive}
+            isRoomCommentator={isRoomCommentator}
+            roomId={room.id}
+            pushedTab={pushedStatsTab}
+            pushNonce={statsPushNonce}
+            onPushTab={pushStatsTab}
+            expanded={expandedView}
+          />
         </aside>
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
+          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col ${
+            chatDesktopHidden ? "lg:hidden" : "lg:flex"
+          }`}
         >
+          {expandedView && companionBar}
           {isRoomCommentator && (
             <div className="hidden border-b border-line bg-surface lg:flex">
               {(["chat", "questions"] as const).map((t) => (
@@ -695,43 +732,38 @@ export function RealtimeRoom(props: Props) {
 
         <aside
           aria-label="Links"
-          className={`${tab === "links" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-l lg:border-line`}
+          className={`${tab === "links" ? "block" : "hidden"} min-h-0 overflow-y-auto ${
+            linksDesktopHidden ? "lg:hidden" : "lg:block"
+          } lg:border-l lg:border-line`}
         >
-          {collapsed.links ? (
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => ({ ...c, links: false }))}
-              aria-label="Expand links panel"
-              className="hidden h-full w-full items-start justify-center pt-3 text-secondary hover:text-primary lg:flex"
-            >
-              «
-            </button>
+          {/* expanded + companion=links: links is the right column, gets the swap bar.
+              default: a desktop entry point to expand straight into stats+links. */}
+          {expandedView ? (
+            companionBar
           ) : (
-            <>
-              {isRoomCommentator && (
-                <div className="hidden justify-start px-2 pt-2 lg:flex">
-                  <button
-                    type="button"
-                    onClick={() => setCollapsed((c) => ({ ...c, links: true }))}
-                    aria-label="Collapse links panel"
-                    className="flex h-8 w-8 items-center justify-center rounded-md text-secondary hover:bg-raised hover:text-primary"
-                  >
-                    »
-                  </button>
-                </div>
-              )}
-              <LiveLinks
-                roomId={room.id}
-                viewer={viewer}
-                roomState={roomState}
-                isRoomCommentator={isRoomCommentator}
-                linksOpen={linksOpen}
-                links={links}
-                myVotes={props.myLinkVotes}
-                onSubmitted={appendLink}
-              />
-            </>
+            <div className="hidden justify-end px-2 pt-2 lg:flex">
+              <button
+                type="button"
+                onClick={() => {
+                  setCompanion("links");
+                  setDeskLayout("expanded");
+                }}
+                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
+              >
+                Expand links <span aria-hidden>«»</span>
+              </button>
+            </div>
           )}
+          <LiveLinks
+            roomId={room.id}
+            viewer={viewer}
+            roomState={roomState}
+            isRoomCommentator={isRoomCommentator}
+            linksOpen={linksOpen}
+            links={links}
+            myVotes={props.myLinkVotes}
+            onSubmitted={appendLink}
+          />
         </aside>
       </div>
 
