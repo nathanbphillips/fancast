@@ -48,6 +48,42 @@ function StatGroups({ bars, size }: { bars: StatBar[]; size: "compact" | "radio"
   );
 }
 
+/** Mobile-only collapsible group ("Match stats" / "Advanced"). A plain header
+ *  with a caret — not a bordered card — so it sits cleanly above grouped bars
+ *  or the deeper-stats cards without nesting boxes inside boxes. */
+function MobileGroup({
+  title,
+  defaultOpen = false,
+  big,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  big: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className={`flex w-full items-center gap-2 py-1.5 font-semibold ${big ? "text-base" : "text-sm"}`}
+      >
+        <span>{title}</span>
+        <span
+          aria-hidden
+          className={`ml-auto inline-block text-secondary transition-transform ${open ? "" : "-rotate-90"}`}
+        >
+          ⌄
+        </span>
+      </button>
+      {open && <div className="mt-1">{children}</div>}
+    </div>
+  );
+}
+
 export function StatsPanel({
   data,
   radio = false,
@@ -156,18 +192,31 @@ export function StatsPanel({
               }
               const def = data!.stats.filter((b) => b.tier === "default");
               const more = data!.stats.filter((b) => b.tier === "more");
+              const thirteen = <StatGroups bars={def} size={size} />;
+              const deeper = (
+                <DeeperStats
+                  deep={data!.deep}
+                  extended={more}
+                  homeName={data!.home.name}
+                  awayName={data!.away.name}
+                  size={size}
+                />
+              );
               return (
                 <>
-                  <StatGroups bars={def} size={size} />
-                  {/* deeper stats: always on mobile, desktop only when expanded */}
-                  <div className={`mt-3 ${expanded ? "" : "lg:hidden"}`}>
-                    <DeeperStats
-                      deep={data!.deep}
-                      extended={more}
-                      homeName={data!.home.name}
-                      awayName={data!.away.name}
-                      size={size}
-                    />
+                  {/* desktop: plain 13; deeper inline only when expanded to 50% */}
+                  <div className="hidden lg:block">
+                    {thirteen}
+                    {expanded && <div className="mt-3">{deeper}</div>}
+                  </div>
+                  {/* mobile: collapsible "Match stats" + "Advanced" (deeper always below) */}
+                  <div className="space-y-3 lg:hidden">
+                    <MobileGroup title="Match stats" defaultOpen big={big}>
+                      {thirteen}
+                    </MobileGroup>
+                    <MobileGroup title="Advanced" defaultOpen big={big}>
+                      {deeper}
+                    </MobileGroup>
                   </div>
                 </>
               );
