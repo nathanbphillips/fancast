@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { emptyStats, getFixtureStats } from "@/lib/stats";
+import { createSupabaseServerClient } from "@/lib/db/server";
 
 export const maxDuration = 30;
 
@@ -10,6 +11,11 @@ export const maxDuration = 30;
  * server-side (no client-supplied URL — SSRF guard). A seed/dev fixture
  * (id <= 0) or an invalid id returns the zeros contract with NO upstream call,
  * so dev rooms render the pre-match placeholder instead of erroring.
+ *
+ * Allowlist (audit M-B): only ids present in our synced `fixtures` table reach
+ * Sportmonks. Rooms can only point at known fixtures (FK), so legitimate
+ * polling is unaffected, but an unauthenticated id-enumeration can't bypass the
+ * per-id cache to amplify calls against the metered Sportmonks plan.
  */
 export async function GET(
   _req: NextRequest,
@@ -19,6 +25,18 @@ export async function GET(
   const parsed = z.coerce.number().int().safeParse(fixtureId);
   const id = parsed.success ? parsed.data : 0;
   if (!parsed.success || id <= 0) {
+    return NextResponse.json(emptyStats(id), {
+      headers: { "Cache-Control": "no-store" },
+    });
+  }
+  // unknown (un-synced) fixture → zeros contract, no upstream call
+  const supabase = await createSupabaseServerClient();
+  const { data: known } = await supabase
+    .from("fixtures")
+    .select("id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!known) {
     return NextResponse.json(emptyStats(id), {
       headers: { "Cache-Control": "no-store" },
     });
