@@ -30,8 +30,21 @@ async function main() {
   for (const ip of ["127.0.0.1", "10.0.0.1", "172.16.0.1", "172.31.255.1", "192.168.1.1", "169.254.169.254", "100.64.0.1", "0.0.0.0", "::1", "fd00::1", "fe80::1", "::ffff:127.0.0.1"]) {
     ok(`isPrivateIp(${ip})`, isPrivateIp(ip) === true);
   }
-  // public IPs are not flagged
-  for (const ip of ["8.8.8.8", "1.1.1.1", "151.101.1.140", "2606:4700::1111"]) {
+  // embedded-IPv4 IPv6 forms that the old regex missed (2026-06-23 re-review):
+  // hex-tail mapped, IPv4-compatible, and NAT64 must all decode to the private v4
+  for (const ip of [
+    "::ffff:7f00:1", // ::ffff:127.0.0.1 in hex
+    "::ffff:a9fe:a9fe", // ::ffff:169.254.169.254 in hex (metadata)
+    "::7f00:1", // IPv4-compatible ::127.0.0.1
+    "::127.0.0.1", // IPv4-compatible dotted
+    "64:ff9b::a9fe:a9fe", // NAT64 169.254.169.254
+    "64:ff9b::7f00:1", // NAT64 127.0.0.1
+    "::ffff:0a00:1", // ::ffff:10.0.0.1 in hex
+  ]) {
+    ok(`isPrivateIp(${ip})`, isPrivateIp(ip) === true);
+  }
+  // public IPs are not flagged (incl. a public v4 mapped into v6 hex)
+  for (const ip of ["8.8.8.8", "1.1.1.1", "151.101.1.140", "2606:4700::1111", "::ffff:0808:0808"]) {
     ok(`isPrivateIp(${ip}) === false`, isPrivateIp(ip) === false);
   }
 

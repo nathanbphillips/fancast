@@ -1,5 +1,7 @@
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
+import { request as httpsRequest, type RequestOptions } from "node:https";
+import { request as httpRequest } from "node:http";
 
 /**
  * Server-side OG unfurl (FR-9.1). Fetches the page, extracts Open Graph
@@ -10,6 +12,12 @@ import { lookup } from "node:dns/promises";
  * rejected if it maps to any private/reserved IP (defeats decimal/hex IP
  * literals and internal DNS names, not just dotted-quad/localhost). https/
  * http only, 8s timeout, 1.5MB read cap, max 4 redirect hops.
+ *
+ * DNS-rebinding hardening (audit 2026-06-23, M-A): the address validated by
+ * `resolvePinned` is PINNED into the actual connection via the node http(s)
+ * `lookup` option, so a short-TTL host cannot return a public IP to the
+ * validator and a private IP to the fetch. SNI/cert validation still uses the
+ * real hostname (`servername`), so https keeps working.
  */
 
 export type Unfurled = {
@@ -39,17 +47,64 @@ export function isPrivateIp(ip: string): boolean {
   const fam = isIP(ip);
   if (fam === 4) return isPrivateV4(ip);
   if (fam === 6) {
-    const lower = ip.toLowerCase();
-    if (lower === "::1" || lower === "::") return true;
-    // IPv4-mapped (::ffff:a.b.c.d)
-    const mapped = lower.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPrivateV4(mapped[1]);
-    // ULA fc00::/7 (fc, fd) and link-local fe80::/10 (fe8..feb)
-    if (/^f[cd]/.test(lower)) return true;
-    if (/^fe[89ab]/.test(lower)) return true;
-    return false;
+    // expand to 8 groups so embedded-IPv4 forms can't smuggle a private target
+    // (audit 2026-06-23 re-review): the old regex only caught the DOTTED mapped
+    // form, so hex-tail mapped (::ffff:7f00:1), IPv4-compatible (::7f00:1), and
+    // NAT64 (64:ff9b::a9fe:a9fe) literals slipped through as "public".
+    const g = v6Groups(ip);
+    if (!g) return true; // unparseable IPv6 → treat as unsafe
+    if (g.every((x) => x === 0)) return true; // :: unspecified
+    if (g.slice(0, 7).every((x) => x === 0) && g[7] === 1) return true; // ::1 loopback
+    if ((g[0] & 0xfe00) === 0xfc00) return true; // ULA fc00::/7
+    if ((g[0] & 0xffc0) === 0xfe80) return true; // link-local fe80::/10
+    // prefixes that embed an IPv4 in the low 32 bits → decode + check as v4
+    const hi6Zero = g[0] === 0 && g[1] === 0 && g[2] === 0 && g[3] === 0 && g[4] === 0;
+    const isMapped = hi6Zero && g[5] === 0xffff; // ::ffff:0:0/96
+    const isCompat = hi6Zero && g[5] === 0; // ::/96 (IPv4-compatible, deprecated)
+    const isNat64 =
+      g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0;
+    if (isMapped || isCompat || isNat64) {
+      const v4 = `${g[6] >> 8}.${g[6] & 0xff}.${g[7] >> 8}.${g[7] & 0xff}`;
+      return isPrivateV4(v4);
+    }
+    return false; // other global-unicast IPv6 = public
   }
   return true; // not a recognizable IP → treat as unsafe
+}
+
+/** Expand an IPv6 literal to its 8 16-bit groups, or null if unparseable.
+ *  Handles "::" compression and a trailing dotted-quad (::ffff:1.2.3.4). */
+function v6Groups(ip: string): number[] | null {
+  let s = ip.toLowerCase();
+  const zone = s.indexOf("%");
+  if (zone >= 0) s = s.slice(0, zone); // strip zone id
+  // fold a trailing dotted IPv4 into two hex groups, in place
+  let bad = false;
+  s = s.replace(/(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/, (_m, a, b, c, d) => {
+    const n = [a, b, c, d].map(Number);
+    if (n.some((x) => x > 255)) {
+      bad = true;
+      return "";
+    }
+    return `${((n[0] << 8) | n[1]).toString(16)}:${((n[2] << 8) | n[3]).toString(16)}`;
+  });
+  if (bad) return null;
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const head = halves[0] ? halves[0].split(":") : [];
+  let groups: string[];
+  if (halves.length === 2) {
+    const tail = halves[1] ? halves[1].split(":") : [];
+    const fill = 8 - head.length - tail.length;
+    if (fill < 0) return null;
+    groups = [...head, ...new Array(fill).fill("0"), ...tail];
+  } else {
+    groups = head;
+  }
+  if (groups.length !== 8) return null;
+  const nums = groups.map((h) => (h === "" ? NaN : parseInt(h, 16)));
+  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 0xffff)) return null;
+  return nums;
 }
 
 function isPrivateV4(ip: string): boolean {
@@ -69,16 +124,20 @@ function isPrivateV4(ip: string): boolean {
   return false;
 }
 
-/** Throws if the URL is not a public http(s) target. Resolves DNS so a
- *  numeric/encoded host or an internal name that maps to a private IP is
- *  rejected. Exported for tests. */
-export async function assertPublicUrl(url: URL): Promise<void> {
+/** Validate the URL is a public http(s) target AND return the single address
+ *  to pin the connection to. Resolves DNS so a numeric/encoded host or an
+ *  internal name that maps to a private IP is rejected; the returned address
+ *  is what the fetch must connect to (no second, unvalidated resolution). */
+async function resolvePinned(
+  url: URL,
+): Promise<{ address: string; family: number }> {
   if (!isFetchableUrl(url)) throw new Error("blocked: scheme/host");
   const host = url.hostname;
-  // literal IP — check directly
-  if (isIP(host)) {
+  const fam = isIP(host);
+  if (fam) {
+    // literal IP — check directly, pin verbatim
     if (isPrivateIp(host)) throw new Error("blocked: private IP literal");
-    return;
+    return { address: host, family: fam };
   }
   // resolve all addresses; reject if ANY is private (covers split-horizon)
   const addrs = await lookup(host, { all: true });
@@ -86,6 +145,12 @@ export async function assertPublicUrl(url: URL): Promise<void> {
   for (const { address } of addrs) {
     if (isPrivateIp(address)) throw new Error("blocked: resolves to private IP");
   }
+  return { address: addrs[0].address, family: addrs[0].family };
+}
+
+/** Throws if the URL is not a public http(s) target. Exported for tests. */
+export async function assertPublicUrl(url: URL): Promise<void> {
+  await resolvePinned(url);
 }
 
 function metaContent(html: string, property: string): string | null {
@@ -128,28 +193,91 @@ function decodeEntities(s: string): string {
     .replace(/&#x27;|&#39;/g, "'");
 }
 
-/** Fetch following redirects manually, validating each hop first. */
-async function safeFetch(start: URL): Promise<Response | null> {
-  let current = start;
-  const signal = AbortSignal.timeout(8000);
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    await assertPublicUrl(current); // throws → caught by caller, returns empty
-    const res = await fetch(current, {
+type RawResult =
+  | { kind: "redirect"; location: string }
+  | { kind: "body"; status: number; body: Buffer };
+
+/** One request to a pinned address. Streams at most MAX_BYTES then aborts.
+ *  Returns a redirect target (3xx + Location) or the response body. */
+function rawRequest(
+  url: URL,
+  pinned: { address: string; family: number },
+  signal: AbortSignal,
+): Promise<RawResult> {
+  return new Promise((resolve, reject) => {
+    const isHttps = url.protocol === "https:";
+    const requestFn = isHttps ? httpsRequest : httpRequest;
+    const options: RequestOptions = {
+      method: "GET",
       signal,
-      redirect: "manual",
+      // pin the validated address; SNI/cert still use the real hostname
+      servername: isHttps ? url.hostname : undefined,
+      lookup: (_hostname, opts, cb) => {
+        // node's socket connect calls lookup with { all: true } and expects the
+        // array form; fall back to the scalar (err, address, family) form. Either
+        // way we return ONLY the pre-validated pinned address (no rebinding).
+        const anyCb = cb as unknown as (
+          e: Error | null,
+          a: string | { address: string; family: number }[],
+          f?: number,
+        ) => void;
+        if ((opts as { all?: boolean })?.all) {
+          anyCb(null, [{ address: pinned.address, family: pinned.family }]);
+        } else {
+          anyCb(null, pinned.address, pinned.family);
+        }
+      },
       headers: {
         "User-Agent": "Mozilla/5.0 (compatible; FanCastBot/1.0; link preview)",
         Accept: "text/html",
+        // node http does not auto-decompress; ask for identity so we read text
+        "Accept-Encoding": "identity",
       },
+    };
+    const req = requestFn(url, options, (res) => {
+      const status = res.statusCode ?? 0;
+      if (status >= 300 && status < 400) {
+        const loc = res.headers.location;
+        res.resume(); // drain & free the socket
+        if (loc) resolve({ kind: "redirect", location: Array.isArray(loc) ? loc[0] : loc });
+        else resolve({ kind: "body", status, body: Buffer.alloc(0) });
+        return;
+      }
+      const chunks: Buffer[] = [];
+      let received = 0;
+      let settled = false;
+      const done = () => {
+        if (settled) return;
+        settled = true;
+        resolve({ kind: "body", status, body: Buffer.concat(chunks) });
+      };
+      res.on("data", (c: Buffer) => {
+        received += c.length;
+        if (received <= MAX_BYTES) chunks.push(c);
+        else res.destroy(); // stop reading past the cap → "close" settles
+      });
+      res.on("end", done);
+      res.on("close", done);
+      res.on("error", reject);
     });
-    if (res.status >= 300 && res.status < 400) {
-      const loc = res.headers.get("location");
-      if (!loc) return res;
-      await res.body?.cancel().catch(() => {});
-      current = new URL(loc, current); // validated at top of next iteration
+    req.on("error", reject);
+    req.end();
+  });
+}
+
+/** Fetch following redirects manually, validating + pinning each hop first. */
+async function safeFetch(start: URL): Promise<{ body: Buffer; url: string } | null> {
+  let current = start;
+  const signal = AbortSignal.timeout(8000);
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const pinned = await resolvePinned(current); // throws on private → caller catches
+    const res = await rawRequest(current, pinned, signal);
+    if (res.kind === "redirect") {
+      current = new URL(res.location, current); // validated at top of next iteration
       continue;
     }
-    return res;
+    if (res.status < 200 || res.status >= 300) return null;
+    return { body: res.body, url: current.toString() };
   }
   return null; // too many redirects
 }
@@ -158,32 +286,20 @@ export async function unfurl(url: URL): Promise<Unfurled> {
   const empty: Unfurled = { title: null, description: null, image: null };
   try {
     const res = await safeFetch(url);
-    if (!res || !res.ok || !res.body) return empty;
-
-    const reader = res.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let received = 0;
-    while (received < MAX_BYTES) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-      received += value.length;
-    }
-    await reader.cancel().catch(() => {});
-    const html = Buffer.concat(chunks).toString("utf8");
+    if (!res) return empty;
+    const html = res.body.toString("utf8");
 
     const ogTitle = metaContent(html, "og:title");
     const docTitle = decodeEntities(
       html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() ?? "",
     );
     const title = ogTitle ?? (docTitle || null);
-    const finalUrl = res.url || url.toString();
 
     return {
       title,
       description:
         metaContent(html, "og:description") ?? metaContent(html, "description"),
-      image: resolveImageUrl(metaContent(html, "og:image"), finalUrl),
+      image: resolveImageUrl(metaContent(html, "og:image"), res.url),
     };
   } catch {
     return empty; // unfurl failure (incl. SSRF block) isn't fatal
