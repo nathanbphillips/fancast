@@ -33,6 +33,18 @@ async function main() {
          applied_at timestamptz not null default now()
        )`,
     );
+    // schema_migrations lives in public (PostgREST-exposed) but is internal
+    // bookkeeping only this runner touches — and it connects as the table owner,
+    // which bypasses RLS. Enable RLS with NO policies (deny-all for anon/
+    // authenticated) and revoke their grants so it isn't reachable via the Data
+    // API. Both are idempotent, so this self-heals on every run and clears the
+    // Supabase "RLS Disabled in Public" advisor finding for this table.
+    await client.query(
+      "alter table public.schema_migrations enable row level security",
+    );
+    await client.query(
+      "revoke all on public.schema_migrations from anon, authenticated",
+    );
 
     const applied = new Set(
       (await client.query("select name from public.schema_migrations")).rows.map(
