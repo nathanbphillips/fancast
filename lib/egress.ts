@@ -67,6 +67,23 @@ async function ensureBucket(
   }
 }
 
+/** Re-assert that the recordings bucket is private (audit M-C, defense in
+ *  depth). The room mix is served only via signed URLs, but a manual dashboard
+ *  toggle or bucket-name reuse could flip it public and expose the guessable
+ *  /object/public/recordings/{roomId}/full.mp3 path — and a public bucket
+ *  bypasses storage RLS entirely, so RLS can't guard this. Re-asserting private
+ *  whenever the downloads panel is read (on top of every Start Broadcast)
+ *  shrinks the exposure window to "between a toggle and the next read". */
+export async function ensureRecordingsPrivate(
+  service: SupabaseClient,
+): Promise<void> {
+  try {
+    await ensureBucket(service, REC_BUCKET, false);
+  } catch (err) {
+    console.warn("ensureRecordingsPrivate failed:", (err as Error).message);
+  }
+}
+
 /** Remove the entire radio/{roomId}/ prefix from the public bucket.
  *  Called on End Broadcast — radio is live-only. */
 export async function purgeRadio(

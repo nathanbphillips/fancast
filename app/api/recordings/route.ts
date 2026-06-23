@@ -4,6 +4,7 @@ import { brand, recordingFileName } from "@/lib/brand";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { triggerProcessing } from "@/lib/recording";
+import { ensureRecordingsPrivate } from "@/lib/egress";
 import { isAdmin } from "@/lib/roles";
 
 const REC_BUCKET = "recordings";
@@ -67,6 +68,10 @@ export async function GET(request: NextRequest) {
   if (!rec) {
     return NextResponse.json({ recording: null });
   }
+
+  // defense in depth (M-C): revert an accidental public-bucket toggle before
+  // we hand out (signed) links to the room mix
+  await ensureRecordingsPrivate(service);
 
   const fixtureLabel = `${room.fixture.home_team} vs ${room.fixture.away_team}`;
   const dateLabel = room.fixture.kickoff_utc.slice(0, 10);
