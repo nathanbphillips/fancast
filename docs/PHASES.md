@@ -57,10 +57,10 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 
 ## Phase 7: Stats + lineups + tab control (days 22-26)
 - [x] Sportmonks proxy route with cache; polling cadence 60s live / 15s around kickoff+goals *(GET /api/stats/[fixtureId], globalThis TTL 10s cache + in-flight coalescing + last-good; useFixtureStats hook 60s/15s w/ goal-burst)*
-- [x] Compact stat bars, events timeline, Home/Away XI tabs with formations and subs *(components/stats/* + StatsPanel container; curated 9-stat allow-list, newest-first timeline, XI by formation line + bench)*
+- [x] Compact stat bars, events timeline, Home/Away XI tabs with formations and subs *(components/stats/* + StatsPanel container; 13 grouped default bars + a 24-stat extended set (37 total) + a deeper-stats panel (xG, momentum, ratings, GKs, per-half, game state) shown on desktop-expand / always-below on mobile; newest-first timeline, XI by formation line + bench)*
 - [x] Commentator push-to-default tab via control channel; listener override *(POST /api/stats-tab -> control `stats_tab` event; pushNonce re-applies; local override clears on each push)*
 - [x] Radio-mode enlarged stats variant *(single component, `size` prop from audio.radioActive — no forked tree)*
-- **Test:** during any live fixture, stats render correctly in both themes and radio mode; tab push <1s. *(Verified 2026-06-16 against a COMPLETED fixture (no live match available): normalize 18/18 unit (test:stats); smoke7 12/12 (real 9-stat proxy, lineups, cache hit 41ms, id<=0 zeros, push auth 200/403/400); browser — all 3 tabs render real data (stats/events/lineups), no console errors, dark theme holds. Radio enlarged + iOS Safari + a real live match ride with the founder device matrix.)*
+- **Test:** during any live fixture, stats render correctly in both themes and radio mode; tab push <1s. *(Verified 2026-06-16 against a COMPLETED fixture (no live match available): normalize 18/18 unit (test:stats); smoke7 12/12 (real proxy, lineups, cache hit 41ms, id<=0 zeros, push auth 200/403/400); browser — all 3 tabs render real data (stats/events/lineups), no console errors, dark theme holds. Radio enlarged + iOS Safari + a real live match ride with the founder device matrix.)*
 
 ## Phase 8: Recording + markers + downloads (days 26-29)
 - [x] Room-composite egress → Supabase storage, Start→End Broadcast, disconnect-proof *(combined with radio in one egress — one composite render; recording is MP4/AAC for codec-compat with HLS, transcoded to MP3 in processing)*
