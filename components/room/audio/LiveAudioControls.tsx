@@ -68,6 +68,108 @@ export function TechDifficultiesCard({ since }: { since: number | null }) {
   );
 }
 
+/** Volume slider. The audio engine scales the live path with a Web Audio gain
+ *  node so this works on iOS, where element .volume is ignored. */
+function VolumeSlider({
+  volume,
+  onChange,
+  className,
+}: {
+  volume: number;
+  onChange: (v: number) => void;
+  className?: string;
+}) {
+  return (
+    <span className={`flex items-center gap-2 ${className ?? ""}`}>
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 shrink-0 text-secondary">
+        <path d="M2 6h2.5L8 3v10L4.5 10H2z" className="fill-current" />
+        {volume > 0.02 && (
+          <path
+            d="M10.5 5.5a3 3 0 010 5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
+        )}
+      </svg>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={volume}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label="Volume"
+        className="h-1 flex-1 cursor-pointer accent-red"
+      />
+    </span>
+  );
+}
+
+/** Sync-to-TV controls (the listening delay): −.5 / Sync +Xs / +.5. Hidden in
+ *  radio mode per FR-6.5. Returns null when sync isn't supported. */
+function SyncControls({
+  syncRequested,
+  syncEffective,
+  syncSupported,
+  radioActive,
+  listenStatus,
+  onSyncAdjust,
+  onOpenSync,
+  className = "shrink-0",
+}: {
+  syncRequested: number;
+  syncEffective: number;
+  syncSupported: boolean;
+  radioActive: boolean;
+  listenStatus: ListenStatus;
+  onSyncAdjust: (seconds: number) => void;
+  onOpenSync: () => void;
+  className?: string;
+}) {
+  if (radioActive || !syncSupported) return null;
+  return (
+    <span className={`flex items-center gap-1 ${className}`}>
+      <button
+        type="button"
+        onClick={() => onSyncAdjust(-0.5)}
+        aria-label="Half a second less delay"
+        className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+      >
+        −.5
+      </button>
+      <button
+        type="button"
+        onClick={onOpenSync}
+        aria-label="Sync to my TV"
+        title="Sync to my TV"
+        className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border px-3 text-sm hover:bg-raised ${
+          syncRequested > 0 ? "border-green" : "border-line bg-surface"
+        }`}
+      >
+        <span className="text-secondary">Sync</span>
+        <span className={`font-semibold tabular-nums ${syncRequested > 0 ? "text-green" : ""}`}>
+          +{syncRequested.toFixed(1)}s
+        </span>
+        {listenStatus === "live" && syncRequested > syncEffective + 0.5 && (
+          <span className="text-[10px] text-gold tabular-nums">
+            ⏳{syncEffective.toFixed(0)}s
+          </span>
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={() => onSyncAdjust(0.5)}
+        aria-label="Half a second more delay"
+        className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+      >
+        +.5
+      </button>
+    </span>
+  );
+}
+
 export function ListenerBar({
   commentator,
   live,
@@ -90,6 +192,11 @@ export function ListenerBar({
   syncSupported,
   onSyncAdjust,
   onOpenSync,
+  volume,
+  onVolumeChange,
+  homeScore,
+  awayScore,
+  clock,
 }: {
   commentator: string;
   live: boolean;
@@ -112,8 +219,26 @@ export function ListenerBar({
   syncSupported: boolean;
   onSyncAdjust: (seconds: number) => void;
   onOpenSync: () => void;
+  volume: number;
+  onVolumeChange: (v: number) => void;
+  homeScore: number | null;
+  awayScore: number | null;
+  clock?: string;
 }) {
   const onAir = canPublish && micStatus === "live";
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const statusLine = radioActive
+    ? "Radio mode — a few seconds behind live"
+    : listenStatus === "live"
+      ? "Live commentary"
+      : listenStatus === "connecting"
+        ? "Connecting…"
+        : listenStatus === "error"
+          ? "Couldn't connect — tap to retry"
+          : live
+            ? "Tap to listen"
+            : "Waiting for the show to start";
 
   if (onAir) {
     // FR-4.3: transformed ON AIR bar
@@ -144,108 +269,143 @@ export function ListenerBar({
     );
   }
 
+  const playButton = radioActive ? (
+    <button
+      type="button"
+      aria-label="Stop radio"
+      onClick={() => onRadioToggle(false)}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-canvas"
+    >
+      <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
+        <rect x="3" y="3" width="4" height="10" rx="1" />
+        <rect x="9" y="3" width="4" height="10" rx="1" />
+      </svg>
+    </button>
+  ) : (
+    <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} />
+  );
+
+  const goOnAir =
+    canPublish && micStatus !== "live" ? (
+      <button
+        type="button"
+        onClick={onGoOnAir}
+        disabled={micStatus === "starting"}
+        className="h-11 shrink-0 rounded-lg bg-gold px-4 text-sm font-bold text-canvas disabled:opacity-60"
+      >
+        {micStatus === "starting" ? "Mic…" : "Go on air"}
+      </button>
+    ) : null;
+
+  const liveBadge =
+    live && !techDifficulties ? (
+      <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
+        <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
+        LIVE
+      </span>
+    ) : null;
+
+  const radioToggle = (
+    <RadioToggle available={radioUrl !== null && live} active={radioActive} onToggle={onRadioToggle} />
+  );
+
+  const sync = (
+    <SyncControls
+      syncRequested={syncRequested}
+      syncEffective={syncEffective}
+      syncSupported={syncSupported}
+      radioActive={radioActive}
+      listenStatus={listenStatus}
+      onSyncAdjust={onSyncAdjust}
+      onOpenSync={onOpenSync}
+    />
+  );
+
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2">
-      {radioActive ? (
-        <button
-          type="button"
-          aria-label="Stop radio"
-          onClick={() => onRadioToggle(false)}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-canvas"
-        >
-          <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
-            <rect x="3" y="3" width="4" height="10" rx="1" />
-            <rect x="9" y="3" width="4" height="10" rx="1" />
-          </svg>
-        </button>
-      ) : (
-        <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} />
-      )}
-      {techDifficulties && !radioActive ? (
-        <TechDifficultiesCard since={techSince} />
-      ) : (
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{commentator}</p>
-          <p className="truncate text-xs text-secondary">
-            {radioActive
-              ? "Radio mode — a few seconds behind live"
-              : listenStatus === "live"
-                ? "Live commentary"
-                : listenStatus === "connecting"
-                  ? "Connecting…"
-                  : listenStatus === "error"
-                    ? "Couldn't connect — tap to retry"
-                    : live
-                      ? "Tap to listen"
-                      : "Waiting for the show to start"}
-          </p>
-        </div>
-      )}
-      {canPublish && micStatus !== "live" && (
-        <button
-          type="button"
-          onClick={onGoOnAir}
-          disabled={micStatus === "starting"}
-          className="h-11 shrink-0 rounded-lg bg-gold px-4 text-sm font-bold text-canvas disabled:opacity-60"
-        >
-          {micStatus === "starting" ? "Mic…" : "Go on air"}
-        </button>
-      )}
-      {live && !techDifficulties && (
-        <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
-          <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
-          LIVE
-        </span>
-      )}
-      <RadioToggle
-        available={radioUrl !== null && live}
-        active={radioActive}
-        onToggle={onRadioToggle}
-      />
-      {/* sync controls hidden in radio mode (FR-6.5) */}
-      {!radioActive && syncSupported && (
-        <span className="flex shrink-0 items-center gap-1">
+    <>
+      {/* DESKTOP: full inline bar */}
+      <div className="hidden flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 lg:flex">
+        {playButton}
+        {techDifficulties && !radioActive ? (
+          <TechDifficultiesCard since={techSince} />
+        ) : (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{commentator}</p>
+            <p className="truncate text-xs text-secondary">{statusLine}</p>
+          </div>
+        )}
+        {goOnAir}
+        {liveBadge}
+        {radioToggle}
+        {sync}
+        <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-28 shrink-0" />
+      </div>
+
+      {/* MOBILE: compact bar (play · score + clock · caret) over an audio drawer */}
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3 px-4 py-2">
+          {playButton}
+          {techDifficulties && !radioActive ? (
+            <TechDifficultiesCard since={techSince} />
+          ) : (
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold">{commentator}</p>
+              <p className="truncate text-xs text-secondary tabular-nums">
+                {clock ? `${homeScore ?? 0}–${awayScore ?? 0} · ${clock}` : statusLine}
+              </p>
+            </div>
+          )}
+          {goOnAir}
+          {liveBadge}
           <button
             type="button"
-            onClick={() => onSyncAdjust(-0.5)}
-            aria-label="Half a second less delay"
-            className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+            onClick={() => setDrawerOpen((o) => !o)}
+            aria-expanded={drawerOpen}
+            aria-label="Audio settings"
+            className="flex h-11 w-9 shrink-0 items-center justify-center text-secondary hover:text-primary"
           >
-            −.5
-          </button>
-          <button
-            type="button"
-            onClick={onOpenSync}
-            aria-label="Sync to my TV"
-            title="Sync to my TV"
-            className={`flex h-11 items-center gap-2 rounded-lg border px-3 text-sm hover:bg-raised ${
-              syncRequested > 0 ? "border-green" : "border-line bg-surface"
-            }`}
-          >
-            <span className="text-secondary">Sync</span>
             <span
-              className={`font-semibold tabular-nums ${syncRequested > 0 ? "text-green" : ""}`}
+              aria-hidden
+              className={`inline-block text-lg transition-transform ${drawerOpen ? "" : "-rotate-90"}`}
             >
-              +{syncRequested.toFixed(1)}s
+              ⌄
             </span>
-            {/* filling toward the setting (FR-6.4) — only meaningful live */}
-            {listenStatus === "live" && syncRequested > syncEffective + 0.5 && (
-              <span className="text-[10px] text-gold tabular-nums">
-                ⏳{syncEffective.toFixed(0)}s
-              </span>
+          </button>
+        </div>
+
+        {drawerOpen && (
+          <div className="space-y-3 border-t border-line bg-surface px-4 py-3">
+            {!radioActive && syncSupported && (
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-secondary">
+                  Listening delay — sync to your TV
+                </p>
+                <SyncControls
+                  syncRequested={syncRequested}
+                  syncEffective={syncEffective}
+                  syncSupported={syncSupported}
+                  radioActive={radioActive}
+                  listenStatus={listenStatus}
+                  onSyncAdjust={onSyncAdjust}
+                  onOpenSync={onOpenSync}
+                  className="w-full"
+                />
+              </div>
             )}
-          </button>
-          <button
-            type="button"
-            onClick={() => onSyncAdjust(0.5)}
-            aria-label="Half a second more delay"
-            className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
-          >
-            +.5
-          </button>
-        </span>
-      )}
-    </div>
+            {radioUrl !== null && live && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-secondary">Radio mode</span>
+                {radioToggle}
+              </div>
+            )}
+            <div>
+              <p className="mb-1.5 text-xs font-semibold text-secondary">Volume</p>
+              <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-full" />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 

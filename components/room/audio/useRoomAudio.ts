@@ -51,6 +51,13 @@ export function useRoomAudio(opts: {
   const [radioActive, setRadioActive] = useState(false);
   const radioElRef = useRef<HTMLAudioElement | null>(null);
 
+  // listener volume (0..1). The live sync path is scaled by a Web Audio gain
+  // node (the only volume control iOS Safari honours — element .volume is a
+  // no-op there); radio / no-worklet fallback fall back to element .volume.
+  const [volume, setVolumeState] = useState(1);
+  const volumeRef = useRef(1);
+  const gainRef = useRef<GainNode | null>(null);
+
   // sync ring buffer (FR-6): requested vs effective offset + buffered depth
   const [syncRequested, setSyncRequested] = useState(0);
   const syncRequestedRef = useRef(0);
@@ -181,6 +188,7 @@ export function useRoomAudio(opts: {
     playbackCtxRef.current?.close().catch(() => {});
     playbackCtxRef.current = null;
     workletRef.current = null;
+    gainRef.current = null;
     if (playbackElRef.current) {
       playbackElRef.current.pause();
       playbackElRef.current.srcObject = null;
@@ -221,7 +229,13 @@ export function useRoomAudio(opts: {
         }
       };
       const dest = ctx.createMediaStreamDestination();
-      node.connect(dest);
+      // gain sits between the ring-delay worklet and the audible stream so the
+      // volume slider works on iOS (where element .volume is ignored)
+      const gain = ctx.createGain();
+      gain.gain.value = volumeRef.current;
+      node.connect(gain);
+      gain.connect(dest);
+      gainRef.current = gain;
       let el = playbackElRef.current;
       if (!el) {
         el = new Audio();
@@ -357,7 +371,8 @@ export function useRoomAudio(opts: {
           });
         } else {
           // no-worklet fallback: live-edge element playback, no sync
-          const el = track.attach();
+          const el = track.attach() as HTMLAudioElement;
+          el.volume = volumeRef.current; // desktop only; iOS ignores it
           audioContainerRef.current?.appendChild(el);
         }
         if (participant.identity === opts.commentatorId) {
@@ -457,6 +472,7 @@ export function useRoomAudio(opts: {
         el.preload = "none";
         radioElRef.current = el;
       }
+      el.volume = volumeRef.current; // desktop only; iOS ignores element volume
       el.src = url;
       try {
         await el.play(); // called inside the toggle gesture
@@ -477,6 +493,20 @@ export function useRoomAudio(opts: {
       el.load();
     }
     setRadioActive(false);
+  }, []);
+
+  const setVolume = useCallback((v: number) => {
+    const vol = Math.max(0, Math.min(1, v));
+    volumeRef.current = vol;
+    setVolumeState(vol);
+    // live sync path — the iOS-correct control
+    if (gainRef.current) gainRef.current.gain.value = vol;
+    // radio + any no-worklet fallback elements (desktop; iOS uses hardware)
+    if (radioElRef.current) radioElRef.current.volume = vol;
+    audioContainerRef.current?.querySelectorAll("audio,video").forEach((node) => {
+      const m = node as HTMLMediaElement;
+      if (!m.muted) m.volume = vol;
+    });
   }, []);
 
   /* --------------------------------------------------------- publisher */
@@ -591,6 +621,8 @@ export function useRoomAudio(opts: {
     radioActive,
     enableRadio,
     disableRadio,
+    volume,
+    setVolume,
     syncRequested,
     syncEffective,
     syncAvailable,

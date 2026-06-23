@@ -532,6 +532,11 @@ export function RealtimeRoom(props: Props) {
       syncSupported={audio.syncSupported}
       onSyncAdjust={audio.adjustSyncOffset}
       onOpenSync={() => setSyncSheetOpen(true)}
+      volume={audio.volume}
+      onVolumeChange={audio.setVolume}
+      homeScore={room.homeScore}
+      awayScore={room.awayScore}
+      clock={clockText}
     />
   );
 
