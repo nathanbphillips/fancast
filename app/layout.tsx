@@ -8,11 +8,19 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
+  // gives NEXT_PUBLIC_APP_URL a real use (absolute OG/canonical URLs) instead of
+  // being a dead-but-"required" var; undefined in dev when unset is fine
+  metadataBase: process.env.NEXT_PUBLIC_APP_URL
+    ? new URL(process.env.NEXT_PUBLIC_APP_URL)
+    : undefined,
   title: {
     default: brand.name,
     template: `%s · ${brand.name}`,
   },
   description: brand.tagline,
+  // iOS "Add to Home Screen" uses apple-touch-icon (the manifest 192/512 are
+  // ignored there); without this iOS falls back to a page screenshot
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {

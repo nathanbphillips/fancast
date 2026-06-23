@@ -2,6 +2,7 @@ import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import { request as httpsRequest, type RequestOptions } from "node:https";
 import { request as httpRequest } from "node:http";
+import { brand } from "@/lib/brand";
 
 /**
  * Server-side OG unfurl (FR-9.1). Fetches the page, extracts Open Graph
@@ -228,7 +229,7 @@ function rawRequest(
         }
       },
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; FanCastBot/1.0; link preview)",
+        "User-Agent": `Mozilla/5.0 (compatible; ${brand.name}Bot/1.0; link preview)`,
         Accept: "text/html",
         // node http does not auto-decompress; ask for identity so we read text
         "Accept-Encoding": "identity",
