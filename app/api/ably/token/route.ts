@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { ablyRest, channels } from "@/lib/ably";
 import { createSupabaseServerClient } from "@/lib/db/server";
+import { isAdmin } from "@/lib/roles";
+import type { Profile } from "@/lib/db/types";
 
 const roomIdSchema = z.uuid();
 
@@ -29,9 +31,14 @@ export async function GET(request: NextRequest) {
     [channels.control(roomId!)]: ["subscribe", "history"],
   };
 
-  // the room's commentator (and admins) may subscribe to the private
-  // channel: questions + talk requests (FR-10.1, FR-4.2)
   if (user) {
+    // each signed-in user may subscribe to their own per-user channel — how a
+    // talk-request resolution reaches the requester without leaking their id on
+    // the shared control channel (FR-4.2)
+    capability[channels.userPrivate(roomId!, user.id)] = ["subscribe", "history"];
+
+    // the room's commentator (and admins) may subscribe to the private
+    // channel: questions + talk requests (FR-10.1, FR-4.2)
     const { data: room } = await supabase
       .from("rooms")
       .select("commentator_id")
@@ -39,17 +46,11 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("*")
       .eq("user_id", user.id)
-      .maybeSingle();
-    const admin =
-      profile?.role === "admin" ||
-      (process.env.ADMIN_USER_IDS ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .includes(user.id);
-    if (room?.commentator_id === user.id || admin) {
-      capability[`room:${roomId}:private`] = ["subscribe", "history"];
+      .maybeSingle<Profile>();
+    if (room?.commentator_id === user.id || isAdmin(user.id, profile)) {
+      capability[channels.private(roomId!)] = ["subscribe", "history"];
     }
   }
 

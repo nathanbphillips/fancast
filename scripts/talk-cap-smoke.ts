@@ -2,8 +2,9 @@
  * Regressions for audit M-6 (two-guest cap is atomic) and M-10 (talk_resolved
  * re-enables the requester's button).
  *  - 3 concurrent accepts on a 2-slot room -> exactly 2 accepted, never 3
- *  - dismissing a request publishes talk_resolved on CONTROL with userId+
- *    requestId but NOT status (FR-4.2 privacy)
+ *  - dismissing a request publishes talk_resolved on the requester's PER-USER
+ *    channel (requestId only — no userId/status) and NOT on the shared control
+ *    channel, closing the 2026-06-23 UID-enumeration leak (FR-4.2 privacy)
  *   npm run smoke:talkcap / -- clean
  */
 import { createClient, type Session } from "@supabase/supabase-js";
@@ -81,11 +82,20 @@ async function main() {
   }
   check("three pending requests created", requestIds.every(Boolean), JSON.stringify(requestIds));
 
-  // Ably observer on the control channel (M-10 publishes here)
+  // Ably observers: each caller's per-user channel (talk_resolved now targets
+  // the requester privately) + the control channel (must NOT carry it anymore).
+  // The observer uses the raw API key, so it can watch any channel.
   const observer = new Ably.Realtime({ key: process.env.ABLY_API_KEY! });
-  const events: { name: string; data: Record<string, unknown> }[] = [];
+  const userEvents: { userId: string; name: string; data: Record<string, unknown> }[] = [];
+  const controlEvents: { name: string }[] = [];
+  for (const c of callers) {
+    const ch = observer.channels.get(`room:${roomId}:user:${c.id}`);
+    await ch.subscribe((m) =>
+      userEvents.push({ userId: c.id, name: m.name!, data: m.data as Record<string, unknown> }),
+    );
+  }
   const controlCh = observer.channels.get(`room:${roomId}:control`);
-  await controlCh.subscribe((m) => events.push({ name: m.name!, data: m.data as Record<string, unknown> }));
+  await controlCh.subscribe((m) => controlEvents.push({ name: m.name! }));
 
   // 3 concurrent accepts on a 2-slot room
   const results = await Promise.all(
@@ -100,15 +110,33 @@ async function main() {
     .eq("room_id", roomId).eq("status", "accepted");
   check("DB has exactly 2 accepted (never 3)", acceptedCount === 2, `${acceptedCount}`);
 
-  // dismiss the still-pending one -> talk_resolved on control, userId+requestId, no status
+  // dismiss the still-pending one -> talk_resolved on the requester's per-user
+  // channel (requestId only); never on control; never to other callers
   const pending = await service.from("talk_requests").select("id, user_id").eq("room_id", roomId).eq("status", "pending").maybeSingle();
   if (pending.data) {
     await api("/api/talk", commentator.cookie, { requestId: pending.data.id, status: "dismissed" }, "PATCH");
     await new Promise((res) => setTimeout(res, 700));
-    const resolved = events.find((e) => e.name === "talk_resolved" && e.data.requestId === pending.data!.id);
-    check("talk_resolved published on control after dismiss", !!resolved, JSON.stringify(events.map((e) => e.name)));
-    check("talk_resolved carries userId + requestId", !!resolved && resolved.data.userId === pending.data.user_id && !!resolved.data.requestId);
-    check("talk_resolved does NOT leak status (privacy)", !!resolved && !("status" in resolved.data), JSON.stringify(resolved?.data));
+    const resolved = userEvents.find((e) => e.name === "talk_resolved" && e.data.requestId === pending.data!.id);
+    check(
+      "talk_resolved delivered on the requester's per-user channel",
+      !!resolved && resolved.userId === pending.data.user_id,
+      JSON.stringify(userEvents.map((e) => `${e.name}@${e.userId.slice(0, 6)}`)),
+    );
+    check(
+      "talk_resolved carries requestId, NOT userId (privacy)",
+      !!resolved && resolved.data.requestId === pending.data.id && !("userId" in resolved.data),
+      JSON.stringify(resolved?.data),
+    );
+    check("talk_resolved does NOT leak status (privacy)", !!resolved && !("status" in resolved.data));
+    check(
+      "talk_resolved is NOT on the shared control channel (leak closed)",
+      !controlEvents.some((e) => e.name === "talk_resolved"),
+      JSON.stringify(controlEvents.map((e) => e.name)),
+    );
+    check(
+      "talk_resolved did NOT reach other callers' channels",
+      !userEvents.some((e) => e.name === "talk_resolved" && e.userId !== pending.data!.user_id),
+    );
   } else {
     check("a pending request remained to dismiss", false);
   }

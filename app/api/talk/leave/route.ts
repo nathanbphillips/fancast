@@ -74,9 +74,10 @@ export async function POST(request: NextRequest) {
     removed: isRemoval,
   });
   // re-enable the (former) caller's Request to Talk button once the call ends
-  // (M-10); userId+requestId only, no status (FR-4.2 privacy)
-  await publish(channels.control(roomId), "talk_resolved", {
-    userId: targetUserId,
+  // (M-10), on THEIR per-user channel — no id on the shared control channel
+  // (FR-4.2). speaker_left above legitimately carries the id (on-air speakers
+  // are already public via LiveKit); a resolution must not be.
+  await publish(channels.userPrivate(roomId, targetUserId), "talk_resolved", {
     requestId: accepted.id,
   });
   return NextResponse.json({ ok: true });

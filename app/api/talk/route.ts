@@ -243,17 +243,17 @@ export async function PATCH(request: NextRequest) {
     });
   }
 
-  await publish(`room:${talkRequest.room_id}:private`, "talk_update", {
+  await publish(channels.private(talkRequest.room_id), "talk_update", {
     requestId: talkRequest.id,
     status: parsed.data.status,
   });
-  // Tell the requester (listeners only hold the control channel) their request
-  // left pending so their button re-enables (M-10). Carry userId+requestId
-  // only — omitting status keeps a dismissal indistinguishable to eavesdroppers
-  // on the public channel (FR-4.2).
-  await publish(channels.control(talkRequest.room_id), "talk_resolved", {
-    userId: talkRequest.user_id,
-    requestId: talkRequest.id,
-  });
+  // Tell the requester their request left pending so their button re-enables
+  // (M-10), on THEIR per-user channel — no userId on the shared control channel,
+  // so listeners can't enumerate who requested + was dismissed (FR-4.2).
+  await publish(
+    channels.userPrivate(talkRequest.room_id, talkRequest.user_id),
+    "talk_resolved",
+    { requestId: talkRequest.id },
+  );
   return NextResponse.json({ ok: true });
 }

@@ -24,6 +24,10 @@ export const channels = {
   links: (roomId: string) => `room:${roomId}:links`,
   control: (roomId: string) => `room:${roomId}:control`,
   private: (roomId: string) => `room:${roomId}:private`,
+  /** per-user channel: only that signed-in user holds the token capability,
+   *  used for resolutions that must reach one requester without broadcasting
+   *  their identity to every listener on the control channel (FR-4.2). */
+  userPrivate: (roomId: string, userId: string) => `room:${roomId}:user:${userId}`,
 };
 
 /** Publish an event; failures are logged, not thrown — the DB write

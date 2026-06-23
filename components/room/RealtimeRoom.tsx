@@ -375,20 +375,22 @@ export function RealtimeRoom(props: Props) {
           : [...prev, e],
       );
     });
-    // a talk request leaving "pending" (dismiss/accept/complete) — listeners
-    // only hold this channel, so it's how the requester re-enables their button
-    // (M-10). No status is carried; we only react when it targets this viewer.
-    control.subscribe("talk_resolved", (msg) => {
-      const { userId } = msg.data as { userId: string; requestId: string };
-      if (viewer?.userId && userId === viewer.userId) {
-        setTalkResolvedSignal((n) => n + 1);
-      }
-    });
+    // a talk request leaving "pending" (dismiss/accept/complete) reaches the
+    // requester on THEIR OWN per-user channel, so their button re-enables (M-10)
+    // without the shared control channel leaking who requested + was dismissed
+    // (FR-4.2). Only signed-in users ever have a pending request.
+    if (viewer?.userId) {
+      const mine = client.channels.get(`room:${room.id}:user:${viewer.userId}`, {
+        params: { rewind: "5" },
+      });
+      mine.subscribe("talk_resolved", () => setTalkResolvedSignal((n) => n + 1));
+    }
     // commentator pushed a stats tab to everyone (Phase 7); bump the nonce on
     // every push so re-pushing the same tab still re-applies
     control.subscribe("stats_tab", (msg) => {
-      const { tab } = msg.data as { tab: StatTab; ts?: string };
-      setPushedStatsTab(tab);
+      // rename out of the outer mobile-nav `tab` state to avoid shadowing
+      const { tab: pushedTab } = msg.data as { tab: StatTab; ts?: string };
+      setPushedStatsTab(pushedTab);
       setStatsPushNonce((n) => n + 1);
     });
 
@@ -612,7 +614,11 @@ export function RealtimeRoom(props: Props) {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] flex-col lg:pb-[80px]">
+    <div
+      className={`flex h-[calc(100dvh-3.5rem)] flex-col ${
+        isRoomCommentator ? "lg:pb-[80px]" : "lg:pb-[52px]"
+      }`}
+    >
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
       <MatchHeader
