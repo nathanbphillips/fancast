@@ -332,6 +332,8 @@ export function RealtimeRoom(props: Props) {
           linksOpen: boolean;
           hlsUrl: string | null;
           clockEvents: ClockEventInput[];
+          messages: ChatMessage[];
+          links: Link[];
           questions: Question[];
           talkRequests: TalkRequest[];
         };
@@ -341,6 +343,18 @@ export function RealtimeRoom(props: Props) {
         setPredictionAgg(s.predictionAgg);
         setActivePoll(s.activePoll);
         setRatingsAgg(s.ratingsAgg);
+        // backfill chat + links missed during a drop longer than the rewind
+        // window (M-4). Snapshot rows are authoritative (fresher vote/hidden state).
+        setMessages((prev) => {
+          const byId = new Map(prev.map((m) => [m.id, m]));
+          for (const m of s.messages ?? []) byId.set(m.id, m);
+          return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+        });
+        setLinks((prev) => {
+          const byId = new Map(prev.map((l) => [l.id, l]));
+          for (const l of s.links ?? []) byId.set(l.id, l);
+          return [...byId.values()].sort((a, b) => b.created_at.localeCompare(a.created_at));
+        });
         setBroadcastStart(s.broadcastStart);
         setChatOpen(s.chatOpen);
         setLinksOpen(s.linksOpen);
@@ -556,6 +570,12 @@ export function RealtimeRoom(props: Props) {
   // Phase 7: poll live match detail (faster cadence while live); push a tab
   const { stats: matchStats } = useFixtureStats({ fixtureId: room.fixtureId, live: isLive });
 
+  // live scoreline from the stats poll, falling back to the page-load value so a
+  // goal during the session updates the header. The CLOCK stays event-sourced
+  // (golden rule 6) — only the score tracks the provider here.
+  const liveHome = matchStats?.score.home ?? room.homeScore;
+  const liveAway = matchStats?.score.away ?? room.awayScore;
+
   // rateable players (FR-12.3): starters + subs from the lineup in the stats payload
   const ratingPlayers = useMemo<RatingPlayer[]>(() => {
     const out: RatingPlayer[] = [];
@@ -658,8 +678,8 @@ export function RealtimeRoom(props: Props) {
       onOpenSync={() => setSyncSheetOpen(true)}
       volume={audio.volume}
       onVolumeChange={audio.setVolume}
-      homeScore={room.homeScore}
-      awayScore={room.awayScore}
+      homeScore={liveHome}
+      awayScore={liveAway}
       clock={clockText}
     />
   );
@@ -753,8 +773,8 @@ export function RealtimeRoom(props: Props) {
       <MatchHeader
         home={room.home}
         away={room.away}
-        homeScore={room.homeScore}
-        awayScore={room.awayScore}
+        homeScore={liveHome}
+        awayScore={liveAway}
         state={roomState}
         clock={clockText}
         listeners={watching ?? undefined}

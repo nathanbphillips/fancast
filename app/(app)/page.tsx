@@ -49,7 +49,7 @@ export default async function HomePage() {
 
   // include fixtures from the last 3h so an in-play match stays on top
   const windowStart = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const { data: fixtures } = await supabase
+  const { data: fixtures, error: fixturesError } = await supabase
     .from("fixtures")
     .select(
       "*, rooms(id, state, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
@@ -58,6 +58,9 @@ export default async function HomePage() {
     .order("kickoff_utc", { ascending: true })
     .limit(10)
     .returns<FixtureWithRooms[]>();
+  // distinguish a real failure from a genuinely empty schedule — otherwise a DB
+  // blip silently reads as "no fixtures yet". Let the error boundary recover it.
+  if (fixturesError) throw fixturesError;
 
   const { user, profile } = await getCurrentUserAndProfile();
   const followedIds = new Set<string>();

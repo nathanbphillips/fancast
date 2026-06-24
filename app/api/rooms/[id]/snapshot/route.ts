@@ -6,7 +6,7 @@ import {
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
-import type { Question, TalkRequest } from "@/lib/db/types";
+import type { ChatMessage, Link, Question, TalkRequest } from "@/lib/db/types";
 import { predictionAggregate } from "@/lib/predictions";
 import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
@@ -47,17 +47,39 @@ export async function GET(
   }
 
   const service = createServiceClient();
-  const [{ data: clockEvents }, { data: sliderRows }, { data: predRows }, { data: ratingRows }] =
-    await Promise.all([
-      supabase
-        .from("clock_events")
-        .select("action, server_ts, offset_seconds")
-        .eq("room_id", id)
-        .order("server_ts", { ascending: true }),
-      service.from("slider_votes").select("value").eq("room_id", id),
-      service.from("predictions").select("home_score, away_score").eq("room_id", id),
-      service.from("player_ratings").select("player_id, rating").eq("room_id", id),
-    ]);
+  const [
+    { data: clockEvents },
+    { data: sliderRows },
+    { data: predRows },
+    { data: ratingRows },
+    { data: messages },
+    { data: links },
+  ] = await Promise.all([
+    supabase
+      .from("clock_events")
+      .select("action, server_ts, offset_seconds")
+      .eq("room_id", id)
+      .order("server_ts", { ascending: true }),
+    service.from("slider_votes").select("value").eq("room_id", id),
+    service.from("predictions").select("home_score, away_score").eq("room_id", id),
+    service.from("player_ratings").select("player_id, rating").eq("room_id", id),
+    // chat + links via the RLS client so hidden bodies stay redacted for non-mods.
+    // Backfills anything the Ably rewind window missed during a long drop (M-4).
+    supabase
+      .from("chat_messages")
+      .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
+      .eq("room_id", id)
+      .order("created_at", { ascending: true })
+      .limit(200)
+      .returns<ChatMessage[]>(),
+    supabase
+      .from("links")
+      .select("*, author:profiles!links_user_id_fkey(username, role)")
+      .eq("room_id", id)
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .returns<Link[]>(),
+  ]);
   const sliderCount = sliderRows?.length ?? 0;
   const sliderAgg = {
     avg:
@@ -113,6 +135,8 @@ export async function GET(
     linksOpen: room.links_open,
     hlsUrl: room.hls_url,
     clockEvents: clockEvents ?? [],
+    messages: messages ?? [],
+    links: links ?? [],
     questions,
     talkRequests,
   });

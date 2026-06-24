@@ -26,11 +26,14 @@ export default async function ProfilePage({
   const { username } = await params;
   const supabase = await createSupabaseServerClient();
 
-  const { data: profile } = await supabase
+  const { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("username", username)
     .maybeSingle<Profile>();
+  // a transient DB error must not masquerade as "user not found" — let the error
+  // boundary handle it (recoverable); only 404 when the user genuinely isn't there
+  if (error) throw error;
   if (!profile) notFound();
 
   const { count: followerCount } = await supabase

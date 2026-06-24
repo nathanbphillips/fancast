@@ -481,6 +481,9 @@ export function useRoomAudio(opts: {
       if (!el) {
         el = new Audio();
         el.preload = "none";
+        // a mid-stream HLS drop/load failure: reset the toggle so the listener
+        // isn't stuck "on but silent" and can re-tap (Phase 10 hardening)
+        el.addEventListener("error", () => setRadioActive(false));
         radioElRef.current = el;
       }
       el.volume = volumeRef.current; // desktop only; iOS ignores element volume
