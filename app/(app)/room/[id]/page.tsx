@@ -17,10 +17,12 @@ import type {
   ChatMessage,
   Fixture,
   Link,
+  MyPrediction,
   Question,
   Room,
   TalkRequest,
 } from "@/lib/db/types";
+import { predictionAggregate } from "@/lib/predictions";
 import { isAdmin } from "@/lib/roles";
 
 type RoomWithJoins = Room & {
@@ -188,15 +190,29 @@ export default async function RoomPage({
     count: sliderCount,
   };
 
+  // score-predictor distribution (service — individual scorelines are private)
+  const { data: predRows } = await service
+    .from("predictions")
+    .select("home_score, away_score")
+    .eq("room_id", room.id);
+  const predictionAgg = predictionAggregate(predRows ?? []);
+
   let mySliderValue: number | null = null;
+  let myPrediction: MyPrediction = null;
   let talkConsentGiven = false;
   let hasPendingTalk = false;
   if (user) {
-    const [{ data: mySlider }, { data: anyConsent }, { data: pending }] =
+    const [{ data: mySlider }, { data: myPred }, { data: anyConsent }, { data: pending }] =
       await Promise.all([
         supabase
           .from("slider_votes")
           .select("value")
+          .eq("room_id", room.id)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("predictions")
+          .select("home_score, away_score")
           .eq("room_id", room.id)
           .eq("user_id", user.id)
           .maybeSingle(),
@@ -215,6 +231,7 @@ export default async function RoomPage({
           .maybeSingle(),
       ]);
     mySliderValue = mySlider?.value ?? null;
+    myPrediction = myPred ? { home: myPred.home_score, away: myPred.away_score } : null;
     talkConsentGiven = anyConsent !== null;
     hasPendingTalk = pending !== null;
   }
@@ -244,6 +261,8 @@ export default async function RoomPage({
       initialTalkRequests={initialTalkRequests}
       sliderAgg={sliderAgg}
       mySliderValue={mySliderValue}
+      predictionAgg={predictionAgg}
+      myPrediction={myPrediction}
       talkConsentGiven={talkConsentGiven}
       hasPendingTalk={hasPendingTalk}
       initialBroadcastStart={room.broadcast_start}

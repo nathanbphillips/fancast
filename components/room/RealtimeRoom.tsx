@@ -7,6 +7,8 @@ import * as Ably from "ably";
 import type {
   ChatMessage,
   Link,
+  MyPrediction,
+  PredictionAggregate,
   Question,
   RoomState,
   SliderAggregate,
@@ -32,6 +34,7 @@ import { Countdown } from "./Countdown";
 import { DownloadsPanel } from "./DownloadsPanel";
 import { InteractionButtons } from "./InteractionButtons";
 import { AggregateMeter, PreferenceSlider } from "./PreferenceSlider";
+import { ScorePredictor } from "./ScorePredictor";
 import { QuestionsPanel } from "./QuestionsPanel";
 
 /**
@@ -73,6 +76,8 @@ type Props = {
   initialTalkRequests: TalkRequest[];
   sliderAgg: SliderAggregate;
   mySliderValue: number | null;
+  predictionAgg: PredictionAggregate;
+  myPrediction: MyPrediction;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
   initialBroadcastStart: string | null;
@@ -115,6 +120,7 @@ export function RealtimeRoom(props: Props) {
     props.initialTalkRequests,
   );
   const [sliderAgg, setSliderAgg] = useState<SliderAggregate>(props.sliderAgg);
+  const [predictionAgg, setPredictionAgg] = useState<PredictionAggregate>(props.predictionAgg);
   const [watching, setWatching] = useState<number | null>(null);
   const [conn, setConn] = useState<ConnState>("connecting");
   const [broadcastStart, setBroadcastStart] = useState(props.initialBroadcastStart);
@@ -232,6 +238,7 @@ export function RealtimeRoom(props: Props) {
         const s = (await res.json()) as {
           state: RoomState;
           sliderAgg: SliderAggregate;
+          predictionAgg: PredictionAggregate;
           broadcastStart: string | null;
           chatOpen: boolean;
           linksOpen: boolean;
@@ -243,6 +250,7 @@ export function RealtimeRoom(props: Props) {
         // don't clobber a newer `state` control event that landed mid-fetch
         if (lastStateTsRef.current === tsBefore) setRoomState(s.state);
         setSliderAgg(s.sliderAgg);
+        setPredictionAgg(s.predictionAgg);
         setBroadcastStart(s.broadcastStart);
         setChatOpen(s.chatOpen);
         setLinksOpen(s.linksOpen);
@@ -349,6 +357,9 @@ export function RealtimeRoom(props: Props) {
     });
     control.subscribe("slider", (msg) => {
       setSliderAgg(msg.data as SliderAggregate);
+    });
+    control.subscribe("prediction", (msg) => {
+      setPredictionAgg(msg.data as PredictionAggregate);
     });
     control.subscribe("broadcast_start", (msg) => {
       setBroadcastStart((msg.data as { broadcastStart: string | null }).broadcastStart);
@@ -561,6 +572,8 @@ export function RealtimeRoom(props: Props) {
       onSent={appendMessage}
       sliderAgg={sliderAgg}
       mySliderValue={props.mySliderValue}
+      predictionAgg={predictionAgg}
+      myPrediction={props.myPrediction}
       talkConsentGiven={props.talkConsentGiven}
       hasPendingTalk={props.hasPendingTalk}
       talkResolvedSignal={talkResolvedSignal}
@@ -852,6 +865,8 @@ function LiveChat({
   onSent,
   sliderAgg,
   mySliderValue,
+  predictionAgg,
+  myPrediction,
   talkConsentGiven,
   hasPendingTalk,
   talkResolvedSignal,
@@ -868,6 +883,8 @@ function LiveChat({
   onSent: (m: ChatMessage) => void;
   sliderAgg: SliderAggregate;
   mySliderValue: number | null;
+  predictionAgg: PredictionAggregate;
+  myPrediction: MyPrediction;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
   talkResolvedSignal: number;
@@ -1094,6 +1111,21 @@ function LiveChat({
         >
           {unread} new {unread === 1 ? "message" : "messages"} ↓
         </button>
+      )}
+
+      {/* score predictor: distribution visible to everyone; the form opens for
+          signed-in listeners during pregame (FR-12.1) */}
+      {inputsOpen && (roomState === "pregame" || predictionAgg.total > 0) && (
+        <div className="border-t border-line px-3 pt-3">
+          <ScorePredictor
+            roomId={room.id}
+            myValue={myPrediction}
+            agg={predictionAgg}
+            open={roomState === "pregame" && !!viewer && !isRoomCommentator}
+            homeName={room.home}
+            awayName={room.away}
+          />
+        </div>
       )}
 
       {!viewer ? (

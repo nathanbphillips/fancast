@@ -7,6 +7,7 @@ import {
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import type { Question, TalkRequest } from "@/lib/db/types";
+import { predictionAggregate } from "@/lib/predictions";
 import { isAdmin } from "@/lib/roles";
 
 /**
@@ -44,14 +45,16 @@ export async function GET(
   }
 
   const service = createServiceClient();
-  const [{ data: clockEvents }, { data: sliderRows }] = await Promise.all([
-    supabase
-      .from("clock_events")
-      .select("action, server_ts, offset_seconds")
-      .eq("room_id", id)
-      .order("server_ts", { ascending: true }),
-    service.from("slider_votes").select("value").eq("room_id", id),
-  ]);
+  const [{ data: clockEvents }, { data: sliderRows }, { data: predRows }] =
+    await Promise.all([
+      supabase
+        .from("clock_events")
+        .select("action, server_ts, offset_seconds")
+        .eq("room_id", id)
+        .order("server_ts", { ascending: true }),
+      service.from("slider_votes").select("value").eq("room_id", id),
+      service.from("predictions").select("home_score, away_score").eq("room_id", id),
+    ]);
   const sliderCount = sliderRows?.length ?? 0;
   const sliderAgg = {
     avg:
@@ -60,6 +63,7 @@ export async function GET(
         : Math.round(sliderRows!.reduce((s, v) => s + v.value, 0) / sliderCount),
     count: sliderCount,
   };
+  const predictionAgg = predictionAggregate(predRows ?? []);
 
   const { user, profile } = await getCurrentUserAndProfile();
   const isModerator =
@@ -96,6 +100,7 @@ export async function GET(
   return NextResponse.json({
     state: room.state,
     sliderAgg,
+    predictionAgg,
     broadcastStart: room.broadcast_start,
     chatOpen: room.chat_open,
     linksOpen: room.links_open,

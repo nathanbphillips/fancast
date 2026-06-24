@@ -110,6 +110,16 @@ export type SliderAggregate = {
   count: number;
 };
 
+/** Score-predictor distribution (FR-12.1). Individual scorelines stay private;
+ *  only the public distribution rides the control channel. */
+export type PredictionAggregate = {
+  total: number;
+  /** most-predicted scorelines, highest first */
+  top: { label: string; count: number }[];
+};
+
+export type MyPrediction = { home: number; away: number } | null;
+
 export type Room = {
   id: string;
   fixture_id: number;
