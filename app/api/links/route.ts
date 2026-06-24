@@ -4,6 +4,7 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import type { Link } from "@/lib/db/types";
+import { rateLimit } from "@/lib/ratelimit";
 import { isFetchableUrl, unfurl } from "@/lib/unfurl";
 
 const bodySchema = z.object({
@@ -19,6 +20,16 @@ function normalizeDomain(hostname: string): string {
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
+
+  // each submit triggers an outbound unfurl fetch, so cap per user to blunt
+  // hammering the unfurler (SSRF amplification / scanning). Generous for a real
+  // user who posts a handful of links.
+  if (!rateLimit(`link:${caller.userId}`, 10, 60_000)) {
+    return NextResponse.json(
+      { error: "You're posting links too fast — give it a moment." },
+      { status: 429 },
+    );
+  }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient, createSupabaseServerClient } from "@/lib/db/server";
+import { clientIp, rateLimit } from "@/lib/ratelimit";
 
 /**
  * Listener-metrics instrumentation (Phase 9, FR-9.4). Listening is open, so this
@@ -24,6 +25,12 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
 
   if (body.action === "start") {
+    // only `start` inserts a row, so it's the lone flood vector here (heartbeat
+    // /stop just touch one existing segment by its capability id). Cap new
+    // segments per IP; a real listener opens 1-2 per session (live/radio).
+    if (!rateLimit(`listen:${clientIp(request)}`, 30, 60_000)) {
+      return NextResponse.json({ error: "Too many requests." }, { status: 429 });
+    }
     const supabase = await createSupabaseServerClient();
     const {
       data: { user },

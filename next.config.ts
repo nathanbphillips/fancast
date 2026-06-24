@@ -1,11 +1,46 @@
 import type { NextConfig } from "next";
 
-// Baseline security headers (audit M-D). A full Content-Security-Policy is
-// deferred to Phase 10 — it needs a nonce for the inline theme-init script
-// (app/layout.tsx) and an explicit allowlist for Supabase/Ably/LiveKit/
-// Sportmonks origins. These four are safe to ship now and cover clickjacking,
-// MIME sniffing, referrer leakage, and transport downgrade.
+// Content-Security-Policy (Phase 10 security closeout). The directives that
+// can't break the cert-gated audio path are enforced strictly — frame-ancestors
+// (clickjacking), object-src, base-uri, form-action. The transport/media
+// directives are deliberately permissive so they never block Ably, LiveKit
+// HLS/WebRTC, Supabase realtime, the AudioWorklet, or link-preview images:
+//   - script-src keeps 'unsafe-inline' because the theme-init script
+//     (app/layout.tsx) interpolates the per-user theme pref, so neither a
+//     static hash nor a no-middleware nonce fits. blob: covers AudioWorklet.
+//   - connect-src / media-src allow any https:/wss: rather than enumerating
+//     Ably's fallback hosts and LiveKit's regional + egress CDN domains, which
+//     can't be exhaustively verified without a live broadcast. They still block
+//     cleartext http:.
+// FUTURE (tighten after a live audio test): nonce-based script-src via
+// middleware, and an explicit connect-src/media-src origin allowlist.
+//
+// script-src is mode-aware: `next dev` (Fast Refresh/HMR) needs full
+// 'unsafe-eval'; production gets only the narrow 'wasm-unsafe-eval' so
+// LiveKit's audio WASM can still compile without permitting JS eval().
+const scriptSrc =
+  process.env.NODE_ENV === "production"
+    ? "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:";
+const csp = [
+  "default-src 'self'",
+  scriptSrc,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' https: wss:",
+  "media-src 'self' blob: https:",
+  "worker-src 'self' blob:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+// X-Frame-Options is kept alongside frame-ancestors for pre-CSP3 browsers.
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: csp },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
