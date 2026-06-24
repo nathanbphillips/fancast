@@ -95,6 +95,7 @@ export function StatsPanel({
   pushNonce = 0,
   onPushTab,
   expanded = false,
+  outage = false,
   defaultTab = "stats",
 }: {
   data: FixtureStats | null;
@@ -107,6 +108,9 @@ export function StatsPanel({
   /** desktop only: render the deeper-stats sections inline below the 13.
    *  On mobile the deeper sections always show (this only gates the ≥lg view). */
   expanded?: boolean;
+  /** live stats polling is currently failing — show a "delayed" cue instead of
+   *  the calm pre-kickoff placeholder (which would be misleading mid-match). */
+  outage?: boolean;
   /** the tab shown when nobody has overridden/pushed — "info" pre-game,
    *  "stats" once the match is underway (the kickoff auto-switch). */
   defaultTab?: StatTab;
@@ -212,7 +216,9 @@ export function StatsPanel({
                   <>
                     <StatGroups bars={placeholderStats()} size={size} />
                     <p className={`mt-3 text-secondary ${big ? "text-sm" : "text-xs"}`}>
-                      Live match data arrives at kickoff.
+                      {outage
+                        ? "Live stats are temporarily unavailable."
+                        : "Live match data arrives at kickoff."}
                     </p>
                   </>
                 );
@@ -261,7 +267,7 @@ export function StatsPanel({
             />
           )}
 
-          {data?.stale && (
+          {(data?.stale || (outage && hasStats)) && (
             <p className="mt-3 text-xs text-secondary">Showing the last update.</p>
           )}
         </div>

@@ -386,7 +386,12 @@ export function RealtimeRoom(props: Props) {
     client.connection.on("connected", () => {
       setConn("connected");
       // skip the very first connect — SSR already delivered fresh state
-      if (hasConnectedRef.current) void rehydrate();
+      if (hasConnectedRef.current) {
+        void rehydrate();
+        // enter/leave events fired during the drop were missed, so the watch
+        // count is stale — recompute it from the freshly-synced presence set
+        void refreshPresence();
+      }
       hasConnectedRef.current = true;
     });
     client.connection.on(["disconnected", "suspended", "failed"], () =>
@@ -550,10 +555,11 @@ export function RealtimeRoom(props: Props) {
       });
     }
 
-    const refreshPresence = async () => {
+    // hoisted so the reconnect handler above can recompute the count too
+    async function refreshPresence() {
       const members = await chat.presence.get();
       setWatching(members.length);
-    };
+    }
     chat.presence.subscribe(["enter", "leave"], refreshPresence);
     chat.presence.enter().then(refreshPresence).catch(() => {});
 
@@ -569,7 +575,13 @@ export function RealtimeRoom(props: Props) {
   const newQuestionCount = questions.filter((q) => q.status === "new").length;
 
   // Phase 7: poll live match detail (faster cadence while live); push a tab
-  const { stats: matchStats } = useFixtureStats({ fixtureId: room.fixtureId, live: isLive });
+  const { stats: matchStats, error: statsError } = useFixtureStats({
+    fixtureId: room.fixtureId,
+    live: isLive,
+  });
+  // updates have stalled if a poll is failing while the match is live (clears on
+  // the next good poll); distinct from the route's own last-good `stale` flag
+  const statsOutage = isLive && statsError !== null;
 
   // live scoreline from the stats poll, falling back to the page-load value so a
   // goal during the session updates the header. The CLOCK stays event-sourced
@@ -846,6 +858,7 @@ export function RealtimeRoom(props: Props) {
             pushNonce={statsPushNonce}
             onPushTab={pushStatsTab}
             expanded={expandedView}
+            outage={statsOutage}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
         </aside>
