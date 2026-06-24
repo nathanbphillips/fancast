@@ -10,7 +10,7 @@ import type { SmParticipant, SmScore } from "@/lib/fixtures";
 
 export type Side = "home" | "away";
 export type StatUnit = "count" | "pct";
-export type StatTab = "stats" | "events" | "lineups";
+export type StatTab = "info" | "stats" | "events" | "lineups";
 /** default = always-visible grouped bars; more = behind the "More stats" toggle */
 export type StatTier = "default" | "more";
 
@@ -82,6 +82,24 @@ export type HalfStat = {
   second: { home: number; away: number };
 };
 export type GameState = { homeLed: number; level: number; awayLed: number };
+
+/** Pre-game context for the Info tab (FR-12-adjacent): venue, referee, weather,
+ *  and team news (sidelined players). Distilled server-side. */
+export type MatchInfo = {
+  venue: { name: string; city: string | null; capacity: number | null } | null;
+  referee: string | null;
+  weather: {
+    description: string;
+    temp: number | null; // °C
+    humidity: string | null;
+    wind: number | null;
+  } | null;
+  teamNews: {
+    home: { name: string; reason: string }[];
+    away: { name: string; reason: string }[];
+  };
+};
+
 export type DeepStats = {
   xg: { home: number; away: number; top: XgPlayer[] };
   ratings: { home: NamedValue[]; away: NamedValue[] };
@@ -103,6 +121,7 @@ export type FixtureStats = {
   events: TimelineEvent[]; // ascending (minute, sortOrder); UI reverses
   lineups: { home: SideLineup | null; away: SideLineup | null };
   deep: DeepStats | null; // null pre-match / when detail unavailable
+  info: MatchInfo | null; // venue/referee/weather/team-news (Info tab)
 };
 
 // ---- raw Sportmonks shapes (probed live; parsed defensively) ----
@@ -153,6 +172,29 @@ export type SmFixtureDetail = {
   state?: { state?: string; short_name?: string | null; name?: string | null };
   trends?: SmTrend[];
   periods?: SmPeriod[];
+  venue?: { name?: string | null; city_name?: string | null; capacity?: number | null };
+  referees?: {
+    type_id?: number;
+    referee?: { name?: string | null; display_name?: string | null };
+  }[];
+  sidelined?: {
+    participant_id?: number;
+    player?: { display_name?: string | null; name?: string | null };
+    type?: { name?: string | null };
+  }[];
+  // Sportmonks returns the weatherReport include under the lowercase key
+  weatherreport?: {
+    description?: string | null;
+    temperature?: { day?: number | null };
+    humidity?: string | null;
+    wind?: { speed?: number | null };
+    current?: {
+      temp?: number | null;
+      description?: string | null;
+      humidity?: string | null;
+      wind?: number | null;
+    };
+  };
 };
 
 /** Full stat catalogue (Phase 7). tier "default" = the 13 always-visible
@@ -381,6 +423,45 @@ function normalizeDeep(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): De
 /** Pure: map a raw Sportmonks fixture detail to FixtureStats. Tolerates any
  *  missing include (defaults to empty), skips unknown event kinds, and drops
  *  rows whose location/team can't be resolved. */
+/** Pre-game context for the Info tab. Distilled from venue/referees/weather/
+ *  sidelined includes; returns null when nothing is available. */
+function normalizeInfo(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): MatchInfo | null {
+  const v = raw.venue;
+  const venue = v?.name
+    ? { name: v.name, city: v.city_name ?? null, capacity: v.capacity ?? null }
+    : null;
+
+  const refs = raw.referees ?? [];
+  const mainRef = refs.find((r) => r.type_id === 6) ?? refs[0];
+  const referee = mainRef?.referee?.name ?? mainRef?.referee?.display_name ?? null;
+
+  const w = raw.weatherreport;
+  const desc = w?.current?.description ?? w?.description ?? null;
+  const weather = w && desc
+    ? {
+        description: desc,
+        temp: num(w.current?.temp ?? w.temperature?.day),
+        humidity: w.current?.humidity ?? w.humidity ?? null,
+        wind: num(w.current?.wind ?? w.wind?.speed),
+      }
+    : null;
+
+  const teamNews: MatchInfo["teamNews"] = { home: [], away: [] };
+  for (const s of raw.sidelined ?? []) {
+    const side: Side | null =
+      s.participant_id === home.id ? "home" : s.participant_id === away.id ? "away" : null;
+    if (!side) continue;
+    const name = s.player?.display_name ?? s.player?.name;
+    if (!name) continue;
+    teamNews[side].push({ name, reason: s.type?.name ?? "Out" });
+  }
+
+  if (!venue && !referee && !weather && teamNews.home.length === 0 && teamNews.away.length === 0) {
+    return null;
+  }
+  return { venue, referee, weather, teamNews };
+}
+
 export function normalize(raw: SmFixtureDetail): FixtureStats {
   const parts = raw.participants ?? [];
   const homeP = parts.find((p) => p.meta?.location === "home");
@@ -481,6 +562,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     events,
     lineups: { home: buildSide("home", home), away: buildSide("away", away) },
     deep: normalizeDeep(raw, home, away),
+    info: normalizeInfo(raw, home, away),
   };
 }
 
@@ -510,6 +592,7 @@ export function emptyStats(id: number): FixtureStats {
     events: [],
     lineups: { home: null, away: null },
     deep: null,
+    info: null,
   };
 }
 
@@ -534,7 +617,7 @@ async function fetchFixtureRaw(id: number): Promise<SmFixtureDetail> {
   const base = process.env.SPORTMONKS_BASE ?? "https://api.sportmonks.com/v3/football";
   // include set is HARDCODED — never accept an include/URL from the client
   const include =
-    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type";
+    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type;venue;referees.referee;sidelined.player;sidelined.type;weatherReport";
   const res = await fetch(`${base}/fixtures/${id}?include=${include}`, {
     headers: { Authorization: token },
     cache: "no-store",

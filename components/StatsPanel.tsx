@@ -5,6 +5,7 @@ import { StatBars } from "@/components/stats/StatBars";
 import { EventsTimeline } from "@/components/stats/EventsTimeline";
 import { LineupTabs } from "@/components/stats/LineupTabs";
 import { DeeperStats } from "@/components/stats/DeeperStats";
+import { MatchInfoPanel } from "@/components/stats/MatchInfoPanel";
 import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
 
@@ -17,6 +18,7 @@ import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
  */
 
 const TABS: { id: StatTab; label: string }[] = [
+  { id: "info", label: "Info" },
   { id: "stats", label: "Stats" },
   { id: "events", label: "Events" },
   { id: "lineups", label: "Line-ups" },
@@ -93,6 +95,7 @@ export function StatsPanel({
   pushNonce = 0,
   onPushTab,
   expanded = false,
+  defaultTab = "stats",
 }: {
   data: FixtureStats | null;
   radio?: boolean;
@@ -104,6 +107,9 @@ export function StatsPanel({
   /** desktop only: render the deeper-stats sections inline below the 13.
    *  On mobile the deeper sections always show (this only gates the ≥lg view). */
   expanded?: boolean;
+  /** the tab shown when nobody has overridden/pushed — "info" pre-game,
+   *  "stats" once the match is underway (the kickoff auto-switch). */
+  defaultTab?: StatTab;
 }) {
   const [override, setOverride] = useState<StatTab | null>(null);
   const [pushed, setPushed] = useState(false);
@@ -113,9 +119,14 @@ export function StatsPanel({
   useEffect(() => {
     setOverride(null);
   }, [pushedTab, pushNonce]);
+  // kickoff auto-switch: when the default flips (e.g. info → stats at kickoff),
+  // clear the local override so everyone lands on the new default (they can tap back)
+  useEffect(() => {
+    setOverride(null);
+  }, [defaultTab]);
   useEffect(() => () => clearTimeout(pushedTimer.current), []);
 
-  const effectiveTab: StatTab = override ?? pushedTab ?? "stats";
+  const effectiveTab: StatTab = override ?? pushedTab ?? defaultTab;
   const size = radio ? "radio" : "compact";
   const big = radio;
 
@@ -185,6 +196,15 @@ export function StatsPanel({
           id="stats-tabpanel"
           aria-labelledby={`stats-tab-${effectiveTab}`}
         >
+          {effectiveTab === "info" && (
+            <MatchInfoPanel
+              info={data?.info ?? null}
+              homeName={data?.home.name ?? "Home"}
+              awayName={data?.away.name ?? "Away"}
+              size={size}
+            />
+          )}
+
           {effectiveTab === "stats" &&
             (() => {
               if (!hasStats) {

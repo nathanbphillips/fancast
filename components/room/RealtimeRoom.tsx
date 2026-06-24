@@ -752,6 +752,7 @@ export function RealtimeRoom(props: Props) {
             pushNonce={statsPushNonce}
             onPushTab={pushStatsTab}
             expanded={expandedView}
+            defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
         </aside>
 
