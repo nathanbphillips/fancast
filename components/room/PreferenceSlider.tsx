@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { SliderAggregate } from "@/lib/db/types";
+import { useToast } from "@/components/Toast";
 
 /**
  * Commentary<->Discussion slider (FR-10.2). Per-listener position posts on
@@ -47,15 +48,24 @@ export function PreferenceSlider({
 }) {
   const [value, setValue] = useState(myValue ?? 50);
   const lastSent = useRef<number | null>(myValue);
+  const toast = useToast();
 
   async function commit() {
     if (!enabled || lastSent.current === value) return;
-    lastSent.current = value;
-    await fetch("/api/slider", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId, value }),
-    });
+    const sent = value;
+    lastSent.current = sent;
+    try {
+      const res = await fetch("/api/slider", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId, value: sent }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      // clear the de-dupe latch so the next release re-sends this position
+      if (lastSent.current === sent) lastSent.current = null;
+      toast("Couldn't save your slider position.");
+    }
   }
 
   return (

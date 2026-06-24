@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { MyPrediction, PredictionAggregate } from "@/lib/db/types";
+import { useToast } from "@/components/Toast";
 
 /**
  * Score predictor (FR-12.1). Pregame: a listener picks one scoreline (one tap
@@ -69,6 +70,7 @@ export function ScorePredictor({
   const [away, setAway] = useState(myValue?.away ?? 0);
   const [mine, setMine] = useState<MyPrediction>(myValue);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   async function submit() {
     if (!open || busy) return;
@@ -77,9 +79,10 @@ export function ScorePredictor({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId, home, away }),
-    });
+    }).catch(() => null);
     setBusy(false);
-    if (res.ok) setMine({ home, away });
+    if (res?.ok) setMine({ home, away });
+    else toast("Couldn't save your prediction.");
   }
 
   const max = Math.max(1, ...agg.top.map((t) => t.count));

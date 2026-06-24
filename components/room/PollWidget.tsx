@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { MyPollVote, PollState } from "@/lib/db/types";
+import { useToast } from "@/components/Toast";
 
 /**
  * Half-time poll (FR-12.2). The commentator poses a 2-4 option question; signed-in
@@ -25,6 +26,7 @@ export function PollWidget({
   const [busy, setBusy] = useState(false);
   const open = poll.status === "open";
   const total = poll.total;
+  const toast = useToast();
 
   async function vote(idx: number) {
     if (!open || !canVote || busy) return;
@@ -34,20 +36,24 @@ export function PollWidget({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "vote", pollId: poll.id, optionIdx: idx }),
-    });
+    }).catch(() => null);
     setBusy(false);
-    if (!res.ok) setMine(initialMine);
+    if (!res?.ok) {
+      setMine(initialMine); // roll back the optimistic highlight
+      toast("Couldn't record your vote.");
+    }
   }
 
   async function close() {
     if (busy) return;
     setBusy(true);
-    await fetch("/api/polls", {
+    const res = await fetch("/api/polls", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "close", pollId: poll.id }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    if (!res?.ok) toast("Couldn't close the poll.");
   }
 
   return (

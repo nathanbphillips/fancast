@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast";
 
 export function FollowButton({
   commentatorId,
@@ -13,6 +14,7 @@ export function FollowButton({
   const router = useRouter();
   const [following, setFollowing] = useState(initialFollowing);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   async function toggle() {
     const next = !following;
@@ -22,10 +24,11 @@ export function FollowButton({
       method: next ? "POST" : "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ commentatorId }),
-    });
+    }).catch(() => null);
     setBusy(false);
-    if (!res.ok) {
+    if (!res?.ok) {
       setFollowing(!next); // revert
+      toast(next ? "Couldn't follow — try again." : "Couldn't unfollow — try again.");
       return;
     }
     router.refresh();

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { MyRatings, RatingPlayer, RatingsAggregate } from "@/lib/db/types";
+import { useToast } from "@/components/Toast";
 
 /**
  * Player ratings (FR-12.3). Postgame, signed-in listeners rate the XI + subs
@@ -29,18 +30,23 @@ export function PlayerRatings({
 }) {
   const [mine, setMine] = useState<MyRatings>(myRatings);
   const [busy, setBusy] = useState<number | null>(null);
+  const toast = useToast();
   const avgOf = (pid: number) => agg.find((a) => a.playerId === pid);
 
   async function rate(playerId: number, rating: number) {
+    const prev = mine;
     setBusy(playerId);
     setMine((m) => ({ ...m, [playerId]: rating })); // optimistic
     const res = await fetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId, playerId, rating }),
-    });
+    }).catch(() => null);
     setBusy(null);
-    if (!res.ok) setMine(myRatings);
+    if (!res?.ok) {
+      setMine(prev); // roll back just this rating, not every change this session
+      toast("Couldn't save your rating.");
+    }
   }
 
   const Row = ({ p }: { p: RatingPlayer }) => {

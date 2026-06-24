@@ -43,6 +43,7 @@ import { ScorePredictor } from "./ScorePredictor";
 import { PollComposer, PollWidget } from "./PollWidget";
 import { PlayerRatings } from "./PlayerRatings";
 import { QuestionsPanel } from "./QuestionsPanel";
+import { useToast } from "@/components/Toast";
 
 /**
  * Live room: chat + links + lifecycle over Ably, DB as source of truth.
@@ -1043,6 +1044,7 @@ function LiveChat({
   const [notice, setNotice] = useState<string | null>(null);
   const [votes, setVotes] = useState(myVotes);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
+  const toast = useToast();
   const listRef = useRef<HTMLUListElement>(null);
   const pinnedRef = useRef(true); // user is at/near the bottom
   const prevLenRef = useRef(messages.length);
@@ -1114,17 +1116,28 @@ function LiveChat({
   }
 
   async function vote(messageId: string, value: 1 | -1 | 0) {
-    setVotes((prev) => {
-      const next = { ...prev };
+    // for rollback if the write fails (index access can be absent at runtime)
+    const prev = (votes[messageId] as 1 | -1 | 0 | undefined) ?? 0;
+    setVotes((p) => {
+      const next = { ...p };
       if (value === 0) delete next[messageId];
       else next[messageId] = value;
       return next;
     });
-    await fetch("/api/chat/vote", {
+    const res = await fetch("/api/chat/vote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messageId, value }),
-    });
+    }).catch(() => null);
+    if (!res?.ok) {
+      setVotes((p) => {
+        const next = { ...p };
+        if (prev === 0) delete next[messageId];
+        else next[messageId] = prev;
+        return next;
+      });
+      toast("Couldn't record your vote.");
+    }
   }
 
   async function flag(messageId: string) {
@@ -1504,6 +1517,7 @@ function LiveLinks({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [votes, setVotes] = useState(myVotes);
+  const toast = useToast();
 
   const canSubmit =
     viewer !== null &&
@@ -1532,17 +1546,28 @@ function LiveLinks({
   }
 
   async function vote(linkId: string, value: 1 | -1 | 0) {
-    setVotes((prev) => {
-      const next = { ...prev };
+    // for rollback if the write fails (index access can be absent at runtime)
+    const prev = (votes[linkId] as 1 | -1 | 0 | undefined) ?? 0;
+    setVotes((p) => {
+      const next = { ...p };
       if (value === 0) delete next[linkId];
       else next[linkId] = value;
       return next;
     });
-    await fetch("/api/links/vote", {
+    const res = await fetch("/api/links/vote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ linkId, value }),
-    });
+    }).catch(() => null);
+    if (!res?.ok) {
+      setVotes((p) => {
+        const next = { ...p };
+        if (prev === 0) delete next[linkId];
+        else next[linkId] = prev;
+        return next;
+      });
+      toast("Couldn't record your vote.");
+    }
   }
 
   return (
