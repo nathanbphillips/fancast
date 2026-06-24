@@ -8,6 +8,8 @@ import {
 } from "@/lib/db/server";
 import type { Question, TalkRequest } from "@/lib/db/types";
 import { predictionAggregate } from "@/lib/predictions";
+import { loadActivePoll } from "@/lib/polls";
+import { ratingsAggregate } from "@/lib/ratings";
 import { isAdmin } from "@/lib/roles";
 
 /**
@@ -45,7 +47,7 @@ export async function GET(
   }
 
   const service = createServiceClient();
-  const [{ data: clockEvents }, { data: sliderRows }, { data: predRows }] =
+  const [{ data: clockEvents }, { data: sliderRows }, { data: predRows }, { data: ratingRows }] =
     await Promise.all([
       supabase
         .from("clock_events")
@@ -54,6 +56,7 @@ export async function GET(
         .order("server_ts", { ascending: true }),
       service.from("slider_votes").select("value").eq("room_id", id),
       service.from("predictions").select("home_score, away_score").eq("room_id", id),
+      service.from("player_ratings").select("player_id, rating").eq("room_id", id),
     ]);
   const sliderCount = sliderRows?.length ?? 0;
   const sliderAgg = {
@@ -64,6 +67,8 @@ export async function GET(
     count: sliderCount,
   };
   const predictionAgg = predictionAggregate(predRows ?? []);
+  const ratingsAgg = ratingsAggregate(ratingRows ?? []);
+  const activePoll = await loadActivePoll(service, id);
 
   const { user, profile } = await getCurrentUserAndProfile();
   const isModerator =
@@ -101,6 +106,8 @@ export async function GET(
     state: room.state,
     sliderAgg,
     predictionAgg,
+    activePoll,
+    ratingsAgg,
     broadcastStart: room.broadcast_start,
     chatOpen: room.chat_open,
     linksOpen: room.links_open,

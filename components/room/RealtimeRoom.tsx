@@ -1,15 +1,20 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFixtureStats } from "@/lib/hooks/useFixtureStats";
 import type { StatTab } from "@/lib/stats";
 import * as Ably from "ably";
 import type {
   ChatMessage,
   Link,
+  MyPollVote,
   MyPrediction,
+  MyRatings,
+  PollState,
   PredictionAggregate,
   Question,
+  RatingPlayer,
+  RatingsAggregate,
   RoomState,
   SliderAggregate,
   TalkRequest,
@@ -35,6 +40,8 @@ import { DownloadsPanel } from "./DownloadsPanel";
 import { InteractionButtons } from "./InteractionButtons";
 import { AggregateMeter, PreferenceSlider } from "./PreferenceSlider";
 import { ScorePredictor } from "./ScorePredictor";
+import { PollComposer, PollWidget } from "./PollWidget";
+import { PlayerRatings } from "./PlayerRatings";
 import { QuestionsPanel } from "./QuestionsPanel";
 
 /**
@@ -78,6 +85,10 @@ type Props = {
   mySliderValue: number | null;
   predictionAgg: PredictionAggregate;
   myPrediction: MyPrediction;
+  activePoll: PollState;
+  myPollVote: MyPollVote;
+  ratingsAgg: RatingsAggregate;
+  myRatings: MyRatings;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
   initialBroadcastStart: string | null;
@@ -121,6 +132,8 @@ export function RealtimeRoom(props: Props) {
   );
   const [sliderAgg, setSliderAgg] = useState<SliderAggregate>(props.sliderAgg);
   const [predictionAgg, setPredictionAgg] = useState<PredictionAggregate>(props.predictionAgg);
+  const [activePoll, setActivePoll] = useState<PollState>(props.activePoll);
+  const [ratingsAgg, setRatingsAgg] = useState<RatingsAggregate>(props.ratingsAgg);
   const [watching, setWatching] = useState<number | null>(null);
   const [conn, setConn] = useState<ConnState>("connecting");
   const [broadcastStart, setBroadcastStart] = useState(props.initialBroadcastStart);
@@ -239,6 +252,8 @@ export function RealtimeRoom(props: Props) {
           state: RoomState;
           sliderAgg: SliderAggregate;
           predictionAgg: PredictionAggregate;
+          activePoll: PollState;
+          ratingsAgg: RatingsAggregate;
           broadcastStart: string | null;
           chatOpen: boolean;
           linksOpen: boolean;
@@ -251,6 +266,8 @@ export function RealtimeRoom(props: Props) {
         if (lastStateTsRef.current === tsBefore) setRoomState(s.state);
         setSliderAgg(s.sliderAgg);
         setPredictionAgg(s.predictionAgg);
+        setActivePoll(s.activePoll);
+        setRatingsAgg(s.ratingsAgg);
         setBroadcastStart(s.broadcastStart);
         setChatOpen(s.chatOpen);
         setLinksOpen(s.linksOpen);
@@ -361,6 +378,12 @@ export function RealtimeRoom(props: Props) {
     control.subscribe("prediction", (msg) => {
       setPredictionAgg(msg.data as PredictionAggregate);
     });
+    control.subscribe("poll", (msg) => {
+      setActivePoll(msg.data as PollState);
+    });
+    control.subscribe("ratings", (msg) => {
+      setRatingsAgg(msg.data as RatingsAggregate);
+    });
     control.subscribe("broadcast_start", (msg) => {
       setBroadcastStart((msg.data as { broadcastStart: string | null }).broadcastStart);
     });
@@ -459,6 +482,21 @@ export function RealtimeRoom(props: Props) {
 
   // Phase 7: poll live match detail (faster cadence while live); push a tab
   const { stats: matchStats } = useFixtureStats({ fixtureId: room.fixtureId, live: isLive });
+
+  // rateable players (FR-12.3): starters + subs from the lineup in the stats payload
+  const ratingPlayers = useMemo<RatingPlayer[]>(() => {
+    const out: RatingPlayer[] = [];
+    const lu = matchStats?.lineups;
+    for (const side of ["home", "away"] as const) {
+      const s = lu?.[side];
+      if (!s) continue;
+      for (const p of s.starters)
+        if (p.playerId != null) out.push({ playerId: p.playerId, name: p.name, side, starter: true });
+      for (const p of s.bench)
+        if (p.playerId != null) out.push({ playerId: p.playerId, name: p.name, side, starter: false });
+    }
+    return out;
+  }, [matchStats]);
   const pushStatsTab = (tab: StatTab) => {
     void fetch("/api/stats-tab", {
       method: "POST",
@@ -574,6 +612,11 @@ export function RealtimeRoom(props: Props) {
       mySliderValue={props.mySliderValue}
       predictionAgg={predictionAgg}
       myPrediction={props.myPrediction}
+      activePoll={activePoll}
+      myPollVote={props.myPollVote}
+      ratingsAgg={ratingsAgg}
+      myRatings={props.myRatings}
+      ratingPlayers={ratingPlayers}
       talkConsentGiven={props.talkConsentGiven}
       hasPendingTalk={props.hasPendingTalk}
       talkResolvedSignal={talkResolvedSignal}
@@ -867,6 +910,11 @@ function LiveChat({
   mySliderValue,
   predictionAgg,
   myPrediction,
+  activePoll,
+  myPollVote,
+  ratingsAgg,
+  myRatings,
+  ratingPlayers,
   talkConsentGiven,
   hasPendingTalk,
   talkResolvedSignal,
@@ -885,6 +933,11 @@ function LiveChat({
   mySliderValue: number | null;
   predictionAgg: PredictionAggregate;
   myPrediction: MyPrediction;
+  activePoll: PollState;
+  myPollVote: MyPollVote;
+  ratingsAgg: RatingsAggregate;
+  myRatings: MyRatings;
+  ratingPlayers: RatingPlayer[];
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
   talkResolvedSignal: number;
@@ -1122,6 +1175,36 @@ function LiveChat({
             myValue={myPrediction}
             agg={predictionAgg}
             open={roomState === "pregame" && !!viewer && !isRoomCommentator}
+            homeName={room.home}
+            awayName={room.away}
+          />
+        </div>
+      )}
+
+      {/* half-time poll: live poll visible to all; composer is commentator-only */}
+      {(activePoll || (inputsOpen && isRoomCommentator)) && (
+        <div className="border-t border-line px-3 pt-3">
+          {activePoll && (
+            <PollWidget
+              poll={activePoll}
+              myVote={myPollVote}
+              canVote={!!viewer && !isRoomCommentator}
+              isCommentator={isRoomCommentator}
+            />
+          )}
+          {inputsOpen && isRoomCommentator && <PollComposer roomId={room.id} />}
+        </div>
+      )}
+
+      {/* player ratings: postgame, rate the XI + subs; visible to all */}
+      {(roomState === "postgame" || ratingsAgg.length > 0) && ratingPlayers.length > 0 && (
+        <div className="border-t border-line px-3 pt-3">
+          <PlayerRatings
+            roomId={room.id}
+            players={ratingPlayers}
+            agg={ratingsAgg}
+            myRatings={myRatings}
+            open={roomState === "postgame" && !!viewer && !isRoomCommentator}
             homeName={room.home}
             awayName={room.away}
           />

@@ -120,6 +120,32 @@ export type PredictionAggregate = {
 
 export type MyPrediction = { home: number; away: number } | null;
 
+/** The room's latest poll + live tallies (FR-12.2). null = no poll yet. The
+ *  question/options/status are public; individual votes stay private. */
+export type PollState = {
+  id: string;
+  question: string;
+  options: string[];
+  status: "open" | "closed";
+  /** vote count per option index, aligned to `options` */
+  results: number[];
+  total: number;
+} | null;
+
+export type MyPollVote = { pollId: string; optionIdx: number } | null;
+
+/** Player ratings (FR-12.3, postgame). Per-player average rides the control
+ *  channel; individual ratings stay private. */
+export type RatingsAggregate = { playerId: number; avg: number; count: number }[];
+export type MyRatings = Record<number, number>;
+/** A rateable player, derived from the lineup in the stats payload. */
+export type RatingPlayer = {
+  playerId: number;
+  name: string;
+  side: "home" | "away";
+  starter: boolean;
+};
+
 export type Room = {
   id: string;
   fixture_id: number;

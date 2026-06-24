@@ -17,12 +17,16 @@ import type {
   ChatMessage,
   Fixture,
   Link,
+  MyPollVote,
   MyPrediction,
+  MyRatings,
   Question,
   Room,
   TalkRequest,
 } from "@/lib/db/types";
 import { predictionAggregate } from "@/lib/predictions";
+import { loadActivePoll } from "@/lib/polls";
+import { ratingsAggregate } from "@/lib/ratings";
 import { isAdmin } from "@/lib/roles";
 
 type RoomWithJoins = Room & {
@@ -197,8 +201,20 @@ export default async function RoomPage({
     .eq("room_id", room.id);
   const predictionAgg = predictionAggregate(predRows ?? []);
 
+  // the room's latest poll + live tallies (question/options are public)
+  const activePoll = await loadActivePoll(service, room.id);
+
+  // player-rating averages (service — individual ratings are private)
+  const { data: ratingRows } = await service
+    .from("player_ratings")
+    .select("player_id, rating")
+    .eq("room_id", room.id);
+  const ratingsAgg = ratingsAggregate(ratingRows ?? []);
+
   let mySliderValue: number | null = null;
   let myPrediction: MyPrediction = null;
+  let myPollVote: MyPollVote = null;
+  let myRatings: MyRatings = {};
   let talkConsentGiven = false;
   let hasPendingTalk = false;
   if (user) {
@@ -234,6 +250,21 @@ export default async function RoomPage({
     myPrediction = myPred ? { home: myPred.home_score, away: myPred.away_score } : null;
     talkConsentGiven = anyConsent !== null;
     hasPendingTalk = pending !== null;
+    if (activePoll) {
+      const { data: pv } = await supabase
+        .from("poll_votes")
+        .select("option_idx")
+        .eq("poll_id", activePoll.id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (pv) myPollVote = { pollId: activePoll.id, optionIdx: pv.option_idx };
+    }
+    const { data: myRatingRows } = await supabase
+      .from("player_ratings")
+      .select("player_id, rating")
+      .eq("room_id", room.id)
+      .eq("user_id", user.id);
+    for (const r of myRatingRows ?? []) myRatings[r.player_id] = r.rating;
   }
 
   const roomInfo: RoomInfo = {
@@ -263,6 +294,10 @@ export default async function RoomPage({
       mySliderValue={mySliderValue}
       predictionAgg={predictionAgg}
       myPrediction={myPrediction}
+      activePoll={activePoll}
+      myPollVote={myPollVote}
+      ratingsAgg={ratingsAgg}
+      myRatings={myRatings}
       talkConsentGiven={talkConsentGiven}
       hasPendingTalk={hasPendingTalk}
       initialBroadcastStart={room.broadcast_start}
