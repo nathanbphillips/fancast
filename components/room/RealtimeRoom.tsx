@@ -100,6 +100,26 @@ type Props = {
 
 type ConnState = "connecting" | "connected" | "broken";
 
+/** Close a listener-metrics segment (FR-9.4). sendBeacon survives tab-close /
+ *  refresh, where a normal fetch would be cancelled; falls back to keepalive. */
+function stopListenSegment(id: string) {
+  const body = JSON.stringify({ action: "stop", id });
+  try {
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      navigator.sendBeacon("/api/listen", new Blob([body], { type: "application/json" }));
+      return;
+    }
+  } catch {
+    /* fall through to fetch */
+  }
+  void fetch("/api/listen", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body,
+    keepalive: true,
+  }).catch(() => {});
+}
+
 const INPUTS_OPEN: RoomState[] = [
   "pregame",
   "live_1h",
@@ -212,6 +232,59 @@ export function RealtimeRoom(props: Props) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [audio.listenStatus, room.home, room.away, room.commentatorUsername]);
+
+  // listener metrics (FR-9.4): one durable segment per listening session, with
+  // a heartbeat so the stale sweep can close sessions a tab-close beacon missed.
+  // Fire-and-forget — never blocks audio. The commentator broadcasts, not listens.
+  const listenSegIdRef = useRef<string | null>(null);
+  const listenMode: "live" | "radio" | null = isRoomCommentator
+    ? null
+    : audio.radioActive
+      ? "radio"
+      : audio.listenStatus === "live"
+        ? "live"
+        : null;
+  useEffect(() => {
+    if (!listenMode) return;
+    let alive = true;
+    void fetch("/api/listen", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "start", roomId: room.id, mode: listenMode }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (alive) listenSegIdRef.current = (d?.id as string) ?? null;
+      })
+      .catch(() => {});
+    const hb = setInterval(() => {
+      const id = listenSegIdRef.current;
+      if (id) {
+        void fetch("/api/listen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "heartbeat", id }),
+        }).catch(() => {});
+      }
+    }, 30_000);
+    return () => {
+      alive = false;
+      clearInterval(hb);
+      const id = listenSegIdRef.current;
+      listenSegIdRef.current = null;
+      if (id) stopListenSegment(id);
+    };
+  }, [listenMode, room.id]);
+
+  // close the open segment on tab-close / refresh (React doesn't unmount then)
+  useEffect(() => {
+    const onHide = () => {
+      const id = listenSegIdRef.current;
+      if (id) stopListenSegment(id);
+    };
+    window.addEventListener("pagehide", onHide);
+    return () => window.removeEventListener("pagehide", onHide);
+  }, []);
 
   async function leaveAir() {
     await audio.stopMic();

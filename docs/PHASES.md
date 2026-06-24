@@ -70,10 +70,11 @@ Rules: one phase at a time, in order. A phase is complete when every box is chec
 - **Test:** simulated session with two call-ins and all markers → full file + six correct segments including guest audio; adjust recuts. *(Verified 2026-06-14: marker derivation 5/5 unit tests; processing pipeline 12/12 smoke incl. real audio energy proving guest audio isolated to the 2nd half, six bounded segments, adjust→recut, zip extraction. Live-capture egress proven via smoke:radio + captured MP4 rms. Full single-script e2e — smoke8 — blocked on this machine by a Windows Application Control policy quarantining @livekit/rtc-node's native binding; runs on machines without that policy.)*
 
 ## Phase 9: Widgets + tipping + notifications (days 29-32)
-- [ ] Score predictor, halftime poll, player ratings (one Supabase table + control events each; live aggregates; read-only when closed)
-- [ ] Stripe: Checkout one-time ($3/$5/$10/custom) + Billing monthly ($3/$5/$10); webhook handling; supporter badge; customer portal link; fee % displayed (confirm % with founder)
-- [ ] Resend going-live emails to followers + one-click unsubscribe; in-app notification
-- [ ] listener_segments instrumentation + nightly metrics computation + founder query pack
+- [x] Score predictor, halftime poll, player ratings (migration 0015; one table each, owner-only RLS, aggregate on control channel; live aggregates; read-only when closed) *(predictor pregame, poll commentator-authored, ratings postgame from lineup; deployed + verified)*
+- [ ] Stripe: Checkout one-time ($3/$5/$10/custom) + Billing monthly ($3/$5/$10); webhook handling; supporter badge; customer portal link; fee % displayed (confirm % with founder) *(deferred — awaiting Stripe creds + fee % decision)*
+- [ ] Resend going-live emails to followers + one-click unsubscribe; in-app notification *(deferred — awaiting Resend key + verified domain)*
+- [x] listener_segments instrumentation + nightly metrics computation + founder query pack (migration 0016; /api/listen start/heartbeat/stop + unload beacon; `npm run metrics` sweeps stale + computes; docs/METRICS.md SQL pack) *(deployed + verified)*
+- [x] **Info tab + kickoff lifecycle** (added 2026-06-24, not in original plan): pre-game venue/referee/weather/team-news from Sportmonks; Info is the default tab pre-game, auto-switches to Stats for everyone at kickoff (viewer can switch back).
 - **Test:** full widget cycle in simulated match; test-mode payments end-to-end incl. cancellation; email dispatch on waiting state.
 
 ## Phase 10: Hardening + first public session (days 32-33+)

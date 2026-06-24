@@ -27,6 +27,7 @@
     "test:stats": "tsx scripts/stats-map-test.ts",
     "sportmonks:check": "tsx --env-file=.env.local scripts/sportmonks-check.ts",
     "check:grants": "tsx --env-file=.env.local scripts/check-rpc-grants.ts",
+    "metrics": "tsx --env-file=.env.local scripts/metrics.ts",
     "clean:test": "tsx --env-file=.env.local scripts/clean-test-data.ts",
     "smoke:highfix": "tsx --env-file=.env.local scripts/highfix-smoke.ts",
     "smoke:flagbudget": "tsx --env-file=.env.local scripts/flag-budget-smoke.ts",
