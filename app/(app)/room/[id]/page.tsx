@@ -267,6 +267,18 @@ export default async function RoomPage({
     for (const r of myRatingRows ?? []) myRatings[r.player_id] = r.rating;
   }
 
+  // does this viewer already follow the commentator? (post-match follow prompt)
+  let viewerFollowsCommentator = false;
+  if (user && !isRoomCommentator) {
+    const { data: f } = await supabase
+      .from("follows")
+      .select("follower_id")
+      .eq("follower_id", user.id)
+      .eq("commentator_id", room.commentator_id)
+      .maybeSingle();
+    viewerFollowsCommentator = f !== null;
+  }
+
   const roomInfo: RoomInfo = {
     id: room.id,
     state: room.state,
@@ -284,6 +296,7 @@ export default async function RoomPage({
     <RealtimeRoom
       room={roomInfo}
       viewer={viewer}
+      viewerFollowsCommentator={viewerFollowsCommentator}
       initialMessages={messages ?? []}
       initialLinks={links ?? []}
       myMessageVotes={myMessageVotes}

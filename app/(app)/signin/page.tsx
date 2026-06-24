@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { brand } from "@/lib/brand";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
@@ -27,6 +28,17 @@ export default async function SignInPage({
         follow commentators.
       </p>
       <SignInForm initialError={error} />
+      <p className="mt-6 text-xs text-secondary">
+        By signing in you agree to our{" "}
+        <Link href="/terms" className="underline hover:text-primary">
+          Terms
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline hover:text-primary">
+          Privacy Policy
+        </Link>
+        .
+      </p>
     </div>
   );
 }

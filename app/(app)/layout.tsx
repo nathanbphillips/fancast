@@ -4,6 +4,7 @@ import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { PWASetup } from "@/components/PWASetup";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ThemeSync } from "@/components/ThemeSync";
+import { SiteFooter } from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -48,6 +49,7 @@ export default async function AppLayout({
           </div>
         </header>
         <main className="flex-1">{children}</main>
+        <SiteFooter />
       </div>
     </ToastProvider>
   );

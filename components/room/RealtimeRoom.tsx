@@ -43,6 +43,7 @@ import { ScorePredictor } from "./ScorePredictor";
 import { PollComposer, PollWidget } from "./PollWidget";
 import { PlayerRatings } from "./PlayerRatings";
 import { QuestionsPanel } from "./QuestionsPanel";
+import { FollowButton } from "@/components/FollowButton";
 import { useToast } from "@/components/Toast";
 
 /**
@@ -76,6 +77,7 @@ export type RoomInfo = {
 type Props = {
   room: RoomInfo;
   viewer: Viewer;
+  viewerFollowsCommentator: boolean;
   initialMessages: ChatMessage[];
   initialLinks: Link[];
   myMessageVotes: Record<string, 1 | -1>;
@@ -709,6 +711,7 @@ export function RealtimeRoom(props: Props) {
       room={room}
       roomState={roomState}
       viewer={viewer}
+      viewerFollowsCommentator={props.viewerFollowsCommentator}
       messages={messages}
       myVotes={props.myMessageVotes}
       watching={watching}
@@ -1009,6 +1012,7 @@ function LiveChat({
   room,
   roomState,
   viewer,
+  viewerFollowsCommentator,
   messages,
   myVotes,
   watching,
@@ -1032,6 +1036,7 @@ function LiveChat({
   room: RoomInfo;
   roomState: RoomState;
   viewer: Viewer;
+  viewerFollowsCommentator: boolean;
   messages: ChatMessage[];
   myVotes: Record<string, 1 | -1>;
   watching: number | null;
@@ -1354,21 +1359,37 @@ function LiveChat({
       ) : roomState === "wrapped" ? (
         <div className="border-t border-line p-3">
           <div className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center">
-            <p className="text-sm">
-              That&apos;s full time on the show.{" "}
-              {!isRoomCommentator && (
-                <>
-                  Follow{" "}
+            <p className="text-sm">That&apos;s full time on the show.</p>
+            {!isRoomCommentator &&
+              (viewerFollowsCommentator ? (
+                <p className="mt-1 text-xs text-secondary">
+                  You follow{" "}
                   <a
                     href={`/u/${room.commentatorUsername}`}
                     className="font-semibold text-gold hover:underline"
                   >
                     {room.commentatorUsername}
                   </a>{" "}
-                  to catch the next one.
-                </>
-              )}
-            </p>
+                  — see you next time.
+                </p>
+              ) : (
+                <div className="mt-3 flex flex-col items-center gap-2">
+                  <p className="text-xs text-secondary">
+                    Enjoyed it? Follow{" "}
+                    <a
+                      href={`/u/${room.commentatorUsername}`}
+                      className="font-semibold text-gold hover:underline"
+                    >
+                      {room.commentatorUsername}
+                    </a>{" "}
+                    to catch the next one.
+                  </p>
+                  <FollowButton
+                    commentatorId={room.commentatorId}
+                    initialFollowing={false}
+                  />
+                </div>
+              ))}
           </div>
         </div>
       ) : !canType ? (
