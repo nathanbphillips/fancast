@@ -45,13 +45,16 @@ export async function POST(request: NextRequest) {
   }
 
   const hiddenBy = admin && !ownsRoom ? "admin" : "commentator";
-  if (message.hidden_by === null) {
-    await service
-      .from("chat_messages")
-      .update({ hidden_by: hiddenBy, hidden_at: new Date().toISOString() })
-      .eq("id", messageId);
+  // cascade the hide through the whole reply subtree (Phase 11): the RPC hides
+  // every not-yet-hidden descendant and returns the affected ids so live clients
+  // blank each one — matching the reload path where RLS drops the subtree
+  const { data: cascadeData } = await service.rpc("hide_message_subtree", {
+    p_message_id: messageId,
+    p_hidden_by: hiddenBy,
+  });
+  for (const row of (cascadeData ?? []) as { id: string }[]) {
     await publish(channels.chat(message.room_id), "hide", {
-      messageId,
+      messageId: row.id,
       hiddenBy,
     });
   }

@@ -408,14 +408,17 @@ export function RealtimeRoom(props: Props) {
 
     chat.subscribe("message", (msg) => appendMessage(msg.data as ChatMessage));
     chat.subscribe("vote", (msg) => {
-      const { messageId, up, down } = msg.data as {
+      const { messageId, up, down, score } = msg.data as {
         messageId: string;
         up: number;
         down: number;
+        score: number;
       };
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === messageId ? { ...m, up_count: up, down_count: down } : m,
+          m.id === messageId
+            ? { ...m, up_count: up, down_count: down, score }
+            : m,
         ),
       );
     });
@@ -434,15 +437,18 @@ export function RealtimeRoom(props: Props) {
 
     linksCh.subscribe("link", (msg) => appendLink(msg.data as Link));
     linksCh.subscribe("vote", (msg) => {
-      const { linkId, up, down, hidden } = msg.data as {
+      const { linkId, up, down, score, hidden } = msg.data as {
         linkId: string;
         up: number;
         down: number;
+        score: number;
         hidden: boolean;
       };
       setLinks((prev) =>
         prev.map((l) =>
-          l.id === linkId ? { ...l, up_count: up, down_count: down, hidden } : l,
+          l.id === linkId
+            ? { ...l, up_count: up, down_count: down, score, hidden }
+            : l,
         ),
       );
     });
@@ -914,10 +920,29 @@ type StreamItem =
   | { kind: "link"; id: string; createdAt: string; lnk: Link };
 
 type StreamFilter = "blended" | "chat" | "links";
+type SortMode = "new" | "top" | "controversial";
 
 // how many reply levels nest inline before a "Continue this thread →" jump into
 // the focused overlay (Reddit's permalink pattern); keeps a 50%/phone column legible
 const MAX_INLINE_DEPTH = 4;
+
+/** Reddit-style controversy: high only when up and down are both large and close
+ *  (lots of engagement, evenly split). Zero unless there are both up and downvotes. */
+function controversyScore(up: number, down: number): number {
+  if (up <= 0 || down <= 0) return 0;
+  return (up + down) * (Math.min(up, down) / Math.max(up, down));
+}
+
+/** Compare two values for a descending ranked sort, newest-first as the tiebreak. */
+function rankCompare(
+  aVal: number,
+  bVal: number,
+  aCreated: string,
+  bCreated: string,
+): number {
+  if (bVal !== aVal) return bVal - aVal;
+  return aCreated < bCreated ? 1 : aCreated > bCreated ? -1 : 0;
+}
 
 function LiveChat({
   room,
@@ -984,6 +1009,10 @@ function LiveChat({
   const toast = useToast();
   const [linkVotes, setLinkVotes] = useState(myLinkVotes);
   const [streamFilter, setStreamFilter] = useState<StreamFilter>("blended");
+  const [sortMode, setSortMode] = useState<SortMode>("new");
+  // frozen top-level display order for the ranked (non-"new") modes — so live
+  // votes/inserts don't re-rank under the reader; new items batch behind a pill
+  const [frozenIds, setFrozenIds] = useState<string[] | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkDraft, setLinkDraft] = useState("");
   const [submittingLink, setSubmittingLink] = useState(false);
@@ -1002,11 +1031,13 @@ function LiveChat({
   const [unread, setUnread] = useState(0);
   const NEAR_BOTTOM_PX = 64;
 
-  // saved filter (localStorage, per-device); load after mount to avoid an SSR mismatch
+  // saved filter + sort (localStorage, per-device); load after mount to avoid an SSR mismatch
   useEffect(() => {
     try {
       const s = localStorage.getItem("fc:streamFilter");
       if (s === "chat" || s === "links" || s === "blended") setStreamFilter(s);
+      const sm = localStorage.getItem("fc:sortMode");
+      if (sm === "new" || sm === "top" || sm === "controversial") setSortMode(sm);
     } catch {
       /* ignore */
     }
@@ -1015,6 +1046,15 @@ function LiveChat({
     setStreamFilter(f);
     try {
       localStorage.setItem("fc:streamFilter", f);
+    } catch {
+      /* ignore */
+    }
+  }
+  function changeSort(mode: SortMode) {
+    setSortMode(mode);
+    setUnread(0); // the chronological unread count is meaningless in ranked modes
+    try {
+      localStorage.setItem("fc:sortMode", mode);
     } catch {
       /* ignore */
     }
@@ -1055,11 +1095,75 @@ function LiveChat({
       else map.set(m.parent_id, [m]);
     }
     for (const arr of map.values())
-      arr.sort((a, b) =>
-        a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0,
-      );
+      arr.sort((a, b) => {
+        if (sortMode === "top")
+          return rankCompare(Number(a.score), Number(b.score), a.created_at, b.created_at);
+        if (sortMode === "controversial")
+          return rankCompare(
+            controversyScore(a.up_count, a.down_count),
+            controversyScore(b.up_count, b.down_count),
+            a.created_at,
+            b.created_at,
+          );
+        return a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0;
+      });
     return map;
-  }, [messages]);
+  }, [messages, sortMode]);
+
+  const itemRank = (it: StreamItem, mode: Exclude<SortMode, "new">) => {
+    const up = it.kind === "message" ? it.msg.up_count : it.lnk.up_count;
+    const down = it.kind === "message" ? it.msg.down_count : it.lnk.down_count;
+    // score is a Postgres numeric, which hydrates as a string on the SSR path
+    const score = Number(it.kind === "message" ? it.msg.score : it.lnk.score);
+    return mode === "top" ? score : controversyScore(up, down);
+  };
+
+  // streamItems sorted by the active mode ("new" stays chronological asc — the
+  // pin-to-bottom default; top/controversial rank highest-first)
+  const sortedItems = useMemo(() => {
+    if (sortMode === "new") return streamItems;
+    return [...streamItems].sort((a, b) =>
+      rankCompare(itemRank(a, sortMode), itemRank(b, sortMode), a.createdAt, b.createdAt),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamItems, sortMode]);
+
+  const itemById = useMemo(() => {
+    const m = new Map<string, StreamItem>();
+    for (const it of streamItems) m.set(it.id, it);
+    return m;
+  }, [streamItems]);
+
+  // (re)freeze the order on entering a ranked mode AND when the filter changes
+  // (so a stale cross-filter snapshot never drops items / inflates the pill);
+  // NOT on data change — that's the whole point of freezing
+  useEffect(() => {
+    if (sortMode === "new") setFrozenIds(null);
+    else setFrozenIds(sortedItems.map((i) => i.id));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortMode, streamFilter]);
+
+  // what renders: live in "new"; the frozen snapshot (live data looked up per id)
+  // in ranked modes, so order holds steady while counts still update
+  const displayItems = useMemo(() => {
+    if (sortMode === "new" || !frozenIds) return sortedItems;
+    const out: StreamItem[] = [];
+    for (const id of frozenIds) {
+      const it = itemById.get(id);
+      if (it) out.push(it);
+    }
+    return out;
+  }, [sortMode, frozenIds, sortedItems, itemById]);
+
+  const pendingCount = useMemo(() => {
+    if (sortMode === "new" || !frozenIds) return 0;
+    const frozen = new Set(frozenIds);
+    return streamItems.reduce((n, it) => n + (frozen.has(it.id) ? 0 : 1), 0);
+  }, [sortMode, frozenIds, streamItems]);
+
+  function refreshSort() {
+    setFrozenIds(sortedItems.map((i) => i.id));
+  }
 
   function scrollChatToBottom() {
     const el = listRef.current;
@@ -1085,6 +1189,13 @@ function LiveChat({
   // their own send); otherwise hold their scroll position and count unread so
   // reading history during a busy match isn't yanked away (M-12, audit)
   useLayoutEffect(() => {
+    // ranked modes (top/controversial) freeze the order + batch new items, so no
+    // pin-to-bottom there; only the chronological "new" mode follows live inserts
+    if (sortMode !== "new") {
+      prevLenRef.current = streamItems.length;
+      filterRef.current = streamFilter;
+      return;
+    }
     const el = listRef.current;
     const prevLen = prevLenRef.current;
     const filterChanged = filterRef.current !== streamFilter;
@@ -1117,7 +1228,7 @@ function LiveChat({
       setUnread((n) => n + (streamItems.length - prevLen));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [streamItems.length, streamFilter, viewer?.userId]);
+  }, [streamItems.length, streamFilter, sortMode, viewer?.userId]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -1462,6 +1573,37 @@ function LiveChat({
         </div>
       </div>
 
+      <div className="flex items-center gap-2 border-b border-line px-3 py-1">
+        <span className="text-[11px] font-semibold text-secondary">Sort</span>
+        <div className="flex gap-1" role="tablist" aria-label="Sort order">
+          {(["new", "top", "controversial"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              role="tab"
+              aria-selected={sortMode === s}
+              onClick={() => changeSort(s)}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${
+                sortMode === s
+                  ? "bg-gold text-canvas"
+                  : "text-secondary hover:bg-raised"
+              }`}
+            >
+              {s === "new" ? "New" : s === "top" ? "Top" : "Controversial"}
+            </button>
+          ))}
+        </div>
+        {pendingCount > 0 && (
+          <button
+            type="button"
+            onClick={refreshSort}
+            className="ml-auto rounded-full bg-gold px-2.5 py-0.5 text-xs font-semibold text-canvas tabular-nums"
+          >
+            {pendingCount} new — refresh
+          </button>
+        )}
+      </div>
+
       {roomState === "waiting" && <Countdown targetIso={broadcastStart} />}
 
       <ul
@@ -1469,7 +1611,7 @@ function LiveChat({
         onScroll={onChatScroll}
         className="flex-1 space-y-1 overflow-y-auto p-2"
       >
-        {streamItems.map((item) =>
+        {displayItems.map((item) =>
           item.kind === "link" ? (
             <LinkCard
               key={item.id}
@@ -1482,7 +1624,7 @@ function LiveChat({
             renderNode(item.msg, 0)
           ),
         )}
-        {streamItems.length === 0 && (
+        {displayItems.length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
             {streamFilter === "links"
               ? "No links yet."
@@ -1493,8 +1635,9 @@ function LiveChat({
         )}
       </ul>
 
-      {/* new-messages affordance shown only when scrolled away from bottom */}
-      {unread > 0 && (
+      {/* new-messages affordance — chronological mode only; ranked modes use the
+          "N new — refresh" pill instead (mutually exclusive) */}
+      {sortMode === "new" && unread > 0 && (
         <button
           type="button"
           onClick={scrollChatToBottom}

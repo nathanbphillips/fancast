@@ -57,6 +57,9 @@ export type ChatMessage = {
   hidden_at: string | null;
   up_count: number;
   down_count: number;
+  /** weighted vote score (Phase 11): established voters count full, new ones
+   *  less; raw up/down stay for display, this drives the "top" sort. */
+  score: number;
   flag_weight: number;
   /** thread spine (Phase 11): parent message id (null = top-level message), the
    *  top-level ancestor (= own id for a root), and nesting depth (0 = root). */
@@ -80,6 +83,8 @@ export type Link = {
   hidden: boolean;
   up_count: number;
   down_count: number;
+  /** weighted vote score (Phase 11), drives the "top" sort. */
+  score: number;
   created_at: string;
   author?: Pick<Profile, "username" | "role">;
 };

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { rateLimit } from "@/lib/ratelimit";
+import { voteWeight } from "@/lib/standing";
 
 const bodySchema = z.object({
   linkId: z.uuid(),
@@ -14,6 +16,10 @@ const bodySchema = z.object({
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
+
+  if (!rateLimit(`linkvote:${caller.userId}`, 40, 60_000)) {
+    return NextResponse.json({ error: "Slow down on the votes." }, { status: 429 });
+  }
 
   const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
@@ -38,21 +44,25 @@ export async function POST(request: NextRequest) {
       p_link_id: linkId,
       p_user_id: caller.userId,
       p_value: value,
+      p_weight: voteWeight(caller.profile),
     })
-    .single<{ up: number; down: number; is_hidden: boolean }>();
+    .single<{ up: number; down: number; score: number; is_hidden: boolean }>();
   if (error || !data) {
     return NextResponse.json(
       { error: error?.message ?? "Vote failed." },
       { status: 500 },
     );
   }
+  // numeric serializes as a JSON string; coerce to a real number
   const { up, down, is_hidden: shouldHide } = data;
+  const score = Number(data.score);
 
   await publish(channels.links(link.room_id), "vote", {
     linkId,
     up,
     down,
+    score,
     hidden: shouldHide,
   });
-  return NextResponse.json({ up, down, hidden: shouldHide });
+  return NextResponse.json({ up, down, score, hidden: shouldHide });
 }

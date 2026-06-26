@@ -3,11 +3,11 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { flagWeight } from "@/lib/standing";
 
 const bodySchema = z.object({ messageId: z.uuid() });
 
 const FLAG_BUDGET_PER_MATCH = 10;
-const ESTABLISHED_AFTER_MS = 48 * 60 * 60 * 1000;
 
 /**
  * Flag-to-hide (FR-8.3), separate from votes. Weight by standing:
@@ -60,12 +60,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const accountAge =
-    Date.now() - new Date(caller.profile.created_at).getTime();
-  const weight =
-    caller.profile.standing === "good" && accountAge >= ESTABLISHED_AFTER_MS
-      ? 1.0
-      : 0.5;
+  const weight = flagWeight(caller.profile);
 
   // Insert the flag, recompute the weighted total, and hide at the threshold
   // (3.0) atomically under a parent-row lock (M-3, audit). just_hidden is true
@@ -97,6 +92,18 @@ export async function POST(request: NextRequest) {
       messageId,
       hiddenBy: "flags",
     });
+    // cascade the hide to descendants (the RPC skips the already-hidden target
+    // and returns only the newly-hidden replies) — Phase 11
+    const { data: descendants } = await service.rpc("hide_message_subtree", {
+      p_message_id: messageId,
+      p_hidden_by: "flags",
+    });
+    for (const row of (descendants ?? []) as { id: string }[]) {
+      await publish(channels.chat(message.room_id), "hide", {
+        messageId: row.id,
+        hiddenBy: "flags",
+      });
+    }
   }
 
   return NextResponse.json({ flagged: true, hidden: crossedThreshold });
