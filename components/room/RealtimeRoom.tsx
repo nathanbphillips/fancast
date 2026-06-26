@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFixtureStats } from "@/lib/hooks/useFixtureStats";
+import { useMatchHistory } from "@/lib/hooks/useMatchHistory";
 import type { StatTab } from "@/lib/stats";
 import * as Ably from "ably";
 import type {
@@ -585,6 +586,11 @@ export function RealtimeRoom(props: Props) {
   // the next good poll); distinct from the route's own last-good `stale` flag
   const statsOutage = isLive && statsError !== null;
 
+  // Phase 11: pre-game league table + form (slow-changing, separate cached proxy)
+  const { history: matchHistory, loading: historyLoading } = useMatchHistory(
+    room.fixtureId,
+  );
+
   // live scoreline from the stats poll, falling back to the page-load value so a
   // goal during the session updates the header. The CLOCK stays event-sourced
   // (golden rule 6) — only the score tracks the provider here.
@@ -805,6 +811,8 @@ export function RealtimeRoom(props: Props) {
             onPushTab={pushStatsTab}
             expanded
             outage={statsOutage}
+            history={matchHistory}
+            historyLoading={historyLoading}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
         </aside>

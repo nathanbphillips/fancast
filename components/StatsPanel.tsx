@@ -6,8 +6,10 @@ import { EventsTimeline } from "@/components/stats/EventsTimeline";
 import { LineupTabs } from "@/components/stats/LineupTabs";
 import { DeeperStats } from "@/components/stats/DeeperStats";
 import { MatchInfoPanel } from "@/components/stats/MatchInfoPanel";
+import { MatchHistoryPanel } from "@/components/stats/MatchHistoryPanel";
 import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
+import type { MatchHistory } from "@/lib/history";
 
 /**
  * Stats panel (Phase 7): Stats / Events / Line-ups, driven by live Sportmonks
@@ -96,6 +98,8 @@ export function StatsPanel({
   onPushTab,
   expanded = false,
   outage = false,
+  history = null,
+  historyLoading = false,
   defaultTab = "stats",
 }: {
   data: FixtureStats | null;
@@ -111,6 +115,9 @@ export function StatsPanel({
   /** live stats polling is currently failing — show a "delayed" cue instead of
    *  the calm pre-kickoff placeholder (which would be misleading mid-match). */
   outage?: boolean;
+  /** pre-game history (league table + form), shown beside Info (Phase 11). */
+  history?: MatchHistory | null;
+  historyLoading?: boolean;
   /** the tab shown when nobody has overridden/pushed — "info" pre-game,
    *  "stats" once the match is underway (the kickoff auto-switch). */
   defaultTab?: StatTab;
@@ -201,12 +208,23 @@ export function StatsPanel({
           aria-labelledby={`stats-tab-${effectiveTab}`}
         >
           {effectiveTab === "info" && (
-            <MatchInfoPanel
-              info={data?.info ?? null}
-              homeName={data?.home.name ?? "Home"}
-              awayName={data?.away.name ?? "Away"}
-              size={size}
-            />
+            // pre-game split: high-level info | historical table & form. Two
+            // columns on desktop, stacked on mobile (Phase 11 Slice 5).
+            <div className="grid gap-4 lg:grid-cols-2">
+              <MatchInfoPanel
+                info={data?.info ?? null}
+                homeName={data?.home.name ?? "Home"}
+                awayName={data?.away.name ?? "Away"}
+                size={size}
+              />
+              <MatchHistoryPanel
+                history={history}
+                loading={historyLoading}
+                homeName={data?.home.name ?? "Home"}
+                awayName={data?.away.name ?? "Away"}
+                size={size}
+              />
+            </div>
           )}
 
           {effectiveTab === "stats" &&
