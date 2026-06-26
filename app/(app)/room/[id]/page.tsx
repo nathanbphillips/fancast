@@ -27,6 +27,7 @@ import type {
 import { predictionAggregate } from "@/lib/predictions";
 import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
+import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
 
 type RoomWithJoins = Room & {
@@ -87,14 +88,10 @@ export default async function RoomPage({
   const supabase = await createSupabaseServerClient();
   const { user, profile } = await getCurrentUserAndProfile();
 
-  const [{ data: messages }, { data: links }, { data: clockEvents }] = await Promise.all([
-    supabase
-      .from("chat_messages")
-      .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
-      .eq("room_id", room.id)
-      .order("created_at", { ascending: true })
-      .limit(200)
-      .returns<ChatMessage[]>(),
+  // chat as COMPLETE threads (Phase 11): the N most recent roots + all their
+  // replies, so reconnect/first-paint never split a thread across the cap
+  const [messages, { data: links }, { data: clockEvents }] = await Promise.all([
+    loadRoomThreadMessages(supabase, room.id),
     supabase
       .from("links")
       .select("*, author:profiles!links_user_id_fkey(username, role)")
@@ -112,7 +109,7 @@ export default async function RoomPage({
   const myMessageVotes: Record<string, 1 | -1> = {};
   const myLinkVotes: Record<string, 1 | -1> = {};
   if (user) {
-    const messageIds = (messages ?? []).map((m) => m.id);
+    const messageIds = messages.map((m) => m.id);
     const linkIds = (links ?? []).map((l) => l.id);
     const [{ data: mv }, { data: lv }] = await Promise.all([
       messageIds.length
@@ -297,7 +294,7 @@ export default async function RoomPage({
       room={roomInfo}
       viewer={viewer}
       viewerFollowsCommentator={viewerFollowsCommentator}
-      initialMessages={messages ?? []}
+      initialMessages={messages}
       initialLinks={links ?? []}
       myMessageVotes={myMessageVotes}
       myLinkVotes={myLinkVotes}

@@ -8,6 +8,8 @@ import type { ChatMessage } from "@/lib/db/types";
 const bodySchema = z.object({
   roomId: z.uuid(),
   body: z.string().trim().min(1).max(500),
+  // Phase 11: a threaded reply targets a parent message in the same room
+  parentId: z.uuid().optional(),
 });
 
 /** Send a chat message. Rate limit (FR-8.5): 1 msg / 2s, burst 3 —
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid message." }, { status: 400 });
   }
-  const { roomId, body } = parsed.data;
+  const { roomId, body, parentId } = parsed.data;
 
   const service = createServiceClient();
 
@@ -57,6 +59,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // a reply must point at a message in this room; the DB trigger fills
+  // root_id/depth, and a depth ceiling stops pathological self-reply chains
+  if (parentId) {
+    const { data: parent } = await service
+      .from("chat_messages")
+      .select("room_id, depth, hidden_by")
+      .eq("id", parentId)
+      .maybeSingle<{ room_id: string; depth: number; hidden_by: string | null }>();
+    if (!parent || parent.room_id !== roomId) {
+      return NextResponse.json({ error: "Reply target not found." }, { status: 404 });
+    }
+    if (parent.hidden_by !== null) {
+      return NextResponse.json(
+        { error: "You can't reply to a hidden message." },
+        { status: 409 },
+      );
+    }
+    if (parent.depth >= 40) {
+      return NextResponse.json(
+        { error: "This thread is too deep to reply to." },
+        { status: 422 },
+      );
+    }
+  }
+
   const windowStart = new Date(Date.now() - 6000).toISOString();
   const { count: recent } = await service
     .from("chat_messages")
@@ -78,6 +105,7 @@ export async function POST(request: NextRequest) {
       user_id: caller.userId,
       body,
       is_waiting_room: room.state === "waiting",
+      parent_id: parentId ?? null,
     })
     .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
     .single<ChatMessage>();

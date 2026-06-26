@@ -6,10 +6,11 @@ import {
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
-import type { ChatMessage, Link, Question, TalkRequest } from "@/lib/db/types";
+import type { Link, Question, TalkRequest } from "@/lib/db/types";
 import { predictionAggregate } from "@/lib/predictions";
 import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
+import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
 
 /**
@@ -52,7 +53,7 @@ export async function GET(
     { data: sliderRows },
     { data: predRows },
     { data: ratingRows },
-    { data: messages },
+    messages,
     { data: links },
   ] = await Promise.all([
     supabase
@@ -63,15 +64,9 @@ export async function GET(
     service.from("slider_votes").select("value").eq("room_id", id),
     service.from("predictions").select("home_score, away_score").eq("room_id", id),
     service.from("player_ratings").select("player_id, rating").eq("room_id", id),
-    // chat + links via the RLS client so hidden bodies stay redacted for non-mods.
-    // Backfills anything the Ably rewind window missed during a long drop (M-4).
-    supabase
-      .from("chat_messages")
-      .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
-      .eq("room_id", id)
-      .order("created_at", { ascending: true })
-      .limit(200)
-      .returns<ChatMessage[]>(),
+    // chat as COMPLETE threads via the RLS client so hidden rows stay redacted
+    // for non-mods (0011/0017) and a reconnect never rebuilds a half thread (M-4).
+    loadRoomThreadMessages(supabase, id),
     supabase
       .from("links")
       .select("*, author:profiles!links_user_id_fkey(username, role)")

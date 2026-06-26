@@ -915,6 +915,10 @@ type StreamItem =
 
 type StreamFilter = "blended" | "chat" | "links";
 
+// how many reply levels nest inline before a "Continue this thread →" jump into
+// the focused overlay (Reddit's permalink pattern); keeps a 50%/phone column legible
+const MAX_INLINE_DEPTH = 4;
+
 function LiveChat({
   room,
   roomState,
@@ -984,6 +988,13 @@ function LiveChat({
   const [linkDraft, setLinkDraft] = useState("");
   const [submittingLink, setSubmittingLink] = useState(false);
   const [linkNotice, setLinkNotice] = useState<string | null>(null);
+  // threading (Phase 11 Slice 3): which node has its reply box open, the draft,
+  // the set of collapsed roots, and a node focused full-depth in the overlay
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyDraft, setReplyDraft] = useState("");
+  const [replyBusy, setReplyBusy] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [focusRoot, setFocusRoot] = useState<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const pinnedRef = useRef(true); // user is at/near the bottom
   const prevLenRef = useRef(0); // length of the merged stream last render
@@ -1009,12 +1020,18 @@ function LiveChat({
     }
   }
 
-  // the merged chat+links stream: interleaved by created_at, narrowed by the filter
+  const messageIds = useMemo(() => new Set(messages.map((m) => m.id)), [messages]);
+
+  // the merged stream is TOP-LEVEL items only (roots + links) interleaved by
+  // created_at; replies hang off their root via childrenByParent (Phase 11). A
+  // reply whose parent isn't loaded (root past the fetch window, or an ancestor
+  // hidden by RLS) is surfaced as a top-level item rather than silently dropped.
   const streamItems = useMemo<StreamItem[]>(() => {
     const items: StreamItem[] = [];
     if (streamFilter !== "links") {
       for (const m of messages)
-        items.push({ kind: "message", id: m.id, createdAt: m.created_at, msg: m });
+        if (!m.parent_id || !messageIds.has(m.parent_id))
+          items.push({ kind: "message", id: m.id, createdAt: m.created_at, msg: m });
     }
     if (streamFilter !== "chat") {
       for (const l of links)
@@ -1026,6 +1043,23 @@ function LiveChat({
     );
     return items;
   }, [messages, links, streamFilter]);
+
+  // parent id -> its direct replies, each list chronological (Slice 3; vote-sort
+  // comes in Slice 4). Rebuilt whenever a message/reply arrives.
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, ChatMessage[]>();
+    for (const m of messages) {
+      if (!m.parent_id) continue;
+      const arr = map.get(m.parent_id);
+      if (arr) arr.push(m);
+      else map.set(m.parent_id, [m]);
+    }
+    for (const arr of map.values())
+      arr.sort((a, b) =>
+        a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0,
+      );
+    return map;
+  }, [messages]);
 
   function scrollChatToBottom() {
     const el = listRef.current;
@@ -1209,6 +1243,193 @@ function LiveChat({
     (inputsOpen ||
       (roomState === "waiting" && (isRoomCommentator || linksOpen)));
 
+  function toggleCollapse(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function sendReply(e: React.FormEvent, parentId: string) {
+    e.preventDefault();
+    if (!replyDraft.trim() || replyBusy) return;
+    setReplyBusy(true);
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: room.id, body: replyDraft.trim(), parentId }),
+    });
+    setReplyBusy(false);
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (body.message) onSent(body.message); // appendMessage → tree rebuilds
+      setReplyDraft("");
+      setReplyTo(null);
+      setCollapsed((prev) => {
+        // make sure the parent is expanded so the new reply is visible
+        if (!prev.has(parentId)) return prev;
+        const next = new Set(prev);
+        next.delete(parentId);
+        return next;
+      });
+    } else {
+      const body = await res.json().catch(() => ({}));
+      toast(body.error ?? "Couldn't post your reply.");
+    }
+  }
+
+  // one message + its reply subtree. Indents inline up to MAX_INLINE_DEPTH, then
+  // offers a "Continue this thread →" jump into the focused overlay.
+  function renderNode(m: ChatMessage, depth: number): React.ReactNode {
+    const kids = childrenByParent.get(m.id) ?? [];
+    const isCollapsed = collapsed.has(m.id);
+    const isCommentator = m.author?.role === "commentator";
+    const isOwn = viewer?.userId === m.user_id;
+    return (
+      <li key={m.id}>
+        {m.hidden_by ? (
+          <div className="rounded-lg px-3 py-2 text-xs text-secondary italic">
+            Message hidden{m.hidden_by === "flags" ? " by community flags" : ""}
+          </div>
+        ) : (
+          <div
+            className={`group flex items-start gap-2 rounded-lg px-2 py-1.5 ${
+              isCommentator
+                ? "border-l-[3px] border-gold bg-raised"
+                : isOwn
+                  ? "bg-raised/60"
+                  : ""
+            }`}
+          >
+            <VoteArrows
+              up={m.up_count}
+              down={m.down_count}
+              myVote={votes[m.id]}
+              disabled={!viewer}
+              onVote={(v) => vote(m.id, v)}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm leading-relaxed">
+                <span className={`mr-2 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
+                  {m.author?.username ?? "…"}
+                </span>
+                {isCommentator && (
+                  <span className="mr-2 rounded-sm bg-gold px-1 py-0.5 align-middle text-[10px] font-bold text-canvas">
+                    COMMENTATOR
+                  </span>
+                )}
+                {m.body}
+              </p>
+              <div className="mt-0.5 flex items-center gap-3 text-xs text-secondary">
+                {canType && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setReplyTo(replyTo === m.id ? null : m.id);
+                      setReplyDraft("");
+                    }}
+                    className="font-semibold hover:text-primary"
+                  >
+                    Reply
+                  </button>
+                )}
+                {kids.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleCollapse(m.id)}
+                    aria-expanded={!isCollapsed}
+                    className="font-semibold hover:text-primary"
+                  >
+                    {isCollapsed
+                      ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
+                      : "▾ hide replies"}
+                  </button>
+                )}
+              </div>
+            </div>
+            {viewer && !isOwn && !flagged.has(m.id) && (
+              <button
+                type="button"
+                aria-label="Flag message"
+                title="Flag message"
+                onClick={() => flag(m.id)}
+                className="px-1 text-xs text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
+              >
+                ⚑
+              </button>
+            )}
+            {viewer?.isModerator && (
+              <button
+                type="button"
+                aria-label="Hide message"
+                title="Hide message"
+                onClick={() => hide(m.id)}
+                className="px-1 text-xs text-secondary hover:text-red"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
+
+        {replyTo === m.id && canType && (
+          <form onSubmit={(e) => sendReply(e, m.id)} className="mt-1 ml-7 flex gap-2">
+            <input
+              type="text"
+              value={replyDraft}
+              onChange={(e) => setReplyDraft(e.target.value)}
+              maxLength={500}
+              placeholder="Reply…"
+              aria-label="Reply"
+              autoFocus
+              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+            />
+            <button
+              type="submit"
+              disabled={replyBusy || !replyDraft.trim()}
+              className="h-9 shrink-0 rounded-lg bg-red px-3 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Reply
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setReplyTo(null);
+                setReplyDraft("");
+              }}
+              aria-label="Cancel reply"
+              className="h-9 shrink-0 px-1 text-sm text-secondary hover:text-primary"
+            >
+              ✕
+            </button>
+          </form>
+        )}
+
+        {/* a hidden node never renders its replies — matches the reload path
+            (RLS drops a hidden root's whole thread) and stops moderated content
+            from carrying a visible reply pile live */}
+        {!m.hidden_by &&
+          kids.length > 0 &&
+          !isCollapsed &&
+          (depth < MAX_INLINE_DEPTH ? (
+            <ul className="mt-1 ml-3 space-y-1 border-l border-line pl-2">
+              {kids.map((k) => renderNode(k, depth + 1))}
+            </ul>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setFocusRoot(m.id)}
+              className="mt-1 ml-7 text-xs font-semibold text-gold hover:underline"
+            >
+              Continue this thread ({kids.length}) →
+            </button>
+          ))}
+      </li>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
@@ -1248,82 +1469,19 @@ function LiveChat({
         onScroll={onChatScroll}
         className="flex-1 space-y-1 overflow-y-auto p-2"
       >
-        {streamItems.map((item) => {
-          if (item.kind === "link") {
-            return (
-              <LinkCard
-                key={item.id}
-                link={item.lnk}
-                myVote={linkVotes[item.id]}
-                canVote={viewer !== null}
-                onVote={(v) => linkVote(item.id, v)}
-              />
-            );
-          }
-          const m = item.msg;
-          if (m.hidden_by) {
-            return (
-              <li key={m.id} className="rounded-lg px-3 py-2 text-xs text-secondary italic">
-                Message hidden{m.hidden_by === "flags" ? " by community flags" : ""}
-              </li>
-            );
-          }
-          const isCommentator = m.author?.role === "commentator";
-          const isOwn = viewer?.userId === m.user_id;
-          return (
-            <li
-              key={m.id}
-              className={`group flex items-start gap-2 rounded-lg px-3 py-2 ${
-                isCommentator
-                  ? "border-l-[3px] border-gold bg-raised"
-                  : isOwn
-                    ? "bg-raised/60"
-                    : ""
-              }`}
-            >
-              <VoteArrows
-                up={m.up_count}
-                down={m.down_count}
-                myVote={votes[m.id]}
-                disabled={!viewer}
-                onVote={(v) => vote(m.id, v)}
-              />
-              <p className="min-w-0 flex-1 text-sm leading-relaxed">
-                <span className={`mr-2 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
-                  {m.author?.username ?? "…"}
-                </span>
-                {isCommentator && (
-                  <span className="mr-2 rounded-sm bg-gold px-1 py-0.5 align-middle text-[10px] font-bold text-canvas">
-                    COMMENTATOR
-                  </span>
-                )}
-                {m.body}
-              </p>
-              {viewer && !isOwn && !flagged.has(m.id) && (
-                <button
-                  type="button"
-                  aria-label="Flag message"
-                  title="Flag message"
-                  onClick={() => flag(m.id)}
-                  className="px-1 text-xs text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
-                >
-                  ⚑
-                </button>
-              )}
-              {viewer?.isModerator && (
-                <button
-                  type="button"
-                  aria-label="Hide message"
-                  title="Hide message"
-                  onClick={() => hide(m.id)}
-                  className="px-1 text-xs text-secondary hover:text-red"
-                >
-                  ✕
-                </button>
-              )}
-            </li>
-          );
-        })}
+        {streamItems.map((item) =>
+          item.kind === "link" ? (
+            <LinkCard
+              key={item.id}
+              link={item.lnk}
+              myVote={linkVotes[item.id]}
+              canVote={viewer !== null}
+              onVote={(v) => linkVote(item.id, v)}
+            />
+          ) : (
+            renderNode(item.msg, 0)
+          ),
+        )}
         {streamItems.length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
             {streamFilter === "links"
@@ -1548,6 +1706,35 @@ function LiveChat({
           )}
         </div>
       )}
+
+      {/* focused single-thread overlay for chains past MAX_INLINE_DEPTH */}
+      {focusRoot &&
+        (() => {
+          const root = messages.find((m) => m.id === focusRoot);
+          if (!root) return null;
+          return (
+            <div
+              className="fixed inset-0 z-50 flex flex-col bg-canvas/95 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Thread"
+            >
+              <div className="flex items-center gap-2 border-b border-line px-3 py-2">
+                <button
+                  type="button"
+                  onClick={() => setFocusRoot(null)}
+                  className="text-sm font-semibold text-secondary hover:text-primary"
+                >
+                  ← Back
+                </button>
+                <span className="text-sm font-semibold">Thread</span>
+              </div>
+              <ul className="flex-1 space-y-1 overflow-y-auto p-3">
+                {renderNode(root, 0)}
+              </ul>
+            </div>
+          );
+        })()}
     </div>
   );
 }

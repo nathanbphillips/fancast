@@ -58,6 +58,11 @@ export type ChatMessage = {
   up_count: number;
   down_count: number;
   flag_weight: number;
+  /** thread spine (Phase 11): parent message id (null = top-level message), the
+   *  top-level ancestor (= own id for a root), and nesting depth (0 = root). */
+  parent_id: string | null;
+  root_id: string;
+  depth: number;
   created_at: string;
   /** embedded author (select alias author:profiles(...)) */
   author?: Pick<Profile, "username" | "role">;
