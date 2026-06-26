@@ -100,6 +100,7 @@ export function StatsPanel({
   outage = false,
   history = null,
   historyLoading = false,
+  comingSoon = false,
   defaultTab = "stats",
 }: {
   data: FixtureStats | null;
@@ -118,6 +119,9 @@ export function StatsPanel({
   /** pre-game history (league table + form), shown beside Info (Phase 11). */
   history?: MatchHistory | null;
   historyLoading?: boolean;
+  /** admin game with no Sportmonks data (uncovered comp / not matched yet) —
+   *  show a single calm "Information coming soon" instead of the tab content. */
+  comingSoon?: boolean;
   /** the tab shown when nobody has overridden/pushed — "info" pre-game,
    *  "stats" once the match is underway (the kickoff auto-switch). */
   defaultTab?: StatTab;
@@ -207,6 +211,13 @@ export function StatsPanel({
           id="stats-tabpanel"
           aria-labelledby={`stats-tab-${effectiveTab}`}
         >
+          {comingSoon ? (
+            <p className={`text-secondary ${big ? "text-base" : "text-sm"}`}>
+              Information coming soon — venue, weather, referee, and live stats
+              fill in automatically once they&apos;re available for this game.
+            </p>
+          ) : (
+          <>
           {effectiveTab === "info" && (
             // pre-game split: high-level info | historical table & form. Two
             // columns on desktop, stacked on mobile (Phase 11 Slice 5).
@@ -287,6 +298,8 @@ export function StatsPanel({
 
           {(data?.stale || (outage && hasStats)) && (
             <p className="mt-3 text-xs text-secondary">Showing the last update.</p>
+          )}
+          </>
           )}
         </div>
       </div>

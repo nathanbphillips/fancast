@@ -287,6 +287,9 @@ export default async function RoomPage({
     commentatorUsername: room.commentator.username,
     commentatorId: room.commentator_id,
     fixtureId: room.fixture_id,
+    // an admin game with no Sportmonks match yet (or in an uncovered comp) has
+    // no upstream data — the stats/info/history panels show "coming soon"
+    comingSoon: room.fixture.sportmonks_fixture_id == null,
   };
 
   return (

@@ -21,6 +21,10 @@ export type Follow = {
 
 export type Fixture = {
   id: number;
+  /** the real Sportmonks fixture id for upstream calls; null for an admin game
+   *  not yet matched (or one in a competition the plan doesn't cover). */
+  sportmonks_fixture_id: number | null;
+  source: "sportmonks" | "admin";
   league_id: number | null;
   season: number | null;
   competition: string;

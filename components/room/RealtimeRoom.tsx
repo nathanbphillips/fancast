@@ -72,7 +72,8 @@ export type RoomInfo = {
   awayScore: number;
   commentatorUsername: string;
   commentatorId: string;
-  fixtureId: number; // Sportmonks fixture id (negative for dev seeds)
+  fixtureId: number; // the room's fixture id (PK; negative for dev seeds, epoch-ms for admin games)
+  comingSoon: boolean; // admin game with no Sportmonks data yet → "Information coming soon"
 };
 
 type Props = {
@@ -813,6 +814,7 @@ export function RealtimeRoom(props: Props) {
             outage={statsOutage}
             history={matchHistory}
             historyLoading={historyLoading}
+            comingSoon={room.comingSoon}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
         </aside>

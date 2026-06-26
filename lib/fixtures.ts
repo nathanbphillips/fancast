@@ -83,6 +83,8 @@ export function mapSportmonksFixture(f: SmFixture, seasonYear: number) {
     current.find((s) => s.score?.participant === loc)?.score?.goals ?? null;
   return {
     id: f.id,
+    sportmonks_fixture_id: f.id,
+    source: "sportmonks",
     league_id: f.league_id,
     season: seasonYear,
     competition: f.league?.name ?? "Football",

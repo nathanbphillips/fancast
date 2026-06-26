@@ -29,20 +29,21 @@ export async function GET(
       headers: { "Cache-Control": "no-store" },
     });
   }
-  // unknown (un-synced) fixture → zeros contract, no upstream call
+  // unknown fixture, or an admin game not yet matched to a Sportmonks fixture →
+  // zeros contract, NO upstream call (the room shows "Information coming soon").
   const supabase = await createSupabaseServerClient();
   const { data: known } = await supabase
     .from("fixtures")
-    .select("id")
+    .select("id, sportmonks_fixture_id")
     .eq("id", id)
-    .maybeSingle();
-  if (!known) {
+    .maybeSingle<{ id: number; sportmonks_fixture_id: number | null }>();
+  if (!known || known.sportmonks_fixture_id == null) {
     return NextResponse.json(emptyStats(id), {
       headers: { "Cache-Control": "no-store" },
     });
   }
   try {
-    const stats = await getFixtureStats(id);
+    const stats = await getFixtureStats(known.sportmonks_fixture_id);
     return NextResponse.json(stats, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     // match data is non-critical — fail soft with a 503 the client treats calmly

@@ -7,11 +7,13 @@ import { ThemeSync } from "@/components/ThemeSync";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
 import { UserMenu } from "@/components/UserMenu";
+import { isAdmin } from "@/lib/roles";
 
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const { user, profile } = await getCurrentUserAndProfile();
+  const admin = isAdmin(user?.id, profile);
 
   return (
     <ToastProvider>
@@ -27,6 +29,14 @@ export default async function AppLayout({
               {brand.name}
             </Link>
             <div className="flex items-center gap-1">
+              {admin && (
+                <Link
+                  href="/admin"
+                  className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-gold hover:bg-raised"
+                >
+                  Admin
+                </Link>
+              )}
               {profile ? (
                 <UserMenu username={profile.username} />
               ) : user ? (
