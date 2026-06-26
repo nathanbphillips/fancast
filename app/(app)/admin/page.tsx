@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
 import { AdminTools } from "@/components/admin/AdminTools";
+import { AdminGuide } from "@/components/admin/AdminGuide";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -17,6 +18,7 @@ export default async function AdminPage() {
         Spin up a room for any game — a World Cup match, a friendly, anything.
       </p>
       <AdminTools />
+      <AdminGuide />
     </div>
   );
 }
