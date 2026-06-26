@@ -132,21 +132,15 @@ const INPUTS_OPEN: RoomState[] = [
   "postgame",
 ];
 
-// default = 3 columns (25/50/25); expanded = 2 columns (50/50, stats + companion).
-const GRID_DEFAULT = "lg:grid-cols-[1fr_2fr_1fr]";
-const GRID_EXPANDED = "lg:grid-cols-[1fr_1fr]";
-
 export function RealtimeRoom(props: Props) {
   const { room, viewer } = props;
   const [roomState, setRoomState] = useState<RoomState>(room.state);
-  const [tab, setTab] = useState<"chat" | "stats" | "links" | "questions">("chat");
+  // Phase 11: desktop is a fixed two-column split — stats LEFT 50 / merged
+  // chat+links stream RIGHT 50. The old 25/50/25 expand/swap/companion model is
+  // retired (founder decision 2026-06-24). On mobile `tab` switches Stream/Stats
+  // (and Questions for the commentator); links live inside the stream now.
+  const [tab, setTab] = useState<"chat" | "stats" | "questions">("chat");
   const [centerTab, setCenterTab] = useState<"chat" | "questions">("chat");
-  // desktop layout is a personal, local choice (not commentator-pushed, not saved):
-  //   default  → stats 25 / chat 50 / links 25
-  //   expanded → stats 50 / companion 50  (companion swaps between chat & links)
-  // expanding stats keeps chat (priority); expanding links pushes chat behind links.
-  const [deskLayout, setDeskLayout] = useState<"default" | "expanded">("default");
-  const [companion, setCompanion] = useState<"chat" | "links">("chat");
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
   const [questions, setQuestions] = useState<Question[]>(props.initialQuestions);
@@ -617,14 +611,13 @@ export function RealtimeRoom(props: Props) {
     setTalkRequests((prev) => prev.filter((r) => r.id !== id));
   }
 
-  type TabId = "chat" | "stats" | "links" | "questions";
+  type TabId = "chat" | "stats" | "questions";
   const mobileTabs: { id: TabId; label: string; badge: number }[] = [
     { id: "chat", label: "Chat", badge: 0 },
     ...(isRoomCommentator
       ? [{ id: "questions" as const, label: "Questions", badge: newQuestionCount }]
       : []),
     { id: "stats", label: "Stats", badge: 0 },
-    { id: "links", label: "Links", badge: 0 },
   ];
 
   const bar = isRoomCommentator ? (
@@ -714,6 +707,10 @@ export function RealtimeRoom(props: Props) {
       viewerFollowsCommentator={props.viewerFollowsCommentator}
       messages={messages}
       myVotes={props.myMessageVotes}
+      links={links}
+      myLinkVotes={props.myLinkVotes}
+      linksOpen={linksOpen}
+      onLinkSubmitted={appendLink}
       watching={watching}
       conn={conn}
       onSent={appendMessage}
@@ -743,39 +740,6 @@ export function RealtimeRoom(props: Props) {
         )
       }
     />
-  );
-
-  const expandedView = deskLayout === "expanded";
-  // in expanded mode only the chosen companion occupies the right column on desktop
-  const chatDesktopHidden = expandedView && companion === "links";
-  const linksDesktopHidden = expandedView && companion === "chat";
-
-  // desktop-only control bar shown atop whichever panel is the companion (right column)
-  const companionBar = (
-    <div className="hidden items-center gap-2 border-b border-line bg-surface px-3 py-2 lg:flex">
-      <div className="flex rounded-lg border-[0.75px] border-line p-0.5 text-xs font-semibold">
-        {(["chat", "links"] as const).map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCompanion(c)}
-            aria-pressed={companion === c}
-            className={`rounded-md px-3 py-1 capitalize transition-colors ${
-              companion === c ? "bg-raised text-primary" : "text-secondary hover:text-primary"
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-      <button
-        type="button"
-        onClick={() => setDeskLayout("default")}
-        className="ml-auto flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
-      >
-        Minimize <span aria-hidden>»«</span>
-      </button>
-    </div>
   );
 
   return (
@@ -820,38 +784,11 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      <div
-        className={`flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl ${
-          expandedView ? GRID_EXPANDED : GRID_DEFAULT
-        }`}
-      >
+      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2">
         <aside
           aria-label="Stats"
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
         >
-          {/* desktop expand/minimize control — personal layout choice */}
-          <div className="hidden items-center justify-end px-2 pt-2 lg:flex">
-            {expandedView ? (
-              <button
-                type="button"
-                onClick={() => setDeskLayout("default")}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
-              >
-                Minimize <span aria-hidden>»«</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setCompanion("chat");
-                  setDeskLayout("expanded");
-                }}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
-              >
-                Expand stats <span aria-hidden>«»</span>
-              </button>
-            )}
-          </div>
           <StatsPanel
             data={matchStats}
             radio={audio.radioActive}
@@ -860,7 +797,7 @@ export function RealtimeRoom(props: Props) {
             pushedTab={pushedStatsTab}
             pushNonce={statsPushNonce}
             onPushTab={pushStatsTab}
-            expanded={expandedView}
+            expanded
             outage={statsOutage}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
@@ -868,11 +805,8 @@ export function RealtimeRoom(props: Props) {
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col ${
-            chatDesktopHidden ? "lg:hidden" : "lg:flex"
-          }`}
+          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
         >
-          {expandedView && companionBar}
           {isRoomCommentator && (
             <div className="hidden border-b border-line bg-surface lg:flex">
               {(["chat", "questions"] as const).map((t) => (
@@ -907,42 +841,6 @@ export function RealtimeRoom(props: Props) {
               : chatPanel}
           </div>
         </section>
-
-        <aside
-          aria-label="Links"
-          className={`${tab === "links" ? "block" : "hidden"} min-h-0 overflow-y-auto ${
-            linksDesktopHidden ? "lg:hidden" : "lg:block"
-          } lg:border-l lg:border-line`}
-        >
-          {/* expanded + companion=links: links is the right column, gets the swap bar.
-              default: a desktop entry point to expand straight into stats+links. */}
-          {expandedView ? (
-            companionBar
-          ) : (
-            <div className="hidden justify-end px-2 pt-2 lg:flex">
-              <button
-                type="button"
-                onClick={() => {
-                  setCompanion("links");
-                  setDeskLayout("expanded");
-                }}
-                className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold text-secondary hover:bg-raised hover:text-primary"
-              >
-                Expand links <span aria-hidden>«»</span>
-              </button>
-            </div>
-          )}
-          <LiveLinks
-            roomId={room.id}
-            viewer={viewer}
-            roomState={roomState}
-            isRoomCommentator={isRoomCommentator}
-            linksOpen={linksOpen}
-            links={links}
-            myVotes={props.myLinkVotes}
-            onSubmitted={appendLink}
-          />
-        </aside>
       </div>
 
       {/* desktop: fixed bottom bar (~50px listener, ~80px commentator) */}
@@ -1008,6 +906,15 @@ function VoteArrows({
   );
 }
 
+/** One item in the merged chat+links stream (Phase 11). Both carry id +
+ *  created_at; the stream interleaves them chronologically and a local filter
+ *  narrows to chat-only / links-only / blended (default). */
+type StreamItem =
+  | { kind: "message"; id: string; createdAt: string; msg: ChatMessage }
+  | { kind: "link"; id: string; createdAt: string; lnk: Link };
+
+type StreamFilter = "blended" | "chat" | "links";
+
 function LiveChat({
   room,
   roomState,
@@ -1015,6 +922,10 @@ function LiveChat({
   viewerFollowsCommentator,
   messages,
   myVotes,
+  links,
+  myLinkVotes,
+  linksOpen,
+  onLinkSubmitted,
   watching,
   conn,
   onSent,
@@ -1039,6 +950,10 @@ function LiveChat({
   viewerFollowsCommentator: boolean;
   messages: ChatMessage[];
   myVotes: Record<string, 1 | -1>;
+  links: Link[];
+  myLinkVotes: Record<string, 1 | -1>;
+  linksOpen: boolean;
+  onLinkSubmitted: (l: Link) => void;
   watching: number | null;
   conn: ConnState;
   onSent: (m: ChatMessage) => void;
@@ -1063,11 +978,54 @@ function LiveChat({
   const [votes, setVotes] = useState(myVotes);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
   const toast = useToast();
+  const [linkVotes, setLinkVotes] = useState(myLinkVotes);
+  const [streamFilter, setStreamFilter] = useState<StreamFilter>("blended");
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkDraft, setLinkDraft] = useState("");
+  const [submittingLink, setSubmittingLink] = useState(false);
+  const [linkNotice, setLinkNotice] = useState<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const pinnedRef = useRef(true); // user is at/near the bottom
-  const prevLenRef = useRef(messages.length);
+  const prevLenRef = useRef(0); // length of the merged stream last render
+  const filterRef = useRef<StreamFilter>("blended");
   const [unread, setUnread] = useState(0);
   const NEAR_BOTTOM_PX = 64;
+
+  // saved filter (localStorage, per-device); load after mount to avoid an SSR mismatch
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem("fc:streamFilter");
+      if (s === "chat" || s === "links" || s === "blended") setStreamFilter(s);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+  function changeFilter(f: StreamFilter) {
+    setStreamFilter(f);
+    try {
+      localStorage.setItem("fc:streamFilter", f);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // the merged chat+links stream: interleaved by created_at, narrowed by the filter
+  const streamItems = useMemo<StreamItem[]>(() => {
+    const items: StreamItem[] = [];
+    if (streamFilter !== "links") {
+      for (const m of messages)
+        items.push({ kind: "message", id: m.id, createdAt: m.created_at, msg: m });
+    }
+    if (streamFilter !== "chat") {
+      for (const l of links)
+        if (!l.hidden)
+          items.push({ kind: "link", id: l.id, createdAt: l.created_at, lnk: l });
+    }
+    items.sort((a, b) =>
+      a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0,
+    );
+    return items;
+  }, [messages, links, streamFilter]);
 
   function scrollChatToBottom() {
     const el = listRef.current;
@@ -1095,10 +1053,25 @@ function LiveChat({
   useLayoutEffect(() => {
     const el = listRef.current;
     const prevLen = prevLenRef.current;
-    prevLenRef.current = messages.length;
-    if (!el || messages.length <= prevLen) return; // only react to growth
-    const newest = messages[messages.length - 1];
-    const isOwn = newest?.user_id === viewer?.userId;
+    const filterChanged = filterRef.current !== streamFilter;
+    prevLenRef.current = streamItems.length;
+    filterRef.current = streamFilter;
+    // a filter switch changes the list length with no live insert — re-pin if the
+    // reader was at the bottom, but never count it as unread
+    if (filterChanged) {
+      if (el && pinnedRef.current) {
+        requestAnimationFrame(() => {
+          const e = listRef.current;
+          if (e) e.scrollTop = e.scrollHeight;
+        });
+      }
+      return;
+    }
+    if (!el || streamItems.length <= prevLen) return; // only react to growth
+    const newest = streamItems[streamItems.length - 1];
+    const newestUser =
+      newest?.kind === "message" ? newest.msg.user_id : newest?.lnk.user_id;
+    const isOwn = newestUser === viewer?.userId;
     const visible = el.clientHeight > 0; // chat tab hidden on mobile -> 0
     if (isOwn || (visible && pinnedRef.current)) {
       requestAnimationFrame(() => {
@@ -1107,10 +1080,10 @@ function LiveChat({
       });
       setUnread(0);
     } else {
-      setUnread((n) => n + (messages.length - prevLen));
+      setUnread((n) => n + (streamItems.length - prevLen));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages.length, viewer?.userId]);
+  }, [streamItems.length, streamFilter, viewer?.userId]);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -1179,16 +1152,66 @@ function LiveChat({
     });
   }
 
+  async function linkVote(linkId: string, value: 1 | -1 | 0) {
+    const prev = (linkVotes[linkId] as 1 | -1 | 0 | undefined) ?? 0;
+    setLinkVotes((p) => {
+      const next = { ...p };
+      if (value === 0) delete next[linkId];
+      else next[linkId] = value;
+      return next;
+    });
+    const res = await fetch("/api/links/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ linkId, value }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      setLinkVotes((p) => {
+        const next = { ...p };
+        if (prev === 0) delete next[linkId];
+        else next[linkId] = prev;
+        return next;
+      });
+      toast("Couldn't record your vote.");
+    }
+  }
+
+  async function submitLink(e: React.FormEvent) {
+    e.preventDefault();
+    if (!linkDraft.trim() || submittingLink) return;
+    setSubmittingLink(true);
+    setLinkNotice(null);
+    const res = await fetch("/api/links", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: room.id, url: linkDraft.trim() }),
+    });
+    setSubmittingLink(false);
+    if (res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (body.link) onLinkSubmitted(body.link);
+      setLinkDraft("");
+      setLinkOpen(false);
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setLinkNotice(body.error ?? "Couldn't submit that link.");
+    }
+  }
+
   const inputsOpen = INPUTS_OPEN.includes(roomState);
   const isRoomCommentator = viewer?.isRoomCommentator ?? false;
   const canType =
     viewer !== null &&
     (inputsOpen ||
       (roomState === "waiting" && (isRoomCommentator || chatOpen)));
+  const canSubmitLink =
+    viewer !== null &&
+    (inputsOpen ||
+      (roomState === "waiting" && (isRoomCommentator || linksOpen)));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between border-b border-line px-3 py-1.5">
+      <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
         <span className="text-xs text-secondary tabular-nums">
           {watching !== null
             ? `${watching} watching`
@@ -1198,6 +1221,24 @@ function LiveChat({
                 ? "live updates unavailable — refresh to retry"
                 : "…"}
         </span>
+        <div className="flex gap-1" role="tablist" aria-label="Stream filter">
+          {(["blended", "chat", "links"] as const).map((f) => (
+            <button
+              key={f}
+              type="button"
+              role="tab"
+              aria-selected={streamFilter === f}
+              onClick={() => changeFilter(f)}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${
+                streamFilter === f
+                  ? "bg-gold text-canvas"
+                  : "text-secondary hover:bg-raised"
+              }`}
+            >
+              {f === "blended" ? "All" : f === "chat" ? "Chat" : "Links"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {roomState === "waiting" && <Countdown targetIso={broadcastStart} />}
@@ -1207,7 +1248,19 @@ function LiveChat({
         onScroll={onChatScroll}
         className="flex-1 space-y-1 overflow-y-auto p-2"
       >
-        {messages.map((m) => {
+        {streamItems.map((item) => {
+          if (item.kind === "link") {
+            return (
+              <LinkCard
+                key={item.id}
+                link={item.lnk}
+                myVote={linkVotes[item.id]}
+                canVote={viewer !== null}
+                onVote={(v) => linkVote(item.id, v)}
+              />
+            );
+          }
+          const m = item.msg;
           if (m.hidden_by) {
             return (
               <li key={m.id} className="rounded-lg px-3 py-2 text-xs text-secondary italic">
@@ -1271,11 +1324,13 @@ function LiveChat({
             </li>
           );
         })}
-        {messages.length === 0 && (
+        {streamItems.length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
-            {roomState === "waiting"
-              ? "The commentator will be along shortly."
-              : "Nothing here yet — say hello."}
+            {streamFilter === "links"
+              ? "No links yet."
+              : roomState === "waiting"
+                ? "The commentator will be along shortly."
+                : "Nothing here yet — say hello."}
           </li>
         )}
       </ul>
@@ -1392,38 +1447,84 @@ function LiveChat({
               ))}
           </div>
         </div>
-      ) : !canType ? (
+      ) : !canType && !canSubmitLink ? (
         <div className="border-t border-line p-3">
           <p className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center text-sm text-secondary">
-            Waiting room — chat opens when the commentator opens it or the
-            broadcast starts.
+            Waiting room — the commentator opens chat and links when the show
+            starts.
           </p>
         </div>
       ) : (
-        <div className="border-t border-line p-3">
+        <div className="space-y-2 border-t border-line p-3">
           {notice && (
-            <p role="alert" className="mb-2 rounded-lg border border-line bg-raised px-3 py-1.5 text-xs text-secondary">
+            <p role="alert" className="rounded-lg border border-line bg-raised px-3 py-1.5 text-xs text-secondary">
               {notice}
             </p>
           )}
-          <form onSubmit={send} className="flex gap-2">
-            <input
-              type="text"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              maxLength={500}
-              placeholder={roomState === "waiting" ? "Warm the room up" : "Say something"}
-              aria-label="Chat message"
-              className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
-            />
-            <button
-              type="submit"
-              disabled={sending || !draft.trim()}
-              className="h-11 shrink-0 rounded-lg bg-red px-4 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              Send
-            </button>
-          </form>
+          {canType && (
+            <form onSubmit={send} className="flex gap-2">
+              <input
+                type="text"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                maxLength={500}
+                placeholder={roomState === "waiting" ? "Warm the room up" : "Say something"}
+                aria-label="Chat message"
+                className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+              />
+              <button
+                type="submit"
+                disabled={sending || !draft.trim()}
+                className="h-11 shrink-0 rounded-lg bg-red px-4 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                Send
+              </button>
+            </form>
+          )}
+          {canSubmitLink &&
+            (linkOpen ? (
+              <form onSubmit={submitLink} className="flex gap-2">
+                <input
+                  type="url"
+                  value={linkDraft}
+                  onChange={(e) => setLinkDraft(e.target.value)}
+                  placeholder="Paste a link"
+                  aria-label="Submit a link"
+                  className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+                />
+                <button
+                  type="submit"
+                  disabled={submittingLink || !linkDraft.trim()}
+                  className="h-10 shrink-0 rounded-lg border border-line bg-surface px-3 text-sm font-semibold hover:bg-raised disabled:opacity-60"
+                >
+                  {submittingLink ? "…" : "Add"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLinkOpen(false);
+                    setLinkNotice(null);
+                  }}
+                  aria-label="Cancel link"
+                  className="h-10 shrink-0 rounded-lg px-2 text-sm text-secondary hover:text-primary"
+                >
+                  ✕
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setLinkOpen(true)}
+                className="text-xs font-semibold text-secondary hover:text-primary"
+              >
+                + Add a link
+              </button>
+            ))}
+          {linkNotice && (
+            <p role="alert" className="text-xs text-red">
+              {linkNotice}
+            </p>
+          )}
           {inputsOpen && !isRoomCommentator && (
             <>
               <InteractionButtons
@@ -1441,7 +1542,7 @@ function LiveChat({
             </>
           )}
           {inputsOpen && isRoomCommentator && (
-            <div className="mt-3">
+            <div className="mt-1">
               <AggregateMeter agg={sliderAgg} />
             </div>
           )}
@@ -1525,129 +1626,5 @@ function LinkCard({
         </span>
       </div>
     </li>
-  );
-}
-
-function LiveLinks({
-  roomId,
-  viewer,
-  roomState,
-  isRoomCommentator,
-  linksOpen,
-  links,
-  myVotes,
-  onSubmitted,
-}: {
-  roomId: string;
-  viewer: Viewer;
-  roomState: RoomState;
-  isRoomCommentator: boolean;
-  linksOpen: boolean;
-  links: Link[];
-  myVotes: Record<string, 1 | -1>;
-  onSubmitted: (l: Link) => void;
-}) {
-  const [draft, setDraft] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [votes, setVotes] = useState(myVotes);
-  const toast = useToast();
-
-  const canSubmit =
-    viewer !== null &&
-    (INPUTS_OPEN.includes(roomState) ||
-      (roomState === "waiting" && (isRoomCommentator || linksOpen)));
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!draft.trim() || busy) return;
-    setBusy(true);
-    setNotice(null);
-    const res = await fetch("/api/links", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId, url: draft.trim() }),
-    });
-    setBusy(false);
-    if (res.ok) {
-      const body = await res.json().catch(() => ({}));
-      if (body.link) onSubmitted(body.link);
-      setDraft("");
-    } else {
-      const body = await res.json().catch(() => ({}));
-      setNotice(body.error ?? "Couldn't submit that link.");
-    }
-  }
-
-  async function vote(linkId: string, value: 1 | -1 | 0) {
-    // for rollback if the write fails (index access can be absent at runtime)
-    const prev = (votes[linkId] as 1 | -1 | 0 | undefined) ?? 0;
-    setVotes((p) => {
-      const next = { ...p };
-      if (value === 0) delete next[linkId];
-      else next[linkId] = value;
-      return next;
-    });
-    const res = await fetch("/api/links/vote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ linkId, value }),
-    }).catch(() => null);
-    if (!res?.ok) {
-      setVotes((p) => {
-        const next = { ...p };
-        if (prev === 0) delete next[linkId];
-        else next[linkId] = prev;
-        return next;
-      });
-      toast("Couldn't record your vote.");
-    }
-  }
-
-  return (
-    <div className="space-y-3 p-3">
-      {canSubmit && (
-        <form onSubmit={submit} className="flex gap-2">
-          <input
-            type="url"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Paste a link"
-            aria-label="Submit a link"
-            className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
-          />
-          <button
-            type="submit"
-            disabled={busy || !draft.trim()}
-            className="h-11 shrink-0 rounded-lg border border-line bg-surface px-3 text-sm font-semibold hover:bg-raised disabled:opacity-60"
-          >
-            {busy ? "…" : "Add"}
-          </button>
-        </form>
-      )}
-      {notice && (
-        <p role="alert" className="rounded-lg border border-red/40 bg-surface px-3 py-2 text-xs text-red">
-          {notice}
-        </p>
-      )}
-      <ul className="space-y-3">
-        {links
-          .filter((l) => !l.hidden)
-          .map((link) => (
-            <LinkCard
-              key={link.id}
-              link={link}
-              myVote={votes[link.id]}
-              canVote={viewer !== null}
-              onVote={(v) => vote(link.id, v)}
-            />
-          ))}
-        {links.filter((l) => !l.hidden).length === 0 && (
-          <li className="px-3 py-6 text-center text-sm text-secondary">
-            No links yet{canSubmit ? " — paste the first one." : "."}
-          </li>
-        )}
-      </ul>
-    </div>
   );
 }
