@@ -797,7 +797,7 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-2">
+      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-[1fr_2fr]">
         <aside
           aria-label="Stats"
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
