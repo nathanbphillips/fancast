@@ -69,6 +69,18 @@ export function MatchInfoPanel({
 
   return (
     <div className="space-y-3">
+      {hasNews && (
+        <div className="rounded-xl border-[0.75px] border-line bg-surface p-3">
+          <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
+            Team news
+          </p>
+          <div className="space-y-3">
+            <NewsTeam name={homeName} rows={info.teamNews.home} />
+            <NewsTeam name={awayName} rows={info.teamNews.away} />
+          </div>
+        </div>
+      )}
+
       {(info.venue || info.referee || w) && (
         <div className="space-y-2 rounded-xl border-[0.75px] border-line bg-surface p-3">
           {info.venue && (
@@ -80,18 +92,6 @@ export function MatchInfoPanel({
           )}
           {info.referee && <Fact label="Referee" value={info.referee} />}
           {w && <Fact label="Weather" value={w.description} sub={weatherSub || undefined} />}
-        </div>
-      )}
-
-      {hasNews && (
-        <div className="rounded-xl border-[0.75px] border-line bg-surface p-3">
-          <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
-            Team news
-          </p>
-          <div className="space-y-3">
-            <NewsTeam name={homeName} rows={info.teamNews.home} />
-            <NewsTeam name={awayName} rows={info.teamNews.away} />
-          </div>
         </div>
       )}
     </div>

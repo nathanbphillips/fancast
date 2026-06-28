@@ -51,7 +51,8 @@ export type LineupPlayer = {
   playerId: number;
   name: string;
   jersey: number | null;
-  line: number | null; // pitch row from formation_field "line:position"
+  line: number | null; // pitch row from formation_field "line:position" (1 = keeper)
+  slot: number | null; // left→right slot within the line (the ":position" half)
   positionId: number | null;
   starting: boolean;
 };
@@ -532,6 +533,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
       name: l.player?.display_name ?? l.player_name ?? "—",
       jersey: l.jersey_number ?? null,
       line: l.formation_field ? Number(l.formation_field.split(":")[0]) || null : null,
+      slot: l.formation_field ? Number(l.formation_field.split(":")[1]) || null : null,
       positionId: l.position_id ?? null,
       starting,
     });

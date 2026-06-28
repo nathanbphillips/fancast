@@ -220,18 +220,19 @@ export function StatsPanel({
           ) : (
           <>
           {effectiveTab === "info" && (
-            // pre-game split: high-level info | historical table & form. Two
-            // columns on desktop, stacked on mobile (Phase 11 Slice 5).
-            <div className="grid gap-4 lg:grid-cols-2">
-              <MatchInfoPanel
-                info={data?.info ?? null}
+            // pre-game: a single column, ordered History → team news →
+            // venue/referee/weather (founder 2026-06-28). MatchInfoPanel renders
+            // team news before venue/weather; History sits on top.
+            <div className="space-y-4">
+              <MatchHistoryPanel
+                history={history}
+                loading={historyLoading}
                 homeName={data?.home.name ?? "Home"}
                 awayName={data?.away.name ?? "Away"}
                 size={size}
               />
-              <MatchHistoryPanel
-                history={history}
-                loading={historyLoading}
+              <MatchInfoPanel
+                info={data?.info ?? null}
                 homeName={data?.home.name ?? "Home"}
                 awayName={data?.away.name ?? "Away"}
                 size={size}

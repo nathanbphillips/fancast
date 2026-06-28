@@ -2,9 +2,12 @@ import type { LineupPlayer, SideLineup } from "@/lib/stats";
 
 /**
  * Line-ups on a pitch (Phase 11): the home XI on the top half, the away XI on
- * the bottom, both attacking the centre line — built from each player's
- * formation `line` (1 = keeper … N = forwards) and their order within the line.
- * Falls back to the text line-ups when formation positions aren't available.
+ * the bottom, both attacking the centre line. Each player is placed from their
+ * Sportmonks formation field "line:position" — `line` (1 = keeper … N =
+ * forwards) is the row, `slot` (the ":position" half) is the true left→right
+ * order within the row. Slot-ascending maps left→right for both halves, so no
+ * mirroring is needed. Falls back to the text line-ups when positions are
+ * missing. Labels sit on each team's own-goal side, away from the busy centre.
  */
 
 function lastName(name: string): string {
@@ -14,8 +17,9 @@ function lastName(name: string): string {
 
 type Placed = { p: LineupPlayer; x: number; y: number };
 
-/** Place a side's starters: group by formation line, spread each line evenly
- *  across the width; keeper at the team's own end, forwards near the centre. */
+/** Place a side's starters: group by formation line, order each line left→right
+ *  by slot, spread evenly across the width. Keeper sits at the team's own end;
+ *  forwards stop short of the centre so the two front lines don't collide. */
 function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
   const byLine = new Map<number, LineupPlayer[]>();
   for (const p of starters) {
@@ -28,9 +32,13 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
   const maxLine = lines[lines.length - 1] ?? 1;
   const placed: Placed[] = [];
   for (const l of lines) {
-    const row = byLine.get(l)!;
+    const row = byLine
+      .get(l)!
+      .slice()
+      .sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99) || (a.jersey ?? 99) - (b.jersey ?? 99));
     const frac = maxLine > 1 ? (l - 1) / (maxLine - 1) : 0; // 0 keeper … 1 forwards
-    const y = home ? 7 + frac * 40 : 93 - frac * 40; // top half vs bottom half
+    // keeper 8% from own end → forwards stop ~42% (16% no-man's-land at centre)
+    const y = home ? 8 + frac * 34 : 92 - frac * 34;
     row.forEach((p, i) => {
       placed.push({ p, x: ((i + 1) / (row.length + 1)) * 100, y });
     });
@@ -39,21 +47,29 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
 }
 
 function Marker({ p, x, y, home }: Placed & { home: boolean }) {
+  // home labels sit above the disc (toward the top goal), away below — both
+  // point outward, keeping names clear of the centre line.
+  const circle = (
+    <span
+      className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow ${
+        home ? "bg-gold text-canvas" : "bg-red text-white"
+      }`}
+    >
+      {p.jersey ?? ""}
+    </span>
+  );
+  const label = (
+    <span className="max-w-[72px] truncate rounded-sm bg-black/50 px-1 text-[9px] font-semibold leading-tight text-white">
+      {lastName(p.name)}
+    </span>
+  );
   return (
     <div
-      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
+      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
       style={{ left: `${x}%`, top: `${y}%` }}
     >
-      <span
-        className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold tabular-nums shadow ${
-          home ? "bg-gold text-canvas" : "bg-red text-white"
-        }`}
-      >
-        {p.jersey ?? ""}
-      </span>
-      <span className="mt-0.5 max-w-[68px] truncate rounded-sm bg-black/45 px-1 text-[9px] font-semibold leading-tight text-white">
-        {lastName(p.name)}
-      </span>
+      {home ? label : circle}
+      {home ? circle : label}
     </div>
   );
 }
@@ -98,16 +114,16 @@ export function PitchLineup({
       <div
         className="relative w-full overflow-hidden rounded-xl border border-line"
         style={{
-          aspectRatio: "3 / 4",
+          aspectRatio: "0.64",
           background:
             "repeating-linear-gradient(0deg, #15803d 0 9%, #16703a 9% 18%)",
         }}
       >
         {/* field markings */}
         <div className="absolute inset-x-0 top-1/2 border-t border-white/40" />
-        <div className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
-        <div className="absolute left-1/2 top-0 h-[13%] w-[56%] -translate-x-1/2 border border-t-0 border-white/40" />
-        <div className="absolute left-1/2 bottom-0 h-[13%] w-[56%] -translate-x-1/2 border border-b-0 border-white/40" />
+        <div className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
+        <div className="absolute left-1/2 top-0 h-[12%] w-[58%] -translate-x-1/2 border border-t-0 border-white/40" />
+        <div className="absolute left-1/2 bottom-0 h-[12%] w-[58%] -translate-x-1/2 border border-b-0 border-white/40" />
 
         {homeMarks.map((m) => (
           <Marker key={m.p.playerId} {...m} home />
