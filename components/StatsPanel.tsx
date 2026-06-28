@@ -7,6 +7,7 @@ import { LineupTabs } from "@/components/stats/LineupTabs";
 import { DeeperStats } from "@/components/stats/DeeperStats";
 import { MatchInfoPanel } from "@/components/stats/MatchInfoPanel";
 import { MatchHistoryPanel } from "@/components/stats/MatchHistoryPanel";
+import { PitchLineup } from "@/components/stats/PitchLineup";
 import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
 import type { MatchHistory } from "@/lib/history";
@@ -288,13 +289,24 @@ export function StatsPanel({
             <EventsTimeline events={data?.events ?? []} size={size} />
           )}
 
-          {effectiveTab === "lineups" && (
-            <LineupTabs
-              home={data?.lineups.home ?? null}
-              away={data?.lineups.away ?? null}
-              size={size}
-            />
-          )}
+          {effectiveTab === "lineups" &&
+            (() => {
+              const lu = data?.lineups;
+              // pitch view when we have formation positions; else the text list
+              const pitchable =
+                !!lu &&
+                ((lu.home?.starters.some((p) => p.line != null) ?? false) ||
+                  (lu.away?.starters.some((p) => p.line != null) ?? false));
+              return pitchable ? (
+                <PitchLineup home={lu!.home} away={lu!.away} />
+              ) : (
+                <LineupTabs
+                  home={lu?.home ?? null}
+                  away={lu?.away ?? null}
+                  size={size}
+                />
+              );
+            })()}
 
           {(data?.stale || (outage && hasStats)) && (
             <p className="mt-3 text-xs text-secondary">Showing the last update.</p>

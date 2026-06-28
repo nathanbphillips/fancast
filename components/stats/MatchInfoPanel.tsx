@@ -27,13 +27,12 @@ export function MatchInfoPanel({
     );
   }
 
+  // label above value, left-aligned — wraps cleanly in a narrow (1/3-width) column
   const Fact = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className={`shrink-0 text-secondary ${big ? "text-sm" : "text-xs"}`}>{label}</span>
-      <span className={`text-right ${text}`}>
-        <span className="font-semibold">{value}</span>
-        {sub && <span className="block text-[11px] text-secondary">{sub}</span>}
-      </span>
+    <div>
+      <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>{label}</p>
+      <p className={`font-semibold ${text}`}>{value}</p>
+      {sub && <p className="text-[11px] text-secondary">{sub}</p>}
     </div>
   );
 
@@ -48,7 +47,7 @@ export function MatchInfoPanel({
         .join(" · ")
     : "";
 
-  const NewsCol = ({ name, rows }: { name: string; rows: { name: string; reason: string }[] }) => (
+  const NewsTeam = ({ name, rows }: { name: string; rows: { name: string; reason: string }[] }) => (
     <div className="min-w-0">
       <p className={`mb-1 font-semibold ${big ? "text-sm" : "text-xs"}`}>{name}</p>
       {rows.length === 0 ? (
@@ -56,9 +55,9 @@ export function MatchInfoPanel({
       ) : (
         <ul className="space-y-0.5">
           {rows.map((r, i) => (
-            <li key={`${r.name}-${i}`} className={text}>
-              <span className="truncate">{r.name}</span>
-              <span className="block text-[11px] text-secondary">{r.reason}</span>
+            <li key={`${r.name}-${i}`} className={`${text} leading-tight`}>
+              {r.name}
+              <span className="text-[11px] text-secondary"> — {r.reason}</span>
             </li>
           ))}
         </ul>
@@ -89,9 +88,9 @@ export function MatchInfoPanel({
           <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
             Team news
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            <NewsCol name={homeName} rows={info.teamNews.home} />
-            <NewsCol name={awayName} rows={info.teamNews.away} />
+          <div className="space-y-3">
+            <NewsTeam name={homeName} rows={info.teamNews.home} />
+            <NewsTeam name={awayName} rows={info.teamNews.away} />
           </div>
         </div>
       )}
