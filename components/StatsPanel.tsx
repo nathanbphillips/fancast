@@ -103,6 +103,7 @@ export function StatsPanel({
   historyLoading = false,
   comingSoon = false,
   defaultTab = "stats",
+  fotmob = {},
 }: {
   data: FixtureStats | null;
   radio?: boolean;
@@ -126,6 +127,8 @@ export function StatsPanel({
   /** the tab shown when nobody has overridden/pushed — "info" pre-game,
    *  "stats" once the match is underway (the kickoff auto-switch). */
   defaultTab?: StatTab;
+  /** playerId → Fotmob profile URL, resolved in the background (Phase 11). */
+  fotmob?: Record<number, string>;
 }) {
   const [override, setOverride] = useState<StatTab | null>(null);
   const [pushed, setPushed] = useState(false);
@@ -299,12 +302,13 @@ export function StatsPanel({
                 ((lu.home?.starters.some((p) => p.line != null) ?? false) ||
                   (lu.away?.starters.some((p) => p.line != null) ?? false));
               return pitchable ? (
-                <PitchLineup home={lu!.home} away={lu!.away} />
+                <PitchLineup home={lu!.home} away={lu!.away} fotmob={fotmob} />
               ) : (
                 <LineupTabs
                   home={lu?.home ?? null}
                   away={lu?.away ?? null}
                   size={size}
+                  fotmob={fotmob}
                 />
               );
             })()}

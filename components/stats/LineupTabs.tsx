@@ -9,13 +9,18 @@ export function LineupTabs({
   home,
   away,
   size = "compact",
+  fotmob = {},
 }: {
   home: SideLineup | null;
   away: SideLineup | null;
   size?: "compact" | "radio";
+  /** playerId → Fotmob profile URL (Phase 11). */
+  fotmob?: Record<number, string>;
 }) {
   const [side, setSide] = useState<"home" | "away">("home");
   const big = size === "radio";
+  const playerHref = (p: LineupPlayer) =>
+    fotmob[p.playerId] ?? `https://www.fotmob.com/search?q=${encodeURIComponent(p.name)}`;
 
   if (!home && !away) {
     return (
@@ -31,7 +36,18 @@ export function LineupTabs({
       <span className="w-6 shrink-0 text-right font-semibold tabular-nums text-secondary">
         {p.jersey ?? "–"}
       </span>
-      <span className="truncate">{p.name}</span>
+      <a
+        href={playerHref(p)}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={`${p.name} — Fotmob profile`}
+        className="truncate hover:underline"
+      >
+        {p.name}
+      </a>
+      {p.subbedOffAt && (
+        <span className="shrink-0 text-xs text-secondary">({p.subbedOffAt})</span>
+      )}
     </li>
   );
 

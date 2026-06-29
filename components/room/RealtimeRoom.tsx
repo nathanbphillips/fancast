@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFixtureStats } from "@/lib/hooks/useFixtureStats";
 import { useMatchHistory } from "@/lib/hooks/useMatchHistory";
+import { useFotmobLinks } from "@/lib/hooks/useFotmobLinks";
 import type { StatTab } from "@/lib/stats";
 import * as Ably from "ably";
 import type {
@@ -592,6 +593,15 @@ export function RealtimeRoom(props: Props) {
     room.fixtureId,
   );
 
+  // Phase 11: Fotmob profile links for lineup players, resolved once the lineup
+  // appears (background, cached server-side per player).
+  const fotmobLinks = useFotmobLinks(
+    room.fixtureId,
+    matchStats?.lineups,
+    matchStats?.home.name ?? "Home",
+    matchStats?.away.name ?? "Away",
+  );
+
   // live scoreline from the stats poll, falling back to the page-load value so a
   // goal during the session updates the header. The CLOCK stays event-sourced
   // (golden rule 6) — only the score tracks the provider here.
@@ -815,6 +825,7 @@ export function RealtimeRoom(props: Props) {
             history={matchHistory}
             historyLoading={historyLoading}
             comingSoon={room.comingSoon}
+            fotmob={fotmobLinks}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
         </aside>
