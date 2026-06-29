@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { emptyStats, getFixtureStats } from "@/lib/stats";
 import { createSupabaseServerClient } from "@/lib/db/server";
+import { readFixtureSnapshot } from "@/lib/statsCache";
 
 export const maxDuration = 30;
 
@@ -46,6 +47,15 @@ export async function GET(
     const stats = await getFixtureStats(known.sportmonks_fixture_id);
     return NextResponse.json(stats, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
+    // live fetch failed (cold start with no in-memory last-good, or a Sportmonks
+    // outage) — serve the daily-warmed snapshot if we have one, marked stale.
+    const snapshot = await readFixtureSnapshot(supabase, id);
+    if (snapshot) {
+      return NextResponse.json(
+        { ...snapshot, stale: true },
+        { headers: { "Cache-Control": "no-store" } },
+      );
+    }
     // match data is non-critical — fail soft with a 503 the client treats calmly
     return NextResponse.json(
       { error: (err as Error).message },

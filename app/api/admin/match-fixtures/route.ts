@@ -3,18 +3,24 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
 import { matchPendingFixtures } from "@/lib/adminFixtures";
+import { warmUpcomingFixtures } from "@/lib/statsCache";
 
 export const maxDuration = 60;
 
 /**
- * Resolve pending admin fixtures to their Sportmonks fixture so the stats/info/
- * history panels light up (covered competitions only). Two ways in:
+ * Daily match-check + cache-warm (covered competitions only). Resolves pending
+ * admin fixtures to their Sportmonks fixture so the stats/info/history panels
+ * light up, then warms a fresh match-data snapshot for every upcoming matched
+ * room so a room stays seeded even before its first visitor / through an outage.
+ * Two ways in:
  *   GET  — a Vercel cron (daily), authenticated with Bearer CRON_SECRET.
  *   POST — the admin clicking "Run match check" (cookie auth).
  */
 async function run() {
-  const result = await matchPendingFixtures(createServiceClient());
-  return NextResponse.json(result);
+  const service = createServiceClient();
+  const matched = await matchPendingFixtures(service);
+  const warmed = await warmUpcomingFixtures(service);
+  return NextResponse.json({ ...matched, ...warmed });
 }
 
 export async function GET(request: NextRequest) {
