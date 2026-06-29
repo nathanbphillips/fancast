@@ -8,9 +8,11 @@ import { DeeperStats } from "@/components/stats/DeeperStats";
 import { MatchInfoPanel } from "@/components/stats/MatchInfoPanel";
 import { MatchHistoryPanel } from "@/components/stats/MatchHistoryPanel";
 import { PitchLineup } from "@/components/stats/PitchLineup";
+import { StatsEditor } from "@/components/stats/StatsEditor";
 import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
 import type { MatchHistory } from "@/lib/history";
+import type { StatOverrides } from "@/lib/statOverrides";
 
 /**
  * Stats panel (Phase 7): Stats / Events / Line-ups, driven by live Sportmonks
@@ -104,6 +106,8 @@ export function StatsPanel({
   comingSoon = false,
   defaultTab = "stats",
   fotmob = {},
+  overrides = null,
+  onSaveOverrides,
 }: {
   data: FixtureStats | null;
   radio?: boolean;
@@ -129,8 +133,14 @@ export function StatsPanel({
   defaultTab?: StatTab;
   /** playerId → Fotmob profile URL, resolved in the background (Phase 11). */
   fotmob?: Record<number, string>;
+  /** commentator's saved Info/Line-up corrections (Phase 11). */
+  overrides?: StatOverrides | null;
+  /** persist + broadcast a correction (commentator only). */
+  onSaveOverrides?: (next: StatOverrides) => void;
 }) {
   const [override, setOverride] = useState<StatTab | null>(null);
+  const [editing, setEditing] = useState<"info" | "lineups" | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [pushed, setPushed] = useState(false);
   const pushedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -148,6 +158,30 @@ export function StatsPanel({
   const effectiveTab: StatTab = override ?? pushedTab ?? defaultTab;
   const size = radio ? "radio" : "compact";
   const big = radio;
+
+  // commentator-only Info / Line-up corrections (Phase 11)
+  const editable = isRoomCommentator && !!onSaveOverrides && !!data && !comingSoon;
+  function handleSaveOverrides(next: StatOverrides) {
+    onSaveOverrides?.(next);
+    setSavingEdit(true);
+    setTimeout(() => {
+      setSavingEdit(false);
+      setEditing(null);
+    }, 300);
+  }
+  // a small "Edit" affordance shown above an editable section
+  const EditButton = ({ section }: { section: "info" | "lineups" }) =>
+    editable ? (
+      <div className="flex justify-end">
+        <button
+          type="button"
+          className="text-xs font-semibold text-gold hover:underline"
+          onClick={() => setEditing(section)}
+        >
+          Edit {section === "info" ? "info" : "line-ups"}
+        </button>
+      </div>
+    ) : null;
 
   function pushCurrent() {
     onPushTab?.(effectiveTab);
@@ -227,6 +261,18 @@ export function StatsPanel({
             // venue/referee/weather (founder 2026-06-28). MatchInfoPanel renders
             // team news before venue/weather; History sits on top.
             <div className="space-y-4">
+              {editing === "info" && data ? (
+                <StatsEditor
+                  section="info"
+                  data={data}
+                  overrides={overrides}
+                  onSave={handleSaveOverrides}
+                  onClose={() => setEditing(null)}
+                  saving={savingEdit}
+                />
+              ) : (
+                <EditButton section="info" />
+              )}
               <MatchHistoryPanel
                 history={history}
                 loading={historyLoading}
@@ -293,25 +339,40 @@ export function StatsPanel({
             <EventsTimeline events={data?.events ?? []} size={size} />
           )}
 
-          {effectiveTab === "lineups" &&
-            (() => {
-              const lu = data?.lineups;
-              // pitch view when we have formation positions; else the text list
-              const pitchable =
-                !!lu &&
-                ((lu.home?.starters.some((p) => p.line != null) ?? false) ||
-                  (lu.away?.starters.some((p) => p.line != null) ?? false));
-              return pitchable ? (
-                <PitchLineup home={lu!.home} away={lu!.away} fotmob={fotmob} />
-              ) : (
-                <LineupTabs
-                  home={lu?.home ?? null}
-                  away={lu?.away ?? null}
-                  size={size}
-                  fotmob={fotmob}
+          {effectiveTab === "lineups" && (
+            <div className="space-y-3">
+              {editing === "lineups" && data ? (
+                <StatsEditor
+                  section="lineups"
+                  data={data}
+                  overrides={overrides}
+                  onSave={handleSaveOverrides}
+                  onClose={() => setEditing(null)}
+                  saving={savingEdit}
                 />
-              );
-            })()}
+              ) : (
+                <EditButton section="lineups" />
+              )}
+              {(() => {
+                const lu = data?.lineups;
+                // pitch view when we have formation positions; else the text list
+                const pitchable =
+                  !!lu &&
+                  ((lu.home?.starters.some((p) => p.line != null) ?? false) ||
+                    (lu.away?.starters.some((p) => p.line != null) ?? false));
+                return pitchable ? (
+                  <PitchLineup home={lu!.home} away={lu!.away} fotmob={fotmob} />
+                ) : (
+                  <LineupTabs
+                    home={lu?.home ?? null}
+                    away={lu?.away ?? null}
+                    size={size}
+                    fotmob={fotmob}
+                  />
+                );
+              })()}
+            </div>
+          )}
 
           {(data?.stale || (outage && hasStats)) && (
             <p className="mt-3 text-xs text-secondary">Showing the last update.</p>

@@ -29,6 +29,7 @@ import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
 import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
+import type { StatOverrides } from "@/lib/statOverrides";
 
 type RoomWithJoins = Room & {
   fixture: Fixture;
@@ -276,6 +277,14 @@ export default async function RoomPage({
     viewerFollowsCommentator = f !== null;
   }
 
+  // commentator's Info/Line-up corrections, merged onto Sportmonks data (public)
+  const { data: ovRow } = await supabase
+    .from("room_stat_overrides")
+    .select("overrides")
+    .eq("room_id", room.id)
+    .maybeSingle<{ overrides: StatOverrides }>();
+  const initialStatOverrides = ovRow?.overrides ?? null;
+
   const roomInfo: RoomInfo = {
     id: room.id,
     state: room.state,
@@ -313,6 +322,7 @@ export default async function RoomPage({
       myRatings={myRatings}
       talkConsentGiven={talkConsentGiven}
       hasPendingTalk={hasPendingTalk}
+      initialStatOverrides={initialStatOverrides}
       initialBroadcastStart={room.broadcast_start}
       initialChatOpen={room.chat_open}
       initialLinksOpen={room.links_open}

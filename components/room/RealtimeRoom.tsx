@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFixtureStats } from "@/lib/hooks/useFixtureStats";
 import { useMatchHistory } from "@/lib/hooks/useMatchHistory";
 import { useFotmobLinks } from "@/lib/hooks/useFotmobLinks";
+import { applyStatOverrides, type StatOverrides } from "@/lib/statOverrides";
 import type { StatTab } from "@/lib/stats";
 import * as Ably from "ably";
 import type {
@@ -97,6 +98,7 @@ type Props = {
   myRatings: MyRatings;
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
+  initialStatOverrides: StatOverrides | null;
   initialBroadcastStart: string | null;
   initialChatOpen: boolean;
   initialLinksOpen: boolean;
@@ -157,6 +159,9 @@ export function RealtimeRoom(props: Props) {
   const [watching, setWatching] = useState<number | null>(null);
   const [conn, setConn] = useState<ConnState>("connecting");
   const [broadcastStart, setBroadcastStart] = useState(props.initialBroadcastStart);
+  const [statOverrides, setStatOverrides] = useState<StatOverrides | null>(
+    props.initialStatOverrides,
+  );
   const [chatOpen, setChatOpen] = useState(props.initialChatOpen);
   const [linksOpen, setLinksOpen] = useState(props.initialLinksOpen);
   const [hlsUrl, setHlsUrl] = useState(props.initialHlsUrl);
@@ -526,6 +531,12 @@ export function RealtimeRoom(props: Props) {
       setStatsPushNonce((n) => n + 1);
     });
 
+    // commentator corrected the Info / Line-ups panels (Phase 11)
+    control.subscribe("stat_overrides", (msg) => {
+      const { overrides } = msg.data as { overrides: StatOverrides | null; ts?: string };
+      setStatOverrides(overrides);
+    });
+
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
       const priv = client.channels.get(`room:${room.id}:private`, {
@@ -602,16 +613,31 @@ export function RealtimeRoom(props: Props) {
     matchStats?.away.name ?? "Away",
   );
 
+  // Phase 11: apply the commentator's Info / Line-up corrections on top of the
+  // live Sportmonks data before anything renders or rates them.
+  const displayStats = useMemo(
+    () => (matchStats ? applyStatOverrides(matchStats, statOverrides) : matchStats),
+    [matchStats, statOverrides],
+  );
+  const saveStatOverrides = (next: StatOverrides) => {
+    setStatOverrides(next); // optimistic; the control echo confirms for everyone
+    void fetch(`/api/rooms/${room.id}/overrides`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next),
+    }).catch(() => {});
+  };
+
   // live scoreline from the stats poll, falling back to the page-load value so a
   // goal during the session updates the header. The CLOCK stays event-sourced
   // (golden rule 6) — only the score tracks the provider here.
   const liveHome = matchStats?.score.home ?? room.homeScore;
   const liveAway = matchStats?.score.away ?? room.awayScore;
 
-  // rateable players (FR-12.3): starters + subs from the lineup in the stats payload
+  // rateable players (FR-12.3): starters + subs from the (corrected) lineup
   const ratingPlayers = useMemo<RatingPlayer[]>(() => {
     const out: RatingPlayer[] = [];
-    const lu = matchStats?.lineups;
+    const lu = displayStats?.lineups;
     for (const side of ["home", "away"] as const) {
       const s = lu?.[side];
       if (!s) continue;
@@ -621,7 +647,7 @@ export function RealtimeRoom(props: Props) {
         if (p.playerId != null) out.push({ playerId: p.playerId, name: p.name, side, starter: false });
     }
     return out;
-  }, [matchStats]);
+  }, [displayStats]);
   const pushStatsTab = (tab: StatTab) => {
     void fetch("/api/stats-tab", {
       method: "POST",
@@ -813,10 +839,12 @@ export function RealtimeRoom(props: Props) {
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
         >
           <StatsPanel
-            data={matchStats}
+            data={displayStats}
             radio={audio.radioActive}
             isRoomCommentator={isRoomCommentator}
             roomId={room.id}
+            overrides={statOverrides}
+            onSaveOverrides={saveStatOverrides}
             pushedTab={pushedStatsTab}
             pushNonce={statsPushNonce}
             onPushTab={pushStatsTab}
