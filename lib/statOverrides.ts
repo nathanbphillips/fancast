@@ -68,7 +68,9 @@ export const statOverridesSchema = z.object({
   added: z
     .array(
       z.object({
-        id: z.number().int(),
+        // synthetic, always negative — keeps added ids from colliding with a real
+        // Sportmonks playerId (which would dup React keys + double-count ratings)
+        id: z.number().int().negative(),
         side: z.enum(["home", "away"]),
         name: z.string().trim().min(1).max(60),
         jersey: z.number().int().min(0).max(99).nullable().optional(),
@@ -106,10 +108,11 @@ function mergeInfo(info: MatchInfo | null, ov: NonNullable<StatOverrides["info"]
       ? { ...next.weather, description: ov.weather }
       : { description: ov.weather, temp: null, windMph: null, humidity: null, note: null };
   }
-  // only replace when the commentator actually provided rows — an empty array
-  // shouldn't blank live team news that Sportmonks may publish later.
-  if (ov.teamNews?.home?.length) next.teamNews.home = ov.teamNews.home;
-  if (ov.teamNews?.away?.length) next.teamNews.away = ov.teamNews.away;
+  // apply on key-presence: a side is present only when the commentator actually
+  // edited it (the editor omits untouched sides), so an untouched Info save can't
+  // blank live news, while an explicitly-emptied list ([]) clears a wrong entry.
+  if (ov.teamNews?.home !== undefined) next.teamNews.home = ov.teamNews.home;
+  if (ov.teamNews?.away !== undefined) next.teamNews.away = ov.teamNews.away;
   return next;
 }
 

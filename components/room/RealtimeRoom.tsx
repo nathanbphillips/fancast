@@ -178,6 +178,7 @@ export function RealtimeRoom(props: Props) {
   // reconnect resilience (M-4): rehydrate room state from the DB on a *re*connect
   const lastStateTsRef = useRef(""); // newest `state` event ts seen
   const lastOverrideTsRef = useRef(""); // newest `stat_overrides` event ts seen
+  const pendingOverrideRef = useRef(false); // an optimistic override save is in flight
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
   const rehydratingRef = useRef(false); // guard against overlapping rehydrates
 
@@ -348,8 +349,10 @@ export function RealtimeRoom(props: Props) {
         // don't clobber a newer `state` control event that landed mid-fetch
         if (lastStateTsRef.current === tsBefore) setRoomState(s.state);
         // restore commentator Info/Line-up corrections, unless a fresher
-        // `stat_overrides` push arrived during the fetch (golden rule 5)
-        if (lastOverrideTsRef.current === ovTsBefore) setStatOverrides(s.statOverrides ?? null);
+        // `stat_overrides` push arrived during the fetch or our own save is still
+        // in flight (its write may not have committed before the snapshot read)
+        if (!pendingOverrideRef.current && lastOverrideTsRef.current === ovTsBefore)
+          setStatOverrides(s.statOverrides ?? null);
         setSliderAgg(s.sliderAgg);
         setPredictionAgg(s.predictionAgg);
         setActivePoll(s.activePoll);
@@ -624,11 +627,16 @@ export function RealtimeRoom(props: Props) {
   );
   const saveStatOverrides = (next: StatOverrides) => {
     setStatOverrides(next); // optimistic; the control echo confirms for everyone
+    pendingOverrideRef.current = true; // guard against a mid-save reconnect clobbering this
     void fetch(`/api/rooms/${room.id}/overrides`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(next),
-    }).catch(() => {});
+    })
+      .catch(() => {})
+      .finally(() => {
+        pendingOverrideRef.current = false;
+      });
   };
 
   // live scoreline from the stats poll, falling back to the page-load value so a
