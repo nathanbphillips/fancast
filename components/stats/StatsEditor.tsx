@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FixtureStats } from "@/lib/stats";
 import type { PlayerStatus, StatOverrides } from "@/lib/statOverrides";
 
@@ -165,10 +165,29 @@ function LineupEditor({
     for (const r of shown) init[r.id] = { name: r.name, jersey: r.jersey, status: r.status };
     return init;
   });
+  // ids the commentator has actually changed — reconciliation must not clobber them
+  const [touched, setTouched] = useState<Set<number>>(() => new Set());
   const [added, setAdded] = useState<{ id: number; side: "home" | "away"; name: string; jersey: string; status: "pitch" | "bench" }[]>([]);
 
-  const setEdit = (id: number, patch: Partial<Edit>) =>
+  // the lineup can grow/change under us while open (a later poll publishes the XI,
+  // or a live sub reclassifies a player). Keep `edits` in sync with `shown` for any
+  // row the commentator hasn't touched, so no Row reads an undefined entry (crash)
+  // and an untouched row never diffs as a spurious change at save time.
+  useEffect(() => {
+    setEdits((prev) => {
+      const next = { ...prev };
+      for (const r of shown) {
+        if (touched.has(r.id)) continue;
+        next[r.id] = { name: r.name, jersey: r.jersey, status: r.status };
+      }
+      return next;
+    });
+  }, [shown, touched]);
+
+  const setEdit = (id: number, patch: Partial<Edit>) => {
     setEdits((e) => ({ ...e, [id]: { ...e[id], ...patch } }));
+    setTouched((t) => (t.has(id) ? t : new Set(t).add(id)));
+  };
 
   function save() {
     const players: NonNullable<StatOverrides["players"]> = { ...(overrides?.players ?? {}) };
@@ -200,7 +219,9 @@ function LineupEditor({
   }
 
   const Row = ({ r }: { r: (typeof shown)[number] }) => {
-    const e = edits[r.id];
+    // fall back to the live row on the first render after a new id appears, before
+    // the reconcile effect has populated `edits` (prevents an undefined deref).
+    const e = edits[r.id] ?? { name: r.name, jersey: r.jersey, status: r.status };
     return (
       <div className="flex items-center gap-1">
         <input

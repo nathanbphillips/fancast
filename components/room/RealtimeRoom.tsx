@@ -177,6 +177,7 @@ export function RealtimeRoom(props: Props) {
   const [statsPushNonce, setStatsPushNonce] = useState(0);
   // reconnect resilience (M-4): rehydrate room state from the DB on a *re*connect
   const lastStateTsRef = useRef(""); // newest `state` event ts seen
+  const lastOverrideTsRef = useRef(""); // newest `stat_overrides` event ts seen
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
   const rehydratingRef = useRef(false); // guard against overlapping rehydrates
 
@@ -321,6 +322,7 @@ export function RealtimeRoom(props: Props) {
       if (rehydratingRef.current) return;
       rehydratingRef.current = true;
       const tsBefore = lastStateTsRef.current;
+      const ovTsBefore = lastOverrideTsRef.current;
       try {
         const res = await fetch(`/api/rooms/${room.id}/snapshot`, {
           cache: "no-store",
@@ -341,9 +343,13 @@ export function RealtimeRoom(props: Props) {
           links: Link[];
           questions: Question[];
           talkRequests: TalkRequest[];
+          statOverrides: StatOverrides | null;
         };
         // don't clobber a newer `state` control event that landed mid-fetch
         if (lastStateTsRef.current === tsBefore) setRoomState(s.state);
+        // restore commentator Info/Line-up corrections, unless a fresher
+        // `stat_overrides` push arrived during the fetch (golden rule 5)
+        if (lastOverrideTsRef.current === ovTsBefore) setStatOverrides(s.statOverrides ?? null);
         setSliderAgg(s.sliderAgg);
         setPredictionAgg(s.predictionAgg);
         setActivePoll(s.activePoll);
@@ -533,7 +539,9 @@ export function RealtimeRoom(props: Props) {
 
     // commentator corrected the Info / Line-ups panels (Phase 11)
     control.subscribe("stat_overrides", (msg) => {
-      const { overrides } = msg.data as { overrides: StatOverrides | null; ts?: string };
+      const { overrides, ts } = msg.data as { overrides: StatOverrides | null; ts?: string };
+      if (ts && ts < lastOverrideTsRef.current) return; // ignore an out-of-order push
+      if (ts) lastOverrideTsRef.current = ts;
       setStatOverrides(overrides);
     });
 
@@ -606,12 +614,7 @@ export function RealtimeRoom(props: Props) {
 
   // Phase 11: Fotmob profile links for lineup players, resolved once the lineup
   // appears (background, cached server-side per player).
-  const fotmobLinks = useFotmobLinks(
-    room.fixtureId,
-    matchStats?.lineups,
-    matchStats?.home.name ?? "Home",
-    matchStats?.away.name ?? "Away",
-  );
+  const fotmobLinks = useFotmobLinks(room.id, room.fixtureId, matchStats?.lineups);
 
   // Phase 11: apply the commentator's Info / Line-up corrections on top of the
   // live Sportmonks data before anything renders or rates them.

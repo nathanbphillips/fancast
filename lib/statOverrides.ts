@@ -62,6 +62,8 @@ export const statOverridesSchema = z.object({
         status: z.enum(["pitch", "bench", "out"]).optional(),
       }),
     )
+    // cap the key count (both full squads fit) so a writer can't store a huge blob
+    .refine((r) => Object.keys(r).length <= 60, "too many player overrides")
     .optional(),
   added: z
     .array(
@@ -104,8 +106,10 @@ function mergeInfo(info: MatchInfo | null, ov: NonNullable<StatOverrides["info"]
       ? { ...next.weather, description: ov.weather }
       : { description: ov.weather, temp: null, windMph: null, humidity: null, note: null };
   }
-  if (ov.teamNews?.home) next.teamNews.home = ov.teamNews.home;
-  if (ov.teamNews?.away) next.teamNews.away = ov.teamNews.away;
+  // only replace when the commentator actually provided rows — an empty array
+  // shouldn't blank live team news that Sportmonks may publish later.
+  if (ov.teamNews?.home?.length) next.teamNews.home = ov.teamNews.home;
+  if (ov.teamNews?.away?.length) next.teamNews.away = ov.teamNews.away;
   return next;
 }
 
@@ -134,7 +138,11 @@ function mergeSide(
     if (!o) continue;
     if (o.name != null) w.p = { ...w.p, name: o.name };
     if (o.jersey !== undefined) w.p = { ...w.p, jersey: o.jersey };
-    if (o.status) w.status = o.status;
+    // a status override is a pre-match correction (late start, scratched starter).
+    // Once Sportmonks has touched this player with a live sub (subbedOffAt /
+    // cameOnFor), the live feed wins so a real substitution is never masked.
+    // Name/jersey corrections still apply either way.
+    if (o.status && w.p.subbedOffAt == null && w.p.cameOnFor == null) w.status = o.status;
   }
 
   for (const a of addedHere) {

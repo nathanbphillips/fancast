@@ -12,6 +12,7 @@ import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
 import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
+import type { StatOverrides } from "@/lib/statOverrides";
 
 /**
  * Read-only reconcilable snapshot of a room (M-4, audit). After an Ably
@@ -87,6 +88,13 @@ export async function GET(
   const ratingsAgg = ratingsAggregate(ratingRows ?? []);
   const activePoll = await loadActivePoll(service, id);
 
+  // commentator's Info/Line-up corrections (golden rule 5: recover on reconnect)
+  const { data: ovRow } = await supabase
+    .from("room_stat_overrides")
+    .select("overrides")
+    .eq("room_id", id)
+    .maybeSingle<{ overrides: StatOverrides }>();
+
   const { user, profile } = await getCurrentUserAndProfile();
   const isModerator =
     !!user && (user.id === room.commentator_id || isAdmin(user.id, profile));
@@ -134,5 +142,6 @@ export async function GET(
     links: links ?? [],
     questions,
     talkRequests,
+    statOverrides: ovRow?.overrides ?? null,
   });
 }

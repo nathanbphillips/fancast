@@ -6,15 +6,15 @@ import type { FixtureStats } from "@/lib/stats";
 /**
  * Resolve lineup players to Fotmob profile links (Phase 11). Fires once the
  * lineup appears (and again if the player set changes, e.g. a sub comes on),
- * POSTing the players to /api/fotmob/resolve, which serves cache + resolves the
- * rest in the background. Returns a playerId → profile-URL map; players with no
- * confident match are simply absent (the UI falls back to a search link).
+ * POSTing the roomId + playerIds to /api/fotmob/resolve, which derives each
+ * player's name from the trusted Sportmonks lineup, resolves + caches it
+ * server-side. Returns a playerId → profile-URL map; players with no confident
+ * match are simply absent (the UI falls back to a search link).
  */
 export function useFotmobLinks(
+  roomId: string,
   fixtureId: number,
   lineups: FixtureStats["lineups"] | undefined,
-  homeName: string,
-  awayName: string,
 ): Record<number, string> {
   const [links, setLinks] = useState<Record<number, string>>({});
   const requestedKey = useRef<string>("");
@@ -24,23 +24,20 @@ export function useFotmobLinks(
     const away = lineups?.away;
     if (!home && !away) return;
 
-    const players = new Map<number, { playerId: number; name: string; team: string }>();
-    const add = (list: { playerId: number; name: string }[] | undefined, team: string) => {
-      for (const p of list ?? []) {
-        if (p.playerId != null && p.name && !players.has(p.playerId)) {
-          players.set(p.playerId, { playerId: p.playerId, name: p.name, team });
-        }
-      }
+    const ids = new Set<number>();
+    const collect = (list: { playerId: number }[] | undefined) => {
+      for (const p of list ?? []) if (p.playerId != null && p.playerId > 0) ids.add(p.playerId);
     };
-    add(home?.starters, home?.teamName ?? homeName);
-    add(home?.bench, home?.teamName ?? homeName);
-    add(away?.starters, away?.teamName ?? awayName);
-    add(away?.bench, away?.teamName ?? awayName);
-    if (players.size === 0) return;
+    collect(home?.starters);
+    collect(home?.bench);
+    collect(away?.starters);
+    collect(away?.bench);
+    if (ids.size === 0) return;
 
     // resolve only when the player set actually changes (the stats poll hands us
     // a fresh lineups object every ~10s even when nothing changed).
-    const key = `${fixtureId}:${[...players.keys()].sort((a, b) => a - b).join(",")}`;
+    const playerIds = [...ids].sort((a, b) => a - b);
+    const key = `${fixtureId}:${playerIds.join(",")}`;
     if (requestedKey.current === key) return;
     requestedKey.current = key;
 
@@ -48,7 +45,7 @@ export function useFotmobLinks(
     void fetch("/api/fotmob/resolve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ players: [...players.values()] }),
+      body: JSON.stringify({ roomId, playerIds }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { links?: Record<string, string | null> } | null) => {
@@ -62,7 +59,7 @@ export function useFotmobLinks(
     return () => {
       cancelled = true;
     };
-  }, [fixtureId, lineups, homeName, awayName]);
+  }, [roomId, fixtureId, lineups]);
 
   return links;
 }

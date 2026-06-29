@@ -3,28 +3,22 @@ import { z } from "zod";
 import { createServiceClient } from "@/lib/db/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 import { resolveFotmobPlayer } from "@/lib/fotmob";
+import { getFixtureStats } from "@/lib/stats";
 
 export const maxDuration = 30;
 
 /**
- * Resolve lineup players to their Fotmob profiles (Phase 11). The room POSTs
- * the players the moment a lineup appears; we serve cached rows from
- * `player_fotmob` and resolve the rest in the background, caching the result
- * (including negatives) so a player is only ever looked up once. Best-effort:
- * an unresolved player simply gets no link and the UI falls back to a search
- * URL. Bounded by a per-IP rate limit + a hard cap on players per request.
+ * Resolve a room's lineup players to their Fotmob profiles (Phase 11). The room
+ * POSTs its roomId + the playerIds it's showing; the SERVER derives each
+ * player's name + club from the trusted Sportmonks lineup (never the client) and
+ * only resolves players that are actually in that fixture's lineup. Results are
+ * cached in player_fotmob and reused forever. This closes the cache-poisoning
+ * vector where a caller could associate a real playerId with an arbitrary name.
+ * Best-effort: an unresolved player gets no link (UI falls back to search).
  */
 const bodySchema = z.object({
-  players: z
-    .array(
-      z.object({
-        playerId: z.number().int(),
-        name: z.string().trim().min(1).max(80),
-        team: z.string().trim().max(80).optional(),
-      }),
-    )
-    .min(1)
-    .max(60), // both full squads (starters + benches) fit under this
+  roomId: z.uuid(),
+  playerIds: z.array(z.number().int()).min(1).max(60),
 });
 
 /** Run async tasks with bounded concurrency so we don't fan a burst at Fotmob. */
@@ -54,31 +48,65 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  const players = parsed.data.players;
+  const { roomId, playerIds } = parsed.data;
   const service = createServiceClient();
 
-  // serve cached rows (positive or negative) first
-  const ids = players.map((p) => p.playerId);
+  // resolve the room → its fixture → the trusted Sportmonks lineup
+  const { data: room } = await service
+    .from("rooms")
+    .select("fixture_id")
+    .eq("id", roomId)
+    .maybeSingle<{ fixture_id: number }>();
+  if (!room) return NextResponse.json({ error: "Room not found." }, { status: 404 });
+
+  const { data: fixture } = await service
+    .from("fixtures")
+    .select("sportmonks_fixture_id")
+    .eq("id", room.fixture_id)
+    .maybeSingle<{ sportmonks_fixture_id: number | null }>();
+  if (!fixture?.sportmonks_fixture_id) return NextResponse.json({ links: {} });
+
+  // trusted name + club per playerId, straight from Sportmonks (cached upstream)
+  const trusted = new Map<number, { name: string; team: string }>();
+  try {
+    const stats = await getFixtureStats(fixture.sportmonks_fixture_id);
+    for (const side of ["home", "away"] as const) {
+      const s = stats.lineups[side];
+      if (!s) continue;
+      const team = side === "home" ? stats.home.name : stats.away.name;
+      for (const p of [...s.starters, ...s.bench]) {
+        if (p.playerId != null && p.name) trusted.set(p.playerId, { name: p.name, team });
+      }
+    }
+  } catch {
+    return NextResponse.json({ links: {} });
+  }
+
+  // only resolve requested ids that genuinely belong to this lineup
+  const wanted = [...new Set(playerIds)].filter((id) => trusted.has(id));
+  if (wanted.length === 0) return NextResponse.json({ links: {} });
+
   const { data: cached } = await service
     .from("player_fotmob")
     .select("sportmonks_player_id, fotmob_url")
-    .in("sportmonks_player_id", ids);
+    .in("sportmonks_player_id", wanted);
   const known = new Map<number, string | null>();
   for (const row of cached ?? []) {
     known.set(Number(row.sportmonks_player_id), (row.fotmob_url as string | null) ?? null);
   }
 
   const links: Record<number, string | null> = {};
-  for (const p of players) if (known.has(p.playerId)) links[p.playerId] = known.get(p.playerId) ?? null;
+  for (const id of wanted) if (known.has(id)) links[id] = known.get(id) ?? null;
 
-  const toResolve = players.filter((p) => !known.has(p.playerId));
-  await mapLimit(toResolve, 6, async (p) => {
-    const resolved = await resolveFotmobPlayer(p.name, p.team);
-    links[p.playerId] = resolved?.url ?? null;
+  const toResolve = wanted.filter((id) => !known.has(id));
+  await mapLimit(toResolve, 6, async (id) => {
+    const t = trusted.get(id)!;
+    const resolved = await resolveFotmobPlayer(t.name, t.team);
+    links[id] = resolved?.url ?? null;
     await service.from("player_fotmob").upsert(
       {
-        sportmonks_player_id: p.playerId,
-        name: p.name,
+        sportmonks_player_id: id,
+        name: t.name,
         fotmob_id: resolved?.fotmobId ?? null,
         fotmob_url: resolved?.url ?? null,
         resolved_at: new Date().toISOString(),
