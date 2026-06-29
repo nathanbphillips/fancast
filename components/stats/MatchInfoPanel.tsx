@@ -36,16 +36,40 @@ export function MatchInfoPanel({
     </div>
   );
 
+  const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+
   const w = info.weather;
+  // compact, unit-labelled readout — wind converted to mph upstream (was a bare "5")
   const weatherSub = w
     ? [
         w.temp != null ? `${Math.round(w.temp)}°C` : null,
-        w.humidity ? `${w.humidity} humidity` : null,
-        w.wind != null ? `wind ${Math.round(w.wind)}` : null,
+        w.windMph != null ? `Wind ${w.windMph} mph` : null,
+        w.humidity ? `Humidity ${w.humidity}` : null,
       ]
         .filter(Boolean)
         .join(" · ")
     : "";
+
+  // Match officials: head referee headlined, the rest of the crew listed with
+  // their designation (1st/2nd Assistant, 4th Official, VAR…).
+  const RefereeBlock = ({ crew }: { crew: { role: string; name: string }[] }) => {
+    const [head, ...rest] = crew;
+    return (
+      <div>
+        <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>Referee</p>
+        <p className={`font-semibold ${text}`}>{head.name}</p>
+        {rest.length > 0 && (
+          <ul className="mt-0.5 space-y-0.5">
+            {rest.map((r, i) => (
+              <li key={`${r.role}-${i}`} className="text-[11px] text-secondary">
+                {r.role} — <span className="text-primary">{r.name}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
 
   const NewsTeam = ({ name, rows }: { name: string; rows: { name: string; reason: string }[] }) => (
     <div className="min-w-0">
@@ -81,8 +105,8 @@ export function MatchInfoPanel({
         </div>
       )}
 
-      {(info.venue || info.referee || w) && (
-        <div className="space-y-2 rounded-xl border-[0.75px] border-line bg-surface p-3">
+      {(info.venue || info.referees.length > 0 || w) && (
+        <div className="space-y-3 rounded-xl border-[0.75px] border-line bg-surface p-3">
           {info.venue && (
             <Fact
               label="Venue"
@@ -90,8 +114,15 @@ export function MatchInfoPanel({
               sub={info.venue.capacity ? `${info.venue.capacity.toLocaleString()} capacity` : undefined}
             />
           )}
-          {info.referee && <Fact label="Referee" value={info.referee} />}
-          {w && <Fact label="Weather" value={w.description} sub={weatherSub || undefined} />}
+          {info.referees.length > 0 && <RefereeBlock crew={info.referees} />}
+          {w && (
+            <div>
+              <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>Weather</p>
+              <p className={`font-semibold ${text}`}>{cap(w.description)}</p>
+              {weatherSub && <p className="text-[11px] text-secondary">{weatherSub}</p>}
+              {w.note && <p className="mt-0.5 text-[11px] font-semibold text-gold">{w.note}</p>}
+            </div>
+          )}
         </div>
       )}
     </div>

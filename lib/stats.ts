@@ -55,6 +55,9 @@ export type LineupPlayer = {
   slot: number | null; // left→right slot within the line (the ":position" half)
   positionId: number | null;
   starting: boolean;
+  // live substitution annotations (set as `substitution` events arrive):
+  cameOnFor?: { number: number | null; minute: string } | null; // on-pitch sub: who they replaced
+  subbedOffAt?: string | null; // subs-list player who left the pitch (minute label, e.g. "70'")
 };
 export type SideLineup = {
   side: Side;
@@ -88,12 +91,14 @@ export type GameState = { homeLed: number; level: number; awayLed: number };
  *  and team news (sidelined players). Distilled server-side. */
 export type MatchInfo = {
   venue: { name: string; city: string | null; capacity: number | null } | null;
-  referee: string | null;
+  // full match-official team, ordered head referee → assistants → 4th → VAR
+  referees: { role: string; name: string }[];
   weather: {
-    description: string;
+    description: string; // forecast-at-kickoff, or live once the match starts
     temp: number | null; // °C
+    windMph: number | null; // converted from Sportmonks' m/s
     humidity: string | null;
-    wind: number | null;
+    note: string | null; // in-match change hint, e.g. "Rain since kickoff"
   } | null;
   teamNews: {
     home: { name: string; reason: string }[];
@@ -138,6 +143,7 @@ type SmEvent = {
   participant_id: number;
   player_id?: number | null;
   player_name?: string | null;
+  related_player_id?: number | null;
   related_player_name?: string | null;
   result?: string | null;
   info?: string | null;
@@ -177,6 +183,7 @@ export type SmFixtureDetail = {
   referees?: {
     type_id?: number;
     referee?: { name?: string | null; display_name?: string | null };
+    type?: { id?: number; name?: string | null; code?: string | null };
   }[];
   sidelined?: {
     participant_id?: number;
@@ -426,26 +433,67 @@ function normalizeDeep(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): De
  *  rows whose location/team can't be resolved. */
 /** Pre-game context for the Info tab. Distilled from venue/referees/weather/
  *  sidelined includes; returns null when nothing is available. */
-function normalizeInfo(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): MatchInfo | null {
+/** Weather for the Info tab. Pre-match shows the match-day forecast; once the
+ *  match has kicked off we surface the live `current` reading and flag a rain
+ *  transition vs the kickoff forecast. Sportmonks wind is metric (m/s) → mph. */
+function normalizeWeather(
+  w: SmFixtureDetail["weatherreport"],
+  started: boolean,
+): MatchInfo["weather"] {
+  if (!w) return null;
+  const fcDesc = w.description ?? null;
+  const liveDesc = w.current?.description ?? null;
+  const useLive = started && (w.current?.temp != null || liveDesc != null);
+  const description = (useLive ? liveDesc : fcDesc) ?? liveDesc ?? fcDesc;
+  if (!description) return null;
+  const tempC = useLive
+    ? num(w.current?.temp ?? w.temperature?.day)
+    : num(w.temperature?.day ?? w.current?.temp);
+  const windMs = useLive
+    ? num(w.current?.wind ?? w.wind?.speed)
+    : num(w.wind?.speed ?? w.current?.wind);
+  const humidity =
+    (useLive ? w.current?.humidity : w.humidity) ?? w.humidity ?? w.current?.humidity ?? null;
+  let note: string | null = null;
+  if (started && fcDesc && liveDesc) {
+    const wet = (d: string) => /rain|drizzle|shower|snow|sleet|thunder|storm/i.test(d);
+    if (wet(liveDesc) && !wet(fcDesc)) note = "Rain since kickoff";
+    else if (!wet(liveDesc) && wet(fcDesc)) note = "Cleared since kickoff";
+  }
+  return {
+    description,
+    temp: tempC,
+    windMph: windMs != null ? Math.round(windMs * 2.23694) : null,
+    humidity,
+    note,
+  };
+}
+
+function normalizeInfo(
+  raw: SmFixtureDetail,
+  home: SideTeam,
+  away: SideTeam,
+  started: boolean,
+): MatchInfo | null {
   const v = raw.venue;
   const venue = v?.name
     ? { name: v.name, city: v.city_name ?? null, capacity: v.capacity ?? null }
     : null;
 
-  const refs = raw.referees ?? [];
-  const mainRef = refs.find((r) => r.type_id === 6) ?? refs[0];
-  const referee = mainRef?.referee?.name ?? mainRef?.referee?.display_name ?? null;
+  // full officiating team, ordered by Sportmonks type_id (6 referee, 7/8
+  // assistants, 9 fourth official, then VAR/AVAR when present). Designation
+  // ("Referee", "1st Assistant", …) comes straight from the type include.
+  const referees = (raw.referees ?? [])
+    .map((r) => ({
+      typeId: r.type_id ?? 99,
+      role: r.type?.name ?? "Official",
+      name: r.referee?.name ?? r.referee?.display_name ?? null,
+    }))
+    .filter((r): r is { typeId: number; role: string; name: string } => !!r.name)
+    .sort((a, b) => a.typeId - b.typeId)
+    .map((r) => ({ role: r.role, name: r.name }));
 
-  const w = raw.weatherreport;
-  const desc = w?.current?.description ?? w?.description ?? null;
-  const weather = w && desc
-    ? {
-        description: desc,
-        temp: num(w.current?.temp ?? w.temperature?.day),
-        humidity: w.current?.humidity ?? w.humidity ?? null,
-        wind: num(w.current?.wind ?? w.wind?.speed),
-      }
-    : null;
+  const weather = normalizeWeather(raw.weatherreport, started);
 
   const teamNews: MatchInfo["teamNews"] = { home: [], away: [] };
   for (const s of raw.sidelined ?? []) {
@@ -457,10 +505,16 @@ function normalizeInfo(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): Ma
     teamNews[side].push({ name, reason: s.type?.name ?? "Out" });
   }
 
-  if (!venue && !referee && !weather && teamNews.home.length === 0 && teamNews.away.length === 0) {
+  if (
+    !venue &&
+    referees.length === 0 &&
+    !weather &&
+    teamNews.home.length === 0 &&
+    teamNews.away.length === 0
+  ) {
     return null;
   }
-  return { venue, referee, weather, teamNews };
+  return { venue, referees, weather, teamNews };
 }
 
 export function normalize(raw: SmFixtureDetail): FixtureStats {
@@ -524,6 +578,29 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
       a.sortOrder - b.sortOrder,
   );
 
+  // "started" gates live-only behaviour (live weather, applying subs to the XI).
+  const shortState = (raw.state?.short_name ?? raw.state?.state ?? "").toUpperCase();
+  const started =
+    score.home > 0 ||
+    score.away > 0 ||
+    (raw.events?.length ?? 0) > 0 ||
+    /(1ST|2ND|HALF|HT|ET|PEN|LIVE|INPLAY|FT|AET|BREAK)/.test(shortState);
+
+  // substitution events, chronological. player_id = incoming, related_player_id
+  // = outgoing (confirmed against Sportmonks). Used to mutate the lineup live.
+  const minLabel = (m: number, extra?: number | null) => `${m}${extra ? "+" + extra : ""}'`;
+  const subs = (raw.events ?? [])
+    .filter((e) => e.type?.code === "substitution" && e.player_id != null)
+    .map((e) => ({
+      participantId: e.participant_id,
+      minute: minLabel(e.minute, e.extra_minute),
+      sortKey: e.minute * 100 + (e.extra_minute ?? 0),
+      onId: e.player_id as number,
+      onName: e.player_name ?? "",
+      offId: e.related_player_id ?? null,
+    }))
+    .sort((a, b) => a.sortKey - b.sortKey);
+
   const buildSide = (side: Side, team: { id: number | null; name: string }): SideLineup | null => {
     if (team.id == null) return null;
     const rows = (raw.lineups ?? []).filter((l) => l.team_id === team.id);
@@ -550,7 +627,43 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     const formation =
       (raw.formations ?? []).find((f) => f.location === side || f.participant_id === team.id)
         ?.formation ?? null;
-    return { side, teamName: team.name, formation, starters, bench };
+
+    // Apply this team's subs to the XI: the incoming player inherits the
+    // outgoing player's pitch slot (with a "came on for #N" badge), and the
+    // outgoing player drops into the subs list stamped with the minute.
+    const byId = new Map<number, LineupPlayer>();
+    for (const p of [...starters, ...bench]) byId.set(p.playerId, p);
+    const onPitch = new Map<number, LineupPlayer>();
+    for (const p of starters) onPitch.set(p.playerId, p);
+    const cameOnIds = new Set<number>();
+    const offEntries: LineupPlayer[] = [];
+    for (const s of subs) {
+      if (s.participantId !== team.id || s.offId == null) continue;
+      const off = onPitch.get(s.offId);
+      if (!off) continue; // can't resolve who left — leave the XI untouched
+      onPitch.delete(off.playerId);
+      const onBase = byId.get(s.onId);
+      const incoming: LineupPlayer = {
+        playerId: s.onId,
+        name: onBase?.name ?? s.onName ?? "—",
+        jersey: onBase?.jersey ?? null,
+        line: off.line,
+        slot: off.slot,
+        positionId: onBase?.positionId ?? off.positionId,
+        starting: false,
+        cameOnFor: { number: off.jersey, minute: s.minute },
+      };
+      onPitch.set(incoming.playerId, incoming);
+      cameOnIds.add(s.onId);
+      offEntries.push({ ...off, subbedOffAt: s.minute });
+    }
+    const pitchXI = [...onPitch.values()].sort(
+      (a, b) => (a.line ?? 99) - (b.line ?? 99) || (a.slot ?? 99) - (b.slot ?? 99),
+    );
+    // subs list: players who left the pitch (with minute) first, then unused bench
+    const benchList = [...offEntries, ...bench.filter((p) => !cameOnIds.has(p.playerId))];
+
+    return { side, teamName: team.name, formation, starters: pitchXI, bench: benchList };
   };
 
   return {
@@ -564,7 +677,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     events,
     lineups: { home: buildSide("home", home), away: buildSide("away", away) },
     deep: normalizeDeep(raw, home, away),
-    info: normalizeInfo(raw, home, away),
+    info: normalizeInfo(raw, home, away, started),
   };
 }
 
@@ -619,7 +732,7 @@ async function fetchFixtureRaw(id: number): Promise<SmFixtureDetail> {
   const base = process.env.SPORTMONKS_BASE ?? "https://api.sportmonks.com/v3/football";
   // include set is HARDCODED — never accept an include/URL from the client
   const include =
-    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type;venue;referees.referee;sidelined.player;sidelined.type;weatherReport";
+    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type;venue;referees.referee;referees.type;sidelined.player;sidelined.type;weatherReport";
   const res = await fetch(`${base}/fixtures/${id}?include=${include}`, {
     headers: { Authorization: token },
     cache: "no-store",

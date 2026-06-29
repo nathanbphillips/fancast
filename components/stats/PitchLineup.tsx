@@ -49,13 +49,26 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
 function Marker({ p, x, y, home }: Placed & { home: boolean }) {
   // home labels sit above the disc (toward the top goal), away below — both
   // point outward, keeping names clear of the centre line.
+  const sub = p.cameOnFor;
   const circle = (
-    <span
-      className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow ${
-        home ? "bg-gold text-canvas" : "bg-red text-white"
-      }`}
-    >
-      {p.jersey ?? ""}
+    <span className="relative">
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow ${
+          home ? "bg-gold text-canvas" : "bg-red text-white"
+        }`}
+      >
+        {p.jersey ?? ""}
+      </span>
+      {sub && (
+        // came-on badge: a small circle at top-right holding the number of the
+        // player they replaced (green = on). Tooltip spells out the swap.
+        <span
+          className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-green px-0.5 text-[7px] font-bold tabular-nums text-white shadow ring-1 ring-canvas"
+          title={`On ${sub.minute}${sub.number != null ? ` for #${sub.number}` : ""}`}
+        >
+          {sub.number ?? "↑"}
+        </span>
+      )}
     </span>
   );
   const label = (
@@ -86,10 +99,18 @@ function SideHeading({ side }: { side: SideLineup | null }) {
 
 function Subs({ side }: { side: SideLineup | null }) {
   if (!side || side.bench.length === 0) return null;
+  // players who left the pitch carry the minute they were subbed off (in parens);
+  // the rest is the unused bench.
   return (
     <p className="text-[11px] leading-snug text-secondary">
       <span className="font-semibold text-primary">{side.teamName} subs:</span>{" "}
-      {side.bench.map((p) => lastName(p.name)).join(", ")}
+      {side.bench.map((p, i) => (
+        <span key={p.playerId}>
+          {i > 0 && ", "}
+          {lastName(p.name)}
+          {p.subbedOffAt && <span className="text-secondary"> ({p.subbedOffAt})</span>}
+        </span>
+      ))}
     </p>
   );
 }
