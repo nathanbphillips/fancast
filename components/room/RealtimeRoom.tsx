@@ -830,7 +830,7 @@ export function RealtimeRoom(props: Props) {
             type="button"
             onClick={() => setTab(t.id)}
             aria-current={tab === t.id ? "page" : undefined}
-            className={`h-11 flex-1 text-sm font-semibold transition-colors ${
+            className={`h-9 flex-1 text-sm font-semibold transition-colors ${
               tab === t.id ? "border-b-2 border-gold text-primary" : "text-secondary"
             }`}
           >
@@ -947,25 +947,25 @@ function VoteArrows({
   onVote: (v: 1 | -1 | 0) => void;
 }) {
   return (
-    <span className="flex shrink-0 flex-col items-center text-secondary">
+    <span className="flex shrink-0 flex-col items-center leading-none text-secondary">
       <button
         type="button"
         aria-label="Upvote"
         aria-pressed={myVote === 1}
         disabled={disabled}
         onClick={() => onVote(myVote === 1 ? 0 : 1)}
-        className={`flex h-5 w-6 items-center justify-center hover:text-green ${myVote === 1 ? "text-green" : ""}`}
+        className={`flex h-4 w-6 items-center justify-center hover:text-green ${myVote === 1 ? "text-green" : ""}`}
       >
         <svg aria-hidden="true" viewBox="0 0 12 8" className="h-2 w-3 fill-current"><path d="M6 0l6 8H0z" /></svg>
       </button>
-      <span className="text-xs font-semibold tabular-nums">{up - down}</span>
+      <span className="text-[11px] font-semibold tabular-nums">{up - down}</span>
       <button
         type="button"
         aria-label="Downvote"
         aria-pressed={myVote === -1}
         disabled={disabled}
         onClick={() => onVote(myVote === -1 ? 0 : -1)}
-        className={`flex h-5 w-6 items-center justify-center hover:text-red ${myVote === -1 ? "text-red" : ""}`}
+        className={`flex h-4 w-6 items-center justify-center hover:text-red ${myVote === -1 ? "text-red" : ""}`}
       >
         <svg aria-hidden="true" viewBox="0 0 12 8" className="h-2 w-3 fill-current"><path d="M6 8L0 0h12z" /></svg>
       </button>
@@ -1467,7 +1467,7 @@ function LiveChat({
           </div>
         ) : (
           <div
-            className={`group flex items-start gap-2 rounded-lg px-2 py-1.5 ${
+            className={`group flex items-start gap-1.5 rounded-md px-1.5 py-1 ${
               isCommentator
                 ? "border-l-[3px] border-gold bg-raised"
                 : isOwn
@@ -1483,8 +1483,8 @@ function LiveChat({
               onVote={(v) => vote(m.id, v)}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-sm leading-relaxed">
-                <span className={`mr-2 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
+              <p className="text-sm leading-snug">
+                <span className={`mr-1.5 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
                   {m.author?.username ?? "…"}
                 </span>
                 {isCommentator && (
@@ -1604,39 +1604,37 @@ function LiveChat({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between gap-2 border-b border-line px-3 py-1.5">
-        <span className="text-xs text-secondary tabular-nums">
-          {watching !== null
-            ? `${watching} watching`
-            : conn === "connecting"
-              ? "connecting…"
-              : conn === "broken"
-                ? "live updates unavailable — refresh to retry"
-                : "…"}
-        </span>
-        <div className="flex gap-1" role="tablist" aria-label="Stream filter">
-          {(["blended", "chat", "links"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              role="tab"
-              aria-selected={streamFilter === f}
-              onClick={() => changeFilter(f)}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${
-                streamFilter === f
-                  ? "bg-gold text-canvas"
-                  : "text-secondary hover:bg-raised"
-              }`}
+      {/* one compact bar: stream filter (All / Chat / Links) left, sort right —
+          the two bars merged + watching count dropped (founder 2026-06-29). A
+          connection problem still surfaces here; the refresh pill drops below. */}
+      <div className="flex items-center justify-between gap-2 border-b border-line px-2 py-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          {conn !== "connected" && (
+            <span
+              title={conn === "broken" ? "Live updates unavailable — refresh to retry" : "Connecting…"}
+              className={`shrink-0 text-[11px] ${conn === "broken" ? "text-red" : "text-secondary"}`}
             >
-              {f === "blended" ? "All" : f === "chat" ? "Chat" : "Links"}
-            </button>
-          ))}
+              {conn === "broken" ? "⚠ offline" : "…"}
+            </span>
+          )}
+          <div className="flex gap-0.5" role="tablist" aria-label="Stream filter">
+            {(["blended", "chat", "links"] as const).map((f) => (
+              <button
+                key={f}
+                type="button"
+                role="tab"
+                aria-selected={streamFilter === f}
+                onClick={() => changeFilter(f)}
+                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                  streamFilter === f ? "bg-gold text-canvas" : "text-secondary hover:bg-raised"
+                }`}
+              >
+                {f === "blended" ? "All" : f === "chat" ? "Chat" : "Links"}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div className="flex items-center gap-2 border-b border-line px-3 py-1">
-        <span className="text-[11px] font-semibold text-secondary">Sort</span>
-        <div className="flex gap-1" role="tablist" aria-label="Sort order">
+        <div className="flex shrink-0 gap-0.5" role="tablist" aria-label="Sort order">
           {(["new", "top", "controversial"] as const).map((s) => (
             <button
               key={s}
@@ -1644,33 +1642,31 @@ function LiveChat({
               role="tab"
               aria-selected={sortMode === s}
               onClick={() => changeSort(s)}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${
-                sortMode === s
-                  ? "bg-gold text-canvas"
-                  : "text-secondary hover:bg-raised"
+              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                sortMode === s ? "bg-gold text-canvas" : "text-secondary hover:bg-raised"
               }`}
             >
               {s === "new" ? "New" : s === "top" ? "Top" : "Controversial"}
             </button>
           ))}
         </div>
-        {pendingCount > 0 && (
-          <button
-            type="button"
-            onClick={refreshSort}
-            className="ml-auto rounded-full bg-gold px-2.5 py-0.5 text-xs font-semibold text-canvas tabular-nums"
-          >
-            {pendingCount} new — refresh
-          </button>
-        )}
       </div>
+      {pendingCount > 0 && (
+        <button
+          type="button"
+          onClick={refreshSort}
+          className="block w-full border-b border-line bg-gold/15 py-1 text-center text-xs font-semibold text-gold tabular-nums"
+        >
+          {pendingCount} new — tap to refresh
+        </button>
+      )}
 
       {roomState === "waiting" && <Countdown targetIso={broadcastStart} />}
 
       <ul
         ref={listRef}
         onScroll={onChatScroll}
-        className="flex-1 space-y-1 overflow-y-auto p-2"
+        className="flex-1 space-y-0.5 overflow-y-auto p-1.5"
       >
         {displayItems.map((item) =>
           item.kind === "link" ? (
@@ -1817,71 +1813,65 @@ function LiveChat({
           </p>
         </div>
       ) : (
-        <div className="space-y-2 border-t border-line p-3">
+        <div className="space-y-1.5 border-t border-line p-2">
           {notice && (
-            <p role="alert" className="rounded-lg border border-line bg-raised px-3 py-1.5 text-xs text-secondary">
+            <p role="alert" className="rounded-lg border border-line bg-raised px-3 py-1 text-xs text-secondary">
               {notice}
             </p>
           )}
-          {canType && (
-            <form onSubmit={send} className="flex gap-2">
-              <input
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                maxLength={500}
-                placeholder={roomState === "waiting" ? "Warm the room up" : "Say something"}
-                aria-label="Chat message"
-                className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
-              />
-              <button
-                type="submit"
-                disabled={sending || !draft.trim()}
-                className="h-11 shrink-0 rounded-lg bg-red px-4 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                Send
-              </button>
-            </form>
-          )}
-          {canSubmitLink &&
-            (linkOpen ? (
-              <form onSubmit={submitLink} className="flex gap-2">
-                <input
-                  type="url"
-                  value={linkDraft}
-                  onChange={(e) => setLinkDraft(e.target.value)}
-                  placeholder="Paste a link"
-                  aria-label="Submit a link"
-                  className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
-                />
-                <button
-                  type="submit"
-                  disabled={submittingLink || !linkDraft.trim()}
-                  className="h-10 shrink-0 rounded-lg border border-line bg-surface px-3 text-sm font-semibold hover:bg-raised disabled:opacity-60"
-                >
-                  {submittingLink ? "…" : "Add"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLinkOpen(false);
-                    setLinkNotice(null);
-                  }}
-                  aria-label="Cancel link"
-                  className="h-10 shrink-0 rounded-lg px-2 text-sm text-secondary hover:text-primary"
-                >
-                  ✕
-                </button>
-              </form>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setLinkOpen(true)}
-                className="text-xs font-semibold text-secondary hover:text-primary"
-              >
-                + Add a link
-              </button>
-            ))}
+          {(canType || canSubmitLink) &&
+            (() => {
+              // one compact row: chat by default; the 🔗 button (right of Send)
+              // flips the same input into link mode (founder 2026-06-29).
+              const linkMode = canSubmitLink && (linkOpen || !canType);
+              return (
+                <form onSubmit={linkMode ? submitLink : send} className="flex gap-1.5">
+                  <input
+                    type={linkMode ? "url" : "text"}
+                    value={linkMode ? linkDraft : draft}
+                    onChange={(e) =>
+                      linkMode ? setLinkDraft(e.target.value) : setDraft(e.target.value)
+                    }
+                    maxLength={linkMode ? undefined : 500}
+                    placeholder={
+                      linkMode
+                        ? "Paste a link"
+                        : roomState === "waiting"
+                          ? "Warm the room up"
+                          : "Say something"
+                    }
+                    aria-label={linkMode ? "Submit a link" : "Chat message"}
+                    className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+                  />
+                  <button
+                    type="submit"
+                    disabled={
+                      linkMode ? submittingLink || !linkDraft.trim() : sending || !draft.trim()
+                    }
+                    className="h-9 shrink-0 rounded-lg bg-red px-3.5 text-sm font-semibold text-white disabled:opacity-60"
+                  >
+                    {linkMode ? (submittingLink ? "…" : "Add") : "Send"}
+                  </button>
+                  {canType && canSubmitLink && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLinkOpen(!linkOpen);
+                        setLinkNotice(null);
+                      }}
+                      aria-pressed={linkMode}
+                      aria-label={linkMode ? "Back to chat" : "Add a link"}
+                      title={linkMode ? "Back to chat" : "Add a link"}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line text-sm hover:bg-raised ${
+                        linkMode ? "bg-raised text-primary" : "bg-surface text-secondary"
+                      }`}
+                    >
+                      {linkMode ? "✕" : "🔗"}
+                    </button>
+                  )}
+                </form>
+              );
+            })()}
           {linkNotice && (
             <p role="alert" className="text-xs text-red">
               {linkNotice}
