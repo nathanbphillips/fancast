@@ -29,8 +29,12 @@ function playerHref(p: LineupPlayer, fotmob: FotmobMap): string {
  *  forwards stop short of the centre so the two front lines don't collide. */
 function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
   const byLine = new Map<number, LineupPlayer[]>();
+  const noLine: LineupPlayer[] = []; // position-less (e.g. a commentator-added starter)
   for (const p of starters) {
-    if (p.line == null) continue; // no formation row — omit rather than collapse onto the keeper line
+    if (p.line == null) {
+      noLine.push(p);
+      continue;
+    }
     const arr = byLine.get(p.line);
     if (arr) arr.push(p);
     else byLine.set(p.line, [p]);
@@ -48,6 +52,14 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
     const y = home ? 8 + frac * 34 : 92 - frac * 34;
     row.forEach((p, i) => {
       placed.push({ p, x: ((i + 1) / (row.length + 1)) * 100, y });
+    });
+  }
+  // position-less starters: place them in a residual front row so they're visible
+  // rather than dropped (they'd otherwise collapse onto the keeper).
+  if (noLine.length) {
+    const y = home ? 46 : 54;
+    noLine.forEach((p, i) => {
+      placed.push({ p, x: ((i + 1) / (noLine.length + 1)) * 100, y });
     });
   }
   return placed;

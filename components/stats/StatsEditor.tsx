@@ -228,12 +228,14 @@ function InfoEditor({
   const [referee, setReferee] = useState(oInfo?.referee ?? "");
   const [weather, setWeather] = useState(oInfo?.weather ?? "");
   // team news pre-fills from the shown (merged) list so it's editable, but is only
-  // written when actually touched — otherwise an untouched save would freeze the
-  // current Sportmonks news and mask later updates.
+  // written when touched — otherwise an untouched save would freeze the current
+  // Sportmonks news. A side that ALREADY has an override counts as touched, so a
+  // re-save (to fix something else) re-emits and preserves it rather than dropping it.
+  const oNews = oInfo?.teamNews;
   const [home, setHome] = useState<NewsRow[]>(info?.teamNews.home ?? []);
   const [away, setAway] = useState<NewsRow[]>(info?.teamNews.away ?? []);
-  const [homeTouched, setHomeTouched] = useState(false);
-  const [awayTouched, setAwayTouched] = useState(false);
+  const [homeTouched, setHomeTouched] = useState(oNews?.home !== undefined);
+  const [awayTouched, setAwayTouched] = useState(oNews?.away !== undefined);
 
   const venuePh = info?.venue
     ? info.venue.city
@@ -295,12 +297,14 @@ function InfoEditor({
 
 function LineupEditor({
   data,
+  rawLineups,
   overrides,
   onSave,
   onClose,
   saving,
 }: {
   data: FixtureStats;
+  rawLineups: FixtureStats["lineups"] | undefined;
   overrides: StatOverrides | null;
   onSave: (next: StatOverrides) => void;
   onClose: () => void;
@@ -317,8 +321,30 @@ function LineupEditor({
       for (const p of s.bench)
         rows.push({ id: p.playerId, side, name: p.name, jersey: p.jersey?.toString() ?? "", status: "bench" });
     }
+    // re-surface real players the commentator marked "Out": mergeSide drops them
+    // from the display, so look them up in the raw (pre-override) lineup so the
+    // editor can show them (status Out) and the commentator can move them back.
+    const shownIds = new Set(rows.map((r) => r.id));
+    for (const [idStr, o] of Object.entries(overrides?.players ?? {})) {
+      const id = Number(idStr);
+      if (o?.status !== "out" || id < 0 || shownIds.has(id)) continue;
+      for (const side of ["home", "away"] as const) {
+        const s = rawLineups?.[side];
+        const p = s ? [...s.starters, ...s.bench].find((x) => x.playerId === id) : undefined;
+        if (p) {
+          rows.push({
+            id,
+            side,
+            name: o.name ?? p.name,
+            jersey: (o.jersey ?? p.jersey)?.toString() ?? "",
+            status: "out",
+          });
+          break;
+        }
+      }
+    }
     return rows;
-  }, [data]);
+  }, [data, rawLineups, overrides]);
 
   const [edits, setEdits] = useState<Record<number, Edit>>(() => {
     const init: Record<number, Edit> = {};
@@ -414,20 +440,32 @@ function LineupEditor({
   );
 }
 
-export function StatsEditor(props: {
+export function StatsEditor({
+  section,
+  data,
+  rawLineups,
+  overrides,
+  onSave,
+  onClose,
+  saving,
+}: {
   section: "info" | "lineups";
   data: FixtureStats;
+  rawLineups?: FixtureStats["lineups"];
   overrides: StatOverrides | null;
   onSave: (next: StatOverrides) => void;
   onClose: () => void;
   saving: boolean;
 }) {
+  const common = { data, overrides, onSave, onClose, saving };
   return (
     <div className="mb-3 rounded-xl border border-gold/40 bg-surface p-3">
-      <p className="mb-2 text-sm font-bold">
-        Edit {props.section === "info" ? "match info" : "line-ups"}
-      </p>
-      {props.section === "info" ? <InfoEditor {...props} /> : <LineupEditor {...props} />}
+      <p className="mb-2 text-sm font-bold">Edit {section === "info" ? "match info" : "line-ups"}</p>
+      {section === "info" ? (
+        <InfoEditor {...common} />
+      ) : (
+        <LineupEditor {...common} rawLineups={rawLineups} />
+      )}
     </div>
   );
 }

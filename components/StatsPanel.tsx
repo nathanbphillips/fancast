@@ -108,6 +108,7 @@ export function StatsPanel({
   fotmob = {},
   overrides = null,
   onSaveOverrides,
+  rawLineups,
 }: {
   data: FixtureStats | null;
   radio?: boolean;
@@ -137,6 +138,8 @@ export function StatsPanel({
   overrides?: StatOverrides | null;
   /** persist + broadcast a correction (commentator only). */
   onSaveOverrides?: (next: StatOverrides) => void;
+  /** raw (pre-override) lineups — lets the editor re-surface "out" players. */
+  rawLineups?: FixtureStats["lineups"];
 }) {
   const [override, setOverride] = useState<StatTab | null>(null);
   const [editing, setEditing] = useState<"info" | "lineups" | null>(null);
@@ -345,6 +348,7 @@ export function StatsPanel({
                 <StatsEditor
                   section="lineups"
                   data={data}
+                  rawLineups={rawLineups}
                   overrides={overrides}
                   onSave={handleSaveOverrides}
                   onClose={() => setEditing(null)}

@@ -856,6 +856,7 @@ export function RealtimeRoom(props: Props) {
             roomId={room.id}
             overrides={statOverrides}
             onSaveOverrides={saveStatOverrides}
+            rawLineups={matchStats?.lineups}
             pushedTab={pushedStatsTab}
             pushNonce={statsPushNonce}
             onPushTab={pushStatsTab}
