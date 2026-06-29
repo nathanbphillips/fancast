@@ -1959,62 +1959,71 @@ function LinkCard({
   const [imgBroken, setImgBroken] = useState(false);
   const showImage = link.og_image !== null && !imgBroken;
 
+  // compact card (founder 2026-06-29, supersedes the 2026-06-11 "rich preview"
+  // wide-image decision): title + domain + votes on the left, a small square
+  // thumbnail on the right — keeps link cards from dwarfing the chat.
   return (
-    <li className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
-      <a
-        href={link.url}
-        target="_blank"
-        rel="noopener noreferrer nofollow"
-        className="block"
-      >
-        {showImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={link.og_image!}
-            alt=""
-            loading="lazy"
-            onError={() => setImgBroken(true)}
-            className="aspect-video w-full border-b border-line object-cover"
-          />
-        )}
-        <div className="px-3 pt-3">
-          <p className="line-clamp-2 text-sm leading-snug font-semibold hover:underline">
-            {link.og_title ?? link.url}
-          </p>
-          {link.og_description && (
-            <p className="mt-1 line-clamp-2 text-xs leading-snug text-secondary">
-              {link.og_description}
+    <li className="rounded-xl border-[0.75px] border-line bg-surface p-3">
+      <div className="flex gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="min-w-0"
+          >
+            <p className="line-clamp-2 text-sm font-semibold leading-snug hover:underline">
+              {link.og_title ?? link.url}
             </p>
-          )}
+            <p className="mt-0.5 truncate text-xs text-secondary">{link.domain}</p>
+          </a>
+          <div className="mt-2 flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Upvote link"
+              aria-pressed={myVote === 1}
+              disabled={!canVote}
+              onClick={() => onVote(myVote === 1 ? 0 : 1)}
+              className={`flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold hover:bg-raised ${myVote === 1 ? "text-green" : "text-secondary hover:text-green"}`}
+            >
+              ▲
+            </button>
+            <span className="min-w-4 text-center text-xs font-semibold tabular-nums">
+              {link.up_count - link.down_count}
+            </span>
+            <button
+              type="button"
+              aria-label="Downvote link"
+              aria-pressed={myVote === -1}
+              disabled={!canVote}
+              onClick={() => onVote(myVote === -1 ? 0 : -1)}
+              className={`flex h-7 w-7 items-center justify-center rounded-md text-xs font-semibold hover:bg-raised ${myVote === -1 ? "text-red" : "text-secondary hover:text-red"}`}
+            >
+              ▼
+            </button>
+          </div>
         </div>
-      </a>
-      <div className="flex items-center justify-between px-3 py-2">
-        <span className="truncate text-xs text-secondary">{link.domain}</span>
-        <span className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            aria-label="Upvote link"
-            aria-pressed={myVote === 1}
-            disabled={!canVote}
-            onClick={() => onVote(myVote === 1 ? 0 : 1)}
-            className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold hover:bg-raised ${myVote === 1 ? "text-green" : "text-secondary hover:text-green"}`}
+        {showImage && (
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="relative block h-20 w-20 shrink-0 self-start"
+            aria-label={`Open ${link.og_title ?? link.url}`}
           >
-            ▲
-          </button>
-          <span className="text-xs font-semibold tabular-nums">
-            {link.up_count - link.down_count}
-          </span>
-          <button
-            type="button"
-            aria-label="Downvote link"
-            aria-pressed={myVote === -1}
-            disabled={!canVote}
-            onClick={() => onVote(myVote === -1 ? 0 : -1)}
-            className={`flex h-8 w-8 items-center justify-center rounded-md text-xs font-semibold hover:bg-raised ${myVote === -1 ? "text-red" : "text-secondary hover:text-red"}`}
-          >
-            ▼
-          </button>
-        </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={link.og_image!}
+              alt=""
+              loading="lazy"
+              onError={() => setImgBroken(true)}
+              className="h-20 w-20 rounded-lg border border-line object-cover"
+            />
+            <span className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded bg-black/55 text-[10px] leading-none text-white">
+              ↗
+            </span>
+          </a>
+        )}
       </div>
     </li>
   );
