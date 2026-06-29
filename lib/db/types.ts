@@ -70,6 +70,13 @@ export type ChatMessage = {
   parent_id: string | null;
   root_id: string;
   depth: number;
+  /** inline link preview (founder 2026-06-29): a URL in the body is unfurled on
+   *  send into these fields and rendered as a card. null when there's no link. */
+  link_url: string | null;
+  link_title: string | null;
+  link_description: string | null;
+  link_image: string | null;
+  link_domain: string | null;
   created_at: string;
   /** embedded author (select alias author:profiles(...)) */
   author?: Pick<Profile, "username" | "role">;

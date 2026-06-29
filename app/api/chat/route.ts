@@ -4,6 +4,71 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import type { ChatMessage } from "@/lib/db/types";
+import { isFetchableUrl, unfurl } from "@/lib/unfurl";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+type LinkPreview = {
+  link_url: string | null;
+  link_title: string | null;
+  link_description: string | null;
+  link_image: string | null;
+  link_domain: string | null;
+};
+const NO_LINK: LinkPreview = {
+  link_url: null,
+  link_title: null,
+  link_description: null,
+  link_image: null,
+  link_domain: null,
+};
+
+/** Links live in chat now: unfurl the first URL in a message body into a preview
+ *  card. Returns the preview fields, or a blocklist error to reject the message
+ *  (same no-piracy/no-unsafe rule the old Links feed enforced). */
+async function previewForBody(
+  service: SupabaseClient,
+  body: string,
+): Promise<{ ok: true; fields: LinkPreview } | { ok: false; error: string }> {
+  const match = body.match(/https?:\/\/[^\s]+/i);
+  if (!match) return { ok: true, fields: NO_LINK };
+  let url: URL;
+  try {
+    url = new URL(match[0].replace(/[.,)\]]+$/, "")); // trim trailing punctuation
+  } catch {
+    return { ok: true, fields: NO_LINK };
+  }
+  if (!isFetchableUrl(url)) return { ok: true, fields: NO_LINK };
+
+  const domain = url.hostname.toLowerCase().replace(/^www\./, "");
+  const candidates = domain
+    .split(".")
+    .map((_, i, parts) => parts.slice(i).join("."))
+    .filter((d) => d.includes("."));
+  const { data: blocked } = await service
+    .from("blocklist_domains")
+    .select("domain")
+    .in("domain", candidates)
+    .limit(1);
+  if (blocked && blocked.length > 0) {
+    return {
+      ok: false,
+      error:
+        "Links to that site aren't allowed here — see the community guidelines (no piracy, no unsafe downloads).",
+    };
+  }
+
+  const og = await unfurl(url);
+  return {
+    ok: true,
+    fields: {
+      link_url: url.toString(),
+      link_title: og.title,
+      link_description: og.description,
+      link_image: og.image,
+      link_domain: domain,
+    },
+  };
+}
 
 const bodySchema = z.object({
   roomId: z.uuid(),
@@ -98,6 +163,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // unfurl any link in the message into an inline preview (links live in chat now)
+  const preview = await previewForBody(service, body);
+  if (!preview.ok) {
+    return NextResponse.json({ error: preview.error }, { status: 422 });
+  }
+
   const { data: message, error } = await service
     .from("chat_messages")
     .insert({
@@ -106,6 +177,7 @@ export async function POST(request: NextRequest) {
       body,
       is_waiting_room: room.state === "waiting",
       parent_id: parentId ?? null,
+      ...preview.fields,
     })
     .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
     .single<ChatMessage>();

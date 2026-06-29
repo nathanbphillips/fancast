@@ -755,6 +755,24 @@ export function RealtimeRoom(props: Props) {
   // wrapped + room commentator: the center becomes the downloads panel
   const showDownloads = roomState === "wrapped" && isRoomCommentator;
 
+  // manual chat refresh (founder 2026-06-29): re-pull complete threads from the
+  // DB snapshot and merge — a fallback if a realtime message was missed.
+  const refreshChat = async () => {
+    try {
+      const res = await fetch(`/api/rooms/${room.id}/snapshot`, { cache: "no-store" });
+      if (!res.ok) return;
+      const s = (await res.json()) as { messages?: ChatMessage[] };
+      if (!s.messages) return;
+      setMessages((prev) => {
+        const byId = new Map(prev.map((m) => [m.id, m]));
+        for (const m of s.messages!) byId.set(m.id, m);
+        return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      });
+    } catch {
+      /* best-effort */
+    }
+  };
+
   const chatPanel = showDownloads ? (
     <div className="min-h-0 flex-1 overflow-y-auto">
       <DownloadsPanel roomId={room.id} />
@@ -771,6 +789,7 @@ export function RealtimeRoom(props: Props) {
       myLinkVotes={props.myLinkVotes}
       linksOpen={linksOpen}
       onLinkSubmitted={appendLink}
+      onRefresh={refreshChat}
       watching={watching}
       conn={conn}
       onSent={appendMessage}
@@ -973,6 +992,23 @@ function VoteArrows({
   );
 }
 
+/** Small square thumbnail for an inline chat-message link preview; hides itself
+ *  if the image 404s. */
+function LinkThumb({ src }: { src: string }) {
+  const [broken, setBroken] = useState(false);
+  if (broken) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      loading="lazy"
+      onError={() => setBroken(true)}
+      className="h-12 w-12 shrink-0 rounded-md border border-line object-cover"
+    />
+  );
+}
+
 /** One item in the merged chat+links stream (Phase 11). Both carry id +
  *  created_at; the stream interleaves them chronologically and a local filter
  *  narrows to chat-only / links-only / blended (default). */
@@ -1016,6 +1052,7 @@ function LiveChat({
   myLinkVotes,
   linksOpen,
   onLinkSubmitted,
+  onRefresh,
   watching,
   conn,
   onSent,
@@ -1044,6 +1081,7 @@ function LiveChat({
   myLinkVotes: Record<string, 1 | -1>;
   linksOpen: boolean;
   onLinkSubmitted: (l: Link) => void;
+  onRefresh: () => void;
   watching: number | null;
   conn: ConnState;
   onSent: (m: ChatMessage) => void;
@@ -1128,22 +1166,17 @@ function LiveChat({
   // reply whose parent isn't loaded (root past the fetch window, or an ancestor
   // hidden by RLS) is surfaced as a top-level item rather than silently dropped.
   const streamItems = useMemo<StreamItem[]>(() => {
+    // links are retired (they render inline in chat now) — the stream is chat
+    // top-level items only; replies hang off their root via childrenByParent.
     const items: StreamItem[] = [];
-    if (streamFilter !== "links") {
-      for (const m of messages)
-        if (!m.parent_id || !messageIds.has(m.parent_id))
-          items.push({ kind: "message", id: m.id, createdAt: m.created_at, msg: m });
-    }
-    if (streamFilter !== "chat") {
-      for (const l of links)
-        if (!l.hidden)
-          items.push({ kind: "link", id: l.id, createdAt: l.created_at, lnk: l });
-    }
+    for (const m of messages)
+      if (!m.parent_id || !messageIds.has(m.parent_id))
+        items.push({ kind: "message", id: m.id, createdAt: m.created_at, msg: m });
     items.sort((a, b) =>
       a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0,
     );
     return items;
-  }, [messages, links, streamFilter]);
+  }, [messages, messageIds]);
 
   // parent id -> its direct replies, each list chronological (Slice 3; vote-sort
   // comes in Slice 4). Rebuilt whenever a message/reply arrives.
@@ -1459,6 +1492,11 @@ function LiveChat({
     const isCollapsed = collapsed.has(m.id);
     const isCommentator = m.author?.role === "commentator";
     const isOwn = viewer?.userId === m.user_id;
+    // links live in chat now: strip the URL from the visible text (it renders as
+    // the card below). A link-only message shows just the card.
+    const displayBody = m.link_url
+      ? m.body.replace(/https?:\/\/[^\s]+/i, "").replace(/\s+/g, " ").trim()
+      : m.body;
     return (
       <li key={m.id}>
         {m.hidden_by ? (
@@ -1467,7 +1505,7 @@ function LiveChat({
           </div>
         ) : (
           <div
-            className={`group flex items-start gap-1.5 rounded-md px-1.5 py-1 ${
+            className={`group rounded-md px-1.5 py-1 ${
               isCommentator
                 ? "border-l-[3px] border-gold bg-raised"
                 : isOwn
@@ -1475,15 +1513,17 @@ function LiveChat({
                   : ""
             }`}
           >
-            <VoteArrows
-              up={m.up_count}
-              down={m.down_count}
-              myVote={votes[m.id]}
-              disabled={!viewer}
-              onVote={(v) => vote(m.id, v)}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm leading-snug">
+            {/* text row: vertically centred next to the vote column; Reply +
+                flag + hide sit on the right of the message (founder 2026-06-29) */}
+            <div className="flex items-center gap-1.5">
+              <VoteArrows
+                up={m.up_count}
+                down={m.down_count}
+                myVote={votes[m.id]}
+                disabled={!viewer}
+                onVote={(v) => vote(m.id, v)}
+              />
+              <p className="min-w-0 flex-1 text-sm leading-snug">
                 <span className={`mr-1.5 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
                   {m.author?.username ?? "…"}
                 </span>
@@ -1492,9 +1532,9 @@ function LiveChat({
                     COMMENTATOR
                   </span>
                 )}
-                {m.body}
+                {displayBody}
               </p>
-              <div className="mt-0.5 flex items-center gap-3 text-xs text-secondary">
+              <div className="flex shrink-0 items-center gap-0.5 self-center text-xs">
                 {canType && (
                   <button
                     type="button"
@@ -1502,45 +1542,61 @@ function LiveChat({
                       setReplyTo(replyTo === m.id ? null : m.id);
                       setReplyDraft("");
                     }}
-                    className="font-semibold hover:text-primary"
+                    className="px-1 font-semibold text-secondary hover:text-primary"
                   >
                     Reply
                   </button>
                 )}
-                {kids.length > 0 && (
+                {viewer && !isOwn && !flagged.has(m.id) && (
                   <button
                     type="button"
-                    onClick={() => toggleCollapse(m.id)}
-                    aria-expanded={!isCollapsed}
-                    className="font-semibold hover:text-primary"
+                    aria-label="Flag message"
+                    title="Flag message"
+                    onClick={() => flag(m.id)}
+                    className="px-1 text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
                   >
-                    {isCollapsed
-                      ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
-                      : "▾ hide replies"}
+                    ⚑
+                  </button>
+                )}
+                {viewer?.isModerator && (
+                  <button
+                    type="button"
+                    aria-label="Hide message"
+                    title="Hide message"
+                    onClick={() => hide(m.id)}
+                    className="px-1 text-secondary hover:text-red"
+                  >
+                    ✕
                   </button>
                 )}
               </div>
             </div>
-            {viewer && !isOwn && !flagged.has(m.id) && (
-              <button
-                type="button"
-                aria-label="Flag message"
-                title="Flag message"
-                onClick={() => flag(m.id)}
-                className="px-1 text-xs text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
+            {m.link_url && (
+              <a
+                href={m.link_url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="mt-1 ml-7 flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 hover:bg-surface"
               >
-                ⚑
-              </button>
+                <span className="flex min-w-0 flex-1 flex-col justify-center">
+                  <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
+                    {m.link_title ?? m.link_url}
+                  </span>
+                  <span className="mt-0.5 truncate text-[11px] text-secondary">{m.link_domain ?? ""}</span>
+                </span>
+                {m.link_image && <LinkThumb src={m.link_image} />}
+              </a>
             )}
-            {viewer?.isModerator && (
+            {kids.length > 0 && (
               <button
                 type="button"
-                aria-label="Hide message"
-                title="Hide message"
-                onClick={() => hide(m.id)}
-                className="px-1 text-xs text-secondary hover:text-red"
+                onClick={() => toggleCollapse(m.id)}
+                aria-expanded={!isCollapsed}
+                className="mt-0.5 ml-7 text-xs font-semibold text-secondary hover:text-primary"
               >
-                ✕
+                {isCollapsed
+                  ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
+                  : "▾ hide replies"}
               </button>
             )}
           </div>
@@ -1604,9 +1660,9 @@ function LiveChat({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* one compact bar: stream filter (All / Chat / Links) left, sort right —
-          the two bars merged + watching count dropped (founder 2026-06-29). A
-          connection problem still surfaces here; the refresh pill drops below. */}
+      {/* one compact bar: refresh (left) + sort (right). The Chat/Links filter is
+          gone — links live inline in chat now (founder 2026-06-29). A connection
+          problem still surfaces here; the "N new" pill drops below. */}
       <div className="flex items-center justify-between gap-2 border-b border-line px-2 py-1">
         <div className="flex min-w-0 items-center gap-1.5">
           {conn !== "connected" && (
@@ -1617,22 +1673,15 @@ function LiveChat({
               {conn === "broken" ? "⚠ offline" : "…"}
             </span>
           )}
-          <div className="flex gap-0.5" role="tablist" aria-label="Stream filter">
-            {(["blended", "chat", "links"] as const).map((f) => (
-              <button
-                key={f}
-                type="button"
-                role="tab"
-                aria-selected={streamFilter === f}
-                onClick={() => changeFilter(f)}
-                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors ${
-                  streamFilter === f ? "bg-gold text-canvas" : "text-secondary hover:bg-raised"
-                }`}
-              >
-                {f === "blended" ? "All" : f === "chat" ? "Chat" : "Links"}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={onRefresh}
+            aria-label="Refresh chat"
+            title="Refresh chat"
+            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-secondary transition-colors hover:bg-raised hover:text-primary"
+          >
+            <span aria-hidden="true">↻</span> Refresh
+          </button>
         </div>
         <div className="flex shrink-0 gap-0.5" role="tablist" aria-label="Sort order">
           {(["new", "top", "controversial"] as const).map((s) => (
@@ -1683,11 +1732,9 @@ function LiveChat({
         )}
         {displayItems.length === 0 && (
           <li className="px-3 py-6 text-center text-sm text-secondary">
-            {streamFilter === "links"
-              ? "No links yet."
-              : roomState === "waiting"
-                ? "The commentator will be along shortly."
-                : "Nothing here yet — say hello."}
+            {roomState === "waiting"
+              ? "The commentator will be along shortly."
+              : "Nothing here yet — say hello."}
           </li>
         )}
       </ul>
@@ -1805,11 +1852,10 @@ function LiveChat({
               ))}
           </div>
         </div>
-      ) : !canType && !canSubmitLink ? (
+      ) : !canType ? (
         <div className="border-t border-line p-3">
           <p className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center text-sm text-secondary">
-            Waiting room — the commentator opens chat and links when the show
-            starts.
+            Waiting room — the commentator opens chat when the show starts.
           </p>
         </div>
       ) : (
@@ -1819,64 +1865,30 @@ function LiveChat({
               {notice}
             </p>
           )}
-          {(canType || canSubmitLink) &&
-            (() => {
-              // one compact row: chat by default; the 🔗 button (right of Send)
-              // flips the same input into link mode (founder 2026-06-29).
-              const linkMode = canSubmitLink && (linkOpen || !canType);
-              return (
-                <form onSubmit={linkMode ? submitLink : send} className="flex gap-1.5">
-                  <input
-                    type={linkMode ? "url" : "text"}
-                    value={linkMode ? linkDraft : draft}
-                    onChange={(e) =>
-                      linkMode ? setLinkDraft(e.target.value) : setDraft(e.target.value)
-                    }
-                    maxLength={linkMode ? undefined : 500}
-                    placeholder={
-                      linkMode
-                        ? "Paste a link"
-                        : roomState === "waiting"
-                          ? "Warm the room up"
-                          : "Say something"
-                    }
-                    aria-label={linkMode ? "Submit a link" : "Chat message"}
-                    className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
-                  />
-                  <button
-                    type="submit"
-                    disabled={
-                      linkMode ? submittingLink || !linkDraft.trim() : sending || !draft.trim()
-                    }
-                    className="h-9 shrink-0 rounded-lg bg-red px-3.5 text-sm font-semibold text-white disabled:opacity-60"
-                  >
-                    {linkMode ? (submittingLink ? "…" : "Add") : "Send"}
-                  </button>
-                  {canType && canSubmitLink && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLinkOpen(!linkOpen);
-                        setLinkNotice(null);
-                      }}
-                      aria-pressed={linkMode}
-                      aria-label={linkMode ? "Back to chat" : "Add a link"}
-                      title={linkMode ? "Back to chat" : "Add a link"}
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line text-sm hover:bg-raised ${
-                        linkMode ? "bg-raised text-primary" : "bg-surface text-secondary"
-                      }`}
-                    >
-                      {linkMode ? "✕" : "🔗"}
-                    </button>
-                  )}
-                </form>
-              );
-            })()}
-          {linkNotice && (
-            <p role="alert" className="text-xs text-red">
-              {linkNotice}
-            </p>
-          )}
+          {/* one compact row — links go straight in the message (they unfurl into
+              an inline card); no separate link compose any more (founder 2026-06-29) */}
+          <form onSubmit={send} className="flex gap-1.5">
+            <input
+              type="text"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              maxLength={500}
+              placeholder={
+                roomState === "waiting"
+                  ? "Warm the room up"
+                  : "Say something — paste a link to share it"
+              }
+              aria-label="Chat message"
+              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+            />
+            <button
+              type="submit"
+              disabled={sending || !draft.trim()}
+              className="h-9 shrink-0 rounded-lg bg-red px-3.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              Send
+            </button>
+          </form>
           {inputsOpen && !isRoomCommentator && (
             <>
               <InteractionButtons
