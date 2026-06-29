@@ -23,10 +23,10 @@ type Placed = { p: LineupPlayer; x: number; y: number };
 function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
   const byLine = new Map<number, LineupPlayer[]>();
   for (const p of starters) {
-    const l = p.line ?? 1;
-    const arr = byLine.get(l);
+    if (p.line == null) continue; // no formation row — omit rather than collapse onto the keeper line
+    const arr = byLine.get(p.line);
     if (arr) arr.push(p);
-    else byLine.set(l, [p]);
+    else byLine.set(p.line, [p]);
   }
   const lines = [...byLine.keys()].sort((a, b) => a - b);
   const maxLine = lines[lines.length - 1] ?? 1;

@@ -443,17 +443,20 @@ function normalizeWeather(
   if (!w) return null;
   const fcDesc = w.description ?? null;
   const liveDesc = w.current?.description ?? null;
-  const useLive = started && (w.current?.temp != null || liveDesc != null);
-  const description = (useLive ? liveDesc : fcDesc) ?? liveDesc ?? fcDesc;
+  // live numbers (temp/wind/humidity) once the match is under way; the condition
+  // text only goes "live" when an actual current description exists — otherwise
+  // the live-temp-only case would surface the stale forecast text as current.
+  const liveActive = started && (w.current?.temp != null || liveDesc != null);
+  const description = (started && liveDesc) || fcDesc || liveDesc;
   if (!description) return null;
-  const tempC = useLive
+  const tempC = liveActive
     ? num(w.current?.temp ?? w.temperature?.day)
     : num(w.temperature?.day ?? w.current?.temp);
-  const windMs = useLive
+  const windMs = liveActive
     ? num(w.current?.wind ?? w.wind?.speed)
     : num(w.wind?.speed ?? w.current?.wind);
   const humidity =
-    (useLive ? w.current?.humidity : w.humidity) ?? w.humidity ?? w.current?.humidity ?? null;
+    (liveActive ? w.current?.humidity : w.humidity) ?? w.humidity ?? w.current?.humidity ?? null;
   let note: string | null = null;
   if (started && fcDesc && liveDesc) {
     const wet = (d: string) => /rain|drizzle|shower|snow|sleet|thunder|storm/i.test(d);
@@ -638,7 +641,9 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     const cameOnIds = new Set<number>();
     const offEntries: LineupPlayer[] = [];
     for (const s of subs) {
-      if (s.participantId !== team.id || s.offId == null) continue;
+      // skip self-subs (player_id === related_player_id) — an upstream glitch
+      // would otherwise leave the player in both the XI and the subs list.
+      if (s.participantId !== team.id || s.offId == null || s.offId === s.onId) continue;
       const off = onPitch.get(s.offId);
       if (!off) continue; // can't resolve who left — leave the XI untouched
       onPitch.delete(off.playerId);

@@ -56,7 +56,9 @@ export function MatchInfoPanel({
     const [head, ...rest] = crew;
     return (
       <div>
-        <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>Referee</p>
+        {/* label by the head official's actual role — usually "Referee", but
+            pre-match the head ref may not be confirmed yet (only assistants). */}
+        <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>{head.role || "Referee"}</p>
         <p className={`font-semibold ${text}`}>{head.name}</p>
         {rest.length > 0 && (
           <ul className="mt-0.5 space-y-0.5">
