@@ -3,6 +3,7 @@ import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { brand } from "@/lib/brand";
+import { Logo } from "@/components/Logo";
 import {
   RealtimeRoom,
   type RoomInfo,
@@ -77,11 +78,8 @@ export default async function RoomPage({
     return (
       <div className="flex min-h-dvh flex-col">
         <header className="border-b border-line px-4 py-3">
-          <NextLink
-            href="/"
-            className="font-display text-lg font-bold tracking-tight"
-          >
-            {brand.name}
+          <NextLink href="/" aria-label={brand.name}>
+            <Logo />
           </NextLink>
         </header>
         <div className="mx-auto max-w-md px-4 py-10 text-center">

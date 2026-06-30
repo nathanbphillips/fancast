@@ -47,6 +47,9 @@ export function FixtureCard({
         <div className="min-w-0">
           <p className="font-display text-xs font-semibold tracking-wider text-secondary uppercase">
             {fixture.competition}
+            {state !== "scheduled" && (
+              <span className="text-gold"> · Live now</span>
+            )}
           </p>
           <h3
             className={`mt-1 font-display font-bold ${state === "live" ? "text-xl" : "text-base"}`}
@@ -72,30 +75,51 @@ export function FixtureCard({
               </>
             ) : (
               <>
-                <KickoffTime iso={fixture.kickoffUtc} />
+                <span className="inline-flex items-center gap-1 align-middle">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect x="3" y="4.5" width="18" height="17" rx="2" />
+                    <path d="M3 9.5h18M8 2.5v4M16 2.5v4" />
+                  </svg>
+                  <KickoffTime iso={fixture.kickoffUtc} />
+                </span>
                 {fixture.commentator && <> · {fixture.commentator}</>}
               </>
             )}
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          {state === "live" && (
-            <span className="flex items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
-              <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
-              LIVE
+        <div className="flex shrink-0 items-center gap-3">
+          <div className="flex flex-col items-end gap-2">
+            {state === "live" && (
+              <span className="flex items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
+                <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
+                LIVE
+              </span>
+            )}
+            {state !== "scheduled" && fixture.roomHref && (
+              <Link
+                href={fixture.roomHref}
+                className="flex h-11 items-center rounded-lg bg-red px-4 text-sm font-semibold text-white"
+              >
+                {state === "live" ? "Join live" : "Join waiting room"}
+              </Link>
+            )}
+            {action}
+          </div>
+          {(fixture.roomHref || action) && (
+            <span aria-hidden="true" className="text-xl text-secondary">
+              ›
             </span>
           )}
-          {state !== "scheduled" && fixture.roomHref && (
-            <Link
-              href={fixture.roomHref}
-              className="flex h-11 items-center gap-1 rounded-lg bg-red px-4 text-sm font-semibold text-white"
-            >
-              {state === "live" ? "Join live" : "Join waiting room"}
-              <span aria-hidden="true">›</span>
-            </Link>
-          )}
-          {action}
         </div>
       </div>
     </article>

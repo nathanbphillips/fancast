@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { brand } from "@/lib/brand";
+import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 
@@ -32,21 +33,14 @@ export function AppHeader({
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
         <Link
           href="/"
-          className="flex h-11 items-center rounded-lg px-1 font-display text-lg font-bold tracking-tight"
+          aria-label={brand.name}
+          className="flex h-11 items-center rounded-lg px-1"
         >
-          {brand.name}
+          <Logo />
         </Link>
         <div className="flex items-center gap-1">
-          {admin && (
-            <Link
-              href="/admin"
-              className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-gold hover:bg-raised"
-            >
-              Admin
-            </Link>
-          )}
           {username ? (
-            <UserMenu username={username} avatarUrl={avatarUrl} />
+            <UserMenu username={username} avatarUrl={avatarUrl} admin={admin} />
           ) : userExists ? (
             <Link
               href="/welcome"

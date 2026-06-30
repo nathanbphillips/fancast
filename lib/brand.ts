@@ -10,7 +10,8 @@ export const brand = {
   /** Product name as shown everywhere in the UI. */
   name: "FanCast",
   /** Short tagline for the home page and meta description. */
-  tagline: "Live fan commentary for Arsenal matches. Watch your stream, listen with us.",
+  tagline:
+    "Live fan commentary for Arsenal matches. Watch your stream, listen with us. No fluff, just football.",
   /** Sender display name for transactional email (address comes from EMAIL_FROM env). */
   emailSenderName: "FanCast",
 } as const;

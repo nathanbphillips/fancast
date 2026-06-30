@@ -52,6 +52,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { brand } from "@/lib/brand";
 import { Avatar } from "@/components/Avatar";
+import { Logo } from "@/components/Logo";
 import NextLink from "next/link";
 
 /**
@@ -844,17 +845,18 @@ export function RealtimeRoom(props: Props) {
         clock={clockText}
         listeners={watching ?? undefined}
         wordmark={
-          <NextLink
-            href="/"
-            className="font-display text-lg font-bold tracking-tight"
-          >
-            {brand.name}
+          <NextLink href="/" aria-label={brand.name}>
+            <Logo />
           </NextLink>
         }
         themeToggle={<ThemeToggle />}
         userMenu={
           viewer ? (
-            <UserMenu username={viewer.username} avatarUrl={viewer.avatarUrl} />
+            <UserMenu
+              username={viewer.username}
+              avatarUrl={viewer.avatarUrl}
+              admin={viewer.role === "admin"}
+            />
           ) : (
             <NextLink
               href="/signin"
@@ -1017,6 +1019,18 @@ function VoteArrows({
       </button>
     </span>
   );
+}
+
+/** Compact relative time for chat message stamps (e.g. "now", "2m", "3h"). */
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  const s = Math.max(0, Math.floor(ms / 1000));
+  if (s < 60) return "now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
 }
 
 /** Small square thumbnail for an inline chat-message link preview; hides itself
@@ -1559,6 +1573,12 @@ function LiveChat({
               <p className="min-w-0 flex-1 text-sm leading-snug">
                 <span className={`mr-1.5 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
                   {m.author?.username ?? "…"}
+                </span>
+                <span
+                  suppressHydrationWarning
+                  className="mr-1.5 text-[11px] text-secondary tabular-nums"
+                >
+                  {timeAgo(m.created_at)}
                 </span>
                 {isCommentator && (
                   <span className="mr-2 rounded-sm bg-gold px-1 py-0.5 align-middle text-[10px] font-bold text-canvas">
