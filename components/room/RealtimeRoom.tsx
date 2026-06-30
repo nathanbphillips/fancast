@@ -52,7 +52,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { brand } from "@/lib/brand";
 import { Avatar } from "@/components/Avatar";
-import Link from "next/link";
+import NextLink from "next/link";
 
 /**
  * Live room: chat + links + lifecycle over Ably, DB as source of truth.
@@ -844,24 +844,24 @@ export function RealtimeRoom(props: Props) {
         clock={clockText}
         listeners={watching ?? undefined}
         wordmark={
-          <Link
+          <NextLink
             href="/"
             className="font-display text-lg font-bold tracking-tight"
           >
             {brand.name}
-          </Link>
+          </NextLink>
         }
         themeToggle={<ThemeToggle />}
         userMenu={
           viewer ? (
             <UserMenu username={viewer.username} avatarUrl={viewer.avatarUrl} />
           ) : (
-            <Link
+            <NextLink
               href="/signin"
               className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold hover:bg-raised"
             >
               Sign in
-            </Link>
+            </NextLink>
           )
         }
       />

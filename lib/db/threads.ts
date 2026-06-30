@@ -26,7 +26,7 @@ export async function loadRoomThreadMessages(
   if (rootIds.length === 0) return [];
   const { data } = await client
     .from("chat_messages")
-    .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
+    .select("*, author:profiles!chat_messages_user_id_fkey(username, role, avatar_url)")
     .eq("room_id", roomId) // keep the (room_id, root_id, created_at) index usable
     .in("root_id", rootIds)
     .order("created_at", { ascending: true })
