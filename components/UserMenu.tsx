@@ -3,8 +3,15 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/db/client";
+import { Avatar } from "@/components/Avatar";
 
-export function UserMenu({ username }: { username: string }) {
+export function UserMenu({
+  username,
+  avatarUrl,
+}: {
+  username: string;
+  avatarUrl?: string | null;
+}) {
   const router = useRouter();
 
   async function signOut() {
@@ -21,9 +28,10 @@ export function UserMenu({ username }: { username: string }) {
     <div className="flex items-center gap-1">
       <Link
         href={`/u/${username}`}
-        className="flex h-11 items-center rounded-lg px-2 text-sm font-semibold hover:bg-raised"
+        className="flex h-11 items-center gap-2 rounded-lg px-1.5 text-sm font-semibold hover:bg-raised"
       >
-        {username}
+        <Avatar src={avatarUrl} name={username} size={28} />
+        <span className="hidden sm:inline">{username}</span>
       </Link>
       <button
         type="button"

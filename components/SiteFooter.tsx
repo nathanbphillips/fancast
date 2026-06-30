@@ -14,23 +14,36 @@ export function SiteFooter() {
   if (pathname?.startsWith("/room/")) return null;
 
   return (
-    <footer className="border-t border-line px-4 py-6 text-xs text-secondary">
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="max-w-md">
-          {brand.name} is an unofficial, fan-made platform and is not affiliated
-          with or endorsed by any club, league, or broadcaster.
+    <footer className="border-t border-line px-4 py-10 text-sm text-secondary">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col gap-8 sm:flex-row sm:justify-between">
+          <div className="max-w-sm">
+            <p className="font-display text-base font-bold text-primary">
+              {brand.name}
+            </p>
+            <p className="mt-2 text-xs">
+              {brand.name} is an unofficial, fan-made platform and is not
+              affiliated with or endorsed by any club, league, or broadcaster.
+            </p>
+          </div>
+          <nav className="flex flex-col gap-2" aria-label="Legal">
+            <p className="font-display text-xs font-bold tracking-wider text-primary uppercase">
+              Legal
+            </p>
+            <Link href="/guidelines" className="hover:text-primary">
+              Community Guidelines
+            </Link>
+            <Link href="/terms" className="hover:text-primary">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="hover:text-primary">
+              Privacy Policy
+            </Link>
+          </nav>
+        </div>
+        <p className="mt-8 border-t border-line pt-4 text-xs">
+          © {new Date().getFullYear()} {brand.name}. All rights reserved.
         </p>
-        <nav className="flex gap-4" aria-label="Legal">
-          <Link href="/guidelines" className="hover:text-primary">
-            Guidelines
-          </Link>
-          <Link href="/terms" className="hover:text-primary">
-            Terms
-          </Link>
-          <Link href="/privacy" className="hover:text-primary">
-            Privacy
-          </Link>
-        </nav>
       </div>
     </footer>
   );

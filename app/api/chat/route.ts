@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       parent_id: parentId ?? null,
       ...preview.fields,
     })
-    .select("*, author:profiles!chat_messages_user_id_fkey(username, role)")
+    .select("*, author:profiles!chat_messages_user_id_fkey(username, role, avatar_url)")
     .single<ChatMessage>();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

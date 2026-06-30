@@ -106,15 +106,20 @@ export default async function HomePage() {
   const upcoming = withFollowed.filter((w) => w.card.state === "scheduled");
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-6">
-      <section aria-label="Introduction" className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">{brand.name}</h1>
-        <p className="mt-1 text-secondary">{brand.tagline}</p>
+    <div className="mx-auto max-w-5xl px-4 py-10 sm:py-12">
+      <section aria-label="Introduction" className="mb-10">
+        <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+          {brand.name}
+        </h1>
+        <p className="mt-3 max-w-xl text-secondary sm:text-lg">{brand.tagline}</p>
       </section>
 
       {live.length > 0 && (
-        <section aria-label="Happening now" className="mb-8">
-          <h2 className="mb-3 text-sm font-bold tracking-wide text-secondary uppercase">
+        <section aria-label="Happening now" className="mb-10">
+          <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
+            <span className="text-gold" aria-hidden="true">
+              ●
+            </span>
             Happening now
           </h2>
           <div className="space-y-3">
@@ -126,11 +131,12 @@ export default async function HomePage() {
       )}
 
       <section aria-label="Upcoming fixtures">
-        <h2 className="mb-3 text-sm font-bold tracking-wide text-secondary uppercase">
-          Upcoming
+        <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
+          <span aria-hidden="true">🏆</span>
+          Upcoming matches
         </h2>
         {upcoming.length === 0 && live.length === 0 ? (
-          <p className="rounded-xl border-[0.75px] border-line bg-surface p-4 text-sm text-secondary">
+          <p className="rounded-xl border-[0.75px] border-line bg-surface p-4 text-sm text-secondary shadow-card">
             No fixtures on the schedule yet — check back soon.
           </p>
         ) : (

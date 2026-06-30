@@ -70,7 +70,7 @@ export async function GET(
     loadRoomThreadMessages(supabase, id),
     supabase
       .from("links")
-      .select("*, author:profiles!links_user_id_fkey(username, role)")
+      .select("*, author:profiles!links_user_id_fkey(username, role, avatar_url)")
       .eq("room_id", id)
       .order("created_at", { ascending: false })
       .limit(50)
@@ -105,14 +105,14 @@ export async function GET(
     const [{ data: qs }, { data: trs }] = await Promise.all([
       service
         .from("questions")
-        .select("*, author:profiles!questions_user_id_fkey(username, role)")
+        .select("*, author:profiles!questions_user_id_fkey(username, role, avatar_url)")
         .eq("room_id", id)
         .order("created_at", { ascending: false })
         .limit(100)
         .returns<Question[]>(),
       service
         .from("talk_requests")
-        .select("*, author:profiles!talk_requests_user_id_fkey(username, role)")
+        .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
         .eq("room_id", id)
         .eq("status", "pending")
         .order("created_at", { ascending: true })

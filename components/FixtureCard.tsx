@@ -34,10 +34,10 @@ export function FixtureCard({
   const { state } = fixture;
   const accent =
     state === "live"
-      ? "border-l-4 border-l-red"
+      ? "border-l-4 border-l-red shadow-raised"
       : state === "waiting"
-        ? "border-l-4 border-l-gold"
-        : "";
+        ? "border-l-4 border-l-gold shadow-card"
+        : "shadow-card";
 
   return (
     <article
@@ -45,8 +45,12 @@ export function FixtureCard({
     >
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs text-secondary">{fixture.competition}</p>
-          <h3 className={`mt-0.5 font-bold ${state === "live" ? "text-xl" : "text-base"}`}>
+          <p className="font-display text-xs font-semibold tracking-wider text-secondary uppercase">
+            {fixture.competition}
+          </p>
+          <h3
+            className={`mt-1 font-display font-bold ${state === "live" ? "text-xl" : "text-base"}`}
+          >
             {fixture.home} vs {fixture.away}
           </h3>
           <p className="mt-1 text-sm text-secondary">
@@ -85,13 +89,10 @@ export function FixtureCard({
           {state !== "scheduled" && fixture.roomHref && (
             <Link
               href={fixture.roomHref}
-              className={`flex h-11 items-center rounded-lg px-4 text-sm font-semibold ${
-                state === "live"
-                  ? "bg-red text-white"
-                  : "border border-line bg-surface hover:bg-raised"
-              }`}
+              className="flex h-11 items-center gap-1 rounded-lg bg-red px-4 text-sm font-semibold text-white"
             >
               {state === "live" ? "Join live" : "Join waiting room"}
+              <span aria-hidden="true">›</span>
             </Link>
           )}
           {action}

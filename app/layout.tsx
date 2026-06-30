@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { THEME_COOKIE, themeInitScript, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+// Display face for headings/wordmark/labels (the redesign's bold geometric
+// grotesque). Body stays Inter; never apply this to tabular-nums elements.
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   // gives NEXT_PUBLIC_APP_URL a real use (absolute OG/canonical URLs) instead of
@@ -46,7 +53,9 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeInitScript(accountPref) }}
         />
       </head>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${display.variable} font-sans antialiased`}
+      >
         {children}
       </body>
     </html>

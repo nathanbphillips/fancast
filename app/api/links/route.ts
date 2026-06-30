@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       og_image: og.image,
       domain,
     })
-    .select("*, author:profiles!links_user_id_fkey(username, role)")
+    .select("*, author:profiles!links_user_id_fkey(username, role, avatar_url)")
     .single<Link>();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

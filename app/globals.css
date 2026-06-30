@@ -20,6 +20,9 @@
   --gold: #806a3c;
   --navy: #023474;
   --green: #137a42;
+  /* redesign: soft card elevation (light = faint, reads on white surfaces) */
+  --elev-card: 0 1px 2px rgba(16, 18, 29, 0.04), 0 1px 3px rgba(16, 18, 29, 0.06);
+  --elev-raised: 0 4px 14px rgba(16, 18, 29, 0.1);
 }
 
 .dark {
@@ -33,6 +36,9 @@
   --gold: #c9a864;
   --navy: #6e9fe0;
   --green: #27c46d;
+  /* dark: shadows barely read on dark surfaces — keep subtle, lean on borders */
+  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --elev-raised: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
 
 /* Tailwind reads the variables; components use bg-base, text-primary, etc. */
@@ -50,6 +56,12 @@
   --color-green: var(--green);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* display face for headings/wordmark/labels (redesign) — falls back to body */
+  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif,
+    system-ui, sans-serif;
+  /* card elevation utilities: shadow-card, shadow-raised (both themes) */
+  --shadow-card: var(--elev-card);
+  --shadow-raised: var(--elev-raised);
 }
 
 html {

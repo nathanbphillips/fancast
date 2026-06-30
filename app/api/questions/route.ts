@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       user_id: caller.userId,
       body: parsed.data.body,
     })
-    .select("*, author:profiles!questions_user_id_fkey(username, role)")
+    .select("*, author:profiles!questions_user_id_fkey(username, role, avatar_url)")
     .single<Question>();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

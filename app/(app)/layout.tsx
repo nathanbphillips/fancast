@@ -24,7 +24,7 @@ export default async function AppLayout({
           <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
             <Link
               href="/"
-              className="flex h-11 items-center rounded-lg px-1 text-lg font-semibold tracking-tight"
+              className="flex h-11 items-center rounded-lg px-1 font-display text-lg font-bold tracking-tight"
             >
               {brand.name}
             </Link>
@@ -38,7 +38,10 @@ export default async function AppLayout({
                 </Link>
               )}
               {profile ? (
-                <UserMenu username={profile.username} />
+                <UserMenu
+                  username={profile.username}
+                  avatarUrl={profile.avatar_url}
+                />
               ) : user ? (
                 <Link
                   href="/welcome"

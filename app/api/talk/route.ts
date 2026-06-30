@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       topic: parsed.data.topic,
       consent_at: consentAt,
     })
-    .select("*, author:profiles!talk_requests_user_id_fkey(username, role)")
+    .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
     .single<TalkRequest>();
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

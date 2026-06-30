@@ -79,7 +79,7 @@ export type ChatMessage = {
   link_domain: string | null;
   created_at: string;
   /** embedded author (select alias author:profiles(...)) */
-  author?: Pick<Profile, "username" | "role">;
+  author?: Pick<Profile, "username" | "role" | "avatar_url">;
 };
 
 export type Link = {
@@ -97,7 +97,7 @@ export type Link = {
   /** weighted vote score (Phase 11), drives the "top" sort. */
   score: number;
   created_at: string;
-  author?: Pick<Profile, "username" | "role">;
+  author?: Pick<Profile, "username" | "role" | "avatar_url">;
 };
 
 export type Question = {
@@ -107,7 +107,7 @@ export type Question = {
   body: string;
   status: "new" | "acknowledged" | "dismissed";
   created_at: string;
-  author?: Pick<Profile, "username" | "role">;
+  author?: Pick<Profile, "username" | "role" | "avatar_url">;
 };
 
 export type TalkRequest = {
@@ -118,7 +118,7 @@ export type TalkRequest = {
   status: "pending" | "accepted" | "dismissed" | "completed";
   consent_at: string;
   created_at: string;
-  author?: Pick<Profile, "username" | "role">;
+  author?: Pick<Profile, "username" | "role" | "avatar_url">;
   /** commentator-only: prior flags on this caller (lib/callers.ts) */
   caller_flags?: {
     count: number;
