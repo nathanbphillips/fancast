@@ -1,147 +1,117 @@
+import Link from "next/link";
 import { brand } from "@/lib/brand";
-import {
-  createSupabaseServerClient,
-  getCurrentUserAndProfile,
-} from "@/lib/db/server";
-import type { Fixture, RoomState } from "@/lib/db/types";
-import {
-  FixtureCard,
-  type FixtureCardData,
-  type FixtureCardState,
-} from "@/components/FixtureCard";
+import { loadFixtures } from "@/lib/db/fixtures";
+import { FixtureCard } from "@/components/FixtureCard";
 import { OpenWaitingButton } from "@/components/OpenWaitingButton";
+import { Section } from "@/components/marketing/Section";
+import { StepCard } from "@/components/marketing/StepCard";
+import { FeatureCard } from "@/components/marketing/FeatureCard";
+import { CtaBand } from "@/components/marketing/CtaBand";
+import { PrimaryCta, SecondaryCta } from "@/components/marketing/CtaButtons";
+import { HeroArt } from "@/components/marketing/HeroArt";
 
 /**
- * Home: next fixtures from the DB with enterability gating by room state
- * (FR-1). Followed commentators' sessions sort first for signed-in users
- * (FR-1.3). Live data replaces the seeds when the Sportmonks sync runs.
+ * Home: a hybrid marketing landing — hero → how it works → a live + next-4
+ * fixtures teaser → features → closing CTA. The full schedule lives at
+ * /matches. Compliance: copy never implies we stream/show the match; "watch"
+ * always attaches to the viewer's own stream (golden rule), and the unaffiliated
+ * disclaimer rides in the shared footer.
  */
-
-type FixtureWithRooms = Fixture & {
-  rooms: {
-    id: string;
-    state: RoomState;
-    commentator_id: string;
-    commentator: { username: string } | null;
-  }[];
-};
-
-const LIVE_STATES: RoomState[] = [
-  "pregame",
-  "live_1h",
-  "halftime",
-  "live_2h",
-  "extra_time",
-  "postgame",
-];
-
-function cardState(roomState: RoomState | undefined): FixtureCardState {
-  if (!roomState) return "scheduled";
-  if (roomState === "waiting") return "waiting";
-  if (LIVE_STATES.includes(roomState)) return "live";
-  return "scheduled"; // scheduled or wrapped
-}
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const supabase = await createSupabaseServerClient();
-
-  // include fixtures from the last 3h so an in-play match stays on top
-  const windowStart = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const { data: fixtures, error: fixturesError } = await supabase
-    .from("fixtures")
-    .select(
-      "*, rooms(id, state, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
-    )
-    .gte("kickoff_utc", windowStart)
-    .order("kickoff_utc", { ascending: true })
-    .limit(10)
-    .returns<FixtureWithRooms[]>();
-  // distinguish a real failure from a genuinely empty schedule — otherwise a DB
-  // blip silently reads as "no fixtures yet". Let the error boundary recover it.
-  if (fixturesError) throw fixturesError;
-
-  const { user, profile } = await getCurrentUserAndProfile();
-  const followedIds = new Set<string>();
-  if (user) {
-    const { data: follows } = await supabase
-      .from("follows")
-      .select("commentator_id")
-      .eq("follower_id", user.id);
-    follows?.forEach((f) => followedIds.add(f.commentator_id));
-  }
-
-  const viewerIsCommentator = profile?.role === "commentator";
-
-  const withFollowed = (fixtures ?? []).map((f) => {
-    const room = f.rooms[0];
-    const card: FixtureCardData = {
-      id: f.id,
-      home: f.home_team,
-      away: f.away_team,
-      competition: f.round ? `${f.competition} · ${f.round}` : f.competition,
-      kickoffUtc: f.kickoff_utc,
-      commentator: room?.commentator?.username,
-      state: cardState(room?.state),
-      roomHref: room ? `/room/${room.id}` : undefined,
-    };
-    // commentator's own open-waiting affordance: no open room on this
-    // fixture yet (their scheduled room, or none at all)
-    const ownRoom = f.rooms.find((r) => r.commentator_id === user?.id);
-    const canOpen =
-      viewerIsCommentator && (!ownRoom || ownRoom.state === "scheduled");
-    return {
-      card,
-      canOpen,
-      followed: room ? followedIds.has(room.commentator_id) : false,
-    };
-  });
-
-  // followed commentators' sessions first (FR-1.3); stable sort keeps
-  // kickoff order within each group
-  withFollowed.sort((a, b) => Number(b.followed) - Number(a.followed));
-
-  const live = withFollowed.filter((w) => w.card.state !== "scheduled");
-  const upcoming = withFollowed.filter((w) => w.card.state === "scheduled");
+  const { live, upcoming } = await loadFixtures();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:py-12">
-      <section aria-label="Introduction" className="mb-10">
-        <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          {brand.name}
-        </h1>
-        <p className="mt-3 max-w-xl text-secondary sm:text-lg">{brand.tagline}</p>
+    <>
+      {/* HERO */}
+      <section className="mx-auto max-w-5xl px-4 pt-10 pb-6 sm:pt-16">
+        <div className="grid items-center gap-8 lg:grid-cols-2">
+          <div>
+            <p className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
+              <span className="text-gold" aria-hidden="true">
+                ●
+              </span>
+              Live fan commentary · Arsenal
+            </p>
+            <h1 className="font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
+              A real Gooner in your ear, all match long.
+            </h1>
+            <p className="mt-4 max-w-xl text-secondary sm:text-lg">
+              Keep watching the match however you already do. {brand.name} rides
+              alongside it — live fan audio, a proper away-end chat, and the stats
+              that matter. No pundits. No fluff. Just football.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <PrimaryCta href="/matches">See what&apos;s live</PrimaryCta>
+              <SecondaryCta href="#how">How it works</SecondaryCta>
+            </div>
+          </div>
+          <div>
+            <HeroArt className="mx-auto max-w-md lg:max-w-none" />
+          </div>
+        </div>
       </section>
 
-      {live.length > 0 && (
-        <section aria-label="Happening now" className="mb-10">
-          <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
-            <span className="text-gold" aria-hidden="true">
-              ●
-            </span>
-            Happening now
-          </h2>
-          <div className="space-y-3">
-            {live.map((w) => (
-              <FixtureCard key={w.card.id} fixture={w.card} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* HOW IT WORKS */}
+      <Section id="how" label="How it works" heading="Three taps to the room">
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <StepCard n={1} title="Bring your own stream">
+            Watch the match the way you always do — your telly, your app, your
+            subscription. {brand.name} doesn&apos;t show the game; it sits beside
+            it.
+          </StepCard>
+          <StepCard n={2} title="Press play and sync">
+            Tap in for live fan commentary, then line it up to your screen — when
+            your TV hits a moment, tap Now and the audio locks to your feed.
+          </StepCard>
+          <StepCard n={3} title="Pull up a seat">
+            Listen and read along with no account. Sign up in under a minute when
+            you want to chat, vote, ask the commentator, or call in.
+          </StepCard>
+        </div>
+      </Section>
 
-      <section aria-label="Upcoming fixtures">
-        <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
-          <span aria-hidden="true">🏆</span>
-          Upcoming matches
-        </h2>
-        {upcoming.length === 0 && live.length === 0 ? (
-          <p className="rounded-xl border-[0.75px] border-line bg-surface p-4 text-sm text-secondary shadow-card">
-            No fixtures on the schedule yet — check back soon.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {upcoming.map((w) => (
+      {/* SCHEDULE TEASER */}
+      <section className="mx-auto max-w-5xl px-4 py-10 sm:py-14">
+        {live.length > 0 && (
+          <div className="mb-8">
+            <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
+              <span
+                className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red"
+                aria-hidden="true"
+              />
+              Live now
+            </h2>
+            <div className="space-y-3">
+              {live.map((w) => (
+                <FixtureCard key={w.card.id} fixture={w.card} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end justify-between gap-3">
+          <h2 className="flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
+            <span aria-hidden="true">🏆</span>
+            Coming up
+          </h2>
+          <Link
+            href="/matches"
+            className="text-sm font-semibold text-gold hover:underline"
+          >
+            View full schedule →
+          </Link>
+        </div>
+        <div className="mt-3 space-y-3">
+          {upcoming.length === 0 ? (
+            <p className="rounded-xl border-[0.75px] border-line bg-surface p-4 text-sm text-secondary shadow-card">
+              No matches on the schedule yet — we&apos;ll be here when the next
+              one kicks off.
+            </p>
+          ) : (
+            upcoming.slice(0, 4).map((w) => (
               <FixtureCard
                 key={w.card.id}
                 fixture={w.card}
@@ -151,10 +121,51 @@ export default async function HomePage() {
                   ) : undefined
                 }
               />
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </section>
-    </div>
+
+      {/* FEATURES */}
+      <Section
+        label="Why you'll stay"
+        heading="Built for the 90 minutes, and the bits around them"
+      >
+        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard title="A fan, not a pundit">
+            A Gooner who lives and dies with every result — on your side, never
+            neutral.
+          </FeatureCard>
+          <FeatureCard title="Synced to your screen">
+            One tap lines the audio up to your feed, with half-second nudges and a
+            jump back to live.
+          </FeatureCard>
+          <FeatureCard title="A chat worth reading">
+            Threaded replies, upvotes, and sort by New, Top or Controversial —
+            good takes rise, noise sinks.
+          </FeatureCard>
+          <FeatureCard title="The stats that matter">
+            Possession, shots, xG, momentum, lineups and team news, live from
+            kickoff.
+          </FeatureCard>
+          <FeatureCard title="Ask, vote, call in">
+            Question the commentator, settle the half-time poll, rate the players —
+            or request the mic and go on air.
+          </FeatureCard>
+          <FeatureCard title="Yours to keep">
+            Every show is recorded into downloadable segments. The commentator owns
+            it; we claim nothing.
+          </FeatureCard>
+        </div>
+      </Section>
+
+      {/* CLOSING CTA */}
+      <CtaBand
+        heading="The room's open. Come in."
+        line="Free to listen, no account needed. Sign up when you want to talk — it takes under a minute."
+        cta={<PrimaryCta href="/matches">See what&apos;s live</PrimaryCta>}
+        note="Arsenal first. More clubs to come — and if you fancy hosting a room, there'll be room for you too."
+      />
+    </>
   );
 }

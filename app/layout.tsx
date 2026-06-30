@@ -25,6 +25,18 @@ export const metadata: Metadata = {
     template: `%s · ${brand.name}`,
   },
   description: brand.tagline,
+  // social share cards (og:image auto-attached from app/opengraph-image.tsx)
+  openGraph: {
+    title: brand.name,
+    description: brand.tagline,
+    siteName: brand.name,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: brand.name,
+    description: brand.tagline,
+  },
   // iOS "Add to Home Screen" uses apple-touch-icon (the manifest 192/512 are
   // ignored there); without this iOS falls back to a page screenshot
   icons: { apple: "/icons/apple-touch-icon.png" },

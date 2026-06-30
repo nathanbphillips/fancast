@@ -30,8 +30,11 @@ export function SiteFooter() {
               <p className="font-display text-xs font-bold tracking-wider text-primary uppercase">
                 Platform
               </p>
-              <Link href="/" className="hover:text-primary">
+              <Link href="/matches" className="hover:text-primary">
                 Matches
+              </Link>
+              <Link href="/about" className="hover:text-primary">
+                About
               </Link>
             </nav>
             <nav className="flex flex-col gap-2" aria-label="Legal">

@@ -31,13 +31,32 @@ export function AppHeader({
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-canvas/95 backdrop-blur-sm">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-        <Link
-          href="/"
-          aria-label={brand.name}
-          className="flex h-11 items-center rounded-lg px-1"
-        >
-          <Logo />
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/"
+            aria-label={brand.name}
+            className="flex h-11 items-center rounded-lg px-1"
+          >
+            <Logo />
+          </Link>
+          <nav
+            className="ml-2 hidden items-center gap-1 sm:flex"
+            aria-label="Primary"
+          >
+            <Link
+              href="/matches"
+              className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-secondary hover:bg-raised hover:text-primary"
+            >
+              Matches
+            </Link>
+            <Link
+              href="/about"
+              className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-secondary hover:bg-raised hover:text-primary"
+            >
+              About
+            </Link>
+          </nav>
+        </div>
         <div className="flex items-center gap-1">
           {username ? (
             <UserMenu username={username} avatarUrl={avatarUrl} admin={admin} />
