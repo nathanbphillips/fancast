@@ -48,6 +48,11 @@ import { PlayerRatings } from "./PlayerRatings";
 import { QuestionsPanel } from "./QuestionsPanel";
 import { FollowButton } from "@/components/FollowButton";
 import { useToast } from "@/components/Toast";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserMenu } from "@/components/UserMenu";
+import { brand } from "@/lib/brand";
+import { Avatar } from "@/components/Avatar";
+import Link from "next/link";
 
 /**
  * Live room: chat + links + lifecycle over Ably, DB as source of truth.
@@ -59,6 +64,7 @@ import { useToast } from "@/components/Toast";
 export type Viewer = {
   userId: string;
   username: string;
+  avatarUrl: string | null;
   role: "listener" | "commentator" | "admin";
   isModerator: boolean; // room commentator or admin
   isRoomCommentator: boolean;
@@ -823,7 +829,7 @@ export function RealtimeRoom(props: Props) {
 
   return (
     <div
-      className={`flex h-[calc(100dvh-3.5rem)] flex-col ${
+      className={`flex h-dvh flex-col ${
         isRoomCommentator ? "lg:pb-[80px]" : "lg:pb-[52px]"
       }`}
     >
@@ -837,6 +843,27 @@ export function RealtimeRoom(props: Props) {
         state={roomState}
         clock={clockText}
         listeners={watching ?? undefined}
+        wordmark={
+          <Link
+            href="/"
+            className="font-display text-lg font-bold tracking-tight"
+          >
+            {brand.name}
+          </Link>
+        }
+        themeToggle={<ThemeToggle />}
+        userMenu={
+          viewer ? (
+            <UserMenu username={viewer.username} avatarUrl={viewer.avatarUrl} />
+          ) : (
+            <Link
+              href="/signin"
+              className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold hover:bg-raised"
+            >
+              Sign in
+            </Link>
+          )
+        }
       />
 
       {/* mobile: in-flow strip under the header */}
@@ -1523,6 +1550,12 @@ function LiveChat({
                 disabled={!viewer}
                 onVote={(v) => vote(m.id, v)}
               />
+              <Avatar
+                src={m.author?.avatar_url}
+                name={m.author?.username}
+                size={22}
+                className="self-center"
+              />
               <p className="min-w-0 flex-1 text-sm leading-snug">
                 <span className={`mr-1.5 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
                   {m.author?.username ?? "…"}
@@ -1576,7 +1609,7 @@ function LiveChat({
                 href={m.link_url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="mt-1 ml-7 flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 hover:bg-surface"
+                className="mt-1 ml-[3.25rem] flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 shadow-card hover:bg-surface"
               >
                 <span className="flex min-w-0 flex-1 flex-col justify-center">
                   <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
@@ -1683,7 +1716,11 @@ function LiveChat({
             <span aria-hidden="true">↻</span> Refresh
           </button>
         </div>
-        <div className="flex shrink-0 gap-0.5" role="tablist" aria-label="Sort order">
+        <div
+          className="flex shrink-0 gap-0.5 rounded-full bg-raised p-0.5"
+          role="tablist"
+          aria-label="Sort order"
+        >
           {(["new", "top", "controversial"] as const).map((s) => (
             <button
               key={s}
@@ -1691,8 +1728,8 @@ function LiveChat({
               role="tab"
               aria-selected={sortMode === s}
               onClick={() => changeSort(s)}
-              className={`rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors ${
-                sortMode === s ? "bg-gold text-canvas" : "text-secondary hover:bg-raised"
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
+                sortMode === s ? "bg-gold text-canvas" : "text-secondary hover:text-primary"
               }`}
             >
               {s === "new" ? "New" : s === "top" ? "Top" : "Controversial"}

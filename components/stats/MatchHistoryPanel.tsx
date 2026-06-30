@@ -81,16 +81,28 @@ export function MatchHistoryPanel({
   return (
     <div className="space-y-1.5">
       {history?.seasonName && (
-        <p className={`text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
+        <p className="font-display text-[11px] font-bold tracking-wider text-secondary uppercase">
           {history.seasonName} table
         </p>
       )}
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-        <span className={`truncate text-left font-bold ${text}`}>{homeName}</span>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
+        <span className="min-w-0 text-left">
+          <span
+            className={`inline-block max-w-full truncate border-b-2 border-red pb-0.5 align-bottom font-display font-bold ${text}`}
+          >
+            {homeName}
+          </span>
+        </span>
         <span aria-hidden className="text-center text-[11px] text-secondary">
           vs
         </span>
-        <span className={`truncate text-right font-bold ${text}`}>{awayName}</span>
+        <span className="min-w-0 text-right">
+          <span
+            className={`inline-block max-w-full truncate border-b-2 border-navy pb-0.5 align-bottom font-display font-bold ${text}`}
+          >
+            {awayName}
+          </span>
+        </span>
       </div>
       <Row
         label="Pos"

@@ -1,12 +1,9 @@
-import Link from "next/link";
-import { brand } from "@/lib/brand";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { PWASetup } from "@/components/PWASetup";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { ThemeSync } from "@/components/ThemeSync";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
-import { UserMenu } from "@/components/UserMenu";
+import { AppHeader } from "@/components/AppHeader";
 import { isAdmin } from "@/lib/roles";
 
 export default async function AppLayout({
@@ -20,47 +17,12 @@ export default async function AppLayout({
       <div className="flex min-h-dvh flex-col">
         <ThemeSync themePref={profile?.theme_pref ?? null} />
         <PWASetup />
-        <header className="sticky top-0 z-40 border-b border-line bg-canvas/95 backdrop-blur-sm">
-          <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4">
-            <Link
-              href="/"
-              className="flex h-11 items-center rounded-lg px-1 font-display text-lg font-bold tracking-tight"
-            >
-              {brand.name}
-            </Link>
-            <div className="flex items-center gap-1">
-              {admin && (
-                <Link
-                  href="/admin"
-                  className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-gold hover:bg-raised"
-                >
-                  Admin
-                </Link>
-              )}
-              {profile ? (
-                <UserMenu
-                  username={profile.username}
-                  avatarUrl={profile.avatar_url}
-                />
-              ) : user ? (
-                <Link
-                  href="/welcome"
-                  className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold text-gold hover:bg-raised"
-                >
-                  Pick a username
-                </Link>
-              ) : (
-                <Link
-                  href="/signin"
-                  className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold hover:bg-raised"
-                >
-                  Sign in
-                </Link>
-              )}
-              <ThemeToggle />
-            </div>
-          </div>
-        </header>
+        <AppHeader
+          username={profile?.username ?? null}
+          avatarUrl={profile?.avatar_url ?? null}
+          admin={admin}
+          userExists={!!user}
+        />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </div>

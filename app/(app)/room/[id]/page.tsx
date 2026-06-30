@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { brand } from "@/lib/brand";
 import {
   RealtimeRoom,
   type RoomInfo,
@@ -73,7 +75,16 @@ export default async function RoomPage({
   // FR-3.1/3.5: a scheduled room is listed but not enterable — and never 404s
   if (room.state === "scheduled") {
     return (
-      <div className="mx-auto max-w-md px-4 py-10 text-center">
+      <div className="flex min-h-dvh flex-col">
+        <header className="border-b border-line px-4 py-3">
+          <Link
+            href="/"
+            className="font-display text-lg font-bold tracking-tight"
+          >
+            {brand.name}
+          </Link>
+        </header>
+        <div className="mx-auto max-w-md px-4 py-10 text-center">
         <h1 className="text-xl font-bold">
           {room.fixture.home_team} vs {room.fixture.away_team}
         </h1>
@@ -81,7 +92,8 @@ export default async function RoomPage({
           Doors aren&apos;t open yet — {room.commentator.username} hasn&apos;t
           opened the waiting room. Check back closer to kickoff.
         </p>
-        <Countdown targetIso={room.scheduled_kickoff} heading="Kickoff in" />
+          <Countdown targetIso={room.scheduled_kickoff} heading="Kickoff in" />
+        </div>
       </div>
     );
   }
@@ -141,6 +153,7 @@ export default async function RoomPage({
       ? {
           userId: user.id,
           username: profile.username,
+          avatarUrl: profile.avatar_url,
           role: profile.role,
           isModerator,
           isRoomCommentator,

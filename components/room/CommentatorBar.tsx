@@ -161,10 +161,17 @@ export function CommentatorBar({
   return (
     <div className="flex min-h-[70px] flex-wrap items-center gap-3 px-4 py-2">
       <div className="shrink-0">
-        <p className="text-xs font-bold tracking-wide text-gold uppercase">
-          Commentator
+        <p className="font-display text-[11px] font-bold tracking-wider text-secondary uppercase">
+          Status
         </p>
-        <p className="text-sm font-semibold">{STATUS_LABEL[state] ?? state}</p>
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <span className="font-display text-gold">Commentator</span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-green uppercase">
+            <span className="h-1.5 w-1.5 rounded-full bg-green" />
+            Connected
+          </span>
+        </p>
+        <p className="text-xs text-secondary">{STATUS_LABEL[state] ?? state}</p>
         {error && <p className="text-xs text-red">{error}</p>}
       </div>
 

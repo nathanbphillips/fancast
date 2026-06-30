@@ -73,9 +73,21 @@ export function MatchInfoPanel({
     );
   };
 
-  const NewsTeam = ({ name, rows }: { name: string; rows: { name: string; reason: string }[] }) => (
+  const NewsTeam = ({
+    name,
+    rows,
+    tone,
+  }: {
+    name: string;
+    rows: { name: string; reason: string }[];
+    tone: string;
+  }) => (
     <div className="min-w-0">
-      <p className={`mb-1 font-semibold ${big ? "text-sm" : "text-xs"}`}>{name}</p>
+      <p
+        className={`mb-1 font-display text-[11px] font-bold tracking-wider uppercase ${tone}`}
+      >
+        {name}
+      </p>
       {rows.length === 0 ? (
         <p className="text-[11px] text-secondary">No reported absences.</p>
       ) : (
@@ -96,19 +108,19 @@ export function MatchInfoPanel({
   return (
     <div className="space-y-3">
       {hasNews && (
-        <div className="rounded-xl border-[0.75px] border-line bg-surface p-3">
-          <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
+        <div className="rounded-xl border-[0.75px] border-line bg-surface p-3 shadow-card">
+          <p className="mb-2 font-display text-[11px] font-bold tracking-wider text-secondary uppercase">
             Team news
           </p>
           <div className="space-y-3">
-            <NewsTeam name={homeName} rows={info.teamNews.home} />
-            <NewsTeam name={awayName} rows={info.teamNews.away} />
+            <NewsTeam name={homeName} rows={info.teamNews.home} tone="text-red" />
+            <NewsTeam name={awayName} rows={info.teamNews.away} tone="text-navy" />
           </div>
         </div>
       )}
 
       {(info.venue || info.referees.length > 0 || w) && (
-        <div className="space-y-3 rounded-xl border-[0.75px] border-line bg-surface p-3">
+        <div className="space-y-3 rounded-xl border-[0.75px] border-line bg-surface p-3 shadow-card">
           {info.venue && (
             <Fact
               label="Venue"

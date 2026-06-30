@@ -199,7 +199,7 @@ export function StatsPanel({
 
   return (
     <div className="p-3">
-      <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
+      <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface shadow-card">
         <div className="flex border-b border-line" role="tablist" aria-label="Match info">
           {TABS.map((t) => {
             const active = effectiveTab === t.id;
