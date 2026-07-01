@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
  * `ghost` = quiet. Renders a `<Link>` when `href` is set, else a `<button>`.
  */
 type Variant = "red" | "inverted" | "outline" | "ghost";
+type Size = "sm" | "md";
 
 const VARIANTS: Record<Variant, string> = {
   red: "bg-red text-white hover:bg-red-hover shadow-glow",
@@ -15,9 +16,15 @@ const VARIANTS: Record<Variant, string> = {
   ghost: "text-secondary hover:bg-raised hover:text-primary",
 };
 
+const SIZES: Record<Size, string> = {
+  sm: "h-9 px-4 text-sm",
+  md: "h-11 px-5 text-sm",
+};
+
 export function Button({
   children,
   variant = "red",
+  size = "md",
   href,
   type = "button",
   onClick,
@@ -27,6 +34,7 @@ export function Button({
 }: {
   children: ReactNode;
   variant?: Variant;
+  size?: Size;
   href?: string;
   type?: "button" | "submit";
   onClick?: () => void;
@@ -34,7 +42,7 @@ export function Button({
   className?: string;
   "aria-label"?: string;
 }) {
-  const cls = `inline-flex h-11 items-center justify-center gap-1.5 rounded-lg px-5 text-sm font-semibold transition-colors disabled:opacity-60 ${VARIANTS[variant]} ${className}`;
+  const cls = `inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors disabled:opacity-60 ${SIZES[size]} ${VARIANTS[variant]} ${className}`;
   if (href) {
     return (
       <Link href={href} className={cls} aria-label={ariaLabel}>

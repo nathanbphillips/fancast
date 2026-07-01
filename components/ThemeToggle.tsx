@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 /**
- * Header theme toggle. Default is system preference (set pre-paint in
- * app/layout.tsx); a tap stores an explicit choice in localStorage.
- * Phase 2 adds profiles.theme_pref for signed-in users.
+ * Header theme toggle (Cloud Design): a pill track with a sliding gold knob.
+ * Dark is the default (set pre-paint in app/layout.tsx); a tap stores an
+ * explicit choice in localStorage and persists to the account when signed in.
  */
 export function ThemeToggle() {
   const [isDark, setIsDark] = useState<boolean | null>(null);
@@ -31,17 +31,21 @@ export function ThemeToggle() {
     }).catch(() => {});
   }
 
+  const light = isDark === false; // null (pre-mount) shows the dark position
   return (
     <button
       type="button"
       onClick={toggle}
+      role="switch"
+      aria-checked={isDark ?? false}
       aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-      className="flex h-11 w-11 items-center justify-center rounded-lg text-secondary transition-colors hover:bg-raised hover:text-primary"
+      className="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-line bg-raised transition-colors"
     >
-      {/* render both icons, hide one with CSS-free state to avoid hydration flicker */}
-      <span aria-hidden="true" className="text-lg leading-none">
-        {isDark === null ? "◐" : isDark ? "☀" : "☾"}
-      </span>
+      <span
+        aria-hidden="true"
+        className="absolute h-4 w-4 rounded-full bg-gold transition-transform duration-200"
+        style={{ transform: light ? "translateX(23px)" : "translateX(3px)" }}
+      />
     </button>
   );
 }

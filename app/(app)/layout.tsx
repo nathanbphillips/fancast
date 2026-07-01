@@ -5,12 +5,14 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { ToastProvider } from "@/components/Toast";
 import { AppHeader } from "@/components/AppHeader";
 import { isAdmin } from "@/lib/roles";
+import { countLiveRooms } from "@/lib/db/fixtures";
 
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const { user, profile } = await getCurrentUserAndProfile();
   const admin = isAdmin(user?.id, profile);
+  const liveCount = await countLiveRooms();
 
   return (
     <ToastProvider>
@@ -22,6 +24,7 @@ export default async function AppLayout({
           avatarUrl={profile?.avatar_url ?? null}
           admin={admin}
           userExists={!!user}
+          liveCount={liveCount}
         />
         <main className="flex-1">{children}</main>
         <SiteFooter />
