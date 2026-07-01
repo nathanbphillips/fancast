@@ -50,9 +50,8 @@ import { FollowButton } from "@/components/FollowButton";
 import { useToast } from "@/components/Toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
-import { brand } from "@/lib/brand";
 import { Avatar } from "@/components/Avatar";
-import { Logo } from "@/components/Logo";
+import { ShareButton } from "@/components/room/ShareButton";
 import NextLink from "next/link";
 
 /**
@@ -844,12 +843,8 @@ export function RealtimeRoom(props: Props) {
         state={roomState}
         clock={clockText}
         listeners={watching ?? undefined}
-        wordmark={
-          <NextLink href="/" aria-label={brand.name}>
-            <Logo />
-          </NextLink>
-        }
         themeToggle={<ThemeToggle />}
+        share={<ShareButton />}
         userMenu={
           viewer ? (
             <UserMenu
