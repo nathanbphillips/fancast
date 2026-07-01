@@ -1,70 +1,76 @@
 import type { Metadata } from "next";
 import { brand } from "@/lib/brand";
-import { Eyebrow } from "@/components/ui/Eyebrow";
-import { Button } from "@/components/ui/Button";
 import { Faq } from "@/components/marketing/Faq";
+
+/**
+ * About (Cloud Design "1a"): manifesto hero → story 3-col → stat band →
+ * principles → hosts → FAQ → CTA. Copy is verbatim from the design (no
+ * em-dashes). The compliance FAQ is kept per the founder's decision log
+ * ("explicit 'we don't show the match' + FAQ kept prominent"). Hosts are
+ * illustrative personas; no real photos (abstract marks only).
+ */
 
 export const metadata: Metadata = {
   title: "About",
-  description: `What ${brand.name} is, how a matchday works, and why it's the matchday company you've been missing.`,
+  description: `What ${brand.name} is, how a matchday works, and why it's fans in your ear instead of pundits.`,
 };
 
 const STORY = [
   {
     h: "The problem",
-    p: "Watching alone is quiet. The group chat lags two minutes behind the action, your mates are scattered across five apps, and the official feeds are polished, neutral and a little bit lifeless.",
+    p: "Pundits hedge. Streams lag. The group chat moves too fast to read. Watching with other fans got harder, not easier, and nobody's on your side for the full ninety.",
   },
   {
     h: "The idea",
-    p: "Put the people, the takes and the stats in one room. A fellow Gooner calls the game in your ear while everyone reacts in real time, all riding alongside the match you're already watching.",
+    p: "Keep your own stream. Add a live fan host, a chat worth reading, and the stats on tap, all synced to your screen with one tap. We don't show the game; we sit beside it.",
   },
   {
     h: "The promise",
-    p: "We never show the match, we don't pretend to be impartial, and the hosts own every second they broadcast. Fan-first, on purpose. The pub for fans who don't have one.",
+    p: "Hosts keep and own every recording. Independent, unofficial, and built for supporters, never for rights-holders.",
   },
 ];
 
 const STATS = [
-  { n: "Arsenal", c: "the club we start with" },
-  { n: "<500ms", c: "live audio latency" },
-  { n: "100%", c: "of each show owned by its host" },
-  { n: "£0", c: "to listen, no account needed" },
+  { n: "0", c: "pundits on the payroll", gold: true },
+  { n: "100%", c: "of recordings owned by hosts" },
+  { n: "<1min", c: "to sign up and join in" },
+  { n: "90", c: "minutes live, every match" },
 ];
 
 const PRINCIPLES = [
   {
-    t: "We don't show the match",
-    d: `${brand.name} is audio, chat and stats only, never the broadcast. You bring your own lawful way of watching; we just keep you company.`,
+    k: "Fans, never pundits",
+    d: "Every room is hosted by a supporter who actually cares about the result. No neutral takes, no broadcast script. Just someone on your side.",
   },
   {
-    t: "Unofficial, and proud of it",
-    d: "A fan-made platform, not affiliated with or endorsed by any club, league or broadcaster. Your host is a fan, not an official analyst.",
+    k: "We sit beside the game",
+    d: `${brand.name} never streams the match. You bring your own feed; we bring the voice, the chat and the stats that ride alongside it.`,
   },
   {
-    t: "Your recordings are yours",
-    d: "Hosts own their broadcasts outright. The platform takes no cut of the rights and no exclusivity.",
+    k: "Hosts keep their work",
+    d: "Every show records into downloadable segments owned by the host. We take no rights and claim nothing. The room is theirs.",
   },
   {
-    t: "You can just listen",
-    d: "No account, no paywall, no pressure. Sign up only if and when you want to join in.",
+    k: "Independent & unofficial",
+    d: "Fan-made and unaffiliated with any club, league or broadcaster. Answerable to supporters, not rights-holders.",
   },
 ];
 
 const HOSTS = [
   {
-    name: "The lifer",
-    handle: "season ticket since '04",
-    bio: "Lives and dies with every result. Will not be neutral about anything, and you wouldn't want them to be.",
+    name: "nathan",
+    handle: "@n8_afc",
+    bio: "A Gooner since the Highbury days. Calls it like he sees it.",
   },
   {
-    name: "The tactician",
-    handle: "diagrams optional",
-    bio: "Reads the game two passes ahead and tells you why the press just broke, without the pundit clichés.",
+    name: "priya",
+    handle: "@priyagooner",
+    bio: "Tactics head. Will explain the xG and then ignore it when we score a worldie.",
   },
   {
-    name: "The joker",
-    handle: "keeps it light",
-    bio: "Turns a nervy 0–0 into the best 90 minutes of your week. The mate you actually want next to you.",
+    name: "deniz",
+    handle: "@denizN5",
+    bio: "Half-time poll enforcer. Runs the call-in mic on big nights.",
   },
 ];
 
@@ -103,67 +109,106 @@ const FAQ = [
   },
 ];
 
+const stripe =
+  "repeating-linear-gradient(135deg, var(--bg2), var(--bg2) 9px, var(--bg-raised) 9px, var(--bg-raised) 18px)";
+
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-[1180px] px-5 sm:px-10">
-      {/* MANIFESTO */}
-      <section className="py-16 sm:py-20">
-        <Eyebrow>About {brand.name}</Eyebrow>
-        <h1 className="display mt-4 max-w-3xl text-5xl leading-[0.98] sm:text-7xl">
-          Not a broadcaster.{" "}
-          <span
-            className="text-red"
-            style={{ textShadow: "0 0 32px rgba(241,35,43,0.5)" }}
-          >
-            Fans &amp; friends hanging out.
-          </span>
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg text-secondary sm:text-xl">
-          Football&apos;s better with people. {brand.name} is the live room where
-          a fellow Gooner calls the game in your ear while everyone argues,
-          celebrates and suffers together, all alongside the match you&apos;re
-          already watching.
-        </p>
+    <>
+      {/* MANIFESTO HERO */}
+      <section
+        className="relative overflow-hidden border-b border-line"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 15% -20%, rgba(241,35,43,0.18), transparent 56%), var(--bg-base)",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgb(var(--hair) / 0.04) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--hair) / 0.04) 1px, transparent 1px)",
+            backgroundSize: "54px 54px",
+            maskImage:
+              "radial-gradient(120% 100% at 20% 0%, black, transparent 72%)",
+            WebkitMaskImage:
+              "radial-gradient(120% 100% at 20% 0%, black, transparent 72%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-[1180px] px-5 py-16 sm:px-10 sm:py-[70px]">
+          <p className="mb-5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            About {brand.name}
+          </p>
+          <h1 className="display max-w-[900px] text-5xl leading-[0.92] sm:text-[74px]">
+            Not a broadcaster.
+            <br />
+            <span
+              className="text-red"
+              style={{ textShadow: "0 0 38px rgba(241,35,43,0.5)" }}
+            >
+              Fans &amp; friends hanging out.
+            </span>
+          </h1>
+          <p className="mt-6 max-w-[640px] text-lg leading-[1.55] text-secondary sm:text-xl">
+            Match coverage got polished into something that forgot who it was
+            for. {brand.name} is the opposite: a real supporter in your ear, the
+            chat you&apos;d have at the pub, and the numbers that actually matter,
+            riding alongside whatever stream you already watch.
+          </p>
+        </div>
       </section>
 
       {/* STORY */}
-      <section className="grid gap-10 border-t border-line py-16 sm:grid-cols-3">
+      <section className="mx-auto grid max-w-[1180px] gap-8 px-5 pt-14 pb-5 sm:grid-cols-3 sm:px-10">
         {STORY.map((s) => (
           <div key={s.h}>
-            <h2 className="display text-2xl text-gold">{s.h}</h2>
-            <p className="mt-3 text-secondary">{s.p}</p>
+            <p className="display mb-3.5 text-3xl text-gold">{s.h}</p>
+            <p className="text-[15px] leading-[1.6] text-secondary">{s.p}</p>
           </div>
         ))}
       </section>
 
-      {/* STATS BAND */}
-      <section className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4">
-        {STATS.map((s) => (
-          <div key={s.c} className="bg-canvas p-7">
-            <p className="display text-4xl text-gold">{s.n}</p>
-            <p className="mt-1 text-sm text-secondary">{s.c}</p>
-          </div>
-        ))}
+      {/* STAT BAND */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-10 pb-2 sm:px-10">
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.c} className="bg-inset px-6 py-7">
+              <p className={`display text-[46px] leading-none ${s.gold ? "text-gold" : ""}`}>
+                {s.n}
+              </p>
+              <p className="mt-2 text-[13px] text-secondary">{s.c}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* PRINCIPLES */}
-      <section className="py-16">
-        <Eyebrow>What we stand for</Eyebrow>
-        <h2 className="display mt-3 text-4xl sm:text-5xl">
+      <section className="mx-auto max-w-[1180px] px-5 pt-14 pb-5 sm:px-10">
+        <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          What we stand for
+        </p>
+        <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
           Four things we won&apos;t budge on
         </h2>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+        <div className="mt-8 grid gap-[18px] sm:grid-cols-2">
           {PRINCIPLES.map((p, i) => (
             <div
-              key={p.t}
-              className="flex gap-5 rounded-2xl border border-line bg-surface p-6"
+              key={p.k}
+              className="flex gap-[18px] rounded-2xl border border-line bg-surface px-[26px] pt-[26px] pb-7"
             >
-              <span className="font-mono text-2xl font-bold text-gold tabular-nums">
+              <span className="display text-[34px] leading-[0.9] text-gold/90">
                 0{i + 1}
               </span>
               <div>
-                <h3 className="text-xl font-extrabold tracking-[-0.01em]">{p.t}</h3>
-                <p className="mt-2 text-sm text-secondary">{p.d}</p>
+                <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+                  {p.k}
+                </h3>
+                <p className="mt-2 text-sm leading-[1.55] text-secondary">
+                  {p.d}
+                </p>
               </div>
             </div>
           ))}
@@ -171,73 +216,103 @@ export default function AboutPage() {
       </section>
 
       {/* HOSTS */}
-      <section className="border-t border-line py-16">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-7 sm:px-10">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <Eyebrow>The voices</Eyebrow>
-            <h2 className="display mt-3 text-4xl sm:text-5xl">
-              The kind of voices you&apos;ll hear
+            <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+              The voices
+            </p>
+            <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+              Your hosts
             </h2>
           </div>
-          <p className="max-w-[240px] font-mono text-[11px] tracking-wide text-secondary uppercase">
-            Real hosts, once the rooms open. These are the types.
+          <p className="max-w-[240px] text-right font-mono text-[11px] leading-[1.5] text-secondary">
+            Illustrative line-up. Real hosts appear here as rooms open.
           </p>
         </div>
-        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-[18px] sm:grid-cols-3">
           {HOSTS.map((h) => (
             <div
-              key={h.name}
-              className="overflow-hidden rounded-2xl border border-line bg-surface"
+              key={h.handle}
+              className="overflow-hidden rounded-2xl border border-line bg-inset"
             >
               <div
-                className="relative flex h-32 items-end p-5"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(241,35,43,0.18), rgba(232,181,74,0.12))",
-                }}
+                className="relative flex h-[150px] items-end p-3.5"
+                style={{ background: stripe }}
               >
-                <span
+                <div
                   aria-hidden="true"
-                  className="h-12 w-12 rounded-full border-2 border-surface"
+                  className="absolute inset-0"
                   style={{
                     background:
-                      "radial-gradient(circle at 30% 30%, #f1232b, #7a0f14)",
+                      "radial-gradient(80% 80% at 50% 0%, rgba(232,181,74,0.18), transparent 60%)",
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="relative h-14 w-14 rounded-full border-2 border-inset"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 35% 30%, #3a3a40, #1b1b1f)",
                   }}
                 />
               </div>
-              <div className="p-5">
-                <p className="text-lg font-extrabold tracking-[-0.01em]">{h.name}</p>
-                <p className="font-mono text-[11px] text-gold">{h.handle}</p>
-                <p className="mt-2 text-sm text-secondary">{h.bio}</p>
+              <div className="px-5 pt-[18px] pb-[22px]">
+                <div className="mb-1.5 flex items-baseline gap-2">
+                  <span className="text-[17px] font-extrabold">{h.name}</span>
+                  <span className="font-mono text-[11px] text-gold">
+                    {h.handle}
+                  </span>
+                </div>
+                <p className="text-[13.5px] leading-[1.5] text-secondary">
+                  {h.bio}
+                </p>
               </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="border-t border-line py-16">
-        <Eyebrow>Questions, answered</Eyebrow>
-        <h2 className="display mt-3 text-4xl sm:text-5xl">The bits people ask</h2>
+      {/* FAQ (kept for compliance) */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-8 pb-14 sm:px-10">
+        <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          Questions, answered
+        </p>
+        <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+          The bits people ask
+        </h2>
         <Faq items={FAQ} />
       </section>
 
       {/* CTA */}
-      <section className="border-t border-line py-20 text-center">
-        <h2 className="display mx-auto max-w-2xl text-5xl sm:text-6xl">
-          Pull up a seat.
-        </h2>
-        <p className="mx-auto mt-4 max-w-md text-secondary">
-          There&apos;s a match coming. Come watch it with people who care as much
-          as you do.
-        </p>
-        <div className="mt-7 flex justify-center gap-3">
-          <Button href="/matches">See what&apos;s live →</Button>
-          <Button href="/" variant="outline">
-            Back to home
-          </Button>
+      <section
+        className="relative overflow-hidden border-t border-line"
+        style={{
+          background:
+            "radial-gradient(90% 130% at 50% 120%, rgba(241,35,43,0.28), transparent 60%), var(--bg-base)",
+        }}
+      >
+        <div className="relative mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-10">
+          <h2 className="display mx-auto max-w-2xl text-5xl leading-[0.92] sm:text-[56px]">
+            Pull up a seat.
+          </h2>
+          <p className="mx-auto mt-4 max-w-[460px] text-[17px] text-secondary">
+            Jump in and listen along. Sign up when you want to chat, vote, or
+            call in.
+          </p>
+          <div className="mt-7 flex justify-center">
+            <a
+              href="/matches"
+              className="inline-flex items-center gap-2.5 rounded-xl bg-red px-7 py-4 text-base font-bold text-white transition-colors hover:bg-red-hover"
+              style={{ boxShadow: "0 16px 40px -10px rgba(241,35,43,0.7)" }}
+            >
+              See what&apos;s live <span aria-hidden="true">→</span>
+            </a>
+          </div>
         </div>
       </section>
-    </div>
+    </>
   );
 }
