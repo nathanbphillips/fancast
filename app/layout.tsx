@@ -1,16 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Anton, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { THEME_COOKIE, themeInitScript, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-// Display face for headings/wordmark/labels (the redesign's bold geometric
-// grotesque). Body stays Inter; never apply this to tabular-nums elements.
-const display = Space_Grotesk({
+// Cloud Design "1a" type system: Hanken Grotesk (body/UI), Anton (display —
+// all-caps, NEVER on tabular-nums/body), Space Mono (labels/eyebrows/meta).
+const hanken = Hanken_Grotesk({
   subsets: ["latin"],
-  variable: "--font-space-grotesk",
+  variable: "--font-hanken",
+  display: "swap",
+});
+const anton = Anton({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-anton",
+  display: "swap",
+});
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono",
   display: "swap",
 });
 
@@ -44,8 +55,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0d0f14" },
-    { media: "(prefers-color-scheme: light)", color: "#fafaf8" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f11" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f5f0" },
   ],
 };
 
@@ -66,7 +77,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${display.variable} font-sans antialiased`}
+        className={`${hanken.variable} ${anton.variable} ${spaceMono.variable} font-sans antialiased`}
       >
         {children}
       </body>

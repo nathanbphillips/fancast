@@ -3,42 +3,62 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens per docs/DESIGN.md — defined once, both themes.
- * Light values on :root, dark overrides on .dark (class set before paint
- * by the inline script in app/layout.tsx; system preference is the default).
+ * Design tokens (Cloud Design "1a broadcast" system) — defined once, both
+ * themes. DARK is the default: the pre-paint script in app/layout.tsx adds
+ * `.dark` when there's no explicit device/account choice. `--fg`/`--hair` are
+ * raw RGB channels consumed at variable opacity, e.g. rgb(var(--fg) / .6).
  */
 :root {
-  --bg-base: #fafaf8;
+  /* raw channels (light) */
+  --fg: 34 30 26;
+  --hair: 34 30 26;
+  /* derived text + hairline — resolve per-theme via --fg/--hair, defined once */
+  --text-secondary: rgb(var(--fg) / 0.6);
+  --line: rgb(var(--hair) / 0.12);
+  /* surfaces (light) */
+  --bg-base: #f7f5f0;
   --bg-surface: #ffffff;
-  --bg-raised: #f1f0ec;
-  --text-primary: #16181d;
-  --text-secondary: #5e6573;
-  --line: #e4e2dc;
-  --red: #b80005;
-  /* gold/green darkened from DESIGN.md table values (#9c824a / #1a9e56):
-     those fail AA for small text on white; the doc says adjust, not break */
-  --gold: #806a3c;
+  --bg-raised: #f3f1ea;
+  --bg2: #efede6;
+  --footer: #eeece4;
+  --text-primary: #191510;
+  /* accents */
+  --red: #f1232b;
+  --red-hover: #ff3a41;
+  --gold: #9a7714; /* light gold darkened for AA on white (adjust, don't break) */
   --navy: #023474;
   --green: #137a42;
-  /* redesign: soft card elevation (light = faint, reads on white surfaces) */
-  --elev-card: 0 1px 2px rgba(16, 18, 29, 0.04), 0 1px 3px rgba(16, 18, 29, 0.06);
-  --elev-raised: 0 4px 14px rgba(16, 18, 29, 0.1);
+  /* inverted high-emphasis buttons (SYNC NOW, Sign in) */
+  --inverted-bg: #191510;
+  --inverted-fg: #f7f5f0;
+  /* elevation + brand glow */
+  --elev-card: 0 1px 2px rgba(16, 18, 29, 0.05), 0 1px 3px rgba(16, 18, 29, 0.07);
+  --elev-raised: 0 24px 60px -28px rgba(0, 0, 0, 0.35),
+    0 0 40px -18px rgba(241, 35, 43, 0.16);
+  --shadow-glow: 0 12px 30px -10px rgba(241, 35, 43, 0.4);
 }
 
 .dark {
-  --bg-base: #0d0f14;
-  --bg-surface: #15181f;
-  --bg-raised: #1c2029;
-  --text-primary: #f2f3f5;
-  --text-secondary: #9ba1ac;
-  --line: #262b35;
-  --red: #ef0107;
-  --gold: #c9a864;
+  /* raw channels (dark) — --text-secondary/--line re-derive from these */
+  --fg: 244 244 242;
+  --hair: 255 255 255;
+  --bg-base: #0f0f11;
+  --bg-surface: #18181c;
+  --bg-raised: #161619;
+  --bg2: #121215;
+  --footer: #0c0c0d;
+  --text-primary: #f4f4f2;
+  --red: #f1232b;
+  --red-hover: #ff3a41;
+  --gold: #e8b54a;
   --navy: #6e9fe0;
   --green: #27c46d;
-  /* dark: shadows barely read on dark surfaces — keep subtle, lean on borders */
-  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
-  --elev-raised: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --inverted-bg: #f4f4f2;
+  --inverted-fg: #0f0f11;
+  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.6);
+  --elev-raised: 0 40px 90px -30px rgba(0, 0, 0, 0.9),
+    0 0 60px -20px rgba(241, 35, 43, 0.35);
+  --shadow-glow: 0 12px 30px -10px rgba(241, 35, 43, 0.6);
 }
 
 /* Tailwind reads the variables; components use bg-base, text-primary, etc. */
@@ -47,21 +67,29 @@
   --color-canvas: var(--bg-base);
   --color-surface: var(--bg-surface);
   --color-raised: var(--bg-raised);
+  --color-inset: var(--bg2);
+  --color-footer: var(--footer);
   --color-primary: var(--text-primary);
   --color-secondary: var(--text-secondary);
   --color-line: var(--line);
   --color-red: var(--red);
+  --color-red-hover: var(--red-hover);
   --color-gold: var(--gold);
   --color-navy: var(--navy);
   --color-green: var(--green);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
+  --color-inverted: var(--inverted-bg);
+  --color-inverted-fg: var(--inverted-fg);
+  /* Hanken Grotesk body; Anton display (all-caps — NEVER on tabular-nums);
+     Space Mono labels/meta via font-mono */
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  /* display face for headings/wordmark/labels (redesign) — falls back to body */
-  --font-display: var(--font-space-grotesk), var(--font-inter), ui-sans-serif,
-    system-ui, sans-serif;
-  /* card elevation utilities: shadow-card, shadow-raised (both themes) */
+  --font-display: var(--font-anton), "Arial Narrow", Impact, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", Menlo,
+    monospace;
+  /* card elevation + brand glow utilities (shadow-card/raised/glow) */
   --shadow-card: var(--elev-card);
   --shadow-raised: var(--elev-raised);
+  --shadow-glow: var(--shadow-glow);
 }
 
 html {
