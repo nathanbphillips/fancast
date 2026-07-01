@@ -986,7 +986,7 @@ function VoteArrows({
   onVote: (v: 1 | -1 | 0) => void;
 }) {
   return (
-    <span className="flex shrink-0 flex-col items-center leading-none text-secondary">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2 py-1 leading-none text-secondary">
       <button
         type="button"
         aria-label="Upvote"
@@ -1537,112 +1537,123 @@ function LiveChat({
           </div>
         ) : (
           <div
-            className={`group rounded-md px-1.5 py-1 ${
+            className={`group rounded-lg px-2 py-1.5 ${
               isCommentator
-                ? "border-l-[3px] border-gold bg-raised"
+                ? "border-l-2 border-red bg-inset"
                 : isOwn
-                  ? "bg-raised/60"
+                  ? "bg-raised/50"
                   : ""
             }`}
           >
-            {/* text row: vertically centred next to the vote column; Reply +
-                flag + hide sit on the right of the message (founder 2026-06-29) */}
-            <div className="flex items-center gap-1.5">
-              <VoteArrows
-                up={m.up_count}
-                down={m.down_count}
-                myVote={votes[m.id]}
-                disabled={!viewer}
-                onVote={(v) => vote(m.id, v)}
-              />
+            <div className="flex gap-2.5">
               <Avatar
                 src={m.author?.avatar_url}
                 name={m.author?.username}
-                size={22}
-                className="self-center"
+                size={30}
+                className="mt-0.5 self-start"
               />
-              <p className="min-w-0 flex-1 text-sm leading-snug">
-                <span className={`mr-1.5 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
-                  {m.author?.username ?? "…"}
-                </span>
-                <span
-                  suppressHydrationWarning
-                  className="mr-1.5 text-[11px] text-secondary tabular-nums"
-                >
-                  {timeAgo(m.created_at)}
-                </span>
-                {isCommentator && (
-                  <span className="mr-2 rounded-sm bg-gold px-1 py-0.5 align-middle text-[10px] font-bold text-canvas">
-                    COMMENTATOR
+              <div className="min-w-0 flex-1">
+                {/* header: name · host badge · time · (mod actions) */}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[13px] font-extrabold ${isCommentator ? "text-gold" : ""}`}
+                  >
+                    {m.author?.username ?? "…"}
                   </span>
+                  {isCommentator && (
+                    <span className="rounded-[3px] border border-gold/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-gold uppercase">
+                      Host
+                    </span>
+                  )}
+                  <span
+                    suppressHydrationWarning
+                    className="font-mono text-[10px] text-secondary tabular-nums"
+                  >
+                    {timeAgo(m.created_at)}
+                  </span>
+                  <span className="ml-auto flex shrink-0 items-center gap-1 text-xs">
+                    {viewer && !isOwn && !flagged.has(m.id) && (
+                      <button
+                        type="button"
+                        aria-label="Flag message"
+                        title="Flag message"
+                        onClick={() => flag(m.id)}
+                        className="px-1 text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
+                      >
+                        ⚑
+                      </button>
+                    )}
+                    {viewer?.isModerator && (
+                      <button
+                        type="button"
+                        aria-label="Hide message"
+                        title="Hide message"
+                        onClick={() => hide(m.id)}
+                        className="px-1 text-secondary hover:text-red"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                </div>
+                {/* body */}
+                <p className="mt-0.5 text-[13px] leading-relaxed">{displayBody}</p>
+                {/* inline link card */}
+                {m.link_url && (
+                  <a
+                    href={m.link_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="mt-2 flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 shadow-card hover:bg-surface"
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col justify-center">
+                      <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
+                        {m.link_title ?? m.link_url}
+                      </span>
+                      <span className="mt-0.5 truncate text-[11px] text-secondary">
+                        {m.link_domain ?? ""}
+                      </span>
+                    </span>
+                    {m.link_image && <LinkThumb src={m.link_image} />}
+                  </a>
                 )}
-                {displayBody}
-              </p>
-              <div className="flex shrink-0 items-center gap-0.5 self-center text-xs">
-                {canType && (
+                {/* actions: vote · reply */}
+                <div className="mt-1.5 flex items-center gap-3">
+                  <VoteArrows
+                    up={m.up_count}
+                    down={m.down_count}
+                    myVote={votes[m.id]}
+                    disabled={!viewer}
+                    onVote={(v) => vote(m.id, v)}
+                  />
+                  {canType && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReplyTo(replyTo === m.id ? null : m.id);
+                        setReplyDraft("");
+                      }}
+                      className="text-[11.5px] font-semibold text-secondary hover:text-primary"
+                    >
+                      Reply
+                    </button>
+                  )}
+                </div>
+                {/* replies toggle */}
+                {kids.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setReplyTo(replyTo === m.id ? null : m.id);
-                      setReplyDraft("");
-                    }}
-                    className="px-1 font-semibold text-secondary hover:text-primary"
+                    onClick={() => toggleCollapse(m.id)}
+                    aria-expanded={!isCollapsed}
+                    className="mt-1 text-xs font-semibold text-secondary hover:text-primary"
                   >
-                    Reply
-                  </button>
-                )}
-                {viewer && !isOwn && !flagged.has(m.id) && (
-                  <button
-                    type="button"
-                    aria-label="Flag message"
-                    title="Flag message"
-                    onClick={() => flag(m.id)}
-                    className="px-1 text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
-                  >
-                    ⚑
-                  </button>
-                )}
-                {viewer?.isModerator && (
-                  <button
-                    type="button"
-                    aria-label="Hide message"
-                    title="Hide message"
-                    onClick={() => hide(m.id)}
-                    className="px-1 text-secondary hover:text-red"
-                  >
-                    ✕
+                    {isCollapsed
+                      ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
+                      : "▾ hide replies"}
                   </button>
                 )}
               </div>
             </div>
-            {m.link_url && (
-              <a
-                href={m.link_url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="mt-1 ml-[3.25rem] flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 shadow-card hover:bg-surface"
-              >
-                <span className="flex min-w-0 flex-1 flex-col justify-center">
-                  <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
-                    {m.link_title ?? m.link_url}
-                  </span>
-                  <span className="mt-0.5 truncate text-[11px] text-secondary">{m.link_domain ?? ""}</span>
-                </span>
-                {m.link_image && <LinkThumb src={m.link_image} />}
-              </a>
-            )}
-            {kids.length > 0 && (
-              <button
-                type="button"
-                onClick={() => toggleCollapse(m.id)}
-                aria-expanded={!isCollapsed}
-                className="mt-0.5 ml-7 text-xs font-semibold text-secondary hover:text-primary"
-              >
-                {isCollapsed
-                  ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
-                  : "▾ hide replies"}
-              </button>
-            )}
           </div>
         )}
 
