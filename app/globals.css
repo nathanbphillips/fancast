@@ -124,6 +124,72 @@ body {
   animation: live-pulse 2s ease-in-out infinite;
 }
 
+/* Cloud Design animation set. The reduced-motion wildcard below neutralizes all
+   of these (durations/iterations collapsed), so they're accessibility-safe. */
+@keyframes fcpulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.3;
+    transform: scale(0.78);
+  }
+}
+@keyframes fceq {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes fcfloat {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  18% {
+    transform: translateY(-14px) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-150px) scale(0.85);
+    opacity: 0;
+  }
+}
+@keyframes fcsweep {
+  0% {
+    left: -6%;
+  }
+  100% {
+    left: 104%;
+  }
+}
+@keyframes fcbob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+.animate-fcpulse {
+  animation: fcpulse 1.7s ease-in-out infinite;
+}
+.animate-fceq {
+  animation: fceq 0.9s ease-in-out infinite;
+}
+.animate-fcsweep {
+  animation: fcsweep 4.5s linear infinite;
+}
+.animate-fcbob {
+  animation: fcbob 6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
