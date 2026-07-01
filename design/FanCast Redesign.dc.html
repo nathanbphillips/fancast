@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Archivo:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#e7e5e0;font-family:'Hanken Grotesk',system-ui,sans-serif}
+  .dv-turn{padding:48px 52px 40px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 26px}
+  .dv-tid{font:700 11px ui-monospace,Menlo,monospace;padding:4px 9px;background:#141414;color:#fff;border-radius:5px;text-decoration:none}
+  .dv-tname{font:700 14px/1.3 'Hanken Grotesk',sans-serif;color:#1a1a1a;letter-spacing:-.01em}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px}
+  .dv-oid{font:700 11px ui-monospace,Menlo,monospace;padding:4px 9px;background:rgba(0,0,0,.09);color:#1a1a1a;border-radius:6px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:center;gap:9px;font:500 12.5px/1.35 'Hanken Grotesk',sans-serif;color:rgba(0,0,0,.6)}
+  .dv-card{max-width:100%;border-radius:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.18);overflow:hidden}
+  .dv-opt:target .dv-oid{background:#F1232B;color:#fff}
+  .dv-next{margin:30px 0 0;font:13px/1.6 'Hanken Grotesk',sans-serif;color:rgba(0,0,0,.55)}
+  .dv-next a{color:#0a0a0a;text-decoration:none;font-weight:700;background:rgba(0,0,0,.07);padding:2px 7px;border-radius:5px}
+  @keyframes fcpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.78)}}
+  @keyframes fcsweep{0%{left:-6%}100%{left:104%}}
+  @keyframes fcticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  @keyframes fcbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Two directions for FanCast, premium, dark, broadcast-grade, Arsenal-red accent</span></div>
+  <div class="dv-opts">
+
+    <!-- ============================ OPTION 1A ============================ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>“On Air”, sleek broadcast booth. Live player UI, waveform, scoreboard, electric red.</div>
+      <div class="dv-card" style="width:1080px;background:#0A0A0B;color:#F4F4F2;font-family:'Hanken Grotesk',sans-serif">
+
+        <!-- NAV -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 36px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(10,10,11,.7);backdrop-filter:blur(8px)">
+          <div style="display:flex;align-items:center;gap:11px">
+            <span style="width:9px;height:9px;border-radius:50%;background:#F1232B;box-shadow:0 0 12px #F1232B;animation:fcpulse 1.8s ease-in-out infinite"></span>
+            <span style="font-family:'Anton',sans-serif;font-size:21px;letter-spacing:.04em">FANCAST</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:28px">
+            <a href="#how" style="font-size:13.5px;font-weight:600;color:rgba(244,244,242,.62);text-decoration:none">How it works</a>
+            <a href="#how" style="font-size:13.5px;font-weight:600;color:rgba(244,244,242,.62);text-decoration:none">Matches</a>
+            <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:#F1232B;display:flex;align-items:center;gap:6px;border:1px solid rgba(241,35,43,.35);padding:5px 10px;border-radius:6px"><span style="width:6px;height:6px;border-radius:50%;background:#F1232B;animation:fcpulse 1.8s ease-in-out infinite"></span>1 LIVE</span>
+            <a href="#how" style="font-size:13.5px;font-weight:700;color:#0A0A0B;background:#F4F4F2;text-decoration:none;padding:8px 16px;border-radius:8px" style-hover="background:#fff">Sign in</a>
+          </div>
+        </div>
+
+        <!-- HERO -->
+        <div style="position:relative;overflow:hidden;background:radial-gradient(120% 90% at 88% -15%,rgba(241,35,43,.20),transparent 58%),radial-gradient(90% 70% at 8% 110%,rgba(241,35,43,.08),transparent 60%),#0A0A0B">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(120% 100% at 70% 0%,#000,transparent 75%);mask-image:radial-gradient(120% 100% at 70% 0%,#000,transparent 75%)"></div>
+          <div style="position:relative;display:grid;grid-template-columns:1.04fr .96fr;gap:44px;align-items:center;padding:62px 36px 70px">
+            <!-- left -->
+            <div>
+              <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:rgba(244,244,242,.6);border:1px solid rgba(255,255,255,.12);padding:7px 12px;border-radius:30px;margin-bottom:26px">
+                <span style="width:6px;height:6px;border-radius:50%;background:#F1232B;box-shadow:0 0 10px #F1232B;animation:fcpulse 1.8s ease-in-out infinite"></span>LIVE FAN COMMENTARY · ARSENAL
+              </div>
+              <h1 style="font-family:'Anton',sans-serif;font-weight:400;font-size:84px;line-height:.9;letter-spacing:.005em;margin:0 0 24px;text-transform:uppercase">A real Gooner<br>in your <span style="color:#F1232B;text-shadow:0 0 38px rgba(241,35,43,.55)">ear</span>,<br>all match long.</h1>
+              <p style="font-size:18px;line-height:1.55;color:rgba(244,244,242,.62);max-width:452px;margin:0 0 32px">Keep watching the match however you already do. FanCast rides alongside it, live fan audio, a proper away-end chat, and the stats that matter. No pundits. No fluff. Just football.</p>
+              <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px">
+                <a href="#how" style="display:inline-flex;align-items:center;gap:9px;font-size:15px;font-weight:700;color:#fff;background:#F1232B;text-decoration:none;padding:15px 24px;border-radius:11px;box-shadow:0 12px 34px -8px rgba(241,35,43,.6)" style-hover="background:#ff3a41">See what’s live <span style="font-size:17px">→</span></a>
+                <a href="#how" style="font-size:15px;font-weight:700;color:#F4F4F2;text-decoration:none;padding:15px 22px;border-radius:11px;border:1px solid rgba(255,255,255,.16)" style-hover="border-color:rgba(255,255,255,.4)">How it works</a>
+              </div>
+              <div style="display:flex;align-items:center;gap:18px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgba(244,244,242,.45)">
+                <span>NO ACCOUNT NEEDED</span><span style="color:rgba(255,255,255,.2)">/</span><span>FREE TO LISTEN</span><span style="color:rgba(255,255,255,.2)">/</span><span style="color:rgba(244,244,242,.72)">1,204 IN THE ROOM</span>
+              </div>
+            </div>
+            <!-- right: player card -->
+            <div style="animation:fcbob 6s ease-in-out infinite">
+              <div style="background:linear-gradient(180deg,#16161A,#100F12);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 60px -20px rgba(241,35,43,.35)">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:#F1232B"><span style="width:7px;height:7px;border-radius:50%;background:#F1232B;box-shadow:0 0 10px #F1232B;animation:fcpulse 1.6s ease-in-out infinite"></span>ON AIR</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.06em;color:rgba(244,244,242,.55)">1H 23:14</span>
+                </div>
+                <!-- scoreboard -->
+                <div style="display:flex;align-items:center;justify-content:space-between;background:#0B0B0D;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px 15px;margin-bottom:16px">
+                  <div style="display:flex;align-items:center;gap:9px"><span style="width:22px;height:22px;border-radius:5px;background:repeating-linear-gradient(45deg,#2a2a2e,#2a2a2e 4px,#222 4px,#222 8px)"></span><span style="font-family:'Anton',sans-serif;font-size:17px;letter-spacing:.03em">ARS</span></div>
+                  <div style="font-family:'Anton',sans-serif;font-size:26px;letter-spacing:.06em;color:#fff;white-space:nowrap;flex:none">2<span style="color:rgba(255,255,255,.3);margin:0 8px">–</span>0</div>
+                  <div style="display:flex;align-items:center;gap:9px"><span style="font-family:'Anton',sans-serif;font-size:17px;letter-spacing:.03em">BUR</span><span style="width:22px;height:22px;border-radius:5px;background:repeating-linear-gradient(45deg,#2a2a2e,#2a2a2e 4px,#222 4px,#222 8px)"></span></div>
+                </div>
+                <!-- host -->
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+                  <span style="width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:1px solid rgba(255,255,255,.12);flex:none"></span>
+                  <div style="flex:1">
+                    <div style="font-size:15px;font-weight:700">nathan <span style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#F1232B;border:1px solid rgba(241,35,43,.4);padding:2px 6px;border-radius:4px;margin-left:5px;vertical-align:middle">HOST</span></div>
+                    <div style="font-size:12.5px;color:rgba(244,244,242,.5)">Gooner · in the away end</div>
+                  </div>
+                </div>
+                <!-- waveform -->
+                <div style="position:relative;height:66px;background:#0B0B0D;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:0 14px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:14px">
+                  <div style="display:flex;align-items:center;gap:3px;height:42px">
+                    <sc-for list="{{ waveform }}" as="bar" hint-placeholder-count="40">
+                      <div style="width:3px;border-radius:2px;height:{{ bar.h }}px;background:linear-gradient(180deg,#F1232B,rgba(241,35,43,.3))"></div>
+                    </sc-for>
+                  </div>
+                  <div style="position:absolute;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,transparent,#fff,transparent);box-shadow:0 0 14px #fff;animation:fcsweep 4.5s linear infinite"></div>
+                </div>
+                <!-- controls -->
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span style="width:46px;height:46px;border-radius:50%;background:#F1232B;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px -6px rgba(241,35,43,.7);flex:none"><span style="display:block;width:0;height:0;border-left:13px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent;margin-left:3px"></span></span>
+                  <div style="flex:1;display:flex;align-items:center;gap:6px">
+                    <span style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:rgba(244,244,242,.6);background:#0B0B0D;border:1px solid rgba(255,255,255,.08);padding:9px 0;border-radius:8px">−0.5s</span>
+                    <span style="flex:1.4;text-align:center;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:#0A0A0B;font-weight:700;background:#F4F4F2;padding:9px 0;border-radius:8px">SYNC NOW</span>
+                    <span style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:rgba(244,244,242,.6);background:#0B0B0D;border:1px solid rgba(255,255,255,.08);padding:9px 0;border-radius:8px">+0.5s</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HOW IT WORKS -->
+        <div id="how" style="padding:62px 36px 56px;border-top:1px solid rgba(255,255,255,.06)">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:38px">
+            <div>
+              <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:#F1232B;margin-bottom:14px">● HOW IT WORKS</div>
+              <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:50px;line-height:.95;margin:0;text-transform:uppercase">Three taps to the room</h2>
+            </div>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;color:rgba(244,244,242,.4);letter-spacing:.05em;text-align:right;max-width:200px">Listen with no account.<br>Sign up in under a minute.</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+            <sc-for list="{{ steps }}" as="step" hint-placeholder-count="3">
+              <div style="background:#101012;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px 24px 28px;position:relative;overflow:hidden">
+                <div style="font-family:'Anton',sans-serif;font-size:64px;line-height:1;color:rgba(241,35,43,.18);position:absolute;top:6px;right:16px">{{ step.n }}</div>
+                <div style="width:34px;height:34px;border-radius:9px;background:#F1232B;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700;font-size:14px;color:#fff;margin-bottom:54px">{{ step.n }}</div>
+                <h3 style="font-size:20px;font-weight:800;margin:0 0 10px;letter-spacing:-.01em">{{ step.t }}</h3>
+                <p style="font-size:14px;line-height:1.55;color:rgba(244,244,242,.55);margin:0">{{ step.d }}</p>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- LIVE NOW + COMING UP -->
+        <div style="padding:14px 36px 60px">
+          <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:stretch">
+            <!-- live featured -->
+            <div style="position:relative;border-radius:18px;overflow:hidden;border:1px solid rgba(241,35,43,.3);min-height:300px;background:#0B0B0D">
+              <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.10) 1px,transparent 1.4px);background-size:9px 9px;opacity:.5"></div>
+              <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 100%,rgba(241,35,43,.32),transparent 55%),linear-gradient(180deg,rgba(11,11,13,.2),rgba(11,11,13,.92))"></div>
+              <div style="position:relative;padding:24px;height:100%;display:flex;flex-direction:column;justify-content:space-between;min-height:300px">
+                <div style="display:flex;align-items:center;justify-content:space-between">
+                  <span style="display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:#fff;background:#F1232B;padding:6px 11px;border-radius:30px"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:fcpulse 1.6s infinite"></span>LIVE NOW</span>
+                  <span style="font-family:'Space Mono',monospace;font-size:11px;color:rgba(244,244,242,.55)">PREMIER LEAGUE · TEST</span>
+                </div>
+                <div>
+                  <div style="font-family:'Space Mono',monospace;font-size:11px;color:rgba(244,244,242,.5);margin-bottom:8px">Show starts soon · hosted by nathan</div>
+                  <h3 style="font-family:'Anton',sans-serif;font-weight:400;font-size:42px;line-height:.96;margin:0 0 20px;text-transform:uppercase">Arsenal vs<br>Burnley <span style="color:rgba(244,244,242,.35);font-size:24px">(test)</span></h3>
+                  <a href="#how" style="display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:#0A0A0B;background:#F4F4F2;text-decoration:none;padding:13px 20px;border-radius:10px" style-hover="background:#fff">Join the waiting room <span>→</span></a>
+                </div>
+              </div>
+            </div>
+            <!-- coming up -->
+            <div style="background:#101012;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:22px 22px 14px;display:flex;flex-direction:column">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                <span style="font-family:'Anton',sans-serif;font-size:22px;letter-spacing:.03em;text-transform:uppercase">Coming up</span>
+                <a href="#how" style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#F1232B;text-decoration:none">FULL SCHEDULE →</a>
+              </div>
+              <sc-for list="{{ upcoming }}" as="fx" hint-placeholder-count="3">
+                <div style="display:flex;align-items:center;gap:14px;padding:15px 4px;border-top:1px solid rgba(255,255,255,.07)">
+                  <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.05em;color:rgba(244,244,242,.5);width:62px;flex:none;line-height:1.4">{{ fx.date }}</div>
+                  <div style="flex:1"><div style="font-size:15px;font-weight:700;letter-spacing:-.01em">{{ fx.match }}</div><div style="font-family:'Space Mono',monospace;font-size:10px;color:rgba(244,244,242,.4);margin-top:2px">{{ fx.comp }}</div></div>
+                  <span style="font-size:18px;color:rgba(244,244,242,.3)">›</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <!-- FEATURES -->
+        <div style="padding:60px 36px 60px;border-top:1px solid rgba(255,255,255,.06);background:radial-gradient(100% 80% at 50% 0%,rgba(241,35,43,.06),transparent 60%)">
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:#F1232B;margin-bottom:14px">● WHY YOU’LL STAY</div>
+          <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:50px;line-height:.95;margin:0 0 38px;text-transform:uppercase;max-width:680px">Built for the 90 minutes, and the bits around them</h2>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden">
+            <sc-for list="{{ features }}" as="f" hint-placeholder-count="6">
+              <div style="background:#0A0A0B;padding:26px 24px 28px" style-hover="background:#101012">
+                <div style="font-family:'Space Mono',monospace;font-size:11px;color:#F1232B;margin-bottom:14px">{{ f.n }}</div>
+                <h3 style="font-size:19px;font-weight:800;margin:0 0 9px;letter-spacing:-.01em">{{ f.k }}</h3>
+                <p style="font-size:13.5px;line-height:1.55;color:rgba(244,244,242,.52);margin:0">{{ f.d }}</p>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- FINAL CTA -->
+        <div style="position:relative;overflow:hidden;padding:78px 36px 84px;text-align:center;background:radial-gradient(90% 130% at 50% 120%,rgba(241,35,43,.3),transparent 60%),#0A0A0B;border-top:1px solid rgba(255,255,255,.06)">
+          <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(80% 80% at 50% 100%,#000,transparent 70%);mask-image:radial-gradient(80% 80% at 50% 100%,#000,transparent 70%)"></div>
+          <div style="position:relative">
+            <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:66px;line-height:.92;margin:0 0 18px;text-transform:uppercase">The room’s open.<br>Come in.</h2>
+            <p style="font-size:17px;color:rgba(244,244,242,.6);max-width:480px;margin:0 auto 30px">Free to listen, no account needed. Sign up when you want to talk, it takes under a minute.</p>
+            <a href="#how" style="display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:#fff;background:#F1232B;text-decoration:none;padding:17px 30px;border-radius:12px;box-shadow:0 16px 40px -10px rgba(241,35,43,.7)" style-hover="background:#ff3a41">See what’s live <span style="font-size:18px">→</span></a>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.05em;color:rgba(244,244,242,.4);margin-top:24px">ARSENAL FIRST · MORE CLUBS TO COME · FANCY HOSTING A ROOM?</div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="padding:34px 36px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;justify-content:space-between;gap:30px;background:#070708">
+          <div style="max-width:320px">
+            <div style="font-family:'Anton',sans-serif;font-size:19px;letter-spacing:.04em;margin-bottom:10px">FANCAST</div>
+            <p style="font-size:11.5px;line-height:1.5;color:rgba(244,244,242,.4);margin:0">Unofficial, fan-made platform. Not affiliated with or endorsed by any club, league, or broadcaster.</p>
+          </div>
+          <div style="display:flex;gap:54px">
+            <div><div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgba(244,244,242,.35);margin-bottom:12px">PLATFORM</div><div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:rgba(244,244,242,.6)"><span>Matches</span><span>About</span></div></div>
+            <div><div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgba(244,244,242,.35);margin-bottom:12px">LEGAL</div><div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:rgba(244,244,242,.6)"><span>Community Guidelines</span><span>Terms of Service</span><span>Privacy Policy</span></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- ============================ OPTION 1B ============================ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>“Matchday”, editorial/terrace. Oversized type, live ticker, halftone crowd, programme fixtures.</div>
+      <div class="dv-card" style="width:1080px;background:#100E0C;color:#ECE6DA;font-family:'Archivo',sans-serif">
+
+        <!-- TICKER -->
+        <div style="background:#F1232B;color:#100E0C;overflow:hidden;white-space:nowrap;border-bottom:2px solid #100E0C">
+          <div style="display:inline-flex;align-items:center;animation:fcticker 26s linear infinite;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.04em;padding:8px 0">
+            <span style="padding:0 0">● LIVE NOW&nbsp;&nbsp;·&nbsp;&nbsp;ARSENAL V BURNLEY&nbsp;&nbsp;·&nbsp;&nbsp;1H 23:14&nbsp;&nbsp;·&nbsp;&nbsp;ARS 2–0 BUR&nbsp;&nbsp;·&nbsp;&nbsp;1,204 LISTENING&nbsp;&nbsp;·&nbsp;&nbsp;HOSTED BY NATHAN&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+            <span style="padding:0 0">● LIVE NOW&nbsp;&nbsp;·&nbsp;&nbsp;ARSENAL V BURNLEY&nbsp;&nbsp;·&nbsp;&nbsp;1H 23:14&nbsp;&nbsp;·&nbsp;&nbsp;ARS 2–0 BUR&nbsp;&nbsp;·&nbsp;&nbsp;1,204 LISTENING&nbsp;&nbsp;·&nbsp;&nbsp;HOSTED BY NATHAN&nbsp;&nbsp;·&nbsp;&nbsp;</span>
+          </div>
+        </div>
+
+        <!-- NAV -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 36px;border-bottom:1px solid rgba(236,230,218,.12)">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em;line-height:1">FAN<span style="color:#F1232B">CAST</span></div>
+          <div style="display:flex;align-items:center;gap:30px">
+            <a href="#how1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;color:rgba(236,230,218,.6);text-decoration:none">HOW IT WORKS</a>
+            <a href="#how1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.05em;color:rgba(236,230,218,.6);text-decoration:none">MATCHES</a>
+            <a href="#how1b" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;letter-spacing:.05em;color:#100E0C;background:#ECE6DA;text-decoration:none;padding:9px 16px;border-radius:2px">SIGN IN</a>
+          </div>
+        </div>
+
+        <!-- HERO -->
+        <div style="position:relative;overflow:hidden">
+          <!-- halftone crowd backdrop -->
+          <div style="position:absolute;inset:0;background:#0C0A09"></div>
+          <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(236,230,218,.22) 1.1px,transparent 1.4px);background-size:7px 7px;-webkit-mask-image:linear-gradient(115deg,#000 0%,transparent 52%);mask-image:linear-gradient(115deg,#000 0%,transparent 52%);opacity:.5"></div>
+          <div style="position:absolute;top:0;right:0;width:46%;height:100%;background-image:radial-gradient(rgba(241,35,43,.5) 1.4px,transparent 1.6px);background-size:9px 9px;-webkit-mask-image:radial-gradient(70% 90% at 100% 30%,#000,transparent 70%);mask-image:radial-gradient(70% 90% at 100% 30%,#000,transparent 70%);opacity:.35"></div>
+          <div style="position:relative;padding:50px 36px 8px">
+            <!-- caption for the crowd photo placeholder -->
+            <div style="position:absolute;top:18px;right:36px;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.04em;color:rgba(236,230,218,.4);text-align:right;max-width:230px;line-height:1.5">[ PHOTO: away end, full voice , <br>low-light supporters, red flares ]</div>
+            <div style="display:inline-flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#F1232B;margin-bottom:18px">
+              <span style="width:7px;height:7px;border-radius:50%;background:#F1232B;animation:fcpulse 1.7s infinite"></span>LIVE FAN COMMENTARY · ARSENAL
+            </div>
+            <h1 style="font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:138px;line-height:.82;letter-spacing:.005em;margin:0;text-transform:uppercase">
+              <span style="display:block">A real Gooner</span>
+              <span style="display:block">in your <span style="color:#F1232B">ear</span>,</span>
+              <span style="display:block;color:#ECE6DA;-webkit-text-stroke:1.5px #ECE6DA;color:transparent">all match long.</span>
+            </h1>
+          </div>
+          <!-- rotated stamp -->
+          <div style="position:absolute;right:48px;top:230px;transform:rotate(-8deg);border:2px solid #F1232B;color:#F1232B;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;letter-spacing:.1em;padding:9px 14px;border-radius:4px;background:rgba(16,14,12,.6)">NO PUNDITS · NO FLUFF</div>
+          <div style="position:relative;display:grid;grid-template-columns:1.5fr 1fr;gap:40px;align-items:end;padding:24px 36px 54px">
+            <p style="font-size:18px;line-height:1.55;color:rgba(236,230,218,.66);max-width:520px;margin:0">Keep watching the match however you already do. FanCast rides alongside it, live fan audio, a proper away-end chat, and the stats that matter. Just football.</p>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <a href="#how1b" style="display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:800;color:#fff;background:#F1232B;text-decoration:none;padding:16px 22px;border-radius:3px" style-hover="background:#ff3a41">SEE WHAT’S LIVE <span style="font-size:18px">→</span></a>
+              <a href="#how1b" style="display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:800;color:#ECE6DA;text-decoration:none;padding:16px 22px;border-radius:3px;border:1px solid rgba(236,230,218,.25)" style-hover="border-color:#ECE6DA">HOW IT WORKS <span style="font-size:18px">→</span></a>
+            </div>
+          </div>
+        </div>
+
+        <!-- HOW IT WORKS -->
+        <div id="how1b" style="padding:56px 36px 50px;background:#ECE6DA;color:#100E0C">
+          <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:36px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#F1232B">[ HOW IT WORKS ]</span>
+            <h2 style="font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:62px;line-height:.9;margin:0;text-transform:uppercase">Three taps to the room</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:2px solid #100E0C">
+            <sc-for list="{{ steps }}" as="step" hint-placeholder-count="3">
+              <div style="padding:26px 26px 30px;border-right:1px solid rgba(16,14,12,.18)">
+                <div style="font-family:'Bebas Neue',sans-serif;font-size:78px;line-height:.8;color:#F1232B;margin-bottom:18px">{{ step.n }}</div>
+                <h3 style="font-family:'Archivo',sans-serif;font-size:21px;font-weight:800;margin:0 0 10px;letter-spacing:-.01em">{{ step.t }}</h3>
+                <p style="font-size:14px;line-height:1.55;color:rgba(16,14,12,.66);margin:0">{{ step.d }}</p>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- FIXTURES (programme style) -->
+        <div style="padding:54px 36px 56px">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px">
+            <h2 style="font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:62px;line-height:.85;margin:0;text-transform:uppercase">The <span style="color:#F1232B">fixtures</span></h2>
+            <a href="#how1b" style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgba(236,230,218,.55);text-decoration:none;padding-bottom:8px">VIEW FULL SCHEDULE →</a>
+          </div>
+          <!-- live row -->
+          <div style="display:flex;align-items:center;gap:22px;padding:22px 22px;background:#F1232B;color:#100E0C;border-radius:3px;margin-bottom:3px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;display:inline-flex;align-items:center;gap:7px;width:118px;flex:none"><span style="width:8px;height:8px;border-radius:50%;background:#100E0C;animation:fcpulse 1.6s infinite"></span>LIVE NOW</span>
+            <div style="flex:1;font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:.9;letter-spacing:.01em;text-transform:uppercase">Arsenal vs Burnley <span style="font-size:20px;opacity:.6">(test)</span></div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.04em">SHOW STARTS SOON</span>
+            <a href="#how1b" style="font-size:13px;font-weight:800;color:#fff;background:#100E0C;text-decoration:none;padding:11px 18px;border-radius:3px;flex:none">JOIN ROOM →</a>
+          </div>
+          <sc-for list="{{ upcoming }}" as="fx" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:22px;padding:18px 22px;border-bottom:1px solid rgba(236,230,218,.12)" style-hover="background:rgba(236,230,218,.04)">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em;color:rgba(236,230,218,.55);width:118px;flex:none;white-space:pre-line;line-height:1.4">{{ fx.date }}</span>
+              <div style="flex:1;font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:.9;letter-spacing:.01em;text-transform:uppercase">{{ fx.match }}</div>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.06em;color:rgba(236,230,218,.4)">{{ fx.comp }}</span>
+              <span style="font-size:18px;color:rgba(236,230,218,.35)">→</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- FEATURES -->
+        <div style="padding:56px 36px 56px;border-top:1px solid rgba(236,230,218,.12)">
+          <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:34px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#F1232B">[ WHY YOU’LL STAY ]</span>
+            <h2 style="font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:62px;line-height:.85;margin:0;text-transform:uppercase;max-width:620px">Built for the 90, and the bits around them</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:2px solid rgba(236,230,218,.2)">
+            <sc-for list="{{ features }}" as="f" hint-placeholder-count="6">
+              <div style="display:flex;gap:18px;padding:24px 22px;border-bottom:1px solid rgba(236,230,218,.12);border-right:1px solid rgba(236,230,218,.12)">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:40px;line-height:.8;color:#F1232B;flex:none;width:42px">{{ f.n }}</span>
+                <div><h3 style="font-family:'Archivo',sans-serif;font-size:19px;font-weight:800;margin:0 0 7px;letter-spacing:-.01em">{{ f.k }}</h3><p style="font-size:13.5px;line-height:1.55;color:rgba(236,230,218,.55);margin:0">{{ f.d }}</p></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- FINAL CTA -->
+        <div style="background:#F1232B;color:#100E0C;padding:72px 36px 76px;text-align:center;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(16,14,12,.18) 1.4px,transparent 1.6px);background-size:11px 11px;opacity:.5"></div>
+          <div style="position:relative">
+            <h2 style="font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:104px;line-height:.82;margin:0 0 16px;text-transform:uppercase">The room’s open.<br>Come in.</h2>
+            <p style="font-size:17px;font-weight:600;max-width:480px;margin:0 auto 28px;color:rgba(16,14,12,.78)">Free to listen, no account needed. Sign up when you want to talk, it takes under a minute.</p>
+            <a href="#how1b" style="display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:800;color:#fff;background:#100E0C;text-decoration:none;padding:17px 30px;border-radius:3px">SEE WHAT’S LIVE <span style="font-size:18px">→</span></a>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div style="padding:32px 36px;display:flex;align-items:flex-start;justify-content:space-between;gap:30px;background:#0C0A09">
+          <div style="max-width:320px">
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.04em;margin-bottom:8px">FAN<span style="color:#F1232B">CAST</span></div>
+            <p style="font-size:11.5px;line-height:1.5;color:rgba(236,230,218,.4);margin:0">Unofficial, fan-made platform. Not affiliated with or endorsed by any club, league, or broadcaster. © 2026 FanCast.</p>
+          </div>
+          <div style="display:flex;gap:50px">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgba(236,230,218,.35);margin-bottom:12px">PLATFORM</div><div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:rgba(236,230,218,.62)"><span>Matches</span><span>About</span></div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgba(236,230,218,.35);margin-bottom:12px">LEGAL</div><div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:rgba(236,230,218,.62)"><span>Guidelines</span><span>Terms</span><span>Privacy</span></div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: “extend <a class="dv-oid" href="#1a">1a</a> to the matches + live-room screens” · “push <a class="dv-oid" href="#1b">1b</a> further, more textural” · “mix: <a class="dv-oid" href="#1a">1a</a>’s player card inside <a class="dv-oid" href="#1b">1b</a>” · “new directions”</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const steps = [
+      { n: '01', t: 'Bring your own stream', d: "Watch the match the way you always do, your telly, your app, your subscription. FanCast doesn't show the game; it sits beside it." },
+      { n: '02', t: 'Press play and sync', d: 'Tap in for live fan audio, then line it up to your screen, when your TV hits a moment, tap Now and the audio locks to your feed.' },
+      { n: '03', t: 'Pull up a seat', d: 'Listen and read along with no account. Sign up in under a minute to chat, vote, ask the commentator, or call in.' },
+    ];
+    const upcoming = [
+      { date: 'FRI 21 AUG\n19:00', match: 'Arsenal vs Coventry City', comp: 'Premier League' },
+      { date: 'SAT 29 AUG\n14:00', match: 'Aston Villa vs Arsenal', comp: 'Premier League' },
+      { date: 'SAT 5 SEP\n14:00', match: 'Arsenal vs Chelsea', comp: 'Premier League' },
+    ];
+    const features = [
+      { n: '01', k: 'A fan, not a pundit', d: 'A Gooner who lives and dies with every result, on your side, never neutral.' },
+      { n: '02', k: 'Synced to your screen', d: 'One tap lines the audio to your feed, with half-second nudges and a jump back to live.' },
+      { n: '03', k: 'A chat worth reading', d: 'Threaded replies, upvotes, and sort by New, Top or Controversial, good takes rise, noise sinks.' },
+      { n: '04', k: 'The stats that matter', d: 'Possession, shots, xG, momentum, lineups and team news, live from kickoff.' },
+      { n: '05', k: 'Ask, vote, call in', d: 'Question the commentator, settle the half-time poll, rate the players, or request the mic.' },
+      { n: '06', k: 'Yours to keep', d: 'Every show is recorded into downloadable segments. The host owns it; we claim nothing.' },
+    ];
+    const waveform = Array.from({ length: 44 }, (_, i) => {
+      const h = Math.round(8 + 32 * Math.pow(Math.abs(Math.sin(i * 0.62 + Math.cos(i * 0.31))), 1.15));
+      return { h };
+    });
+    return { steps, upcoming, features, waveform };
+  }
+}
+</script>
+</body>
+</html>
