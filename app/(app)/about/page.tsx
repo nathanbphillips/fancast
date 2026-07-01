@@ -1,36 +1,91 @@
 import type { Metadata } from "next";
 import { brand } from "@/lib/brand";
-import { Section } from "@/components/marketing/Section";
-import { StepCard } from "@/components/marketing/StepCard";
-import { FeatureCard } from "@/components/marketing/FeatureCard";
 import { Faq } from "@/components/marketing/Faq";
-import { CtaBand } from "@/components/marketing/CtaBand";
-import { PrimaryCta, SecondaryCta } from "@/components/marketing/CtaButtons";
 
 /**
- * About: the marketing deep-dive. Compliance — every line keeps "watch"
- * attached to the viewer's own stream, never to the platform; the platform only
- * ever "listens alongside". Explicit "we don't show the match" + an FAQ answer
- * are kept prominent; the unaffiliated disclaimer rides in the shared footer.
+ * About (Cloud Design "1a"): manifesto hero → story 3-col → stat band →
+ * principles → hosts → FAQ → CTA. Copy is verbatim from the design (no
+ * em-dashes). The compliance FAQ is kept per the founder's decision log
+ * ("explicit 'we don't show the match' + FAQ kept prominent"). Hosts are
+ * illustrative personas; no real photos (abstract marks only).
  */
 
 export const metadata: Metadata = {
   title: "About",
-  description: `What ${brand.name} is, how a matchday works, and why it's the matchday company you've been missing.`,
+  description: `What ${brand.name} is, how a matchday works, and why it's fans in your ear instead of pundits.`,
 };
+
+const STORY = [
+  {
+    h: "The problem",
+    p: "Pundits hedge. Streams lag. The group chat moves too fast to read. Watching with other fans got harder, not easier, and nobody's on your side for the full ninety.",
+  },
+  {
+    h: "The idea",
+    p: "Keep your own stream. Add a live fan host, a chat worth reading, and the stats on tap, all synced to your screen with one tap. We don't show the game; we sit beside it.",
+  },
+  {
+    h: "The promise",
+    p: "Hosts keep and own every recording. Independent, unofficial, and built for supporters, never for rights-holders.",
+  },
+];
+
+const STATS = [
+  { n: "0", c: "pundits on the payroll", gold: true },
+  { n: "100%", c: "of recordings owned by hosts" },
+  { n: "<1min", c: "to sign up and join in" },
+  { n: "90", c: "minutes live, every match" },
+];
+
+const PRINCIPLES = [
+  {
+    k: "Fans, never pundits",
+    d: "Every room is hosted by a supporter who actually cares about the result. No neutral takes, no broadcast script. Just someone on your side.",
+  },
+  {
+    k: "We sit beside the game",
+    d: `${brand.name} never streams the match. You bring your own feed; we bring the voice, the chat and the stats that ride alongside it.`,
+  },
+  {
+    k: "Hosts keep their work",
+    d: "Every show records into downloadable segments owned by the host. We take no rights and claim nothing. The room is theirs.",
+  },
+  {
+    k: "Independent & unofficial",
+    d: "Fan-made and unaffiliated with any club, league or broadcaster. Answerable to supporters, not rights-holders.",
+  },
+];
+
+const HOSTS = [
+  {
+    name: "nathan",
+    handle: "@n8_afc",
+    bio: "A Gooner since the Highbury days. Calls it like he sees it.",
+  },
+  {
+    name: "priya",
+    handle: "@priyagooner",
+    bio: "Tactics head. Will explain the xG and then ignore it when we score a worldie.",
+  },
+  {
+    name: "deniz",
+    handle: "@denizN5",
+    bio: "Half-time poll enforcer. Runs the call-in mic on big nights.",
+  },
+];
 
 const FAQ = [
   {
     q: "Do you stream the match?",
-    a: `No — and we never will. ${brand.name} doesn't show match video or play broadcast audio. You watch the game however you already legally do, and we ride alongside with fan commentary, chat and stats.`,
+    a: `No, and we never will. ${brand.name} doesn't show match video or play broadcast audio. You watch the game however you already legally do, and we ride alongside with fan commentary, chat and stats.`,
   },
   {
     q: "Is this official Arsenal?",
-    a: `No. ${brand.name} is an unofficial, fan-made platform and isn't affiliated with or endorsed by Arsenal, the Premier League, or any broadcaster. The commentators are fans, not official club analysts.`,
+    a: `No. ${brand.name} is an unofficial, fan-made platform and isn't affiliated with or endorsed by Arsenal, the Premier League, or any broadcaster. The hosts are fans, not official club analysts.`,
   },
   {
     q: "Do I need to pay or sign up?",
-    a: "No. Anyone can listen and read the chat and stats without an account. You only sign up — under a minute — when you want to chat, vote, ask a question or call in.",
+    a: "No. Anyone can listen and read the chat and stats without an account. You only sign up, in under a minute, when you want to chat, vote, ask a question or call in.",
   },
   {
     q: "How does the sync work?",
@@ -42,172 +97,222 @@ const FAQ = [
   },
   {
     q: "Can I talk on air?",
-    a: "Yes, if you want to. You can request the mic, and with the commentator's consent you go live to the room. It's recorded as part of the show — and if you'd rather just listen, you never have to.",
+    a: "Yes, if you want to. You can request the mic, and with the host's consent you go live to the room. It's recorded as part of the show. And if you'd rather just listen, you never have to.",
   },
   {
     q: "What about the recordings?",
-    a: `Each broadcast is saved as downloadable segments. They belong to the commentator completely; ${brand.name} claims no rights and asks for nothing.`,
+    a: `Each broadcast is saved as downloadable segments. They belong to the host completely; ${brand.name} claims no rights and asks for nothing.`,
   },
   {
     q: "Is it only Arsenal?",
-    a: "For now, yes — we're starting with Arsenal and doing it properly. More clubs will follow.",
+    a: "For now, yes. We're starting with Arsenal and doing it properly. More clubs will follow.",
   },
 ];
+
+const stripe =
+  "repeating-linear-gradient(135deg, var(--bg2), var(--bg2) 9px, var(--bg-raised) 9px, var(--bg-raised) 18px)";
 
 export default function AboutPage() {
   return (
     <>
-      {/* INTRO */}
-      <Section
-        label="About FanCast"
-        heading="The matchday company you've been missing"
-        sub={
-          <>
-            Watching Arsenal alone is quiet. Watching in a group chat is chaos.{" "}
-            {brand.name} is the bit in between: a live room where a fellow Gooner
-            calls the game in your ear while everyone argues, celebrates and
-            suffers together — all riding alongside the match you&apos;re already
-            watching.
-          </>
-        }
-      />
-
-      {/* WHY */}
-      <Section label="Why we built it" heading="Football's better with people">
-        <div className="mt-4 max-w-2xl space-y-4 text-secondary">
-          <p>
-            But the people aren&apos;t always in the room. Mates are scattered,
-            the group chat lags two minutes behind the action, and the official
-            feeds are polished, neutral and a little bit lifeless.
-          </p>
-          <p>
-            We wanted the feeling of the pub on a big match day: someone who knows
-            the team calling it like they mean it, a crowd reacting in real time,
-            and nobody pretending to be impartial. As our community guidelines put
-            it — the pub for fans who don&apos;t have one.
-          </p>
-        </div>
-      </Section>
-
-      {/* HOW A MATCHDAY WORKS */}
-      <Section
-        label="How a matchday works"
-        heading="You bring the match. We bring the room."
+      {/* MANIFESTO HERO */}
+      <section
+        className="relative overflow-hidden border-b border-line"
+        style={{
+          background:
+            "radial-gradient(120% 90% at 15% -20%, rgba(241,35,43,0.18), transparent 56%), var(--bg-base)",
+        }}
       >
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <StepCard n={1} title="You watch your way">
-            {brand.name} never shows the game. You keep watching however you
-            legally already do — your TV, your app, your subscription — and we
-            ride alongside with audio, chat and stats.
-          </StepCard>
-          <StepCard n={2} title="You sync once">
-            Streams run at different delays, so we make it easy to line things up:
-            a big match-clock ticks, and when your feed shows that exact moment you
-            tap Now. Half-second steppers fine-tune it; one tap jumps you to the
-            live edge.
-          </StepCard>
-          <StepCard n={3} title="You settle in">
-            Listen and read with no account at all. When you want to join in,
-            signing up takes under a minute — then you&apos;re chatting, voting and
-            asking questions.
-          </StepCard>
-          <StepCard n={4} title="It follows the match">
-            The room reads team news, venue, referee and weather before kickoff,
-            then switches itself to live stats the moment the whistle goes.
-          </StepCard>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgb(var(--hair) / 0.04) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--hair) / 0.04) 1px, transparent 1px)",
+            backgroundSize: "54px 54px",
+            maskImage:
+              "radial-gradient(120% 100% at 20% 0%, black, transparent 72%)",
+            WebkitMaskImage:
+              "radial-gradient(120% 100% at 20% 0%, black, transparent 72%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-[1180px] px-5 py-16 sm:px-10 sm:py-[70px]">
+          <p className="mb-5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            About {brand.name}
+          </p>
+          <h1 className="display max-w-[900px] text-5xl leading-[0.92] sm:text-[74px]">
+            Not a broadcaster.
+            <br />
+            <span
+              className="text-red"
+              style={{ textShadow: "0 0 38px rgba(241,35,43,0.5)" }}
+            >
+              Fans &amp; friends hanging out.
+            </span>
+          </h1>
+          <p className="mt-6 max-w-[640px] text-lg leading-[1.55] text-secondary sm:text-xl">
+            Match coverage got polished into something that forgot who it was
+            for. {brand.name} is the opposite: a real supporter in your ear, the
+            chat you&apos;d have at the pub, and the numbers that actually matter,
+            riding alongside whatever stream you already watch.
+          </p>
         </div>
-      </Section>
+      </section>
 
-      {/* WHAT'S IN THE ROOM */}
-      <Section
-        label="What's in the room"
-        heading="Everything the matchday needs, in one place"
-      >
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <FeatureCard title="Live fan commentary">
-            A real supporter on the mic, broadcasting live with barely any delay —
-            not a neutral analyst, someone who wants the same result you do. Nudge
-            them between flat-out commentary and back-and-forth discussion with a
-            simple slider.
-          </FeatureCard>
-          <FeatureCard title="A chat that's actually good">
-            Reddit-style threaded replies, upvotes, and New / Top / Controversial
-            sorting keep the best takes visible and the pile-ons buried. Shared
-            links open as tidy inline cards instead of bare URLs.
-          </FeatureCard>
-          <FeatureCard title="Stats beside the action">
-            Possession, shots, xG, momentum, lineups, key events and pre-game team
-            news sit right next to the conversation, and the panel flips to live
-            data automatically at kickoff.
-          </FeatureCard>
-          <FeatureCard title="Get involved">
-            Ask the commentator a question privately, vote in the half-time poll,
-            predict the score, rate the players at full time — or request the mic
-            and, with the commentator&apos;s say-so, go on air to the whole room.
-          </FeatureCard>
-          <FeatureCard title="Take it with you">
-            Every broadcast is recorded into clean segments — pre-game, each half,
-            half-time, post-game — that you can download. These recordings belong
-            to the commentator, full stop; {brand.name} claims no rights to them.
-          </FeatureCard>
-          <FeatureCard title="Radio mode">
-            It runs in your browser, including iPhone, installs to your home screen,
-            and keeps playing on the lock screen — so you can pocket your phone and
-            just listen.
-          </FeatureCard>
+      {/* STORY */}
+      <section className="mx-auto grid max-w-[1180px] gap-8 px-5 pt-14 pb-5 sm:grid-cols-3 sm:px-10">
+        {STORY.map((s) => (
+          <div key={s.h}>
+            <p className="display mb-3.5 text-3xl text-gold">{s.h}</p>
+            <p className="text-[15px] leading-[1.6] text-secondary">{s.p}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* STAT BAND */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-10 pb-2 sm:px-10">
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.c} className="bg-inset px-6 py-7">
+              <p className={`display text-[46px] leading-none ${s.gold ? "text-gold" : ""}`}>
+                {s.n}
+              </p>
+              <p className="mt-2 text-[13px] text-secondary">{s.c}</p>
+            </div>
+          ))}
         </div>
-      </Section>
+      </section>
 
-      {/* HOST A ROOM */}
-      <Section label="For commentators" heading="Fancy hosting a room?">
-        <p className="mt-4 max-w-2xl text-secondary">
-          Every match needs a voice. If you&apos;re the one your mates message at
-          full time, there&apos;ll be a way to host your own room and bring the
-          noise — with a way for listeners to tip you for it if they want to.
-          We&apos;re starting small and Arsenal-first; if that&apos;s you, keep an
-          eye out.
+      {/* PRINCIPLES */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-14 pb-5 sm:px-10">
+        <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          What we stand for
         </p>
-      </Section>
-
-      {/* FAN-FIRST PROMISE */}
-      <Section label="Our promise" heading="Fan-first, on purpose">
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <FeatureCard title="We don't show the match">
-            {brand.name} is audio, chat and stats only — never the broadcast. You
-            bring your own lawful way of watching; we just keep you company.
-          </FeatureCard>
-          <FeatureCard title="We're unofficial, and proud of it">
-            A fan-made platform, not affiliated with or endorsed by any club,
-            league or broadcaster. Your commentator is a fan, not an official
-            analyst.
-          </FeatureCard>
-          <FeatureCard title="Your recordings are yours">
-            Commentators own their broadcasts outright. The platform takes no cut
-            of the rights and no exclusivity.
-          </FeatureCard>
-          <FeatureCard title="You can just listen">
-            No account, no paywall, no pressure. Sign up only if and when you want
-            to join in.
-          </FeatureCard>
+        <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+          Four things we won&apos;t budge on
+        </h2>
+        <div className="mt-8 grid gap-[18px] sm:grid-cols-2">
+          {PRINCIPLES.map((p, i) => (
+            <div
+              key={p.k}
+              className="flex gap-[18px] rounded-2xl border border-line bg-surface px-[26px] pt-[26px] pb-7"
+            >
+              <span className="display text-[34px] leading-[0.9] text-gold/90">
+                0{i + 1}
+              </span>
+              <div>
+                <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+                  {p.k}
+                </h3>
+                <p className="mt-2 text-sm leading-[1.55] text-secondary">
+                  {p.d}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
-      </Section>
+      </section>
 
-      {/* FAQ */}
-      <Section label="Questions, answered" heading="The bits people ask">
+      {/* HOSTS */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-7 sm:px-10">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+              The voices
+            </p>
+            <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+              Your hosts
+            </h2>
+          </div>
+          <p className="max-w-[240px] text-right font-mono text-[11px] leading-[1.5] text-secondary">
+            Illustrative line-up. Real hosts appear here as rooms open.
+          </p>
+        </div>
+        <div className="grid gap-[18px] sm:grid-cols-3">
+          {HOSTS.map((h) => (
+            <div
+              key={h.handle}
+              className="overflow-hidden rounded-2xl border border-line bg-inset"
+            >
+              <div
+                className="relative flex h-[150px] items-end p-3.5"
+                style={{ background: stripe }}
+              >
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "radial-gradient(80% 80% at 50% 0%, rgba(232,181,74,0.18), transparent 60%)",
+                  }}
+                />
+                <span
+                  aria-hidden="true"
+                  className="relative h-14 w-14 rounded-full border-2 border-inset"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 35% 30%, #3a3a40, #1b1b1f)",
+                  }}
+                />
+              </div>
+              <div className="px-5 pt-[18px] pb-[22px]">
+                <div className="mb-1.5 flex items-baseline gap-2">
+                  <span className="text-[17px] font-extrabold">{h.name}</span>
+                  <span className="font-mono text-[11px] text-gold">
+                    {h.handle}
+                  </span>
+                </div>
+                <p className="text-[13.5px] leading-[1.5] text-secondary">
+                  {h.bio}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ (kept for compliance) */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-8 pb-14 sm:px-10">
+        <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          Questions, answered
+        </p>
+        <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+          The bits people ask
+        </h2>
         <Faq items={FAQ} />
-      </Section>
+      </section>
 
-      {/* CLOSING CTA */}
-      <CtaBand
-        heading="See you in the room"
-        line="There's a match coming. Come watch it with people who care as much as you do."
-        cta={
-          <>
-            <PrimaryCta href="/matches">See what&apos;s live</PrimaryCta>
-            <SecondaryCta href="/">Back to home</SecondaryCta>
-          </>
-        }
-      />
+      {/* CTA */}
+      <section
+        className="relative overflow-hidden border-t border-line"
+        style={{
+          background:
+            "radial-gradient(90% 130% at 50% 120%, rgba(241,35,43,0.28), transparent 60%), var(--bg-base)",
+        }}
+      >
+        <div className="relative mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-10">
+          <h2 className="display mx-auto max-w-2xl text-5xl leading-[0.92] sm:text-[56px]">
+            Pull up a seat.
+          </h2>
+          <p className="mx-auto mt-4 max-w-[460px] text-[17px] text-secondary">
+            Jump in and listen along. Sign up when you want to chat, vote, or
+            call in.
+          </p>
+          <div className="mt-7 flex justify-center">
+            <a
+              href="/matches"
+              className="inline-flex items-center gap-2.5 rounded-xl bg-red px-7 py-4 text-base font-bold text-white transition-colors hover:bg-red-hover"
+              style={{ boxShadow: "0 16px 40px -10px rgba(241,35,43,0.7)" }}
+            >
+              See what&apos;s live <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </div>
+      </section>
     </>
   );
 }

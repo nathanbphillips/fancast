@@ -13,8 +13,8 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
           fontFamily: "system-ui, -apple-system, sans-serif",
           padding: "4rem 1rem",
           textAlign: "center",
-          background: "#0d0f14",
-          color: "#fafaf8",
+          background: "#0f0f11",
+          color: "#f4f4f2",
           minHeight: "100vh",
         }}
       >
@@ -27,7 +27,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
             marginTop: "1.25rem",
             padding: "0.65rem 1.25rem",
             borderRadius: 8,
-            background: "#ef0107",
+            background: "#f1232b",
             color: "#fff",
             border: 0,
             fontWeight: 600,

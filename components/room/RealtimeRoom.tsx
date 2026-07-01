@@ -50,9 +50,8 @@ import { FollowButton } from "@/components/FollowButton";
 import { useToast } from "@/components/Toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
-import { brand } from "@/lib/brand";
 import { Avatar } from "@/components/Avatar";
-import { Logo } from "@/components/Logo";
+import { ShareButton } from "@/components/room/ShareButton";
 import NextLink from "next/link";
 
 /**
@@ -829,11 +828,7 @@ export function RealtimeRoom(props: Props) {
   );
 
   return (
-    <div
-      className={`flex h-dvh flex-col ${
-        isRoomCommentator ? "lg:pb-[80px]" : "lg:pb-[52px]"
-      }`}
-    >
+    <div className="flex h-dvh flex-col">
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
       <MatchHeader
@@ -844,12 +839,8 @@ export function RealtimeRoom(props: Props) {
         state={roomState}
         clock={clockText}
         listeners={watching ?? undefined}
-        wordmark={
-          <NextLink href="/" aria-label={brand.name}>
-            <Logo />
-          </NextLink>
-        }
         themeToggle={<ThemeToggle />}
+        share={<ShareButton />}
         userMenu={
           viewer ? (
             <UserMenu
@@ -892,10 +883,10 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-[1fr_2fr]">
+      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:w-full lg:grid-cols-[2fr_1fr]">
         <aside
           aria-label="Stats"
-          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
+          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:order-2 lg:block`}
         >
           <StatsPanel
             data={displayStats}
@@ -920,7 +911,7 @@ export function RealtimeRoom(props: Props) {
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
+          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex lg:border-r lg:border-line`}
         >
           {isRoomCommentator && (
             <div className="hidden border-b border-line bg-surface lg:flex">
@@ -958,9 +949,9 @@ export function RealtimeRoom(props: Props) {
         </section>
       </div>
 
-      {/* desktop: fixed bottom bar (~50px listener, ~80px commentator) */}
-      <div className="fixed inset-x-0 bottom-0 z-40 hidden border-t border-line bg-surface lg:block">
-        <div className="mx-auto max-w-7xl">{bar}</div>
+      {/* desktop: in-flow audio dock at the base of the h-dvh flex column */}
+      <div className="hidden flex-none border-t border-line bg-surface lg:block">
+        {bar}
       </div>
 
       {!isRoomCommentator && (
@@ -995,7 +986,7 @@ function VoteArrows({
   onVote: (v: 1 | -1 | 0) => void;
 }) {
   return (
-    <span className="flex shrink-0 flex-col items-center leading-none text-secondary">
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-line px-2 py-1 leading-none text-secondary">
       <button
         type="button"
         aria-label="Upvote"
@@ -1546,112 +1537,123 @@ function LiveChat({
           </div>
         ) : (
           <div
-            className={`group rounded-md px-1.5 py-1 ${
+            className={`group rounded-lg px-2 py-1.5 ${
               isCommentator
-                ? "border-l-[3px] border-gold bg-raised"
+                ? "border-l-2 border-red bg-inset"
                 : isOwn
-                  ? "bg-raised/60"
+                  ? "bg-raised/50"
                   : ""
             }`}
           >
-            {/* text row: vertically centred next to the vote column; Reply +
-                flag + hide sit on the right of the message (founder 2026-06-29) */}
-            <div className="flex items-center gap-1.5">
-              <VoteArrows
-                up={m.up_count}
-                down={m.down_count}
-                myVote={votes[m.id]}
-                disabled={!viewer}
-                onVote={(v) => vote(m.id, v)}
-              />
+            <div className="flex gap-2.5">
               <Avatar
                 src={m.author?.avatar_url}
                 name={m.author?.username}
-                size={22}
-                className="self-center"
+                size={30}
+                className="mt-0.5 self-start"
               />
-              <p className="min-w-0 flex-1 text-sm leading-snug">
-                <span className={`mr-1.5 font-semibold ${isCommentator ? "text-gold" : "text-secondary"}`}>
-                  {m.author?.username ?? "…"}
-                </span>
-                <span
-                  suppressHydrationWarning
-                  className="mr-1.5 text-[11px] text-secondary tabular-nums"
-                >
-                  {timeAgo(m.created_at)}
-                </span>
-                {isCommentator && (
-                  <span className="mr-2 rounded-sm bg-gold px-1 py-0.5 align-middle text-[10px] font-bold text-canvas">
-                    COMMENTATOR
+              <div className="min-w-0 flex-1">
+                {/* header: name · host badge · time · (mod actions) */}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[13px] font-extrabold ${isCommentator ? "text-gold" : ""}`}
+                  >
+                    {m.author?.username ?? "…"}
                   </span>
+                  {isCommentator && (
+                    <span className="rounded-[3px] border border-gold/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-gold uppercase">
+                      Host
+                    </span>
+                  )}
+                  <span
+                    suppressHydrationWarning
+                    className="font-mono text-[10px] text-secondary tabular-nums"
+                  >
+                    {timeAgo(m.created_at)}
+                  </span>
+                  <span className="ml-auto flex shrink-0 items-center gap-1 text-xs">
+                    {viewer && !isOwn && !flagged.has(m.id) && (
+                      <button
+                        type="button"
+                        aria-label="Flag message"
+                        title="Flag message"
+                        onClick={() => flag(m.id)}
+                        className="px-1 text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
+                      >
+                        ⚑
+                      </button>
+                    )}
+                    {viewer?.isModerator && (
+                      <button
+                        type="button"
+                        aria-label="Hide message"
+                        title="Hide message"
+                        onClick={() => hide(m.id)}
+                        className="px-1 text-secondary hover:text-red"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </span>
+                </div>
+                {/* body */}
+                <p className="mt-0.5 text-[13px] leading-relaxed">{displayBody}</p>
+                {/* inline link card */}
+                {m.link_url && (
+                  <a
+                    href={m.link_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="mt-2 flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 shadow-card hover:bg-surface"
+                  >
+                    <span className="flex min-w-0 flex-1 flex-col justify-center">
+                      <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
+                        {m.link_title ?? m.link_url}
+                      </span>
+                      <span className="mt-0.5 truncate text-[11px] text-secondary">
+                        {m.link_domain ?? ""}
+                      </span>
+                    </span>
+                    {m.link_image && <LinkThumb src={m.link_image} />}
+                  </a>
                 )}
-                {displayBody}
-              </p>
-              <div className="flex shrink-0 items-center gap-0.5 self-center text-xs">
-                {canType && (
+                {/* actions: vote · reply */}
+                <div className="mt-1.5 flex items-center gap-3">
+                  <VoteArrows
+                    up={m.up_count}
+                    down={m.down_count}
+                    myVote={votes[m.id]}
+                    disabled={!viewer}
+                    onVote={(v) => vote(m.id, v)}
+                  />
+                  {canType && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReplyTo(replyTo === m.id ? null : m.id);
+                        setReplyDraft("");
+                      }}
+                      className="text-[11.5px] font-semibold text-secondary hover:text-primary"
+                    >
+                      Reply
+                    </button>
+                  )}
+                </div>
+                {/* replies toggle */}
+                {kids.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setReplyTo(replyTo === m.id ? null : m.id);
-                      setReplyDraft("");
-                    }}
-                    className="px-1 font-semibold text-secondary hover:text-primary"
+                    onClick={() => toggleCollapse(m.id)}
+                    aria-expanded={!isCollapsed}
+                    className="mt-1 text-xs font-semibold text-secondary hover:text-primary"
                   >
-                    Reply
-                  </button>
-                )}
-                {viewer && !isOwn && !flagged.has(m.id) && (
-                  <button
-                    type="button"
-                    aria-label="Flag message"
-                    title="Flag message"
-                    onClick={() => flag(m.id)}
-                    className="px-1 text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-red focus-visible:opacity-100"
-                  >
-                    ⚑
-                  </button>
-                )}
-                {viewer?.isModerator && (
-                  <button
-                    type="button"
-                    aria-label="Hide message"
-                    title="Hide message"
-                    onClick={() => hide(m.id)}
-                    className="px-1 text-secondary hover:text-red"
-                  >
-                    ✕
+                    {isCollapsed
+                      ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
+                      : "▾ hide replies"}
                   </button>
                 )}
               </div>
             </div>
-            {m.link_url && (
-              <a
-                href={m.link_url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="mt-1 ml-[3.25rem] flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 shadow-card hover:bg-surface"
-              >
-                <span className="flex min-w-0 flex-1 flex-col justify-center">
-                  <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
-                    {m.link_title ?? m.link_url}
-                  </span>
-                  <span className="mt-0.5 truncate text-[11px] text-secondary">{m.link_domain ?? ""}</span>
-                </span>
-                {m.link_image && <LinkThumb src={m.link_image} />}
-              </a>
-            )}
-            {kids.length > 0 && (
-              <button
-                type="button"
-                onClick={() => toggleCollapse(m.id)}
-                aria-expanded={!isCollapsed}
-                className="mt-0.5 ml-7 text-xs font-semibold text-secondary hover:text-primary"
-              >
-                {isCollapsed
-                  ? `▸ ${kids.length} ${kids.length === 1 ? "reply" : "replies"}`
-                  : "▾ hide replies"}
-              </button>
-            )}
           </div>
         )}
 
@@ -1731,13 +1733,13 @@ function LiveChat({
             onClick={onRefresh}
             aria-label="Refresh chat"
             title="Refresh chat"
-            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-secondary transition-colors hover:bg-raised hover:text-primary"
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] text-secondary uppercase transition-colors hover:border-gold hover:text-primary"
           >
             <span aria-hidden="true">↻</span> Refresh
           </button>
         </div>
         <div
-          className="flex shrink-0 gap-0.5 rounded-full bg-raised p-0.5"
+          className="flex shrink-0 items-center gap-1 font-mono text-[10px] tracking-[0.04em]"
           role="tablist"
           aria-label="Sort order"
         >
@@ -1748,8 +1750,10 @@ function LiveChat({
               role="tab"
               aria-selected={sortMode === s}
               onClick={() => changeSort(s)}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
-                sortMode === s ? "bg-gold text-canvas" : "text-secondary hover:text-primary"
+              className={`rounded-md px-2 py-1 uppercase transition-colors ${
+                sortMode === s
+                  ? "bg-inverted font-bold text-inverted-fg"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               {s === "new" ? "New" : s === "top" ? "Top" : "Controversial"}
@@ -1924,7 +1928,7 @@ function LiveChat({
           )}
           {/* one compact row — links go straight in the message (they unfurl into
               an inline card); no separate link compose any more (founder 2026-06-29) */}
-          <form onSubmit={send} className="flex gap-1.5">
+          <form onSubmit={send} className="flex items-center gap-2">
             <input
               type="text"
               value={draft}
@@ -1933,17 +1937,20 @@ function LiveChat({
               placeholder={
                 roomState === "waiting"
                   ? "Warm the room up"
-                  : "Say something — paste a link to share it"
+                  : "Say something to the room…"
               }
               aria-label="Chat message"
-              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+              className="h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
             />
             <button
               type="submit"
               disabled={sending || !draft.trim()}
-              className="h-9 shrink-0 rounded-lg bg-red px-3.5 text-sm font-semibold text-white disabled:opacity-60"
+              aria-label="Send message"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-red text-white transition-colors hover:bg-red-hover disabled:opacity-60"
             >
-              Send
+              <span aria-hidden="true" className="text-lg leading-none">
+                ↑
+              </span>
             </button>
           </form>
           {inputsOpen && !isRoomCommentator && (

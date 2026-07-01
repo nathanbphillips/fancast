@@ -109,3 +109,24 @@ export async function loadFixtures(): Promise<{
     upcoming: withFollowed.filter((w) => w.card.state === "scheduled"),
   };
 }
+
+const OPEN_ROOM_STATES: RoomState[] = [
+  "waiting",
+  "pregame",
+  "live_1h",
+  "halftime",
+  "live_2h",
+  "extra_time",
+  "postgame",
+];
+
+/** Count of currently-open rooms (waiting through post-game) for the nav
+ *  "N LIVE" pill. Head-count only — cheap enough for the shared layout. */
+export async function countLiveRooms(): Promise<number> {
+  const supabase = await createSupabaseServerClient();
+  const { count } = await supabase
+    .from("rooms")
+    .select("id", { count: "exact", head: true })
+    .in("state", OPEN_ROOM_STATES);
+  return count ?? 0;
+}

@@ -130,41 +130,37 @@ function SyncControls({
 }) {
   if (radioActive || !syncSupported) return null;
   return (
-    <span className={`flex items-center gap-1 ${className}`}>
+    <span className={`flex items-center gap-1.5 ${className}`}>
       <button
         type="button"
         onClick={() => onSyncAdjust(-0.5)}
         aria-label="Half a second less delay"
-        className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-gold hover:text-primary"
       >
-        −.5
+        −0.5s
       </button>
       <button
         type="button"
         onClick={onOpenSync}
         aria-label="Sync to my TV"
         title="Sync to my TV"
-        className={`flex h-11 flex-1 items-center justify-center gap-2 rounded-lg border px-3 text-sm hover:bg-raised ${
-          syncRequested > 0 ? "border-green" : "border-line bg-surface"
-        }`}
+        className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-inverted px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-inverted-fg transition-opacity hover:opacity-90"
       >
-        <span className="text-secondary">Sync</span>
-        <span className={`font-semibold tabular-nums ${syncRequested > 0 ? "text-green" : ""}`}>
-          +{syncRequested.toFixed(1)}s
-        </span>
+        SYNC NOW
+        {syncRequested > 0 && (
+          <span className="tabular-nums opacity-80">+{syncRequested.toFixed(1)}s</span>
+        )}
         {listenStatus === "live" && syncRequested > syncEffective + 0.5 && (
-          <span className="text-[10px] text-gold tabular-nums">
-            ⏳{syncEffective.toFixed(0)}s
-          </span>
+          <span className="text-gold tabular-nums">⏳{syncEffective.toFixed(0)}s</span>
         )}
       </button>
       <button
         type="button"
         onClick={() => onSyncAdjust(0.5)}
         aria-label="Half a second more delay"
-        className="h-11 w-11 rounded-lg border border-line bg-surface text-xs font-bold tabular-nums hover:bg-raised"
+        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-gold hover:text-primary"
       >
-        +.5
+        +0.5s
       </button>
     </span>
   );

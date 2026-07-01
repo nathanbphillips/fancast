@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0F0F11;--bg2:#121215;--bg3:#131316;--panel:#18181C;--panel-lo:#161619;--panel-hi:#1C1C21;--footer:#0C0C0D;--grad-b:#17161A;--bg-rgb:15 15 17;--bg2-rgb:11 11 13;--fg:244 244 242;--line:255 255 255;--strong:#F4F4F2;--inv-bg:#F4F4F2;--inv-fg:#0F0F11;--gold:#E8B54A}
+  [data-theme="light"]{--bg:#F7F5F0;--bg2:#EFEDE6;--bg3:#EAE8E0;--panel:#FFFFFF;--panel-lo:#F3F1EA;--panel-hi:#FFFFFF;--footer:#EEECE4;--grad-b:#F1EEE7;--bg-rgb:247 245 240;--bg2-rgb:239 237 230;--fg:34 30 26;--line:34 30 26;--strong:#191510;--inv-bg:#191510;--inv-fg:#F7F5F0;--gold:#9A7714}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--strong);font-family:'Hanken Grotesk',system-ui,sans-serif}
+  ::selection{background:#F1232B;color:#fff}
+  ::-webkit-scrollbar{width:11px;height:11px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:#26262a;border-radius:6px;border:3px solid var(--bg)}
+  @keyframes fcpulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.78)}}
+  @keyframes fcsweep{0%{left:-6%}100%{left:104%}}
+  @keyframes fcbob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes fcrise{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:translateY(0)}}
+  @keyframes fceq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  @keyframes fcfloat{0%{transform:translateY(0) scale(.5);opacity:0}18%{opacity:1;transform:translateY(-14px) scale(1.05)}100%{transform:translateY(-152px) scale(.85);opacity:0}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:var(--bg)">
+
+  <!-- ============ NAV (persistent) ============ -->
+  <sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+  <div style="position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:18px 40px;border-bottom:1px solid rgb(var(--line) / .1);background:rgb(var(--bg-rgb) / .82);backdrop-filter:blur(10px)">
+    <div style="display:flex;align-items:center;gap:11px;cursor:pointer" onClick="{{ goHome }}">
+      <span style="width:9px;height:9px;border-radius:50%;background:#F1232B;box-shadow:0 0 12px #F1232B;animation:fcpulse 1.8s ease-in-out infinite"></span>
+      <span style="font-family:'Anton',sans-serif;font-size:21px;letter-spacing:.04em">FANCAST</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:28px">
+      <span style="font-size:13.5px;font-weight:600;color:rgb(var(--fg) / .76);cursor:pointer" style-hover="color:var(--strong)" onClick="{{ goHome }}">How it works</span>
+      <span style="font-size:13.5px;font-weight:600;cursor:pointer;color:{{ matchesColor }}" style-hover="color:var(--strong)" onClick="{{ goMatches }}">Matches</span>
+      <span style="font-size:13.5px;font-weight:600;cursor:pointer;color:{{ aboutColor }}" style-hover="color:var(--strong)" onClick="{{ goAbout }}">About</span>
+      <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.08em;color:#F1232B;display:flex;align-items:center;gap:6px;border:1px solid rgba(241,35,43,.35);padding:5px 10px;border-radius:6px;cursor:pointer" onClick="{{ goMatches }}"><span style="width:6px;height:6px;border-radius:50%;background:#F1232B;animation:fcpulse 1.8s ease-in-out infinite"></span>1 LIVE</span>
+      <span onClick="{{ toggleTheme }}" role="button" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:1px solid rgb(var(--line) / .16);padding:5px 8px 5px 11px;border-radius:20px" style-hover="border-color:rgb(var(--line) / .34)"><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;color:rgb(var(--fg) / .6)">{{ themeLabel }}</span><span style="width:30px;height:16px;border-radius:10px;background:rgb(var(--line) / .14);position:relative;display:inline-block"><span style="position:absolute;top:2px;left:{{ knobLeft }};width:12px;height:12px;border-radius:50%;background:var(--gold);box-shadow:0 1px 2px rgba(0,0,0,.4);transition:left .22s ease"></span></span></span>
+      <span style="font-size:13.5px;font-weight:700;color:var(--inv-fg);background:var(--inv-bg);padding:8px 16px;border-radius:8px;cursor:pointer" style-hover="opacity:.88" onClick="{{ goSignin }}">Sign in</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <div style="flex:1">
+
+  <!-- ============ HOME ============ -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <!-- HERO -->
+    <div style="position:relative;overflow:hidden;background:radial-gradient(120% 90% at 88% -15%,rgba(241,35,43,.20),transparent 58%),radial-gradient(90% 70% at 8% 110%,rgba(241,35,43,.08),transparent 60%),var(--bg)">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgb(var(--line) / .04) 1px,transparent 1px),linear-gradient(90deg,rgb(var(--line) / .04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(120% 100% at 70% 0%,#000,transparent 75%);mask-image:radial-gradient(120% 100% at 70% 0%,#000,transparent 75%)"></div>
+      <div style="position:relative;max-width:1180px;margin:0 auto;padding:66px 40px 76px;display:grid;grid-template-columns:1.04fr .96fr;gap:48px;align-items:center">
+        <div>
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:rgb(var(--fg) / .74);border:1px solid rgb(var(--line) / .15);padding:7px 12px;border-radius:30px;margin-bottom:26px">
+            <span style="width:6px;height:6px;border-radius:50%;background:#F1232B;box-shadow:0 0 10px #F1232B;animation:fcpulse 1.8s ease-in-out infinite"></span>LIVE FAN COMMENTARY · ARSENAL
+          </div>
+          <h1 style="font-family:'Anton',sans-serif;font-weight:400;font-size:66px;line-height:.98;letter-spacing:.005em;margin:0 0 22px;text-transform:uppercase">Turn the pundits off. Tune in to <span style="color:#F1232B;text-shadow:0 0 34px rgba(241,35,43,.45)">real Arsenal fans</span>.</h1>
+          <p style="font-size:18px;line-height:1.55;color:rgb(var(--fg) / .76);max-width:452px;margin:0 0 32px">Keep watching the match however you already do. FanCast rides alongside it with live fan commentary, discussions, and the stats that matter. No pundits. No fluff. Just football.</p>
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px">
+            <span style="display:inline-flex;align-items:center;gap:9px;font-size:15px;font-weight:700;color:#fff;background:#F1232B;padding:15px 24px;border-radius:11px;box-shadow:0 12px 34px -8px rgba(241,35,43,.6);cursor:pointer" style-hover="background:#ff3a41" onClick="{{ goMatches }}">See what’s live <span style="font-size:17px">→</span></span>
+            <a href="#how" style="font-size:15px;font-weight:700;color:var(--gold);text-decoration:none;padding:15px 22px;border-radius:11px;border:1px solid rgba(232,181,74,.45)" style-hover="border-color:rgba(232,181,74,.85)">How it works</a>
+          </div>
+          <div style="display:flex;align-items:center;gap:18px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgb(var(--fg) / .62)">
+            <span>LIVE EVERY MATCH</span><span style="color:rgb(var(--line) / .2)">/</span><span>FAN-HOSTED</span><span style="color:rgb(var(--line) / .2)">/</span><span style="color:rgb(var(--fg) / .84)">1,204 IN THE ROOM</span>
+          </div>
+        </div>
+        <div style="animation:fcbob 6s ease-in-out infinite">
+          <div style="background:linear-gradient(180deg,var(--panel-hi),var(--grad-b));border:1px solid rgb(var(--line) / .13);border-radius:20px;padding:20px;box-shadow:0 40px 90px -30px rgba(0,0,0,.9),0 0 60px -20px rgba(241,35,43,.35)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+              <span style="display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:#F1232B"><span style="width:7px;height:7px;border-radius:50%;background:#F1232B;box-shadow:0 0 10px #F1232B;animation:fcpulse 1.6s ease-in-out infinite"></span>ON AIR</span>
+              <span style="font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.06em;color:rgb(var(--fg) / .7)">1H 23:14</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid rgb(var(--line) / .1);border-radius:12px;padding:13px 15px;margin-bottom:16px">
+              <div style="display:flex;align-items:center;gap:9px"><span style="width:22px;height:22px;border-radius:5px;background:repeating-linear-gradient(45deg,#2a2a2e,#2a2a2e 4px,#222 4px,#222 8px)"></span><span style="font-family:'Anton',sans-serif;font-size:17px;letter-spacing:.03em">ARS</span></div>
+              <div style="font-family:'Anton',sans-serif;font-size:26px;letter-spacing:.06em;color:var(--strong);white-space:nowrap;flex:none">2<span style="color:rgb(var(--line) / .3);margin:0 8px">–</span>0</div>
+              <div style="display:flex;align-items:center;gap:9px"><span style="font-family:'Anton',sans-serif;font-size:17px;letter-spacing:.03em">BUR</span><span style="width:22px;height:22px;border-radius:5px;background:repeating-linear-gradient(45deg,#2a2a2e,#2a2a2e 4px,#222 4px,#222 8px)"></span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+              <span style="width:46px;height:46px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:1px solid rgb(var(--line) / .15);flex:none"></span>
+              <div style="flex:1">
+                <div style="font-size:15px;font-weight:700">nathan <span style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:var(--gold);border:1px solid rgba(232,181,74,.5);padding:2px 6px;border-radius:4px;margin-left:5px;vertical-align:middle">HOST</span></div>
+                <div style="font-size:12.5px;color:rgb(var(--fg) / .66)">Gooner · lifelong</div>
+              </div>
+            </div>
+            <div style="position:relative;height:66px;background:var(--bg2);border:1px solid rgb(var(--line) / .1);border-radius:12px;padding:0 14px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:14px">
+              <div style="display:flex;align-items:center;gap:3px;height:42px">
+                <sc-for list="{{ waveform }}" as="bar" hint-placeholder-count="40">
+                  <div style="width:3px;border-radius:2px;height:{{ bar.h }}px;background:linear-gradient(180deg,#F1232B,rgba(241,35,43,.3))"></div>
+                </sc-for>
+              </div>
+              <div style="position:absolute;top:8px;bottom:8px;width:2px;background:linear-gradient(180deg,transparent,var(--strong),transparent);box-shadow:0 0 14px var(--strong);animation:fcsweep 4.5s linear infinite"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="width:46px;height:46px;border-radius:50%;background:#F1232B;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px -6px rgba(241,35,43,.7);flex:none"><span style="display:block;width:0;height:0;border-left:13px solid #fff;border-top:8px solid transparent;border-bottom:8px solid transparent;margin-left:3px"></span></span>
+              <div style="flex:1;display:flex;align-items:center;gap:6px">
+                <span style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .74);background:var(--bg2);border:1px solid rgb(var(--line) / .11);padding:9px 0;border-radius:8px">−0.5s</span>
+                <span style="flex:1.4;text-align:center;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--inv-fg);font-weight:700;background:var(--inv-bg);padding:9px 0;border-radius:8px">SYNC NOW</span>
+                <span style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .74);background:var(--bg2);border:1px solid rgb(var(--line) / .11);padding:9px 0;border-radius:8px">+0.5s</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOW IT WORKS -->
+    <div id="how" style="border-top:1px solid rgb(var(--line) / .09)">
+      <div style="max-width:1180px;margin:0 auto;padding:64px 40px 58px">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:38px">
+          <div>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--gold);margin-bottom:14px">● HOW IT WORKS</div>
+            <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:52px;line-height:.95;margin:0;text-transform:uppercase">Three taps to the room</h2>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .58);letter-spacing:.05em;text-align:right;max-width:200px">Jump in and listen along.<br>Signing up takes under a minute.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+          <sc-for list="{{ steps }}" as="step" hint-placeholder-count="3">
+            <div style="background:var(--panel);border:1px solid rgb(var(--line) / .11);border-radius:16px;padding:26px 24px 28px;position:relative;overflow:hidden">
+              <div style="position:absolute;top:16px;right:18px;color:var(--gold);opacity:.55">{{ step.iconEl }}</div>
+              <div style="width:34px;height:34px;border-radius:9px;background:#E8B54A;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-weight:700;font-size:14px;color:#141210;margin-bottom:54px">{{ step.n }}</div>
+              <h3 style="font-size:20px;font-weight:800;margin:0 0 10px;letter-spacing:-.01em">{{ step.t }}</h3>
+              <p style="font-size:14px;line-height:1.55;color:rgb(var(--fg) / .7);margin:0">{{ step.d }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE + COMING UP -->
+    <div>
+      <div style="max-width:1180px;margin:0 auto;padding:14px 40px 62px;display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:stretch">
+        <div style="position:relative;border-radius:18px;overflow:hidden;border:1px solid rgba(241,35,43,.3);min-height:300px;background:var(--bg2)">
+          <div style="position:absolute;inset:0;background-image:radial-gradient(rgb(var(--line) / .10) 1px,transparent 1.4px);background-size:9px 9px;opacity:.5"></div>
+          <div style="position:absolute;inset:0;background:radial-gradient(120% 120% at 100% 100%,rgba(241,35,43,.32),transparent 55%),linear-gradient(180deg,rgb(var(--bg2-rgb) / .2),rgb(var(--bg2-rgb) / .92))"></div>
+          <div style="position:relative;padding:24px;height:100%;display:flex;flex-direction:column;justify-content:space-between;min-height:300px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:#fff;background:#F1232B;padding:6px 11px;border-radius:30px"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:fcpulse 1.6s infinite"></span>LIVE NOW</span>
+              <span style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .7)">PREMIER LEAGUE · TEST</span>
+            </div>
+            <div>
+              <div style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .66);margin-bottom:8px">Show starts soon · hosted by nathan</div>
+              <h3 style="font-family:'Anton',sans-serif;font-weight:400;font-size:42px;line-height:.96;margin:0 0 20px;text-transform:uppercase">Arsenal vs<br>Burnley <span style="color:rgb(var(--fg) / .54);font-size:24px">(test)</span></h3>
+              <span style="display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--inv-fg);background:var(--inv-bg);padding:13px 20px;border-radius:10px;cursor:pointer" style-hover="opacity:.88" onClick="{{ goRoom }}">Join the waiting room <span>→</span></span>
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--panel);border:1px solid rgb(var(--line) / .11);border-radius:18px;padding:22px 22px 14px;display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-family:'Anton',sans-serif;font-size:22px;letter-spacing:.03em;text-transform:uppercase">Coming up</span>
+            <span style="font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--gold);cursor:pointer" onClick="{{ goMatches }}">FULL SCHEDULE →</span>
+          </div>
+          <sc-for list="{{ upcomingHome }}" as="fx" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:14px;padding:15px 4px;border-top:1px solid rgb(var(--line) / .1)">
+              <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.05em;color:rgb(var(--fg) / .66);width:62px;flex:none;line-height:1.4;white-space:pre-line">{{ fx.date }}</div>
+              <div style="flex:1"><div style="font-size:15px;font-weight:700;letter-spacing:-.01em">{{ fx.match }}</div><div style="font-family:'Space Mono',monospace;font-size:10px;color:rgb(var(--fg) / .58);margin-top:2px">{{ fx.comp }}</div></div>
+              <span style="font-size:18px;color:rgb(var(--fg) / .5)">›</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURES -->
+    <div style="border-top:1px solid rgb(var(--line) / .09);background:radial-gradient(100% 80% at 50% 0%,rgba(241,35,43,.06),transparent 60%)">
+      <div style="max-width:1180px;margin:0 auto;padding:62px 40px 62px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--gold);margin-bottom:14px">● WHY YOU’LL STAY</div>
+        <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:52px;line-height:.95;margin:0 0 38px;text-transform:uppercase;max-width:700px">Built for the 90 minutes, and the bits around them</h2>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgb(var(--line) / .11);border:1px solid rgb(var(--line) / .11);border-radius:16px;overflow:hidden">
+          <sc-for list="{{ features }}" as="f" hint-placeholder-count="6">
+            <div style="background:var(--bg);padding:26px 24px 28px" style-hover="background:var(--panel)">
+              <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);margin-bottom:14px">{{ f.n }}</div>
+              <h3 style="font-size:19px;font-weight:800;margin:0 0 9px;letter-spacing:-.01em">{{ f.k }}</h3>
+              <p style="font-size:13.5px;line-height:1.55;color:rgb(var(--fg) / .68);margin:0">{{ f.d }}</p>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <!-- FINAL CTA -->
+    <div style="position:relative;overflow:hidden;background:radial-gradient(90% 130% at 50% 120%,rgba(241,35,43,.3),transparent 60%),var(--bg);border-top:1px solid rgb(var(--line) / .09)">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgb(var(--line) / .04) 1px,transparent 1px),linear-gradient(90deg,rgb(var(--line) / .04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(80% 80% at 50% 100%,#000,transparent 70%);mask-image:radial-gradient(80% 80% at 50% 100%,#000,transparent 70%)"></div>
+      <div style="position:relative;max-width:1180px;margin:0 auto;padding:80px 40px 86px;text-align:center">
+        <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:68px;line-height:.92;margin:0 0 18px;text-transform:uppercase">The room’s open.<br>Come in.</h2>
+        <p style="font-size:17px;color:rgb(var(--fg) / .74);max-width:480px;margin:0 auto 30px">Get in the room and listen along. Signing up takes under a minute when you want to join in.</p>
+        <span style="display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:#fff;background:#F1232B;padding:17px 30px;border-radius:12px;box-shadow:0 16px 40px -10px rgba(241,35,43,.7);cursor:pointer" style-hover="background:#ff3a41" onClick="{{ goMatches }}">See what’s live <span style="font-size:18px">→</span></span>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.05em;color:rgb(var(--fg) / .58);margin-top:24px">ARSENAL FIRST · MORE CLUBS TO COME · FANCY HOSTING A ROOM?</div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <!-- ============ MATCHES ============ -->
+  <sc-if value="{{ isMatches }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <!-- header -->
+    <div style="position:relative;overflow:hidden;background:radial-gradient(110% 100% at 85% -20%,rgba(241,35,43,.16),transparent 56%),var(--bg);border-bottom:1px solid rgb(var(--line) / .09)">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgb(var(--line) / .04) 1px,transparent 1px),linear-gradient(90deg,rgb(var(--line) / .04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(120% 100% at 80% 0%,#000,transparent 75%);mask-image:radial-gradient(120% 100% at 80% 0%,#000,transparent 75%)"></div>
+      <div style="position:relative;max-width:1180px;margin:0 auto;padding:54px 40px 30px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--gold);margin-bottom:14px">● FULL SCHEDULE · ARSENAL</div>
+        <h1 style="font-family:'Anton',sans-serif;font-weight:400;font-size:74px;line-height:.9;margin:0 0 16px;text-transform:uppercase">Matches</h1>
+        <p style="font-size:17px;line-height:1.5;color:rgb(var(--fg) / .74);max-width:520px;margin:0 0 28px">Every Arsenal fixture with a room. Join the live show, or set a reminder and we’ll buzz you when the host goes on air.</p>
+        <div style="display:flex;align-items:center;gap:9px">
+          <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;font-weight:700;color:var(--inv-fg);background:var(--inv-bg);padding:8px 16px;border-radius:30px">ALL</span>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgb(var(--fg) / .74);border:1px solid rgb(var(--line) / .17);padding:8px 16px;border-radius:30px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .4)">LIVE</span>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgb(var(--fg) / .74);border:1px solid rgb(var(--line) / .17);padding:8px 16px;border-radius:30px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .4)">UPCOMING</span>
+          <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.06em;color:rgb(var(--fg) / .74);border:1px solid rgb(var(--line) / .17);padding:8px 16px;border-radius:30px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .4)">PAST</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="max-width:1180px;margin:0 auto;padding:36px 40px 70px">
+      <!-- LIVE NOW featured -->
+      <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:rgb(var(--fg) / .58);margin-bottom:14px">LIVE NOW</div>
+      <div style="position:relative;border-radius:18px;overflow:hidden;border:1px solid rgba(241,35,43,.35);background:var(--bg2);margin-bottom:40px">
+        <div style="position:absolute;inset:0;background-image:radial-gradient(rgb(var(--line) / .10) 1px,transparent 1.4px);background-size:9px 9px;opacity:.4"></div>
+        <div style="position:absolute;inset:0;background:radial-gradient(120% 160% at 100% 0%,rgba(241,35,43,.3),transparent 55%)"></div>
+        <div style="position:relative;display:flex;align-items:center;gap:24px;padding:26px 28px;flex-wrap:wrap">
+          <span style="display:inline-flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:#fff;background:#F1232B;padding:7px 12px;border-radius:30px;flex:none"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:fcpulse 1.6s infinite"></span>LIVE</span>
+          <div style="flex:1;min-width:240px">
+            <h3 style="font-family:'Anton',sans-serif;font-weight:400;font-size:34px;line-height:.95;margin:0 0 6px;text-transform:uppercase">Arsenal vs Burnley <span style="color:rgb(var(--fg) / .54);font-size:18px">(test)</span></h3>
+            <div style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .7)">PREMIER LEAGUE · TEST · SHOW STARTS SOON · HOSTED BY NATHAN</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="text-align:right"><div style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .62)">IN THE ROOM</div><div style="font-family:'Anton',sans-serif;font-size:26px;letter-spacing:.04em">1,204</div></div>
+            <span style="display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--inv-fg);background:var(--inv-bg);padding:13px 22px;border-radius:10px;cursor:pointer" style-hover="opacity:.88" onClick="{{ goRoom }}">Join the room <span>→</span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPCOMING list -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <span style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.14em;color:rgb(var(--fg) / .58)">UPCOMING</span>
+        <span style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .54)">{{ upcomingCount }} FIXTURES</span>
+      </div>
+      <div style="border:1px solid rgb(var(--line) / .11);border-radius:16px;overflow:hidden;background:var(--bg3)">
+        <sc-for list="{{ upcomingFull }}" as="fx" hint-placeholder-count="7">
+          <div style="display:flex;align-items:center;gap:22px;padding:20px 24px;border-bottom:1px solid rgb(var(--line) / .09)" style-hover="background:var(--panel)">
+            <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.04em;color:rgb(var(--fg) / .74);width:96px;flex:none;line-height:1.5;white-space:pre-line">{{ fx.date }}</div>
+            <div style="width:1px;height:38px;background:rgb(var(--line) / .13);flex:none"></div>
+            <div style="flex:1;min-width:200px">
+              <div style="font-size:18px;font-weight:700;letter-spacing:-.01em;margin-bottom:3px">{{ fx.match }}</div>
+              <div style="font-family:'Space Mono',monospace;font-size:10.5px;color:rgb(var(--fg) / .6);letter-spacing:.04em">{{ fx.venue }} · {{ fx.mw }}</div>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:rgb(var(--fg) / .7);border:1px solid rgb(var(--line) / .15);padding:5px 10px;border-radius:6px;flex:none">{{ fx.comp }}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--strong);border:1px solid rgb(var(--line) / .18);padding:10px 16px;border-radius:9px;flex:none;cursor:pointer" style-hover="border-color:var(--gold);color:var(--gold)">Remind me</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="margin-top:34px;display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid rgb(var(--line) / .11);border-radius:16px;padding:24px 26px;flex-wrap:wrap;gap:16px">
+        <div>
+          <div style="font-size:18px;font-weight:800;margin-bottom:4px">Want to host a room?</div>
+          <div style="font-size:13.5px;color:rgb(var(--fg) / .7)">Arsenal first. More clubs to come. If you fancy calling the match, there’ll be room for you too.</div>
+        </div>
+        <span style="font-size:14px;font-weight:700;color:#fff;background:#F1232B;padding:13px 22px;border-radius:10px;cursor:pointer;flex:none" style-hover="background:#ff3a41" onClick="{{ goAbout }}">Read more →</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <!-- ============ ABOUT ============ -->
+  <sc-if value="{{ isAbout }}" hint-placeholder-val="{{ false }}">
+  <div>
+    <!-- manifesto hero -->
+    <div style="position:relative;overflow:hidden;background:radial-gradient(120% 90% at 15% -20%,rgba(241,35,43,.18),transparent 56%),var(--bg);border-bottom:1px solid rgb(var(--line) / .09)">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgb(var(--line) / .04) 1px,transparent 1px),linear-gradient(90deg,rgb(var(--line) / .04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(120% 100% at 20% 0%,#000,transparent 72%);mask-image:radial-gradient(120% 100% at 20% 0%,#000,transparent 72%)"></div>
+      <div style="position:relative;max-width:1180px;margin:0 auto;padding:64px 40px 70px">
+        <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--gold);margin-bottom:20px">● ABOUT FANCAST</div>
+        <h1 style="font-family:'Anton',sans-serif;font-weight:400;font-size:74px;line-height:.92;margin:0 0 26px;text-transform:uppercase;max-width:900px">Not a broadcaster.<br><span style="color:#F1232B;text-shadow:0 0 38px rgba(241,35,43,.5)">Fans &amp; friends hanging out.</span></h1>
+        <p style="font-size:20px;line-height:1.55;color:rgb(var(--fg) / .8);max-width:640px;margin:0">Match coverage got polished into something that forgot who it was for. FanCast is the opposite: a real supporter in your ear, the chat you’d have at the pub, and the numbers that actually matter, riding alongside whatever stream you already watch.</p>
+      </div>
+    </div>
+
+    <!-- story columns -->
+    <div style="max-width:1180px;margin:0 auto;padding:60px 40px 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:34px">
+      <div>
+        <div style="font-family:'Anton',sans-serif;font-size:30px;color:rgba(232,181,74,.95);margin-bottom:14px;text-transform:uppercase">The problem</div>
+        <p style="font-size:15px;line-height:1.6;color:rgb(var(--fg) / .74);margin:0">Pundits hedge. Streams lag. The group chat moves too fast to read. Watching with other fans got harder, not easier, and nobody’s on your side for the full ninety.</p>
+      </div>
+      <div>
+        <div style="font-family:'Anton',sans-serif;font-size:30px;color:rgba(232,181,74,.95);margin-bottom:14px;text-transform:uppercase">The idea</div>
+        <p style="font-size:15px;line-height:1.6;color:rgb(var(--fg) / .74);margin:0">Keep your own stream. Add a live fan host, a chat worth reading, and the stats on tap, all synced to your screen with one tap. We don’t show the game; we sit beside it.</p>
+      </div>
+      <div>
+        <div style="font-family:'Anton',sans-serif;font-size:30px;color:rgba(232,181,74,.95);margin-bottom:14px;text-transform:uppercase">The promise</div>
+        <p style="font-size:15px;line-height:1.6;color:rgb(var(--fg) / .74);margin:0">Hosts keep and own every recording. Independent, unofficial, and built for supporters, never for rights-holders.</p>
+      </div>
+    </div>
+
+    <!-- big stat band -->
+    <div style="max-width:1180px;margin:0 auto;padding:40px 40px 8px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgb(var(--line) / .11);border:1px solid rgb(var(--line) / .11);border-radius:16px;overflow:hidden">
+        <div style="background:var(--bg3);padding:28px 24px"><div style="font-family:'Anton',sans-serif;font-size:46px;line-height:1;color:var(--gold)">0</div><div style="font-size:13px;color:rgb(var(--fg) / .7);margin-top:8px">pundits on the payroll</div></div>
+        <div style="background:var(--bg3);padding:28px 24px"><div style="font-family:'Anton',sans-serif;font-size:46px;line-height:1">100%</div><div style="font-size:13px;color:rgb(var(--fg) / .7);margin-top:8px">of recordings owned by hosts</div></div>
+        <div style="background:var(--bg3);padding:28px 24px"><div style="font-family:'Anton',sans-serif;font-size:46px;line-height:1">&lt;1<span style="font-size:24px">min</span></div><div style="font-size:13px;color:rgb(var(--fg) / .7);margin-top:8px">to sign up and join in</div></div>
+        <div style="background:var(--bg3);padding:28px 24px"><div style="font-family:'Anton',sans-serif;font-size:46px;line-height:1">90</div><div style="font-size:13px;color:rgb(var(--fg) / .7);margin-top:8px">minutes live, every match</div></div>
+      </div>
+    </div>
+
+    <!-- principles -->
+    <div style="max-width:1180px;margin:0 auto;padding:54px 40px 20px">
+      <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--gold);margin-bottom:14px">● WHAT WE STAND FOR</div>
+      <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:48px;line-height:.95;margin:0 0 30px;text-transform:uppercase">Four things we won’t budge on</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <sc-for list="{{ principles }}" as="p" hint-placeholder-count="4">
+          <div style="background:var(--panel);border:1px solid rgb(var(--line) / .11);border-radius:16px;padding:26px 26px 28px;display:flex;gap:18px">
+            <span style="font-family:'Anton',sans-serif;font-size:34px;line-height:.9;color:rgba(232,181,74,.9);flex:none">{{ p.n }}</span>
+            <div><h3 style="font-size:19px;font-weight:800;margin:0 0 9px;letter-spacing:-.01em">{{ p.k }}</h3><p style="font-size:14px;line-height:1.55;color:rgb(var(--fg) / .7);margin:0">{{ p.d }}</p></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- hosts -->
+    <div style="max-width:1180px;margin:0 auto;padding:50px 40px 30px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:26px">
+        <div>
+          <div style="font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.16em;color:var(--gold);margin-bottom:14px">● THE VOICES</div>
+          <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:48px;line-height:.95;margin:0;text-transform:uppercase">Your hosts</h2>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .58);text-align:right;max-width:220px;line-height:1.5">[ PHOTO: hosts mid-show,<br>headphones on, scarf up ]</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+        <sc-for list="{{ hosts }}" as="h" hint-placeholder-count="3">
+          <div style="background:var(--bg3);border:1px solid rgb(var(--line) / .11);border-radius:16px;overflow:hidden">
+            <div style="height:150px;background:repeating-linear-gradient(135deg,var(--bg2),var(--bg2) 9px,var(--bg3) 9px,var(--bg3) 18px);position:relative;display:flex;align-items:flex-end;padding:14px">
+              <div style="position:absolute;inset:0;background:radial-gradient(80% 80% at 50% 0%,rgba(232,181,74,.18),transparent 60%)"></div>
+              <span style="position:relative;width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:2px solid var(--bg3)"></span>
+            </div>
+            <div style="padding:18px 20px 22px">
+              <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px"><span style="font-size:17px;font-weight:800">{{ h.name }}</span><span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--gold)">{{ h.handle }}</span></div>
+              <p style="font-size:13.5px;line-height:1.5;color:rgb(var(--fg) / .7);margin:0">{{ h.bio }}</p>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="position:relative;overflow:hidden;background:radial-gradient(90% 130% at 50% 120%,rgba(241,35,43,.28),transparent 60%),var(--bg);margin-top:30px;border-top:1px solid rgb(var(--line) / .09)">
+      <div style="position:relative;max-width:1180px;margin:0 auto;padding:72px 40px 80px;text-align:center">
+        <h2 style="font-family:'Anton',sans-serif;font-weight:400;font-size:56px;line-height:.92;margin:0 0 16px;text-transform:uppercase">Pull up a seat.</h2>
+        <p style="font-size:17px;color:rgb(var(--fg) / .74);max-width:460px;margin:0 auto 28px">Jump in and listen along. Sign up when you want to chat, vote, or call in.</p>
+        <span style="display:inline-flex;align-items:center;gap:10px;font-size:16px;font-weight:700;color:#fff;background:#F1232B;padding:16px 28px;border-radius:12px;box-shadow:0 16px 40px -10px rgba(241,35,43,.7);cursor:pointer" style-hover="background:#ff3a41" onClick="{{ goMatches }}">See what’s live <span style="font-size:18px">→</span></span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <!-- ============ SIGN IN ============ -->
+  <sc-if value="{{ isSignin }}" hint-placeholder-val="{{ false }}">
+  <div style="display:grid;grid-template-columns:1.05fr .95fr;min-height:calc(100vh - 61px);position:relative">
+    <div style="position:absolute;top:18px;right:22px;z-index:6"><span onClick="{{ toggleTheme }}" role="button" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:1px solid rgb(var(--line) / .16);padding:5px 8px 5px 11px;border-radius:20px" style-hover="border-color:rgb(var(--line) / .34)"><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;color:rgb(var(--fg) / .6)">{{ themeLabel }}</span><span style="width:30px;height:16px;border-radius:10px;background:rgb(var(--line) / .14);position:relative;display:inline-block"><span style="position:absolute;top:2px;left:{{ knobLeft }};width:12px;height:12px;border-radius:50%;background:var(--gold);box-shadow:0 1px 2px rgba(0,0,0,.4);transition:left .22s ease"></span></span></span></div>
+    <!-- left: value panel -->
+    <div style="position:relative;overflow:hidden;background:radial-gradient(120% 90% at 20% 10%,rgba(241,35,43,.22),transparent 55%),var(--bg);padding:56px 56px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgb(var(--line) / .1)">
+      <div style="position:absolute;inset:0;background-image:linear-gradient(rgb(var(--line) / .04) 1px,transparent 1px),linear-gradient(90deg,rgb(var(--line) / .04) 1px,transparent 1px);background-size:54px 54px;-webkit-mask-image:radial-gradient(120% 90% at 10% 10%,#000,transparent 70%);mask-image:radial-gradient(120% 90% at 10% 10%,#000,transparent 70%)"></div>
+      <div style="position:relative">
+        <div style="display:inline-flex;align-items:center;gap:8px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.12em;color:#F1232B;border:1px solid rgba(241,35,43,.35);padding:6px 12px;border-radius:30px;margin-bottom:auto"><span style="width:6px;height:6px;border-radius:50%;background:#F1232B;animation:fcpulse 1.7s infinite"></span>1,204 IN THE ROOM RIGHT NOW</div>
+      </div>
+      <div style="position:relative">
+        <h1 style="font-family:'Anton',sans-serif;font-weight:400;font-size:62px;line-height:.9;margin:0 0 22px;text-transform:uppercase">Pull up<br>a seat.</h1>
+        <p style="font-size:16px;line-height:1.55;color:rgb(var(--fg) / .76);max-width:380px;margin:0 0 30px">Tune in to the room in seconds. Sign up to join in, and it only takes a minute.</p>
+        <div style="display:flex;flex-direction:column;gap:14px;max-width:380px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:7px;background:rgba(232,181,74,.16);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;flex:none">✓</span><span style="font-size:14.5px;color:rgb(var(--fg) / .86)">Chat with the room and reply to good takes</span></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:7px;background:rgba(232,181,74,.16);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;flex:none">✓</span><span style="font-size:14.5px;color:rgb(var(--fg) / .86)">Vote in half-time polls and rate the players</span></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:7px;background:rgba(232,181,74,.16);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;flex:none">✓</span><span style="font-size:14.5px;color:rgb(var(--fg) / .86)">Ask the commentator, or request the mic and call in</span></div>
+        </div>
+      </div>
+      <div style="position:relative;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.05em;color:rgb(var(--fg) / .58)">NO PUNDITS · NO FLUFF · JUST FOOTBALL</div>
+    </div>
+
+    <!-- right: form -->
+    <div style="background:var(--bg3);display:flex;align-items:center;justify-content:center;padding:48px 40px">
+      <div style="width:100%;max-width:380px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:30px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#F1232B;box-shadow:0 0 12px #F1232B;animation:fcpulse 1.8s infinite"></span>
+          <span style="font-family:'Anton',sans-serif;font-size:20px;letter-spacing:.04em">FANCAST</span>
+        </div>
+        <h2 style="font-size:26px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px">Sign in or join</h2>
+        <p style="font-size:14px;color:rgb(var(--fg) / .7);margin:0 0 26px">Enter your email and we’ll send a one-tap link. No passwords.</p>
+
+        <label style="display:block;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:rgb(var(--fg) / .66);margin-bottom:8px">EMAIL</label>
+        <input type="email" placeholder="you@example.com" style="width:100%;background:var(--bg);border:1px solid rgb(var(--line) / .17);border-radius:11px;padding:14px 16px;font-size:15px;color:var(--strong);font-family:'Hanken Grotesk',sans-serif;outline:none;margin-bottom:14px" style-focus="border-color:#F1232B">
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:700;color:#fff;background:#F1232B;padding:15px 0;border-radius:11px;box-shadow:0 12px 30px -10px rgba(241,35,43,.6);cursor:pointer" style-hover="background:#ff3a41">Continue with email <span>→</span></div>
+
+        <div style="display:flex;align-items:center;gap:14px;margin:22px 0">
+          <span style="flex:1;height:1px;background:rgb(var(--line) / .13)"></span>
+          <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .58)">OR</span>
+          <span style="flex:1;height:1px;background:rgb(var(--line) / .13)"></span>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <div style="display:flex;align-items:center;justify-content:center;gap:11px;font-size:14.5px;font-weight:600;color:var(--strong);background:var(--bg);border:1px solid rgb(var(--line) / .17);padding:13px 0;border-radius:11px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .34)"><span style="font-weight:800"></span>Continue with Apple</div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:11px;font-size:14.5px;font-weight:600;color:var(--strong);background:var(--bg);border:1px solid rgb(var(--line) / .17);padding:13px 0;border-radius:11px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .34)"><span style="font-family:'Anton',sans-serif;color:#F1232B;font-size:16px">G</span>Continue with Google</div>
+        </div>
+
+        <p style="font-size:12px;line-height:1.5;color:rgb(var(--fg) / .6);margin:24px 0 0;text-align:center">By continuing you agree to FanCast’s <span style="color:rgb(var(--fg) / .82);text-decoration:underline;cursor:pointer">Terms</span> and <span style="color:rgb(var(--fg) / .82);text-decoration:underline;cursor:pointer">Privacy Policy</span>.</p>
+        <p style="font-size:13px;color:rgb(var(--fg) / .7);margin:18px 0 0;text-align:center">Want to look around first? <span style="color:#F1232B;font-weight:700;cursor:pointer" onClick="{{ goMatches }}">Browse matches →</span></p>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ GAMEDAY ROOM ============ -->
+  <sc-if value="{{ isRoom }}" hint-placeholder-val="{{ false }}">
+  <div style="height:100vh;display:flex;flex-direction:column;background:var(--bg);overflow:hidden">
+
+    <!-- match bar -->
+    <div style="flex:none;height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid rgb(var(--line) / .11);background:var(--bg3)">
+      <div style="display:flex;align-items:center;gap:13px">
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:rgb(var(--fg) / .82);cursor:pointer" style-hover="color:#fff" onClick="{{ goMatches }}"><span style="font-size:15px">‹</span>Leave</span>
+        <span style="width:1px;height:20px;background:rgb(var(--line) / .15)"></span>
+        <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:rgb(var(--fg) / .66);border:1px solid rgb(var(--line) / .15);padding:3px 7px;border-radius:5px">PL · TEST</span>
+        <span style="font-size:14px;font-weight:700;letter-spacing:-.01em">Arsenal vs Burnley <span style="color:rgb(var(--fg) / .58);font-weight:500">(test)</span></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="display:inline-flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:11px;letter-spacing:.1em;color:#fff;background:#F1232B;padding:5px 10px;border-radius:6px"><span style="width:6px;height:6px;border-radius:50%;background:#fff;animation:fcpulse 1.6s infinite"></span>LIVE</span>
+        <span style="font-family:'Space Mono',monospace;font-size:13px;letter-spacing:.04em;color:rgb(var(--fg) / .82)">1H 23:14</span>
+        <span style="width:1px;height:20px;background:rgb(var(--line) / .15)"></span>
+        <span style="font-family:'Anton',sans-serif;font-size:18px;letter-spacing:.04em;white-space:nowrap">ARS <span style="color:var(--strong)">2</span> <span style="color:rgb(var(--line) / .3)">–</span> <span style="color:var(--strong)">0</span> BUR</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="display:flex;align-items:center"><span style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:1.5px solid var(--bg3)"></span><span style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#44343a,#241b1f);border:1.5px solid var(--bg3);margin-left:-8px"></span><span style="width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:1.5px solid var(--bg3);margin-left:-8px"></span><span style="font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .74);margin-left:8px">1,204</span></div>
+        <span onClick="{{ toggleTheme }}" role="button" style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;border:1px solid rgb(var(--line) / .16);padding:5px 7px 5px 10px;border-radius:20px" style-hover="border-color:rgb(var(--line) / .34)"><span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.12em;color:rgb(var(--fg) / .6)">{{ themeLabel }}</span><span style="width:28px;height:15px;border-radius:10px;background:rgb(var(--line) / .14);position:relative;display:inline-block"><span style="position:absolute;top:2px;left:{{ knobLeft }};width:11px;height:11px;border-radius:50%;background:var(--gold);box-shadow:0 1px 2px rgba(0,0,0,.4);transition:left .22s ease"></span></span></span>
+        <span style="font-size:12.5px;font-weight:600;color:rgb(var(--fg) / .82);border:1px solid rgb(var(--line) / .17);padding:6px 12px;border-radius:8px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .34)">Share</span>
+      </div>
+    </div>
+
+    <!-- body: 3 columns -->
+    <div style="flex:1;min-height:0;display:grid;grid-template-columns:2fr 1fr">
+
+      <!-- CHAT (left · 2/3) -->
+      <div style="display:flex;flex-direction:column;min-height:0;border-right:1px solid rgb(var(--line) / .11)">
+        <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-bottom:1px solid rgb(var(--line) / .11);background:var(--bg2)">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span onClick="{{ goChatTab }}" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:800;padding:7px 13px;border-radius:8px;cursor:pointer;background:{{ chatTabBg }};color:{{ chatTabFg }}">Room chat<span style="font-family:'Space Mono',monospace;font-size:9.5px;font-weight:400;opacity:.55">342</span></span>
+            <span onClick="{{ goPollsTab }}" style="position:relative;display:inline-flex;align-items:center;font-size:13px;font-weight:800;padding:7px 13px;border-radius:8px;cursor:pointer;background:{{ pollsTabBg }};color:{{ pollsTabFg }}">Polls<sc-if value="{{ showPollBadge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-4px;right:-5px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#F1232B;color:#fff;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg2);animation:fcpulse 1.8s ease-in-out infinite">{{ pollCount }}</span></sc-if></span>
+          </div>
+          <sc-if value="{{ isChatTab }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="display:flex;align-items:center;gap:4px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.04em">
+              <span style="color:rgb(var(--fg) / .66);padding:5px 9px;border-radius:6px;cursor:pointer">NEW</span>
+              <span style="color:var(--inv-fg);background:var(--inv-bg);font-weight:700;padding:5px 9px;border-radius:6px;cursor:pointer">TOP</span>
+              <span style="color:rgb(var(--fg) / .66);padding:5px 9px;border-radius:6px;cursor:pointer">CONTROVERSIAL</span>
+            </div>
+            <span onClick="{{ refreshChat }}" style="display:inline-flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.04em;color:rgb(var(--fg) / .82);border:1px solid rgb(var(--line) / .15);padding:5px 10px;border-radius:6px;cursor:pointer" style-hover="border-color:rgb(var(--line) / .34);color:var(--strong)"><span style="font-size:12px">↻</span>Refresh<sc-if value="{{ hasNew }}" hint-placeholder-val="{{ true }}"><span style="min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:#F1232B;color:#fff;font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center">{{ newCount }}</span></sc-if></span>
+          </div>
+          </sc-if>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto">
+          <!-- CHAT TAB -->
+          <sc-if value="{{ isChatTab }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:14px">
+          <!-- answered question -->
+          <div style="background:var(--panel-lo);border:1px solid rgb(var(--line) / .11);border-left:2px solid #F1232B;border-radius:10px;padding:12px 14px">
+            <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#F1232B;margin-bottom:7px">ASKED THE COMMENTATOR</div>
+            <div style="font-size:13px;color:rgb(var(--fg) / .92);margin-bottom:11px"><span style="color:rgb(var(--fg) / .66);font-family:'Space Mono',monospace;font-size:11px">{{ qa.asker }}</span> &nbsp;{{ qa.question }}</div>
+            <div style="display:flex;gap:9px;align-items:flex-start;background:var(--bg);border-radius:8px;padding:10px 11px">
+              <span style="width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:1.5px solid #F1232B;flex:none"></span>
+              <div><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:12.5px;font-weight:800">nathan</span><span style="font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--gold);border:1px solid rgba(232,181,74,.5);padding:1px 5px;border-radius:3px">HOST</span></div><div style="font-size:12.5px;line-height:1.5;color:rgb(var(--fg) / .86)">{{ qa.answer }}</div></div>
+            </div>
+          </div>
+
+          <!-- messages -->
+          <sc-for list="{{ chat }}" as="msg" hint-placeholder-count="4">
+            <div style="display:flex;gap:10px">
+              <span style="width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);flex:none;margin-top:1px"></span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+                  <span style="font-size:13px;font-weight:800">{{ msg.name }}</span>
+                  <sc-if value="{{ msg.host }}" hint-placeholder-val="{{ false }}"><span style="font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.1em;color:var(--gold);border:1px solid rgba(232,181,74,.5);padding:1px 5px;border-radius:3px">HOST</span></sc-if>
+                  <span style="font-family:'Space Mono',monospace;font-size:10px;color:rgb(var(--fg) / .56)">{{ msg.time }}</span>
+                </div>
+                <div style="font-size:13px;line-height:1.5;color:rgb(var(--fg) / .82)">{{ msg.text }}</div>
+                <div style="display:flex;align-items:center;gap:14px;margin-top:7px">
+                  <span style="display:inline-flex;align-items:center;gap:5px;font-family:'Space Mono',monospace;font-size:11px;color:rgb(var(--fg) / .7);border:1px solid rgb(var(--line) / .15);padding:3px 9px;border-radius:20px;cursor:pointer" style-hover="border-color:var(--gold);color:var(--gold)"><span style="font-size:9px">▲</span>{{ msg.ups }}</span>
+                  <span style="font-size:11.5px;font-weight:600;color:rgb(var(--fg) / .66);cursor:pointer" style-hover="color:var(--strong)">Reply</span>
+                </div>
+                <sc-for list="{{ msg.replies }}" as="r" hint-placeholder-count="0">
+                  <div style="display:flex;gap:8px;margin-top:10px;padding-left:11px;border-left:1px solid rgb(var(--line) / .13)">
+                    <span style="width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#44343a,#241b1f);flex:none;margin-top:1px"></span>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px"><span style="font-size:12px;font-weight:700">{{ r.name }}</span><span style="font-family:'Space Mono',monospace;font-size:9.5px;color:rgb(var(--fg) / .56)">{{ r.time }}</span></div>
+                      <div style="font-size:12.5px;line-height:1.45;color:rgb(var(--fg) / .84)">{{ r.text }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          </div>
+          </sc-if>
+
+          <!-- POLLS TAB -->
+          <sc-if value="{{ isPollsTab }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">
+            <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .62)">OPEN POLLS · {{ pollCount }}</div>
+            <sc-for list="{{ polls }}" as="poll" hint-placeholder-count="2">
+              <div style="background:var(--panel);border:1px solid rgba(241,35,43,.28);border-radius:12px;padding:14px 15px">
+                <div style="display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:#F1232B;margin-bottom:9px"><span style="width:5px;height:5px;border-radius:50%;background:#F1232B;animation:fcpulse 1.6s infinite"></span>{{ poll.status }} POLL</div>
+                <div style="font-size:14.5px;font-weight:700;margin-bottom:12px">{{ poll.q }}</div>
+                <sc-for list="{{ poll.options }}" as="opt" hint-placeholder-count="3">
+                  <div style="position:relative;background:var(--bg);border:1px solid rgb(var(--line) / .1);border-radius:8px;overflow:hidden;margin-bottom:7px;cursor:pointer" style-hover="border-color:rgba(232,181,74,.55)">
+                    <div style="position:absolute;top:0;left:0;bottom:0;width:{{ opt.pct }}%;background:rgba(241,35,43,.22)"></div>
+                    <div style="position:relative;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;font-size:13px"><span style="font-weight:600">{{ opt.label }}</span><span style="font-family:'Space Mono',monospace;color:rgb(var(--fg) / .82)">{{ opt.pct }}%</span></div>
+                  </div>
+                </sc-for>
+                <div style="font-family:'Space Mono',monospace;font-size:10px;color:rgb(var(--fg) / .6);margin-top:9px">{{ poll.total }}</div>
+              </div>
+            </sc-for>
+            <!-- player ratings -->
+            <div style="background:var(--panel);border:1px solid rgb(var(--line) / .11);border-radius:12px;padding:14px 15px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+                <div style="font-family:'Space Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:var(--gold)">RATE THE PLAYERS</div>
+                <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:rgb(var(--fg) / .58)">HALF-TIME · TAP TO RATE</div>
+              </div>
+              <div style="font-size:12px;color:rgb(var(--fg) / .66);margin-bottom:11px">Your score joins the crowd average.</div>
+              <sc-for list="{{ players }}" as="p" hint-placeholder-count="6">
+                <div style="display:flex;align-items:center;gap:11px;padding:7px 0;border-top:1px solid rgb(var(--line) / .09)">
+                  <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.04em;color:rgb(var(--fg) / .62);width:24px;flex:none">{{ p.pos }}</span>
+                  <span style="font-size:13px;font-weight:700;flex:none;width:72px">{{ p.name }}</span>
+                  <div style="flex:1;display:flex;align-items:center;gap:2px;cursor:pointer">
+                    <sc-for list="{{ p.segs }}" as="seg" hint-placeholder-count="10">
+                      <div style="flex:1;height:7px;border-radius:1px;background:{{ seg.c }}"></div>
+                    </sc-for>
+                  </div>
+                  <span style="font-family:'Anton',sans-serif;font-size:15px;letter-spacing:.02em;width:32px;text-align:right;flex:none">{{ p.avg }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          </sc-if>
+        </div>
+
+        <!-- composer (chat only) -->
+        <sc-if value="{{ isChatTab }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:none;border-top:1px solid rgb(var(--line) / .11);padding:11px 14px;background:var(--bg2);position:relative">
+          <!-- floating reactions -->
+          <div style="position:absolute;left:14px;right:14px;bottom:100%;height:180px;pointer-events:none;overflow:hidden">
+            <sc-for list="{{ floats }}" as="f" hint-placeholder-count="0">
+              <span style="position:absolute;bottom:0;left:{{ f.left }}%;animation:fcfloat {{ f.dur }}s ease-out forwards"><span style="display:inline-block;font-size:22px;transform:rotate({{ f.rot }}deg)">{{ f.emoji }}</span></span>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <sc-for list="{{ reactionButtons }}" as="r" hint-placeholder-count="5">
+                <span onClick="{{ r.onTap }}" style="width:32px;height:32px;border-radius:9px;background:var(--panel-hi);border:1px solid rgb(var(--line) / .11);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer" style-hover="background:var(--panel-hi);border-color:rgba(232,181,74,.5)">{{ r.emoji }}</span>
+              </sc-for>
+            </div>
+            <span style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.04em;color:rgb(var(--fg) / .74);border:1px solid rgb(var(--line) / .15);padding:6px 12px;border-radius:20px;cursor:pointer;flex:none;white-space:nowrap" style-hover="border-color:rgb(var(--line) / .34)">Ask the host</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <input type="text" placeholder="Say something to the room…" style="flex:1;background:var(--bg);border:1px solid rgb(var(--line) / .17);border-radius:10px;padding:11px 13px;font-size:13px;color:var(--strong);font-family:'Hanken Grotesk',sans-serif;outline:none" style-focus="border-color:#F1232B">
+            <span style="width:42px;height:42px;border-radius:10px;background:#F1232B;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none" style-hover="background:#ff3a41"><span style="display:block;width:0;height:0;border-left:12px solid #fff;border-top:7px solid transparent;border-bottom:7px solid transparent;margin-left:3px"></span></span>
+          </div>
+        </div>
+        </sc-if>
+      </div>
+
+      <!-- RIGHT: stats -->
+      <div style="overflow-y:auto;background:var(--bg2);padding:14px">
+        <div style="display:flex;align-items:center;gap:4px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.04em;margin-bottom:14px">
+          <span style="color:var(--inv-fg);background:var(--inv-bg);font-weight:700;padding:5px 10px;border-radius:6px;cursor:pointer">STATS</span>
+          <span style="color:rgb(var(--fg) / .66);padding:5px 10px;border-radius:6px;cursor:pointer">LINEUPS</span>
+          <span style="color:rgb(var(--fg) / .66);padding:5px 10px;border-radius:6px;cursor:pointer">TIMELINE</span>
+        </div>
+
+        <!-- possession -->
+        <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .62);margin-bottom:8px"><span>POSSESSION</span></div>
+        <div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:7px">
+          <div style="width:{{ stats.homePoss }}%;background:#F1232B"></div>
+          <div style="flex:1;background:rgb(var(--line) / .17)"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:700;margin-bottom:18px"><span>ARS {{ stats.homePoss }}%</span><span style="color:rgb(var(--fg) / .66)">{{ stats.awayPoss }}% BUR</span></div>
+
+        <!-- stat rows -->
+        <div style="display:flex;align-items:center;justify-content:space-between;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.08em;color:rgb(var(--fg) / .58);padding-bottom:6px;border-bottom:1px solid rgb(var(--line) / .13)"><span>ARS</span><span>MATCH STATS</span><span>BUR</span></div>
+        <sc-for list="{{ stats.rows }}" as="row" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid rgb(var(--line) / .09)">
+            <span style="width:46px;font-size:14px;font-weight:800">{{ row.home }}</span>
+            <span style="flex:1;text-align:center;font-family:'Space Mono',monospace;font-size:10.5px;letter-spacing:.04em;color:rgb(var(--fg) / .7)">{{ row.label }}</span>
+            <span style="width:46px;text-align:right;font-size:14px;font-weight:800;color:rgb(var(--fg) / .82)">{{ row.away }}</span>
+          </div>
+        </sc-for>
+
+        <!-- momentum -->
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .62);margin:18px 0 9px">MOMENTUM</div>
+        <div style="display:flex;align-items:flex-end;gap:2px;height:36px;margin-bottom:18px">
+          <sc-for list="{{ momentum }}" as="m" hint-placeholder-count="24">
+            <div style="flex:1;border-radius:2px;height:{{ m.h }}px;background:{{ m.color }}"></div>
+          </sc-for>
+        </div>
+
+        <!-- key events -->
+        <div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .62);margin-bottom:6px">KEY EVENTS</div>
+        <sc-for list="{{ events }}" as="e" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgb(var(--line) / .09)">
+            <span style="font-family:'Anton',sans-serif;font-size:15px;color:var(--gold);width:28px;flex:none">{{ e.min }}’</span>
+            <div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700">{{ e.text }}</div><div style="font-family:'Space Mono',monospace;font-size:9.5px;color:rgb(var(--fg) / .62)">{{ e.sub }}</div></div>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.06em;color:rgb(var(--fg) / .66);border:1px solid rgb(var(--line) / .15);padding:2px 6px;border-radius:4px">{{ e.team }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- audio dock -->
+    <div style="flex:none;min-height:74px;border-top:1px solid rgb(var(--line) / .11);background:var(--bg3);display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;padding:9px 18px">
+      <!-- on-air speakers + request mic -->
+      <div style="display:flex;align-items:center;gap:10px;flex:none">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--panel-lo);border:1px solid rgba(241,35,43,.3);border-radius:12px;padding:6px 14px 6px 6px">
+          <span style="width:32px;height:32px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3a3a40,#1b1b1f);border:2px solid #F1232B;flex:none"></span>
+          <div>
+            <div style="display:flex;align-items:center;gap:5px"><span style="font-size:12.5px;font-weight:800">nathan</span><span style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.1em;color:var(--gold);border:1px solid rgba(232,181,74,.5);padding:1px 4px;border-radius:3px">HOST</span></div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:3px">
+              <div style="display:flex;align-items:flex-end;gap:2px;height:8px">
+                <span style="width:2.5px;height:8px;background:#F1232B;border-radius:1px;transform-origin:bottom;animation:fceq .9s ease-in-out infinite"></span>
+                <span style="width:2.5px;height:8px;background:#F1232B;border-radius:1px;transform-origin:bottom;animation:fceq .9s ease-in-out .18s infinite"></span>
+                <span style="width:2.5px;height:8px;background:#F1232B;border-radius:1px;transform-origin:bottom;animation:fceq .9s ease-in-out .36s infinite"></span>
+              </div>
+              <span style="font-family:'Space Mono',monospace;font-size:8.5px;letter-spacing:.04em;color:rgb(var(--fg) / .62);white-space:nowrap">priya · co-host</span>
+            </div>
+          </div>
+        </div>
+        <sc-if value="{{ notInQueue }}" hint-placeholder-val="{{ true }}">
+        <span onClick="{{ toggleMic }}" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#F1232B;border:1px solid rgba(241,35,43,.4);padding:9px 13px;border-radius:9px;cursor:pointer;flex:none;white-space:nowrap" style-hover="background:rgba(241,35,43,.08)"><span style="width:6px;height:6px;border-radius:50%;background:#F1232B"></span>Request the mic</span>
+        </sc-if>
+        <sc-if value="{{ inQueue }}" hint-placeholder-val="{{ false }}">
+        <span onClick="{{ toggleMic }}" style="display:inline-flex;align-items:center;gap:8px;background:rgba(241,35,43,.12);border:1px solid rgba(241,35,43,.5);padding:6px 12px;border-radius:9px;cursor:pointer;flex:none;white-space:nowrap" style-hover="background:rgba(241,35,43,.2)"><span style="width:7px;height:7px;border-radius:50%;background:#F1232B;animation:fcpulse 1.2s infinite;flex:none"></span><span style="display:flex;flex-direction:column;line-height:1.2;align-items:flex-start"><span style="font-size:11px;font-weight:800;color:var(--strong)">In line to speak · #{{ queuePos }}</span><span style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:.03em;color:rgb(var(--fg) / .66)">nathan brings you on · tap to leave</span></span></span>
+        </sc-if>
+      </div>
+      <!-- transport (flexible: waveform clips, never the controls) -->
+      <div style="flex:1 1 300px;display:flex;align-items:center;gap:12px">
+        <span style="width:42px;height:42px;border-radius:50%;background:#F1232B;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;box-shadow:0 8px 22px -8px rgba(241,35,43,.7)" style-hover="background:#ff3a41"><span style="display:flex;gap:3px"><span style="width:4px;height:14px;background:#fff;border-radius:1px"></span><span style="width:4px;height:14px;background:#fff;border-radius:1px"></span></span></span>
+        <div style="flex:1 1 0;min-width:0;height:30px;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:2px;height:26px">
+            <sc-for list="{{ waveform }}" as="bar" hint-placeholder-count="40">
+              <div style="width:3px;border-radius:2px;height:{{ bar.h }}px;background:linear-gradient(180deg,#F1232B,rgba(241,35,43,.3))"></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex:none">
+          <span style="font-family:'Space Mono',monospace;font-size:10px;color:rgb(var(--fg) / .74);background:var(--bg);border:1px solid rgb(var(--line) / .13);padding:7px 9px;border-radius:7px;cursor:pointer">−0.5s</span>
+          <span style="font-family:'Space Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--inv-fg);background:var(--inv-bg);padding:7px 11px;border-radius:7px;cursor:pointer">SYNC NOW</span>
+          <span style="font-family:'Space Mono',monospace;font-size:10px;color:rgb(var(--fg) / .74);background:var(--bg);border:1px solid rgb(var(--line) / .13);padding:7px 9px;border-radius:7px;cursor:pointer">+0.5s</span>
+        </div>
+      </div>
+      <!-- live + volume -->
+      <div style="display:flex;align-items:center;gap:11px;flex:none">
+        <span style="display:inline-flex;align-items:center;gap:6px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.06em;color:#F1232B;border:1px solid rgba(241,35,43,.4);padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap" style-hover="background:rgba(241,35,43,.08)"><span style="width:5px;height:5px;border-radius:50%;background:#F1232B;animation:fcpulse 1.6s infinite"></span>JUMP TO LIVE</span>
+        <div style="display:flex;align-items:center;gap:7px;flex:none"><span style="font-size:13px;color:rgb(var(--fg) / .66)">♪</span><div style="width:56px;height:4px;border-radius:2px;background:rgb(var(--line) / .17);position:relative"><div style="position:absolute;left:0;top:0;bottom:0;width:68%;background:var(--inv-bg);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+
+  </div>
+  </sc-if>
+
+  </div>
+
+  <!-- ============ FOOTER (persistent) ============ -->
+  <sc-if value="{{ showFooter }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:34px 40px;border-top:1px solid rgb(var(--line) / .1);display:flex;align-items:flex-start;justify-content:space-between;gap:30px;background:var(--footer)">
+    <div style="max-width:340px">
+      <div style="font-family:'Anton',sans-serif;font-size:19px;letter-spacing:.04em;margin-bottom:10px">FANCAST</div>
+      <p style="font-size:11.5px;line-height:1.5;color:rgb(var(--fg) / .58);margin:0">Unofficial, fan-made platform. Not affiliated with or endorsed by any club, league, or broadcaster. © 2026 FanCast.</p>
+    </div>
+    <div style="display:flex;gap:54px">
+      <div><div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .54);margin-bottom:12px">PLATFORM</div><div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:rgb(var(--fg) / .74)"><span style="cursor:pointer" style-hover="color:#fff" onClick="{{ goMatches }}">Matches</span><span style="cursor:pointer" style-hover="color:#fff" onClick="{{ goAbout }}">About</span></div></div>
+      <div><div style="font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;color:rgb(var(--fg) / .54);margin-bottom:12px">LEGAL</div><div style="display:flex;flex-direction:column;gap:9px;font-size:13px;color:rgb(var(--fg) / .74)"><span>Community Guidelines</span><span>Terms of Service</span><span>Privacy Policy</span></div></div>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  _fid = 0;
+  state = { page: 'home', roomTab: 'chat', micQueue: null, floats: [], newCount: 4, theme: 'dark' };
+  nav(p) {
+    return () => {
+      this.setState({ page: p });
+      try { window.scrollTo(0, 0); } catch (e) {}
+    };
+  }
+  setTab(t) {
+    return () => this.setState({ roomTab: t });
+  }
+  toggleMic() {
+    this.setState(s => ({ micQueue: s.micQueue == null ? 3 : null }));
+  }
+  refreshChat() {
+    this.setState({ newCount: 0 });
+  }
+  addReaction(emoji) {
+    const id = ++this._fid;
+    const left = 6 + Math.floor(Math.random() * 62);
+    const rot = Math.round(Math.random() * 26 - 13);
+    const dur = (1.5 + Math.random() * 0.7).toFixed(2);
+    this.setState(s => ({ floats: [...(s.floats || []), { id, emoji, left, rot, dur }].slice(-14) }));
+  }
+  componentDidMount() { this.applyTheme(); }
+  componentDidUpdate() { this.applyTheme(); }
+  applyTheme() { try { document.documentElement.setAttribute('data-theme', this.state.theme || 'dark'); } catch (e) {} }
+  toggleTheme() { this.setState(s => ({ theme: s.theme === 'light' ? 'dark' : 'light' })); }
+  renderVals() {
+    const page = this.state.page;
+    const roomTab = this.state.roomTab || 'chat';
+    const theme = this.state.theme || 'dark';
+    const steps = [
+      { n: '01', t: 'Bring your own stream', d: "Watch the match the way you always do: your telly, your app, your subscription. FanCast doesn't show the game; it sits beside it." },
+      { n: '02', t: 'Press play and sync', d: 'Tap in for live fan audio, then line it up to your screen. When your TV hits a moment, tap Now and the audio locks to your feed.' },
+      { n: '03', t: 'Pull up a seat', d: 'Jump in and listen along. Signing up takes under a minute and lets you chat, vote, ask the commentator, or call in.' },
+    ];
+    const _h = React.createElement;
+    const _svg = (k) => _h('svg', { viewBox: '0 0 24 24', width: 72, height: 72, fill: 'none', stroke: 'currentColor', strokeWidth: 1.4, strokeLinecap: 'round', strokeLinejoin: 'round' }, k);
+    [
+      _svg([_h('rect', { key: 'a', x: 2.5, y: 4, width: 19, height: 12, rx: 2 }), _h('line', { key: 'b', x1: 8, y1: 20, x2: 16, y2: 20 }), _h('line', { key: 'c', x1: 12, y1: 16, x2: 12, y2: 20 })]),
+      _svg([_h('circle', { key: 'a', cx: 12, cy: 12, r: 9 }), _h('polygon', { key: 'b', points: '10,8 16,12 10,16', fill: 'currentColor', stroke: 'none' })]),
+      _svg([_h('line', { key: 'a', x1: 6, y1: 14, x2: 6, y2: 18 }), _h('line', { key: 'b', x1: 10, y1: 9, x2: 10, y2: 18 }), _h('line', { key: 'c', x1: 14, y1: 6, x2: 14, y2: 18 }), _h('line', { key: 'd', x1: 18, y1: 11, x2: 18, y2: 18 })]),
+    ].forEach((el, i) => { if (steps[i]) steps[i].iconEl = el; });
+    const features = [
+      { n: '01', k: 'A fan, not a pundit', d: 'A Gooner who lives and dies with every result, on your side, never neutral.' },
+      { n: '02', k: 'Synced to your screen', d: 'One tap lines the audio to your feed, with half-second nudges and a jump back to live.' },
+      { n: '03', k: 'A chat worth reading', d: 'Threaded replies, upvotes, and sort by New, Top or Controversial. Good takes rise, noise sinks.' },
+      { n: '04', k: 'The stats that matter', d: 'Possession, shots, xG, momentum, lineups and team news, live from kickoff.' },
+      { n: '05', k: 'Ask, vote, call in', d: 'Question the commentator, settle the half-time poll, rate the players, or request the mic.' },
+      { n: '06', k: 'Yours to keep', d: 'Every show is recorded into downloadable segments. The host owns it; we claim nothing.' },
+    ];
+    const upcomingFull = [
+      { date: 'FRI 21 AUG\n19:00', match: 'Arsenal vs Coventry City', comp: 'Premier League', venue: 'Emirates Stadium', mw: 'Matchweek 1' },
+      { date: 'SAT 29 AUG\n14:00', match: 'Aston Villa vs Arsenal', comp: 'Premier League', venue: 'Villa Park', mw: 'Matchweek 2' },
+      { date: 'SAT 5 SEP\n14:00', match: 'Arsenal vs Chelsea', comp: 'Premier League', venue: 'Emirates Stadium', mw: 'Matchweek 3' },
+      { date: 'SAT 12 SEP\n14:00', match: 'Sunderland vs Arsenal', comp: 'Premier League', venue: 'Stadium of Light', mw: 'Matchweek 4' },
+      { date: 'TUE 16 SEP\n20:00', match: 'Arsenal vs Athletic Club', comp: 'Champions League', venue: 'Emirates Stadium', mw: 'League phase' },
+      { date: 'SAT 20 SEP\n17:30', match: 'Arsenal vs Manchester City', comp: 'Premier League', venue: 'Emirates Stadium', mw: 'Matchweek 5' },
+      { date: 'SAT 27 SEP\n14:00', match: "Newcastle vs Arsenal", comp: 'Premier League', venue: "St James' Park", mw: 'Matchweek 6' },
+    ];
+    const upcomingHome = upcomingFull.slice(0, 3);
+    const principles = [
+      { n: '01', k: 'Fans, never pundits', d: 'Every room is hosted by a supporter who actually cares about the result. No neutral takes, no broadcast script. Just someone on your side.' },
+      { n: '02', k: 'We sit beside the game', d: "FanCast never streams the match. You bring your own feed; we bring the voice, the chat and the stats that ride alongside it." },
+      { n: '03', k: 'Hosts keep their work', d: 'Every show records into downloadable segments owned by the host. We take no rights and claim nothing. The room is theirs.' },
+      { n: '04', k: 'Independent & unofficial', d: 'Fan-made and unaffiliated with any club, league or broadcaster. Answerable to supporters, not rights-holders.' },
+    ];
+    const hosts = [
+      { name: 'nathan', handle: '@n8_afc', bio: 'A Gooner since the Highbury days. Calls it like he sees it.' },
+      { name: 'priya', handle: '@priyagooner', bio: 'Tactics head. Will explain the xG and then ignore it when we score a worldie.' },
+      { name: 'deniz', handle: '@denizN5', bio: 'Half-time poll enforcer. Runs the call-in mic on big nights.' },
+    ];
+    const waveform = Array.from({ length: 44 }, (_, i) => {
+      const h = Math.round(8 + 32 * Math.pow(Math.abs(Math.sin(i * 0.62 + Math.cos(i * 0.31))), 1.15));
+      return { h };
+    });
+    // ---- gameday room data ----
+    const polls = [
+      { q: 'Half-time shout: who’s been our best?', total: '1,043 votes · 2:14 left', status: 'LIVE', options: [{ label: 'Saka', pct: 58 }, { label: 'Ødegaard', pct: 27 }, { label: 'Rice', pct: 15 }] },
+      { q: 'Do we hold this lead to full time?', total: '612 votes · open', status: 'LIVE', options: [{ label: 'Comfortably', pct: 64 }, { label: 'Squeaky bum time', pct: 29 }, { label: 'They’ll nick one', pct: 7 }] },
+    ];
+    const qa = { asker: '@gooner_mo', question: 'Why is Rice sitting so deep today?', answer: 'Burnley keep countering through the middle, and he’s screening it so Ødegaard can roam. It’s working.' };
+    const chat = [
+      { name: 'nathan', host: true, time: '23:02', text: 'Saka’s unplayable down that right. Burnley’s left-back needs help and he isn’t getting any.', ups: 84, replies: [{ name: 'priya', time: '23:03', text: 'Double him and it just frees Ødegaard. No answer to it.', ups: 21 }] },
+      { name: 'deniz', host: false, time: '22:51', text: 'That offside flag was tight but right. VAR would’ve taken a week to find it.', ups: 37, replies: [] },
+      { name: 'sam', host: false, time: '22:44', text: '2–0 and cruising. More of this, please.', ups: 52, replies: [] },
+      { name: 'priya', host: false, time: '22:40', text: 'xG says this should be three or four. We’re leaving goals out there.', ups: 29, replies: [] },
+    ];
+    const stats = {
+      homePoss: 61, awayPoss: 39,
+      rows: [
+        { label: 'Shots', home: '9', away: '4' },
+        { label: 'On target', home: '5', away: '1' },
+        { label: 'Corners', home: '6', away: '2' },
+        { label: 'xG', home: '1.84', away: '0.32' },
+        { label: 'Fouls', home: '7', away: '11' },
+      ],
+    };
+    const events = [
+      { min: '19', text: 'Havertz', sub: 'Goal · assist Saka', team: 'ARS' },
+      { min: '8', text: 'Saka', sub: 'Goal · assist Ødegaard', team: 'ARS' },
+      { min: '3', text: 'Berge', sub: 'Yellow card', team: 'BUR' },
+    ];
+    const momentum = Array.from({ length: 26 }, (_, i) => {
+      const home = Math.sin(i * 0.55) + 0.3 > 0;
+      const h = 5 + Math.round(17 * Math.abs(Math.sin(i * 0.7 + 1)));
+      return { h, color: home ? 'rgba(241,35,43,.85)' : 'rgb(var(--line) / .16)' };
+    });
+    const listeners = Array.from({ length: 13 }, (_, i) => ({ i }));
+    const players = [
+      { name: 'Raya', pos: 'GK', rating: 7.2 },
+      { name: 'Saliba', pos: 'CB', rating: 8.1 },
+      { name: 'Rice', pos: 'CM', rating: 8.6 },
+      { name: 'Ødegaard', pos: 'AM', rating: 7.9 },
+      { name: 'Saka', pos: 'RW', rating: 9.1 },
+      { name: 'Havertz', pos: 'ST', rating: 8.4 },
+    ];
+    players.forEach(p => {
+      const filled = Math.round(p.rating);
+      p.avg = p.rating.toFixed(1);
+      p.segs = Array.from({ length: 10 }, (_, i) => ({ c: i < filled ? 'var(--gold)' : 'rgb(var(--line) / .15)' }));
+    });
+    const reactionButtons = ['⚽', '🔥', '👏', '😱', '🙌'].map(e => ({ emoji: e, onTap: () => this.addReaction(e) }));
+    const floats = this.state.floats || [];
+    const micQueue = this.state.micQueue;
+    const newCount = this.state.newCount || 0;
+    return {
+      page,
+      isHome: page === 'home', isMatches: page === 'matches', isAbout: page === 'about', isSignin: page === 'signin',
+      showNav: page !== 'room',
+      showFooter: page !== 'signin' && page !== 'room',
+      isRoom: page === 'room',
+      matchesColor: page === 'matches' ? 'var(--gold)' : 'rgb(var(--fg) / .76)',
+      aboutColor: page === 'about' ? 'var(--gold)' : 'rgb(var(--fg) / .76)',
+      goHome: this.nav('home'), goMatches: this.nav('matches'), goAbout: this.nav('about'), goSignin: this.nav('signin'), goRoom: this.nav('room'),
+      steps, features, upcomingFull, upcomingHome, upcomingCount: upcomingFull.length, principles, hosts, waveform,
+      qa, chat, stats, events, momentum, listeners,
+      polls, pollCount: polls.length,
+      roomTab, isChatTab: roomTab === 'chat', isPollsTab: roomTab === 'polls',
+      goChatTab: this.setTab('chat'), goPollsTab: this.setTab('polls'),
+      chatTabBg: roomTab === 'chat' ? 'var(--inv-bg)' : 'transparent',
+      chatTabFg: roomTab === 'chat' ? 'var(--inv-fg)' : 'rgb(var(--fg) / .76)',
+      pollsTabBg: roomTab === 'polls' ? 'var(--inv-bg)' : 'transparent',
+      pollsTabFg: roomTab === 'polls' ? 'var(--inv-fg)' : 'rgb(var(--fg) / .76)',
+      showPollBadge: roomTab !== 'polls',
+      players,
+      reactionButtons, floats,
+      inQueue: micQueue != null, notInQueue: micQueue == null, queuePos: micQueue,
+      toggleMic: () => this.toggleMic(),
+      newCount, hasNew: newCount > 0, refreshChat: () => this.refreshChat(),
+      theme, isLight: theme === 'light', themeLabel: theme === 'light' ? 'LIGHT' : 'DARK', knobLeft: theme === 'light' ? '16px' : '2px', toggleTheme: () => this.toggleTheme(),
+    };
+  }
+}
+</script>
+</body>
+</html>

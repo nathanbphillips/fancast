@@ -25,7 +25,7 @@ import type { StatOverrides } from "@/lib/statOverrides";
 const TABS: { id: StatTab; label: string }[] = [
   { id: "info", label: "Info" },
   { id: "stats", label: "Stats" },
-  { id: "events", label: "Events" },
+  { id: "events", label: "Timeline" },
   { id: "lineups", label: "Line-ups" },
 ];
 
@@ -200,7 +200,11 @@ export function StatsPanel({
   return (
     <div className="p-3">
       <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface shadow-card">
-        <div className="flex border-b border-line" role="tablist" aria-label="Match info">
+        <div
+          className="flex flex-wrap items-center gap-1 border-b border-line px-2.5 py-2 font-mono text-[10px] tracking-[0.04em]"
+          role="tablist"
+          aria-label="Match info"
+        >
           {TABS.map((t) => {
             const active = effectiveTab === t.id;
             return (
@@ -212,10 +216,10 @@ export function StatsPanel({
                 aria-selected={active}
                 aria-controls="stats-tabpanel"
                 onClick={() => setOverride(t.id)}
-                className={`flex-1 border-b-2 font-semibold ${big ? "h-12 text-base" : "h-10 text-sm"} ${
+                className={`rounded-md px-2.5 py-1.5 uppercase transition-colors ${
                   active
-                    ? "border-gold text-primary"
-                    : "border-transparent text-secondary hover:text-primary"
+                    ? "bg-inverted font-bold text-inverted-fg"
+                    : "text-secondary hover:text-primary"
                 }`}
               >
                 {t.label}
