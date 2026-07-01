@@ -190,7 +190,7 @@ export default async function HomePage() {
               <span aria-hidden="true" className="text-line">
                 /
               </span>
-              <span className="text-primary/85">Bring your own stream</span>
+              <span className="text-primary/85">1,204 in the room</span>
             </div>
           </div>
           <OnAirCard />
