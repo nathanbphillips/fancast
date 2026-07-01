@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { FixtureCard } from "@/components/FixtureCard";
-import { OpenWaitingButton } from "@/components/OpenWaitingButton";
 import { loadFixtures } from "@/lib/db/fixtures";
+import { Eyebrow } from "@/components/ui/Eyebrow";
+import { Button } from "@/components/ui/Button";
+import { MatchesBrowser } from "@/components/marketing/MatchesBrowser";
 
 /**
- * Matches: the full live + upcoming schedule (FR-1). The home page shows a
- * teaser (live + next 4) and links here for the full list. A DB failure throws
- * to the (app) error boundary rather than reading as an empty schedule.
+ * Matches: the full live + upcoming schedule (FR-1), Cloud Design. A DB failure
+ * throws to the (app) error boundary rather than reading as an empty schedule.
  */
 
 export const metadata: Metadata = { title: "Matches" };
@@ -16,55 +16,28 @@ export default async function MatchesPage() {
   const { live, upcoming } = await loadFixtures();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:py-12">
-      <section aria-label="Introduction" className="mb-8">
-        <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-          Matches
-        </h1>
-        <p className="mt-2 text-secondary">Live now and what&apos;s coming up.</p>
-      </section>
+    <div className="mx-auto max-w-[1180px] px-5 py-14 sm:px-10">
+      <Eyebrow>Full schedule · Arsenal</Eyebrow>
+      <h1 className="mt-3 font-display text-6xl sm:text-7xl">Matches</h1>
+      <p className="mt-4 max-w-xl text-secondary">
+        Every Arsenal match, live and upcoming. Jump into a room when the host
+        opens the doors.
+      </p>
 
-      {live.length > 0 && (
-        <section aria-label="Happening now" className="mb-10">
-          <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
-            <span className="text-gold" aria-hidden="true">
-              ●
-            </span>
-            Happening now
-          </h2>
-          <div className="space-y-3">
-            {live.map((w) => (
-              <FixtureCard key={w.card.id} fixture={w.card} />
-            ))}
-          </div>
-        </section>
-      )}
+      <MatchesBrowser live={live} upcoming={upcoming} />
 
-      <section aria-label="Upcoming fixtures">
-        <h2 className="mb-3 flex items-center gap-2 font-display text-xs font-bold tracking-wider text-secondary uppercase">
-          <span aria-hidden="true">🏆</span>
-          Upcoming matches
-        </h2>
-        {upcoming.length === 0 && live.length === 0 ? (
-          <p className="rounded-xl border-[0.75px] border-line bg-surface p-4 text-sm text-secondary shadow-card">
-            No fixtures on the schedule yet — check back soon.
+      <div className="mt-14 flex flex-col items-start justify-between gap-4 rounded-2xl border border-line bg-surface p-6 sm:flex-row sm:items-center">
+        <div>
+          <h2 className="font-display text-2xl">Want to host a room?</h2>
+          <p className="mt-1 text-sm text-secondary">
+            Got the voice and the knowledge? Bring the matchday to life for the
+            rest of us.
           </p>
-        ) : (
-          <div className="space-y-3">
-            {upcoming.map((w) => (
-              <FixtureCard
-                key={w.card.id}
-                fixture={w.card}
-                action={
-                  w.canOpen ? (
-                    <OpenWaitingButton fixtureId={w.card.id} />
-                  ) : undefined
-                }
-              />
-            ))}
-          </div>
-        )}
-      </section>
+        </div>
+        <Button href="/about" variant="red">
+          Read more →
+        </Button>
+      </div>
     </div>
   );
 }

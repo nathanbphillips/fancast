@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/db/client";
+import { Button } from "@/components/ui/Button";
 
+/**
+ * Sign-in (Cloud Design): email magic-link (primary) + Google OAuth. Google
+ * works once the Supabase provider is enabled — until then it surfaces the
+ * provider error rather than faking success.
+ */
 export function SignInForm({ initialError }: { initialError?: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
@@ -37,12 +43,12 @@ export function SignInForm({ initialError }: { initialError?: string }) {
 
   if (state === "sent") {
     return (
-      <div className="rounded-xl border-[0.75px] border-line bg-surface p-6 text-center">
-        <h2 className="font-bold">Check your email</h2>
+      <div className="rounded-xl border border-line bg-surface p-6 text-center">
+        <h2 className="font-display text-lg">Check your email</h2>
         <p className="mt-2 text-sm text-secondary">
           We sent a sign-in link to{" "}
-          <span className="font-semibold text-primary">{email}</span>. Open it
-          on this device and you&apos;re in.
+          <span className="font-semibold text-primary">{email}</span>. Open it on
+          this device and you&apos;re in.
         </p>
       </div>
     );
@@ -59,10 +65,42 @@ export function SignInForm({ initialError }: { initialError?: string }) {
         </p>
       )}
 
+      <form onSubmit={sendMagicLink} className="space-y-3">
+        <label
+          htmlFor="email"
+          className="block font-mono text-[11px] font-bold tracking-wider text-secondary uppercase"
+        >
+          Email
+        </label>
+        <input
+          id="email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          className="h-12 w-full rounded-xl border border-line bg-inset px-4 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+        />
+        <Button
+          type="submit"
+          variant="red"
+          disabled={state === "sending"}
+          className="w-full"
+        >
+          {state === "sending" ? "Sending…" : "Continue with email →"}
+        </Button>
+      </form>
+
+      <div className="flex items-center gap-3 font-mono text-[11px] tracking-wider text-secondary uppercase">
+        <span className="h-px flex-1 bg-line" />
+        or
+        <span className="h-px flex-1 bg-line" />
+      </div>
+
       <button
         type="button"
         onClick={signInWithGoogle}
-        className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-line bg-surface text-sm font-semibold hover:bg-raised"
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-line bg-inset text-sm font-semibold hover:bg-raised"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
           <path
@@ -85,36 +123,9 @@ export function SignInForm({ initialError }: { initialError?: string }) {
         Continue with Google
       </button>
 
-      <div className="flex items-center gap-3 text-xs text-secondary">
-        <span className="h-px flex-1 bg-line" />
-        or
-        <span className="h-px flex-1 bg-line" />
-      </div>
-
-      <form onSubmit={sendMagicLink} className="space-y-2">
-        <label htmlFor="email" className="block text-sm font-semibold">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
-        />
-        <button
-          type="submit"
-          disabled={state === "sending"}
-          className="h-11 w-full rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {state === "sending" ? "Sending…" : "Email me a sign-in link"}
-        </button>
-        <p className="text-xs text-secondary">
-          No password needed — the link signs you in.
-        </p>
-      </form>
+      <p className="text-center text-xs text-secondary">
+        No password needed — the email link signs you in.
+      </p>
     </div>
   );
 }
