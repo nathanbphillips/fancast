@@ -828,11 +828,7 @@ export function RealtimeRoom(props: Props) {
   );
 
   return (
-    <div
-      className={`flex h-dvh flex-col ${
-        isRoomCommentator ? "lg:pb-[80px]" : "lg:pb-[52px]"
-      }`}
-    >
+    <div className="flex h-dvh flex-col">
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
       <MatchHeader
@@ -887,10 +883,10 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      <div className="flex min-h-0 flex-1 flex-col lg:mx-auto lg:grid lg:w-full lg:max-w-7xl lg:grid-cols-[1fr_2fr]">
+      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:w-full lg:grid-cols-[2fr_1fr]">
         <aside
           aria-label="Stats"
-          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:block lg:border-r lg:border-line`}
+          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:order-2 lg:block`}
         >
           <StatsPanel
             data={displayStats}
@@ -915,7 +911,7 @@ export function RealtimeRoom(props: Props) {
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:flex`}
+          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex lg:border-r lg:border-line`}
         >
           {isRoomCommentator && (
             <div className="hidden border-b border-line bg-surface lg:flex">
@@ -953,9 +949,9 @@ export function RealtimeRoom(props: Props) {
         </section>
       </div>
 
-      {/* desktop: fixed bottom bar (~50px listener, ~80px commentator) */}
-      <div className="fixed inset-x-0 bottom-0 z-40 hidden border-t border-line bg-surface lg:block">
-        <div className="mx-auto max-w-7xl">{bar}</div>
+      {/* desktop: in-flow audio dock at the base of the h-dvh flex column */}
+      <div className="hidden flex-none border-t border-line bg-surface lg:block">
+        {bar}
       </div>
 
       {!isRoomCommentator && (
