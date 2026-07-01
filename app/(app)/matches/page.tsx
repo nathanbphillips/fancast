@@ -18,7 +18,7 @@ export default async function MatchesPage() {
   return (
     <div className="mx-auto max-w-[1180px] px-5 py-14 sm:px-10">
       <Eyebrow>Full schedule · Arsenal</Eyebrow>
-      <h1 className="mt-3 font-display text-6xl sm:text-7xl">Matches</h1>
+      <h1 className="display mt-3 text-6xl sm:text-7xl">Matches</h1>
       <p className="mt-4 max-w-xl text-secondary">
         Every Arsenal match, live and upcoming. Jump into a room when the host
         opens the doors.
@@ -28,7 +28,7 @@ export default async function MatchesPage() {
 
       <div className="mt-14 flex flex-col items-start justify-between gap-4 rounded-2xl border border-line bg-surface p-6 sm:flex-row sm:items-center">
         <div>
-          <h2 className="font-display text-2xl">Want to host a room?</h2>
+          <h2 className="display text-2xl">Want to host a room?</h2>
           <p className="mt-1 text-sm text-secondary">
             Got the voice and the knowledge? Bring the matchday to life for the
             rest of us.

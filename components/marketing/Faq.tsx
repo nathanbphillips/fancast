@@ -9,7 +9,7 @@ export function Faq({ items }: { items: { q: string; a: ReactNode }[] }) {
           key={i}
           className="group rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-card"
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-display font-semibold [&::-webkit-details-marker]:hidden">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-bold tracking-[-0.01em] [&::-webkit-details-marker]:hidden">
             {it.q}
             <span
               aria-hidden="true"

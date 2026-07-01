@@ -69,7 +69,7 @@ export function MatchesBrowser({
                   </span>
                 </div>
                 <div className="min-w-[220px] flex-1">
-                  <h3 className="font-display text-2xl">
+                  <h3 className="display text-2xl">
                     {w.card.home} vs {w.card.away}
                   </h3>
                   <p className="font-mono text-[11px] text-secondary">
@@ -91,7 +91,7 @@ export function MatchesBrowser({
 
       {showLive && filter === "live" && live.length === 0 && (
         <p className="mt-8 rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
-          No live rooms right now — check the upcoming schedule.
+          No live rooms right now. Check the upcoming schedule.
         </p>
       )}
 
@@ -102,7 +102,7 @@ export function MatchesBrowser({
           </p>
           {upcoming.length === 0 ? (
             <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
-              Nothing scheduled yet — check back soon.
+              Nothing scheduled yet. Check back soon.
             </p>
           ) : (
             <div className="overflow-hidden rounded-2xl border border-line bg-surface">

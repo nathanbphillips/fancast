@@ -104,6 +104,21 @@ body {
   color: var(--text-primary);
 }
 
+/* Anton display treatment — ALWAYS uppercase, weight 400 (Anton is single-weight
+   and the design transforms every headline/score/wordmark to caps). Use `display`
+   for headings/scores/logo; card titles use Hanken bold (font-sans font-extrabold),
+   NOT this. Letter-spacing is intentionally left to per-use `tracking-*` utilities
+   (this rule is unlayered and would otherwise beat them); Anton's natural 0 is the
+   default, matching the design where no tracking is specified. */
+.display {
+  /* Reference --font-anton directly: `@theme inline` inlines --font-display into
+     Tailwind's font-display utility and does NOT emit it as a :root variable, so
+     var(--font-display) here would resolve to nothing and fall back to body font. */
+  font-family: var(--font-anton), "Arial Narrow", Impact, sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+}
+
 /* Visible focus everywhere (WCAG); gold ring reads in both themes. */
 :focus-visible {
   outline: 2px solid var(--gold);

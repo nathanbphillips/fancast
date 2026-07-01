@@ -45,7 +45,7 @@ export default async function SignInPage({
           </Pill>
         </div>
         <div className="relative">
-          <h1 className="font-display text-6xl leading-[0.9]">Pull up a seat.</h1>
+          <h1 className="display text-6xl leading-[0.9]">Pull up a seat.</h1>
           <p className="mt-4 max-w-sm text-secondary">
             Sign up to join in. It takes under a minute, and lets you chat, vote,
             and call in.
@@ -85,7 +85,7 @@ export default async function SignInPage({
           <Link href="/" aria-label={brand.name} className="inline-flex">
             <Logo />
           </Link>
-          <h2 className="mt-8 font-display text-3xl">Sign in or join</h2>
+          <h2 className="display mt-8 text-3xl">Sign in or join</h2>
           <p className="mt-2 text-sm text-secondary">
             Enter your email and we&apos;ll send a one-tap link. No passwords.
           </p>

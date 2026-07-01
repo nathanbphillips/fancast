@@ -44,7 +44,7 @@ export function SignInForm({ initialError }: { initialError?: string }) {
   if (state === "sent") {
     return (
       <div className="rounded-xl border border-line bg-surface p-6 text-center">
-        <h2 className="font-display text-lg">Check your email</h2>
+        <h2 className="display text-lg">Check your email</h2>
         <p className="mt-2 text-sm text-secondary">
           We sent a sign-in link to{" "}
           <span className="font-semibold text-primary">{email}</span>. Open it on
@@ -124,7 +124,7 @@ export function SignInForm({ initialError }: { initialError?: string }) {
       </button>
 
       <p className="text-center text-xs text-secondary">
-        No password needed — the email link signs you in.
+        No password needed. The email link signs you in.
       </p>
     </div>
   );

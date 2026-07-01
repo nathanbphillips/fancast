@@ -1,71 +1,100 @@
-import { Pill } from "@/components/ui/Pill";
 import { Waveform } from "@/components/ui/Waveform";
 import { EqBars } from "@/components/ui/EqBars";
 
 /**
  * Marketing "ON AIR" player card for the home hero (Cloud Design) — a bobbing
- * mock of the room's transport. Illustrative content, no real data, no crests
- * (avatar is a CSS gradient). Decorative.
+ * mock of the room transport. Illustrative, no real data; team marks are
+ * abstract CSS stripe swatches (no real crests). Decorative.
  */
+const swatch =
+  "repeating-linear-gradient(45deg, rgb(var(--hair) / 0.14), rgb(var(--hair) / 0.14) 4px, rgb(var(--hair) / 0.05) 4px, rgb(var(--hair) / 0.05) 8px)";
+
 export function OnAirCard() {
   return (
-    <div className="animate-fcbob relative rounded-2xl border border-red/40 bg-gradient-to-b from-inset to-surface p-5 shadow-raised">
-      <div className="flex items-center justify-between">
-        <Pill variant="red" live>
+    <div className="animate-fcbob rounded-[20px] border border-line bg-gradient-to-b from-surface to-inset p-5 shadow-raised">
+      <div className="mb-4 flex items-center justify-between">
+        <span className="flex items-center gap-2 font-mono text-[11px] font-bold tracking-[0.14em] text-red">
+          <span
+            aria-hidden="true"
+            className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red"
+            style={{ boxShadow: "0 0 10px #f1232b" }}
+          />
           ON AIR
-        </Pill>
-        <span className="font-mono text-xs text-secondary tabular-nums">
+        </span>
+        <span className="font-mono text-[13px] tracking-wide text-secondary tabular-nums">
           1H 23:14
         </span>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-3 font-display text-2xl">
-        <span>ARS</span>
-        <span className="font-sans text-3xl font-bold tabular-nums">2</span>
-        <span className="text-secondary">–</span>
-        <span className="font-sans text-3xl font-bold tabular-nums">0</span>
-        <span>BUR</span>
+      <div className="mb-4 flex items-center justify-between rounded-xl border border-line bg-inset px-4 py-3">
+        <span className="flex items-center gap-2.5">
+          <span
+            aria-hidden="true"
+            className="h-[22px] w-[22px] rounded-[5px]"
+            style={{ background: swatch }}
+          />
+          <span className="display text-[17px]" style={{ letterSpacing: "0.03em" }}>
+            ARS
+          </span>
+        </span>
+        <span
+          className="display text-[26px] whitespace-nowrap"
+          style={{ letterSpacing: "0.06em" }}
+        >
+          2<span className="mx-2 text-secondary">–</span>0
+        </span>
+        <span className="flex items-center gap-2.5">
+          <span className="display text-[17px]" style={{ letterSpacing: "0.03em" }}>
+            BUR
+          </span>
+          <span
+            aria-hidden="true"
+            className="h-[22px] w-[22px] rounded-[5px]"
+            style={{ background: swatch }}
+          />
+        </span>
       </div>
 
-      <div className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-inset px-3 py-2.5">
+      <div className="mb-4 flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="h-9 w-9 shrink-0 rounded-full"
-          style={{
-            background: "radial-gradient(circle at 30% 30%, #f1232b, #7a0f14)",
-          }}
+          className="h-[46px] w-[46px] shrink-0 rounded-full border border-line"
+          style={{ background: "radial-gradient(circle at 35% 30%, #3a3a40, #1b1b1f)" }}
         />
-        <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2 text-sm font-semibold">
+        <div className="flex-1">
+          <p className="flex items-center gap-2 text-[15px] font-bold">
             nathan
-            <span className="rounded border border-gold/40 px-1 py-0.5 font-mono text-[8px] font-bold tracking-wider text-gold uppercase">
+            <span className="rounded border border-gold/50 px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-gold uppercase">
               Host
             </span>
           </p>
-          <p className="font-mono text-[10px] text-secondary">Gooner · lifelong</p>
+          <p className="text-[12.5px] text-secondary">Gooner · lifelong</p>
         </div>
         <EqBars />
       </div>
 
-      <Waveform bars={40} height={56} className="mt-4" />
+      <div className="mb-3.5 rounded-xl border border-line bg-inset px-3.5">
+        <Waveform bars={40} height={66} />
+      </div>
 
-      <div className="mt-4 flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red text-white shadow-glow"
+          className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-red text-white"
+          style={{ boxShadow: "0 8px 24px -6px rgba(241,35,43,0.7)" }}
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+          <svg viewBox="0 0 24 24" className="ml-0.5 h-4 w-4 fill-current">
             <path d="M8 5v14l11-7z" />
           </svg>
         </span>
-        <div className="flex flex-1 items-center gap-2 font-mono text-[10px] font-bold uppercase">
-          <span className="flex-1 rounded-md border border-line py-2 text-center text-secondary">
+        <div className="flex flex-1 items-center gap-1.5 font-mono text-[11px]">
+          <span className="flex-1 rounded-lg border border-line bg-inset py-2.5 text-center text-secondary">
             −0.5s
           </span>
-          <span className="flex-[1.4] rounded-md bg-inverted py-2 text-center text-inverted-fg">
-            Sync now
+          <span className="flex-[1.4] rounded-lg bg-inverted py-2.5 text-center font-bold tracking-[0.1em] text-inverted-fg">
+            SYNC NOW
           </span>
-          <span className="flex-1 rounded-md border border-line py-2 text-center text-secondary">
+          <span className="flex-1 rounded-lg border border-line bg-inset py-2.5 text-center text-secondary">
             +0.5s
           </span>
         </div>

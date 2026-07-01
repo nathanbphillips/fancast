@@ -16,11 +16,11 @@ const STORY = [
   },
   {
     h: "The idea",
-    p: "Put the people, the takes and the stats in one room — a fellow Gooner calling the game in your ear while everyone reacts in real time. All riding alongside the match you're already watching.",
+    p: "Put the people, the takes and the stats in one room. A fellow Gooner calls the game in your ear while everyone reacts in real time, all riding alongside the match you're already watching.",
   },
   {
     h: "The promise",
-    p: "We never show the match, we don't pretend to be impartial, and the hosts own every second they broadcast. Fan-first, on purpose — the pub for fans who don't have one.",
+    p: "We never show the match, we don't pretend to be impartial, and the hosts own every second they broadcast. Fan-first, on purpose. The pub for fans who don't have one.",
   },
 ];
 
@@ -28,13 +28,13 @@ const STATS = [
   { n: "Arsenal", c: "the club we start with" },
   { n: "<500ms", c: "live audio latency" },
   { n: "100%", c: "of each show owned by its host" },
-  { n: "£0", c: "to listen — no account needed" },
+  { n: "£0", c: "to listen, no account needed" },
 ];
 
 const PRINCIPLES = [
   {
     t: "We don't show the match",
-    d: `${brand.name} is audio, chat and stats only — never the broadcast. You bring your own lawful way of watching; we just keep you company.`,
+    d: `${brand.name} is audio, chat and stats only, never the broadcast. You bring your own lawful way of watching; we just keep you company.`,
   },
   {
     t: "Unofficial, and proud of it",
@@ -54,12 +54,12 @@ const HOSTS = [
   {
     name: "The lifer",
     handle: "season ticket since '04",
-    bio: "Lives and dies with every result. Will not be neutral about anything — and you wouldn't want them to be.",
+    bio: "Lives and dies with every result. Will not be neutral about anything, and you wouldn't want them to be.",
   },
   {
     name: "The tactician",
     handle: "diagrams optional",
-    bio: "Reads the game two passes ahead and tells you why the press just broke — without the pundit clichés.",
+    bio: "Reads the game two passes ahead and tells you why the press just broke, without the pundit clichés.",
   },
   {
     name: "The joker",
@@ -71,7 +71,7 @@ const HOSTS = [
 const FAQ = [
   {
     q: "Do you stream the match?",
-    a: `No — and we never will. ${brand.name} doesn't show match video or play broadcast audio. You watch the game however you already legally do, and we ride alongside with fan commentary, chat and stats.`,
+    a: `No, and we never will. ${brand.name} doesn't show match video or play broadcast audio. You watch the game however you already legally do, and we ride alongside with fan commentary, chat and stats.`,
   },
   {
     q: "Is this official Arsenal?",
@@ -79,7 +79,7 @@ const FAQ = [
   },
   {
     q: "Do I need to pay or sign up?",
-    a: "No. Anyone can listen and read the chat and stats without an account. You only sign up — under a minute — when you want to chat, vote, ask a question or call in.",
+    a: "No. Anyone can listen and read the chat and stats without an account. You only sign up, in under a minute, when you want to chat, vote, ask a question or call in.",
   },
   {
     q: "How does the sync work?",
@@ -91,7 +91,7 @@ const FAQ = [
   },
   {
     q: "Can I talk on air?",
-    a: "Yes, if you want to. You can request the mic, and with the host's consent you go live to the room. It's recorded as part of the show — and if you'd rather just listen, you never have to.",
+    a: "Yes, if you want to. You can request the mic, and with the host's consent you go live to the room. It's recorded as part of the show. And if you'd rather just listen, you never have to.",
   },
   {
     q: "What about the recordings?",
@@ -99,7 +99,7 @@ const FAQ = [
   },
   {
     q: "Is it only Arsenal?",
-    a: "For now, yes — we're starting with Arsenal and doing it properly. More clubs will follow.",
+    a: "For now, yes. We're starting with Arsenal and doing it properly. More clubs will follow.",
   },
 ];
 
@@ -109,7 +109,7 @@ export default function AboutPage() {
       {/* MANIFESTO */}
       <section className="py-16 sm:py-20">
         <Eyebrow>About {brand.name}</Eyebrow>
-        <h1 className="mt-4 max-w-3xl font-display text-5xl leading-[0.98] sm:text-7xl">
+        <h1 className="display mt-4 max-w-3xl text-5xl leading-[0.98] sm:text-7xl">
           Not a broadcaster.{" "}
           <span
             className="text-red"
@@ -121,7 +121,7 @@ export default function AboutPage() {
         <p className="mt-6 max-w-2xl text-lg text-secondary sm:text-xl">
           Football&apos;s better with people. {brand.name} is the live room where
           a fellow Gooner calls the game in your ear while everyone argues,
-          celebrates and suffers together — all alongside the match you&apos;re
+          celebrates and suffers together, all alongside the match you&apos;re
           already watching.
         </p>
       </section>
@@ -130,7 +130,7 @@ export default function AboutPage() {
       <section className="grid gap-10 border-t border-line py-16 sm:grid-cols-3">
         {STORY.map((s) => (
           <div key={s.h}>
-            <h2 className="font-display text-2xl text-gold">{s.h}</h2>
+            <h2 className="display text-2xl text-gold">{s.h}</h2>
             <p className="mt-3 text-secondary">{s.p}</p>
           </div>
         ))}
@@ -140,7 +140,7 @@ export default function AboutPage() {
       <section className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-4">
         {STATS.map((s) => (
           <div key={s.c} className="bg-canvas p-7">
-            <p className="font-display text-4xl text-gold">{s.n}</p>
+            <p className="display text-4xl text-gold">{s.n}</p>
             <p className="mt-1 text-sm text-secondary">{s.c}</p>
           </div>
         ))}
@@ -149,7 +149,7 @@ export default function AboutPage() {
       {/* PRINCIPLES */}
       <section className="py-16">
         <Eyebrow>What we stand for</Eyebrow>
-        <h2 className="mt-3 font-display text-4xl sm:text-5xl">
+        <h2 className="display mt-3 text-4xl sm:text-5xl">
           Four things we won&apos;t budge on
         </h2>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -158,11 +158,11 @@ export default function AboutPage() {
               key={p.t}
               className="flex gap-5 rounded-2xl border border-line bg-surface p-6"
             >
-              <span className="font-display text-3xl text-gold tabular-nums">
+              <span className="font-mono text-2xl font-bold text-gold tabular-nums">
                 0{i + 1}
               </span>
               <div>
-                <h3 className="font-display text-xl">{p.t}</h3>
+                <h3 className="text-xl font-extrabold tracking-[-0.01em]">{p.t}</h3>
                 <p className="mt-2 text-sm text-secondary">{p.d}</p>
               </div>
             </div>
@@ -175,7 +175,7 @@ export default function AboutPage() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <Eyebrow>The voices</Eyebrow>
-            <h2 className="mt-3 font-display text-4xl sm:text-5xl">
+            <h2 className="display mt-3 text-4xl sm:text-5xl">
               The kind of voices you&apos;ll hear
             </h2>
           </div>
@@ -206,7 +206,7 @@ export default function AboutPage() {
                 />
               </div>
               <div className="p-5">
-                <p className="font-display text-lg">{h.name}</p>
+                <p className="text-lg font-extrabold tracking-[-0.01em]">{h.name}</p>
                 <p className="font-mono text-[11px] text-gold">{h.handle}</p>
                 <p className="mt-2 text-sm text-secondary">{h.bio}</p>
               </div>
@@ -218,13 +218,13 @@ export default function AboutPage() {
       {/* FAQ */}
       <section className="border-t border-line py-16">
         <Eyebrow>Questions, answered</Eyebrow>
-        <h2 className="mt-3 font-display text-4xl sm:text-5xl">The bits people ask</h2>
+        <h2 className="display mt-3 text-4xl sm:text-5xl">The bits people ask</h2>
         <Faq items={FAQ} />
       </section>
 
       {/* CTA */}
       <section className="border-t border-line py-20 text-center">
-        <h2 className="mx-auto max-w-2xl font-display text-5xl sm:text-6xl">
+        <h2 className="display mx-auto max-w-2xl text-5xl sm:text-6xl">
           Pull up a seat.
         </h2>
         <p className="mx-auto mt-4 max-w-md text-secondary">
