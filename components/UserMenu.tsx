@@ -79,6 +79,14 @@ export function UserMenu({
           >
             Profile
           </Link>
+          <Link
+            role="menuitem"
+            href="/settings"
+            onClick={() => setOpen(false)}
+            className="block px-3 py-2 text-sm hover:bg-raised"
+          >
+            Edit profile
+          </Link>
           {admin && (
             <Link
               role="menuitem"

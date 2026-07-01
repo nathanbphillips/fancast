@@ -19,9 +19,21 @@ const usernameSchema = z
 
 const createSchema = z.object({ username: usernameSchema });
 
+// Avatar is a free-text image URL for the MVP (no upload bucket yet). Require
+// https to avoid mixed content; empty string clears it back to the initial-circle
+// fallback. Bare-bones profile fields (FR-2.x); file upload is a later slice.
+const avatarSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v), {
+    message: "Avatar must be an https:// image URL.",
+  });
+
 const updateSchema = z
   .object({
     username: usernameSchema.optional(),
+    avatar_url: avatarSchema.optional(),
     theme_pref: z.enum(["dark", "light"]).nullable().optional(),
   })
   .refine((b) => Object.keys(b).length > 0, { message: "Nothing to update." });
@@ -108,6 +120,10 @@ export async function PATCH(request: NextRequest) {
 
   if (parsed.data.theme_pref !== undefined) {
     update.theme_pref = parsed.data.theme_pref;
+  }
+
+  if (parsed.data.avatar_url !== undefined) {
+    update.avatar_url = parsed.data.avatar_url === "" ? null : parsed.data.avatar_url;
   }
 
   if (
