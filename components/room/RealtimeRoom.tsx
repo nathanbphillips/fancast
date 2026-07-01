@@ -1722,13 +1722,13 @@ function LiveChat({
             onClick={onRefresh}
             aria-label="Refresh chat"
             title="Refresh chat"
-            className="flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold text-secondary transition-colors hover:bg-raised hover:text-primary"
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] text-secondary uppercase transition-colors hover:border-gold hover:text-primary"
           >
             <span aria-hidden="true">↻</span> Refresh
           </button>
         </div>
         <div
-          className="flex shrink-0 gap-0.5 rounded-full bg-raised p-0.5"
+          className="flex shrink-0 items-center gap-1 font-mono text-[10px] tracking-[0.04em]"
           role="tablist"
           aria-label="Sort order"
         >
@@ -1739,8 +1739,10 @@ function LiveChat({
               role="tab"
               aria-selected={sortMode === s}
               onClick={() => changeSort(s)}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition-colors ${
-                sortMode === s ? "bg-gold text-canvas" : "text-secondary hover:text-primary"
+              className={`rounded-md px-2 py-1 uppercase transition-colors ${
+                sortMode === s
+                  ? "bg-inverted font-bold text-inverted-fg"
+                  : "text-secondary hover:text-primary"
               }`}
             >
               {s === "new" ? "New" : s === "top" ? "Top" : "Controversial"}
@@ -1915,7 +1917,7 @@ function LiveChat({
           )}
           {/* one compact row — links go straight in the message (they unfurl into
               an inline card); no separate link compose any more (founder 2026-06-29) */}
-          <form onSubmit={send} className="flex gap-1.5">
+          <form onSubmit={send} className="flex items-center gap-2">
             <input
               type="text"
               value={draft}
@@ -1924,17 +1926,20 @@ function LiveChat({
               placeholder={
                 roomState === "waiting"
                   ? "Warm the room up"
-                  : "Say something — paste a link to share it"
+                  : "Say something to the room…"
               }
               aria-label="Chat message"
-              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+              className="h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
             />
             <button
               type="submit"
               disabled={sending || !draft.trim()}
-              className="h-9 shrink-0 rounded-lg bg-red px-3.5 text-sm font-semibold text-white disabled:opacity-60"
+              aria-label="Send message"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-red text-white transition-colors hover:bg-red-hover disabled:opacity-60"
             >
-              Send
+              <span aria-hidden="true" className="text-lg leading-none">
+                ↑
+              </span>
             </button>
           </form>
           {inputsOpen && !isRoomCommentator && (
