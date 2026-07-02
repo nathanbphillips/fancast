@@ -1530,7 +1530,10 @@ function LiveChat({
       ? m.body.replace(/https?:\/\/[^\s]+/i, "").replace(/\s+/g, " ").trim()
       : m.body;
     return (
-      <li key={m.id}>
+      <li
+        key={m.id}
+        className={depth === 0 ? "border-t border-line/60 py-2.5 first:border-t-0" : ""}
+      >
         {m.hidden_by ? (
           <div className="rounded-lg px-3 py-2 text-xs text-secondary italic">
             Message hidden{m.hidden_by === "flags" ? " by community flags" : ""}
@@ -1718,8 +1721,8 @@ function LiveChat({
       {/* one compact bar: refresh (left) + sort (right). The Chat/Links filter is
           gone — links live inline in chat now (founder 2026-06-29). A connection
           problem still surfaces here; the "N new" pill drops below. */}
-      <div className="flex items-center justify-between gap-2 border-b border-line px-2 py-1">
-        <div className="flex min-w-0 items-center gap-1.5">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-3.5 py-2.5">
+        <div className="flex min-w-0 items-center gap-2">
           {conn !== "connected" && (
             <span
               title={conn === "broken" ? "Live updates unavailable — refresh to retry" : "Connecting…"}
@@ -1776,7 +1779,7 @@ function LiveChat({
       <ul
         ref={listRef}
         onScroll={onChatScroll}
-        className="flex-1 space-y-0.5 overflow-y-auto p-1.5"
+        className="flex-1 overflow-y-auto px-1.5"
       >
         {displayItems.map((item) =>
           item.kind === "link" ? (

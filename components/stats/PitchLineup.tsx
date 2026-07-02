@@ -67,12 +67,19 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
 
 function Marker({ p, x, y, home, href }: Placed & { home: boolean; href: string }) {
   // home labels sit above the disc (toward the top goal), away below — both
-  // point outward, keeping names clear of the centre line.
+  // point outward, keeping names clear of the centre line. Both the number disc
+  // AND the name link to the player's profile (founder 2026-07-02).
   const sub = p.cameOnFor;
   const circle = (
-    <span className="relative">
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={p.name}
+      className="relative block"
+    >
       <span
-        className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow ${
+        className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums shadow ${
           home ? "bg-gold text-canvas" : "bg-red text-white"
         }`}
       >
@@ -82,28 +89,28 @@ function Marker({ p, x, y, home, href }: Placed & { home: boolean; href: string 
         // came-on badge: a small circle at top-right holding the number of the
         // player they replaced (green = on). Tooltip spells out the swap.
         <span
-          className="absolute -right-1.5 -top-1.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-green px-0.5 text-[7px] font-bold tabular-nums text-white shadow ring-1 ring-canvas"
+          className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-green px-0.5 text-[8px] font-bold tabular-nums text-white shadow ring-1 ring-canvas"
           title={`On ${sub.minute}${sub.number != null ? ` for #${sub.number}` : ""}`}
         >
           {sub.number ?? "↑"}
         </span>
       )}
-    </span>
+    </a>
   );
   const label = (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      title={`${p.name} — Fotmob profile`}
-      className="max-w-[72px] truncate rounded-sm bg-black/50 px-1 text-[9px] font-semibold leading-tight text-white hover:underline"
+      title={p.name}
+      className="max-w-[92px] truncate rounded bg-black/55 px-1.5 py-0.5 text-[11px] font-semibold leading-tight text-white hover:underline"
     >
       {lastName(p.name)}
     </a>
   );
   return (
     <div
-      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-0.5"
+      className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
       style={{ left: `${x}%`, top: `${y}%` }}
     >
       {home ? label : circle}
@@ -125,25 +132,30 @@ function SideHeading({ side }: { side: SideLineup | null }) {
 function Subs({ side, fotmob }: { side: SideLineup | null; fotmob: FotmobMap }) {
   if (!side || side.bench.length === 0) return null;
   // players who left the pitch carry the minute they were subbed off (in parens);
-  // the rest is the unused bench. Every name links to its Fotmob profile.
+  // the rest is the unused bench. Every name links to its Fotmob profile. Title
+  // is a display headline over the list (founder 2026-07-02).
   return (
-    <p className="text-[11px] leading-snug text-secondary">
-      <span className="font-semibold text-primary">{side.teamName} subs:</span>{" "}
-      {side.bench.map((p, i) => (
-        <span key={p.playerId}>
-          {i > 0 && ", "}
-          <a
-            href={playerHref(p, fotmob)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
-            {lastName(p.name)}
-          </a>
-          {p.subbedOffAt && <span className="text-secondary"> ({p.subbedOffAt})</span>}
-        </span>
-      ))}
-    </p>
+    <div className="min-w-0">
+      <p className="display mb-2 text-lg">{side.teamName} subs</p>
+      <p className="text-sm leading-relaxed">
+        {side.bench.map((p, i) => (
+          <span key={p.playerId}>
+            {i > 0 && ", "}
+            <a
+              href={playerHref(p, fotmob)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              {lastName(p.name)}
+            </a>
+            {p.subbedOffAt && (
+              <span className="text-secondary"> ({p.subbedOffAt})</span>
+            )}
+          </span>
+        ))}
+      </p>
+    </div>
   );
 }
 
@@ -169,7 +181,7 @@ export function PitchLineup({
       <div
         className="relative w-full overflow-hidden rounded-xl border border-line"
         style={{
-          aspectRatio: "0.64",
+          aspectRatio: "0.72",
           background:
             "repeating-linear-gradient(0deg, #15803d 0 9%, #16703a 9% 18%)",
         }}
@@ -188,9 +200,11 @@ export function PitchLineup({
         ))}
       </div>
 
-      <div className="space-y-1 pt-1">
-        <Subs side={home} fotmob={fotmob} />
-        <Subs side={away} fotmob={fotmob} />
+      <div className="@container pt-3">
+        <div className="grid gap-x-6 gap-y-4 @md:grid-cols-2">
+          <Subs side={home} fotmob={fotmob} />
+          <Subs side={away} fotmob={fotmob} />
+        </div>
       </div>
     </div>
   );

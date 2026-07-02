@@ -40,12 +40,11 @@ function StatGroups({ bars, size }: { bars: StatBar[]; size: "compact" | "radio"
     }
     g.items.push(b);
   }
-  const big = size === "radio";
   return (
     <>
       {groups.map((g, i) => (
-        <div key={g.name} className={i === 0 ? "" : "mt-4"}>
-          <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>
+        <div key={g.name} className={i === 0 ? "" : "mt-5"}>
+          <p className="mb-2.5 font-mono text-[13px] font-bold tracking-[0.08em] text-secondary uppercase">
             {g.name}
           </p>
           <StatBars stats={g.items} size={size} />
@@ -291,7 +290,6 @@ export function StatsPanel({
                 info={data?.info ?? null}
                 homeName={data?.home.name ?? "Home"}
                 awayName={data?.away.name ?? "Away"}
-                size={size}
               />
             </div>
           )}

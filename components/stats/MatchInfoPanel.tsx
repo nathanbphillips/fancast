@@ -1,45 +1,51 @@
 import type { MatchInfo } from "@/lib/stats";
 
 /**
- * Info tab (pre-game): venue, referee, weather, and team news (sidelined
- * players), distilled server-side in lib/stats. Default tab before kickoff;
- * the room auto-switches everyone to Stats at kickoff.
+ * Info tab (pre-game): team news (left) beside venue / referee / weather
+ * (right) as two half-width cards once the stats column is wide enough
+ * (container query), stacking on a narrow column. Larger, denser type than the
+ * first redesign pass (founder 2026-07-02). Distilled server-side in lib/stats.
  */
 export function MatchInfoPanel({
   info,
   homeName,
   awayName,
-  size = "compact",
 }: {
   info: MatchInfo | null;
   homeName: string;
   awayName: string;
-  size?: "compact" | "radio";
 }) {
-  const big = size === "radio";
-  const text = big ? "text-sm" : "text-[13px]";
-
   if (!info) {
     return (
-      <p className={`text-secondary ${big ? "text-base" : "text-sm"}`}>
-        Match info — venue, referee, weather, and team news — appears closer to kickoff.
+      <p className="text-sm text-secondary">
+        Match info — venue, referee, weather, and team news — appears closer to
+        kickoff.
       </p>
     );
   }
 
-  // label above value, left-aligned — wraps cleanly in a narrow (1/3-width) column
-  const Fact = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
+  const cardTitle =
+    "mb-3 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase";
+
+  const Fact = ({
+    label,
+    value,
+    sub,
+  }: {
+    label: string;
+    value: string;
+    sub?: string;
+  }) => (
     <div>
-      <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>{label}</p>
-      <p className={`font-semibold ${text}`}>{value}</p>
-      {sub && <p className="text-[11px] text-secondary">{sub}</p>}
+      <p className="text-[13px] text-secondary">{label}</p>
+      <p className="text-[15px] font-semibold">{value}</p>
+      {sub && <p className="text-xs text-secondary">{sub}</p>}
     </div>
   );
 
   const cap = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
   const w = info.weather;
-  // compact, unit-labelled readout — wind converted to mph upstream (was a bare "5")
   const weatherSub = w
     ? [
         w.temp != null ? `${Math.round(w.temp)}°C` : null,
@@ -50,21 +56,17 @@ export function MatchInfoPanel({
         .join(" · ")
     : "";
 
-  // Match officials: head referee headlined, the rest of the crew listed with
-  // their designation (1st/2nd Assistant, 4th Official, VAR…).
   const RefereeBlock = ({ crew }: { crew: { role: string; name: string }[] }) => {
     const [head, ...rest] = crew;
     return (
       <div>
-        {/* label by the head official's actual role — usually "Referee", but
-            pre-match the head ref may not be confirmed yet (only assistants). */}
-        <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>{head.role || "Referee"}</p>
-        <p className={`font-semibold ${text}`}>{head.name}</p>
+        <p className="text-[13px] text-secondary">{head.role || "Referee"}</p>
+        <p className="text-[15px] font-semibold">{head.name}</p>
         {rest.length > 0 && (
-          <ul className="mt-0.5 space-y-0.5">
+          <ul className="mt-1 space-y-0.5">
             {rest.map((r, i) => (
-              <li key={`${r.role}-${i}`} className="text-[11px] text-secondary">
-                {r.role} — <span className="text-primary">{r.name}</span>
+              <li key={`${r.role}-${i}`} className="text-xs text-secondary">
+                {r.role} <span className="text-primary">{r.name}</span>
               </li>
             ))}
           </ul>
@@ -84,18 +86,18 @@ export function MatchInfoPanel({
   }) => (
     <div className="min-w-0">
       <p
-        className={`mb-1 font-display text-[11px] font-bold tracking-wider uppercase ${tone}`}
+        className={`mb-1.5 text-[13px] font-extrabold tracking-wide uppercase ${tone}`}
       >
         {name}
       </p>
       {rows.length === 0 ? (
-        <p className="text-[11px] text-secondary">No reported absences.</p>
+        <p className="text-[13px] text-secondary">No reported absences.</p>
       ) : (
-        <ul className="space-y-0.5">
+        <ul className="space-y-1">
           {rows.map((r, i) => (
-            <li key={`${r.name}-${i}`} className={`${text} leading-tight`}>
-              {r.name}
-              <span className="text-[11px] text-secondary"> — {r.reason}</span>
+            <li key={`${r.name}-${i}`} className="text-sm leading-snug">
+              <span className="font-semibold">{r.name}</span>{" "}
+              <span className="text-xs text-secondary">{r.reason}</span>
             </li>
           ))}
         </ul>
@@ -104,41 +106,57 @@ export function MatchInfoPanel({
   );
 
   const hasNews = info.teamNews.home.length > 0 || info.teamNews.away.length > 0;
+  const hasVenue = !!(info.venue || info.referees.length > 0 || w);
+  const both = hasNews && hasVenue;
+
+  const teamNewsCard = hasNews ? (
+    <div className="rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-card">
+      <p className={cardTitle}>Team news</p>
+      <div className="space-y-4">
+        <NewsTeam name={homeName} rows={info.teamNews.home} tone="text-red" />
+        <NewsTeam name={awayName} rows={info.teamNews.away} tone="text-navy" />
+      </div>
+    </div>
+  ) : null;
+
+  const venueCard = hasVenue ? (
+    <div className="space-y-4 rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-card">
+      <p className={cardTitle}>Match day</p>
+      {info.venue && (
+        <Fact
+          label="Venue"
+          value={
+            info.venue.city
+              ? `${info.venue.name}, ${info.venue.city}`
+              : info.venue.name
+          }
+          sub={
+            info.venue.capacity
+              ? `${info.venue.capacity.toLocaleString()} capacity`
+              : undefined
+          }
+        />
+      )}
+      {info.referees.length > 0 && <RefereeBlock crew={info.referees} />}
+      {w && (
+        <div>
+          <p className="text-[13px] text-secondary">Weather</p>
+          <p className="text-[15px] font-semibold">{cap(w.description)}</p>
+          {weatherSub && <p className="text-xs text-secondary">{weatherSub}</p>}
+          {w.note && (
+            <p className="mt-0.5 text-xs font-semibold text-gold">{w.note}</p>
+          )}
+        </div>
+      )}
+    </div>
+  ) : null;
 
   return (
-    <div className="space-y-3">
-      {hasNews && (
-        <div className="rounded-xl border-[0.75px] border-line bg-surface p-3 shadow-card">
-          <p className="mb-2 font-display text-[11px] font-bold tracking-wider text-secondary uppercase">
-            Team news
-          </p>
-          <div className="space-y-3">
-            <NewsTeam name={homeName} rows={info.teamNews.home} tone="text-red" />
-            <NewsTeam name={awayName} rows={info.teamNews.away} tone="text-navy" />
-          </div>
-        </div>
-      )}
-
-      {(info.venue || info.referees.length > 0 || w) && (
-        <div className="space-y-3 rounded-xl border-[0.75px] border-line bg-surface p-3 shadow-card">
-          {info.venue && (
-            <Fact
-              label="Venue"
-              value={info.venue.city ? `${info.venue.name}, ${info.venue.city}` : info.venue.name}
-              sub={info.venue.capacity ? `${info.venue.capacity.toLocaleString()} capacity` : undefined}
-            />
-          )}
-          {info.referees.length > 0 && <RefereeBlock crew={info.referees} />}
-          {w && (
-            <div>
-              <p className={`text-secondary ${big ? "text-sm" : "text-xs"}`}>Weather</p>
-              <p className={`font-semibold ${text}`}>{cap(w.description)}</p>
-              {weatherSub && <p className="text-[11px] text-secondary">{weatherSub}</p>}
-              {w.note && <p className="mt-0.5 text-[11px] font-semibold text-gold">{w.note}</p>}
-            </div>
-          )}
-        </div>
-      )}
+    <div className="@container">
+      <div className={both ? "grid gap-3 @xl:grid-cols-2" : "space-y-3"}>
+        {teamNewsCard}
+        {venueCard}
+      </div>
     </div>
   );
 }
