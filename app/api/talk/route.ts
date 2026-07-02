@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
-import { callerFlagSummary } from "@/lib/callers";
+import {
+  callerFlagSummary,
+  pendingQueue,
+  queuePositionFor,
+} from "@/lib/callers";
 import { createServiceClient } from "@/lib/db/server";
 import { setPublishPermission } from "@/lib/livekit";
 import type { RoomState, TalkRequest } from "@/lib/db/types";
@@ -153,6 +157,16 @@ export async function POST(request: NextRequest) {
   };
 
   await publish(`room:${room.id}:private`, "talk_request", withFlags);
+
+  // tell the requester their place in line, on their OWN per-user channel
+  // (never broadcast the roster — FR-4.2). Phase 5c.
+  const position = await queuePositionFor(service, room.id, caller.userId);
+  if (position != null) {
+    await publish(channels.userPrivate(room.id, caller.userId), "queue_position", {
+      position,
+    });
+  }
+
   return NextResponse.json({ request: withFlags }, { status: 201 });
 }
 
@@ -255,5 +269,17 @@ export async function PATCH(request: NextRequest) {
     "talk_resolved",
     { requestId: talkRequest.id },
   );
+
+  // the queue shifted — push each still-waiting caller their fresh #N on their
+  // own per-user channel (roster never broadcast — FR-4.2). Phase 5c.
+  const waiting = await pendingQueue(service, talkRequest.room_id);
+  await Promise.all(
+    waiting.map((uid, i) =>
+      publish(channels.userPrivate(talkRequest.room_id, uid), "queue_position", {
+        position: i + 1,
+      }),
+    ),
+  );
+
   return NextResponse.json({ ok: true });
 }

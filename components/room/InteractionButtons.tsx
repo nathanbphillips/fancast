@@ -22,12 +22,16 @@ export function InteractionButtons({
   consentGiven,
   hasPendingTalk,
   resolvedSignal,
+  queuePosition = null,
 }: {
   roomId: string;
   consentGiven: boolean;
   hasPendingTalk: boolean;
   /** bumps when this viewer's talk request is dismissed/accepted/completed */
   resolvedSignal: number;
+  /** this viewer's 1-based place in the call-in queue, pushed on their own
+   *  per-user channel; null until known (Phase 5c) */
+  queuePosition?: number | null;
 }) {
   const [open, setOpen] = useState<"none" | "question" | "talk">("none");
   const [question, setQuestion] = useState("");
@@ -128,7 +132,11 @@ export function InteractionButtons({
               : "border-line bg-surface hover:bg-raised"
           }`}
         >
-          {talkPending ? "Request pending" : "Request to Talk"}
+          {talkPending
+            ? queuePosition != null
+              ? `In line · #${queuePosition}`
+              : "Request pending"
+            : "Request to Talk"}
         </button>
       </div>
 

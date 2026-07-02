@@ -224,6 +224,9 @@ export function RealtimeRoom(props: Props) {
   );
   // bumped when THIS viewer's talk request is resolved, so their button clears
   const [talkResolvedSignal, setTalkResolvedSignal] = useState(0);
+  // call-in queue position (#N), pushed to this viewer on their own per-user
+  // channel — the requester roster is never broadcast (FR-4.2). (Phase 5c)
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
   // commentator-pushed stats tab (Phase 7); nonce re-applies repeated pushes
   const [pushedStatsTab, setPushedStatsTab] = useState<StatTab | null>(null);
   const [statsPushNonce, setStatsPushNonce] = useState(0);
@@ -592,7 +595,14 @@ export function RealtimeRoom(props: Props) {
       const mine = client.channels.get(`room:${room.id}:user:${viewer.userId}`, {
         params: { rewind: "5" },
       });
-      mine.subscribe("talk_resolved", () => setTalkResolvedSignal((n) => n + 1));
+      mine.subscribe("talk_resolved", () => {
+        setTalkResolvedSignal((n) => n + 1);
+        setQueuePosition(null); // left pending (accepted/dismissed) → no longer queued
+      });
+      mine.subscribe("queue_position", (msg) => {
+        const pos = (msg.data as { position?: number } | null)?.position;
+        setQueuePosition(typeof pos === "number" ? pos : null);
+      });
     }
     // commentator pushed a stats tab to everyone (Phase 7); bump the nonce on
     // every push so re-pushing the same tab still re-applies
@@ -868,6 +878,7 @@ export function RealtimeRoom(props: Props) {
       talkConsentGiven={props.talkConsentGiven}
       hasPendingTalk={props.hasPendingTalk}
       talkResolvedSignal={talkResolvedSignal}
+      queuePosition={queuePosition}
       broadcastStart={broadcastStart}
       chatOpen={chatOpen}
       floats={floats}
@@ -1159,6 +1170,7 @@ function LiveChat({
   talkConsentGiven,
   hasPendingTalk,
   talkResolvedSignal,
+  queuePosition,
   broadcastStart,
   chatOpen,
   floats,
@@ -1190,6 +1202,7 @@ function LiveChat({
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
   talkResolvedSignal: number;
+  queuePosition: number | null;
   broadcastStart: string | null;
   chatOpen: boolean;
   floats: ReactionFloat[];
@@ -2060,6 +2073,7 @@ function LiveChat({
                 consentGiven={talkConsentGiven}
                 hasPendingTalk={hasPendingTalk}
                 resolvedSignal={talkResolvedSignal}
+                queuePosition={queuePosition}
               />
               <PreferenceSlider
                 roomId={room.id}
