@@ -162,7 +162,7 @@ export function RealtimeRoom(props: Props) {
   // chat+links stream RIGHT 50. The old 25/50/25 expand/swap/companion model is
   // retired (founder decision 2026-06-24). On mobile `tab` switches Stream/Stats
   // (and Questions for the commentator); links live inside the stream now.
-  const [tab, setTab] = useState<"chat" | "stats" | "questions">("chat");
+  const [tab, setTab] = useState<"chat" | "stats" | "questions" | "callin">("chat");
   const [centerTab, setCenterTab] = useState<"chat" | "questions">("chat");
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
@@ -744,14 +744,99 @@ export function RealtimeRoom(props: Props) {
     setTalkRequests((prev) => prev.filter((r) => r.id !== id));
   }
 
-  type TabId = "chat" | "stats" | "questions";
-  const mobileTabs: { id: TabId; label: string; badge: number }[] = [
-    { id: "chat", label: "Chat", badge: 0 },
+  type TabId = "chat" | "stats" | "questions" | "callin";
+  // Mobile room sections (Cloud Design): CHAT / STATS / CALL IN in a bottom
+  // segmented bar, swipeable. The commentator swaps CALL IN (they're already
+  // on air) for their QUESTIONS inbox.
+  const tabIcon = (paths: React.ReactNode) => (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="h-[22px] w-[22px]"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {paths}
+    </svg>
+  );
+  const mobileTabs: { id: TabId; label: string; badge: number; icon: React.ReactNode }[] = [
+    {
+      id: "chat",
+      label: "Chat",
+      badge: 0,
+      icon: tabIcon(
+        <path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.6-.8L3 21l1.8-5.1A8.5 8.5 0 1121 11.5z" />,
+      ),
+    },
     ...(isRoomCommentator
-      ? [{ id: "questions" as const, label: "Questions", badge: newQuestionCount }]
+      ? [
+          {
+            id: "questions" as const,
+            label: "Questions",
+            badge: newQuestionCount,
+            icon: tabIcon(
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.5 9.3a2.5 2.5 0 115 .4c0 1.6-2.5 2-2.5 3.5" />
+                <line x1="12" y1="16.5" x2="12" y2="16.55" />
+              </>,
+            ),
+          },
+        ]
       : []),
-    { id: "stats", label: "Stats", badge: 0 },
+    {
+      id: "stats",
+      label: "Stats",
+      badge: 0,
+      icon: tabIcon(
+        <>
+          <line x1="6" y1="20" x2="6" y2="14" />
+          <line x1="12" y1="20" x2="12" y2="8" />
+          <line x1="18" y1="20" x2="18" y2="4" />
+        </>,
+      ),
+    },
+    ...(!isRoomCommentator
+      ? [
+          {
+            id: "callin" as const,
+            label: "Call in",
+            badge: 0,
+            icon: tabIcon(
+              <>
+                <rect x="9" y="3" width="6" height="11" rx="3" />
+                <path d="M5 11a7 7 0 0014 0" />
+                <line x1="12" y1="18" x2="12" y2="21" />
+              </>,
+            ),
+          },
+        ]
+      : []),
   ];
+
+  // horizontal swipe between mobile sections (|dx|>55 and clearly horizontal)
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  const onPanelTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    swipeRef.current = { x: t.clientX, y: t.clientY };
+  };
+  const onPanelTouchEnd = (e: React.TouchEvent) => {
+    const s = swipeRef.current;
+    swipeRef.current = null;
+    if (!s) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s.x;
+    const dy = t.clientY - s.y;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      const order = mobileTabs.map((m) => m.id);
+      const i = Math.max(0, order.indexOf(tab));
+      const next = dx < 0 ? Math.min(i + 1, order.length - 1) : Math.max(i - 1, 0);
+      if (order[next] !== tab) setTab(order[next]);
+    }
+  };
 
   const bar = isRoomCommentator ? (
     <CommentatorBar
@@ -794,6 +879,8 @@ export function RealtimeRoom(props: Props) {
   ) : (
     <ListenerBar
       commentator={room.commentatorUsername}
+      home={room.home}
+      away={room.away}
       live={audioLive}
       listenStatus={audio.listenStatus}
       onStart={() => void audio.startListening()}
@@ -929,31 +1016,20 @@ export function RealtimeRoom(props: Props) {
         }
       />
 
-      {/* mobile: in-flow strip under the header */}
-      <div className="border-b border-line bg-surface lg:hidden">{bar}</div>
+      {/* mobile: the sync transport sits at the very top (the desktop match bar
+          is lg-only). The listener transport paints its own surface; the
+          commentator bar keeps the plain strip. */}
+      <div
+        className={`lg:hidden ${isRoomCommentator ? "border-b border-line bg-surface" : ""}`}
+      >
+        {bar}
+      </div>
 
-      <nav aria-label="Room sections" className="flex border-b border-line bg-surface lg:hidden">
-        {mobileTabs.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            aria-current={tab === t.id ? "page" : undefined}
-            className={`h-9 flex-1 text-sm font-semibold transition-colors ${
-              tab === t.id ? "border-b-2 border-gold text-primary" : "text-secondary"
-            }`}
-          >
-            {t.label}
-            {t.badge > 0 && (
-              <span className="ml-1.5 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold text-canvas tabular-nums">
-                {t.badge}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      <div className="flex min-h-0 flex-1 flex-col lg:grid lg:w-full lg:grid-cols-[2fr_1fr]">
+      <div
+        onTouchStart={onPanelTouchStart}
+        onTouchEnd={onPanelTouchEnd}
+        className="flex min-h-0 flex-1 flex-col lg:grid lg:w-full lg:grid-cols-[2fr_1fr]"
+      >
         <aside
           aria-label="Stats"
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:order-2 lg:block`}
@@ -1017,7 +1093,140 @@ export function RealtimeRoom(props: Props) {
               : chatPanel}
           </div>
         </section>
+
+        {/* CALL IN (mobile listeners only — the commentator is already on air;
+            desktop keeps request-to-talk inline in chat) */}
+        {!isRoomCommentator && (
+          <section
+            aria-label="Call in"
+            className={`${tab === "callin" ? "block" : "hidden"} min-h-0 flex-1 overflow-y-auto lg:hidden`}
+          >
+            <div className="mx-auto max-w-md px-5 py-8">
+              <div className="mb-6 text-center">
+                <span className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full border border-red/40 bg-red/10 text-red">
+                  <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    className="h-[30px] w-[30px]"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.7}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="9" y="3" width="6" height="11" rx="3" />
+                    <path d="M5 11a7 7 0 0014 0" />
+                    <line x1="12" y1="18" x2="12" y2="21" />
+                  </svg>
+                </span>
+                <h2 className="display mb-2 text-[26px] leading-none">Go on air</h2>
+                <p className="mx-auto max-w-[280px] text-[13.5px] leading-normal text-secondary">
+                  Request the mic and {room.commentatorUsername} can bring you
+                  into the show live during a break in play.
+                </p>
+              </div>
+
+              {!viewer ? (
+                <div className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center">
+                  <p className="text-sm text-secondary">
+                    Sign in to request the mic and join the show.
+                  </p>
+                  <a
+                    href="/signin"
+                    className="mt-3 inline-flex h-11 items-center rounded-lg bg-red px-5 text-sm font-semibold text-white"
+                  >
+                    Sign in
+                  </a>
+                </div>
+              ) : queuePosition != null ? (
+                <div className="rounded-[14px] border border-red/40 bg-surface p-5 text-center">
+                  <p className="mb-2 font-mono text-[9.5px] tracking-[0.12em] text-red uppercase">
+                    You&apos;re in the queue
+                  </p>
+                  <p className="display text-[44px] leading-none tabular-nums">
+                    #{queuePosition}
+                  </p>
+                  <p className="mt-2 text-[12.5px] text-secondary">
+                    Keep listening. {room.commentatorUsername} brings you on
+                    between plays.
+                  </p>
+                </div>
+              ) : (
+                <InteractionButtons
+                  roomId={room.id}
+                  consentGiven={props.talkConsentGiven}
+                  hasPendingTalk={props.hasPendingTalk}
+                  resolvedSignal={talkResolvedSignal}
+                  queuePosition={queuePosition}
+                />
+              )}
+
+              <p className="mt-7 mb-2.5 font-mono text-[10px] tracking-[0.1em] text-secondary uppercase">
+                On air now
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2.5 rounded-xl border border-line bg-raised px-3 py-2.5">
+                  <Avatar name={room.commentatorUsername} size={34} />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
+                      <span className="truncate">{room.commentatorUsername}</span>
+                      <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                        Host
+                      </span>
+                    </p>
+                    <p className="font-mono text-[9px] text-secondary">
+                      {audioLive ? "speaking" : "show hasn't started"}
+                    </p>
+                  </div>
+                </div>
+                {audio.speakers
+                  .filter((s) => !s.isCommentator && s.name !== "you")
+                  .map((s) => (
+                    <div
+                      key={s.identity}
+                      className="flex items-center gap-2.5 rounded-xl border border-line bg-raised px-3 py-2.5"
+                    >
+                      <Avatar name={s.name} size={34} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13px] font-bold">{s.name}</p>
+                        <p className="font-mono text-[9px] text-secondary">on air</p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </section>
+        )}
       </div>
+
+      {/* mobile: bottom segmented bar (Cloud Design) — CHAT / STATS / CALL IN */}
+      <nav
+        aria-label="Room sections"
+        className="flex flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden"
+        style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+      >
+        {mobileTabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setTab(t.id)}
+            aria-current={tab === t.id ? "page" : undefined}
+            className={`relative flex flex-1 flex-col items-center gap-1 py-1 transition-colors ${
+              tab === t.id ? "text-primary" : "text-secondary"
+            }`}
+          >
+            {t.icon}
+            <span className="font-mono text-[9px] tracking-[0.06em] uppercase">
+              {t.label}
+            </span>
+            {t.badge > 0 && (
+              <span className="absolute top-0 right-[22%] flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red px-1 font-mono text-[9px] font-bold text-white tabular-nums">
+                {t.badge}
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
 
       {/* desktop: in-flow audio dock at the base of the h-dvh flex column */}
       <div className="hidden flex-none border-t border-line bg-surface lg:block">

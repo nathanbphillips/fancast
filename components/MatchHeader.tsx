@@ -44,7 +44,9 @@ export function MatchHeader({
   return (
     <section
       aria-label="Match status"
-      className="flex h-[54px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4"
+      // desktop-only: on mobile the room's sync transport carries leave/LIVE/
+      // clock/score itself (Cloud Design mobile room has no separate match bar)
+      className="hidden h-[54px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 lg:flex"
     >
       {/* left: leave · competition · title */}
       <div className="flex min-w-0 items-center gap-3">

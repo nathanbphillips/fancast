@@ -166,8 +166,31 @@ function SyncControls({
   );
 }
 
+/** 3-letter team code for the compact score readout (matches MatchHeader). */
+function abbr3(s: string): string {
+  return s.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase();
+}
+
+/** Little animated EQ bars shown while live audio is playing (decorative). */
+function EqTicks({ h = 14 }: { h?: number }) {
+  return (
+    <span aria-hidden="true" className="flex items-end gap-0.5" style={{ height: h }}>
+      {[0, 0.18, 0.36].map((d) => (
+        <span
+          key={d}
+          className="animate-fceq w-[3px] rounded-[1px] bg-red"
+          style={{ height: h, transformOrigin: "bottom", animationDelay: `${d}s` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export function ListenerBar({
   commentator,
+  home,
+  away,
+  leaveHref = "/matches",
   live,
   listenStatus,
   onStart,
@@ -195,6 +218,10 @@ export function ListenerBar({
   clock,
 }: {
   commentator: string;
+  /** team names for the transport's score readout (mobile) */
+  home: string;
+  away: string;
+  leaveHref?: string;
   live: boolean;
   listenStatus: ListenStatus;
   onStart: () => void;
@@ -222,7 +249,9 @@ export function ListenerBar({
   clock?: string;
 }) {
   const onAir = canPublish && micStatus === "live";
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // mobile sync transport (Cloud Design): expanded by default — "tap SYNC once,
+  // then collapse it". Session-local UI state only.
+  const [expanded, setExpanded] = useState(true);
 
   const statusLine = radioActive
     ? "Radio mode — a few seconds behind live"
@@ -337,67 +366,157 @@ export function ListenerBar({
         <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-28 shrink-0" />
       </div>
 
-      {/* MOBILE: compact bar (play · score + clock · caret) over an audio drawer */}
+      {/* MOBILE: sync transport (Cloud Design) — a rich expanded state (score,
+          host card, sync, radio + volume) that collapses to a slim always-on
+          strip. Pure reslot: every engine callback is the same one the old
+          drawer used. */}
       <div className="lg:hidden">
-        <div className="flex items-center gap-3 px-4 py-2">
-          {playButton}
-          {techDifficulties && !radioActive ? (
-            <TechDifficultiesCard since={techSince} />
-          ) : (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{commentator}</p>
-              <p className="truncate text-xs text-secondary tabular-nums">
-                {clock ? `${homeScore ?? 0}–${awayScore ?? 0} · ${clock}` : statusLine}
-              </p>
-            </div>
-          )}
-          {goOnAir}
-          {liveBadge}
-          <button
-            type="button"
-            onClick={() => setDrawerOpen((o) => !o)}
-            aria-expanded={drawerOpen}
-            aria-label="Audio settings"
-            className="flex h-11 w-9 shrink-0 items-center justify-center text-secondary hover:text-primary"
+        {expanded ? (
+          <div
+            className="border-b border-line px-4 pt-3 pb-3.5"
+            style={{
+              background:
+                "radial-gradient(120% 110% at 80% 0%, rgba(241,35,43,0.16), transparent 60%), var(--bg2)",
+            }}
           >
-            <span
-              aria-hidden
-              className={`inline-block text-lg transition-transform ${drawerOpen ? "" : "-rotate-90"}`}
-            >
-              ⌄
-            </span>
-          </button>
-        </div>
-
-        {drawerOpen && (
-          <div className="space-y-3 border-t border-line bg-surface px-4 py-3">
-            {!radioActive && syncSupported && (
-              <div>
-                <p className="mb-1.5 text-xs font-semibold text-secondary">
-                  Listening delay — sync to your TV
-                </p>
-                <SyncControls
-                  syncRequested={syncRequested}
-                  syncEffective={syncEffective}
-                  syncSupported={syncSupported}
-                  radioActive={radioActive}
-                  listenStatus={listenStatus}
-                  onSyncAdjust={onSyncAdjust}
-                  onOpenSync={onOpenSync}
-                  className="w-full"
-                />
-              </div>
-            )}
-            {radioUrl !== null && live && (
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-semibold text-secondary">Radio mode</span>
-                {radioToggle}
-              </div>
-            )}
-            <div>
-              <p className="mb-1.5 text-xs font-semibold text-secondary">Volume</p>
-              <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-full" />
+            {/* leave · LIVE + clock · collapse */}
+            <div className="mb-3 flex items-center justify-between">
+              <a
+                href={leaveHref}
+                className="flex items-center gap-1 text-[12.5px] font-bold text-secondary"
+              >
+                <span aria-hidden="true" className="text-[15px] leading-none">
+                  ‹
+                </span>
+                Leave
+              </a>
+              <span className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.06em] text-red">
+                {live && !techDifficulties && (
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
+                    style={{ boxShadow: "0 0 8px #f1232b" }}
+                  />
+                )}
+                {live && !techDifficulties ? "LIVE" : ""}
+                {clock ? (
+                  <span className="text-primary tabular-nums">
+                    {live && !techDifficulties ? "· " : ""}
+                    {clock}
+                  </span>
+                ) : null}
+              </span>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                aria-expanded={true}
+                aria-label="Collapse audio controls"
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-line text-xs text-secondary"
+              >
+                ▲
+              </button>
             </div>
+
+            {/* score — team codes on the display face, digits body-font
+                tabular-nums (golden rule: never Anton on anything that ticks) */}
+            <div className="mb-3 flex items-center justify-center gap-3.5">
+              <span className="display text-[17px] tracking-[0.03em]">{abbr3(home)}</span>
+              <span className="text-[30px] leading-none font-bold whitespace-nowrap tabular-nums">
+                {homeScore ?? 0} <span className="font-normal text-secondary">–</span>{" "}
+                {awayScore ?? 0}
+              </span>
+              <span className="display text-[17px] tracking-[0.03em]">{abbr3(away)}</span>
+            </div>
+
+            {/* play + host card (tech difficulties swaps in) */}
+            {techDifficulties && !radioActive ? (
+              <div className="mb-3 flex items-center gap-2.5">
+                {playButton}
+                <TechDifficultiesCard since={techSince} />
+              </div>
+            ) : (
+              <div className="mb-3 flex items-center gap-2.5 rounded-xl border border-line bg-raised px-3 py-2">
+                {playButton}
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
+                    <span className="truncate">{commentator}</span>
+                    <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                      Host
+                    </span>
+                  </p>
+                  <p className="truncate font-mono text-[9px] text-secondary">{statusLine}</p>
+                </div>
+                {listenStatus === "live" && !radioActive && <EqTicks />}
+              </div>
+            )}
+
+            {goOnAir && <div className="mb-3 flex">{goOnAir}</div>}
+
+            {/* sync transport */}
+            {!radioActive && syncSupported && (
+              <SyncControls
+                syncRequested={syncRequested}
+                syncEffective={syncEffective}
+                syncSupported={syncSupported}
+                radioActive={radioActive}
+                listenStatus={listenStatus}
+                onSyncAdjust={onSyncAdjust}
+                onOpenSync={onOpenSync}
+                className="w-full"
+              />
+            )}
+
+            {/* radio + volume (kept from the old drawer — nothing lost) */}
+            <div className="mt-3 flex items-center gap-3">
+              {radioUrl !== null && live && radioToggle}
+              <VolumeSlider
+                volume={volume}
+                onChange={onVolumeChange}
+                className="min-w-0 flex-1"
+              />
+            </div>
+
+            <p className="mt-2.5 text-center font-mono text-[9.5px] tracking-[0.03em] text-secondary">
+              Tap SYNC when your telly hits the moment, then collapse this ▲
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 border-b border-line bg-inset px-3 py-2">
+            <a
+              href={leaveHref}
+              aria-label="Leave room"
+              className="shrink-0 px-1 text-base leading-none text-secondary"
+            >
+              ‹
+            </a>
+            {playButton}
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              aria-expanded={false}
+              aria-label="Expand audio controls"
+              className="flex h-11 min-w-0 flex-1 items-center gap-2.5 text-left"
+            >
+              {live && !techDifficulties && (
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 shrink-0 animate-fcpulse rounded-full bg-red"
+                />
+              )}
+              <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
+                <span className="display text-[15px] tracking-[0.03em]">{abbr3(home)}</span>
+                <span className="text-[15px] font-bold tabular-nums">
+                  {homeScore ?? 0}
+                  <span className="font-normal text-secondary">–</span>
+                  {awayScore ?? 0}
+                </span>
+                <span className="display text-[15px] tracking-[0.03em]">{abbr3(away)}</span>
+              </span>
+              {listenStatus === "live" && !radioActive && <EqTicks h={11} />}
+              <span className="ml-auto min-w-0 truncate text-right font-mono text-[9px] tracking-[0.05em] text-secondary uppercase">
+                {listenStatus === "live" ? "Synced · tap to nudge ▼" : "Tap for audio ▼"}
+              </span>
+            </button>
           </div>
         )}
       </div>
