@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFixtureStats } from "@/lib/hooks/useFixtureStats";
 import { useMatchHistory } from "@/lib/hooks/useMatchHistory";
 import { useFotmobLinks } from "@/lib/hooks/useFotmobLinks";
@@ -143,6 +143,18 @@ const INPUTS_OPEN: RoomState[] = [
   "postgame",
 ];
 
+/** The five floating-reaction emoji (Cloud Design). Kept in sync with the
+ *  allow-list in app/api/reactions/route.ts. */
+const REACTION_EMOJI = ["⚽", "🔥", "👏", "😱", "🙌"] as const;
+
+type ReactionFloat = {
+  id: number;
+  emoji: string;
+  left: number;
+  dur: number;
+  rot: number;
+};
+
 export function RealtimeRoom(props: Props) {
   const { room, viewer } = props;
   const [roomState, setRoomState] = useState<RoomState>(room.state);
@@ -176,6 +188,40 @@ export function RealtimeRoom(props: Props) {
   );
   const [clockText, setClockText] = useState<string | undefined>(undefined);
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
+
+  // floating reaction emoji (Phase 5a) — ephemeral, capped at 12 in flight,
+  // reduced-motion neutralised via the fcfloat keyframe wildcard. spawnFloat
+  // only touches setFloats(prev=>…), so the realtime effect can call it through
+  // a stable closure without re-subscribing.
+  const [floats, setFloats] = useState<ReactionFloat[]>([]);
+  const floatIdRef = useRef(0);
+  const spawnFloat = useCallback((emoji: string) => {
+    const id = (floatIdRef.current += 1);
+    const dur = 2.4 + Math.random() * 1.2;
+    const f: ReactionFloat = {
+      id,
+      emoji,
+      left: 6 + Math.random() * 84,
+      dur,
+      rot: -20 + Math.random() * 40,
+    };
+    setFloats((prev) => [...prev.slice(-11), f]);
+    window.setTimeout(
+      () => setFloats((prev) => prev.filter((x) => x.id !== id)),
+      (dur + 0.3) * 1000,
+    );
+  }, []);
+  const sendReaction = useCallback(
+    (emoji: string) => {
+      spawnFloat(emoji); // optimistic — show it instantly, publish in the background
+      void fetch("/api/reactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId: room.id, emoji }),
+      }).catch(() => {});
+    },
+    [room.id, spawnFloat],
+  );
   // bumped when THIS viewer's talk request is resolved, so their button clears
   const [talkResolvedSignal, setTalkResolvedSignal] = useState(0);
   // commentator-pushed stats tab (Phase 7); nonce re-applies repeated pushes
@@ -427,6 +473,17 @@ export function RealtimeRoom(props: Props) {
       // 6 event types multiplex here; a small window drops the state/clock
       // event under slider churn, so replay deep enough to recover (M-4)
       params: { rewind: "100" },
+    });
+
+    // ephemeral floating reactions (Phase 5a): no rewind — a reaction that
+    // happened before you joined shouldn't replay. client.close() (cleanup
+    // below) tears this down with the rest.
+    const reactionsCh = client.channels.get(`room:${room.id}:reactions`);
+    reactionsCh.subscribe("reaction", (msg) => {
+      const emoji = (msg.data as { emoji?: string } | null)?.emoji;
+      if (emoji && REACTION_EMOJI.includes(emoji as (typeof REACTION_EMOJI)[number])) {
+        spawnFloat(emoji);
+      }
     });
 
     chat.subscribe("message", (msg) => appendMessage(msg.data as ChatMessage));
@@ -813,6 +870,8 @@ export function RealtimeRoom(props: Props) {
       talkResolvedSignal={talkResolvedSignal}
       broadcastStart={broadcastStart}
       chatOpen={chatOpen}
+      floats={floats}
+      onReact={sendReaction}
     />
   );
 
@@ -1102,6 +1161,8 @@ function LiveChat({
   talkResolvedSignal,
   broadcastStart,
   chatOpen,
+  floats,
+  onReact,
 }: {
   room: RoomInfo;
   roomState: RoomState;
@@ -1131,6 +1192,8 @@ function LiveChat({
   talkResolvedSignal: number;
   broadcastStart: string | null;
   chatOpen: boolean;
+  floats: ReactionFloat[];
+  onReact: (emoji: string) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -1923,7 +1986,41 @@ function LiveChat({
           </p>
         </div>
       ) : (
-        <div className="space-y-1.5 border-t border-line p-2">
+        <div className="relative space-y-2 border-t border-line p-2">
+          {/* floating reactions rise over the composer (Phase 5a); the fcfloat
+              keyframe is neutralised under prefers-reduced-motion */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-3 bottom-full h-44 overflow-hidden"
+          >
+            {floats.map((f) => (
+              <span
+                key={f.id}
+                className="animate-fcfloat absolute bottom-0"
+                style={{ left: `${f.left}%`, animationDuration: `${f.dur}s` }}
+              >
+                <span
+                  className="inline-block text-[22px]"
+                  style={{ transform: `rotate(${f.rot}deg)` }}
+                >
+                  {f.emoji}
+                </span>
+              </span>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5">
+            {REACTION_EMOJI.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => onReact(e)}
+                aria-label={`Send ${e} reaction`}
+                className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-line bg-raised text-base transition-colors hover:border-gold/60"
+              >
+                {e}
+              </button>
+            ))}
+          </div>
           {notice && (
             <p role="alert" className="rounded-lg border border-line bg-raised px-3 py-1 text-xs text-secondary">
               {notice}
