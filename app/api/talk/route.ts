@@ -170,6 +170,66 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ request: withFlags }, { status: 201 });
 }
 
+const withdrawSchema = z.object({ roomId: z.uuid() });
+
+/** Leave the queue (withdraw your own PENDING request — Phase 5c follow-up,
+ *  founder 2026-07-02). Reuses the 'dismissed' status (no schema change); the
+ *  commentator's request card disappears via the same talk_update event a
+ *  dismissal sends. Everyone still waiting gets a fresh #N. */
+export async function DELETE(request: NextRequest) {
+  const caller = await requireParticipant();
+  if (caller.error) return caller.error;
+
+  const parsed = withdrawSchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+  }
+
+  const service = createServiceClient();
+  // guard on still-pending so a concurrent accept wins cleanly (the caller is
+  // then on air, not withdrawn)
+  const { data: withdrawn, error } = await service
+    .from("talk_requests")
+    .update({ status: "dismissed" })
+    .eq("room_id", parsed.data.roomId)
+    .eq("user_id", caller.userId)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle<{ id: string }>();
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!withdrawn) {
+    return NextResponse.json(
+      { error: "No pending request to withdraw." },
+      { status: 404 },
+    );
+  }
+
+  // commentator's pending card disappears (same event a dismissal sends)
+  await publish(channels.private(parsed.data.roomId), "talk_update", {
+    requestId: withdrawn.id,
+    status: "dismissed",
+  });
+  // confirm to the withdrawing user's other tabs/devices
+  await publish(
+    channels.userPrivate(parsed.data.roomId, caller.userId),
+    "talk_resolved",
+    { requestId: withdrawn.id },
+  );
+  // everyone still waiting moves up — push fresh positions (own channels only)
+  const waiting = await pendingQueue(service, parsed.data.roomId);
+  await Promise.all(
+    waiting.map((uid, i) =>
+      publish(channels.userPrivate(parsed.data.roomId, uid), "queue_position", {
+        position: i + 1,
+      }),
+    ),
+  );
+
+  return NextResponse.json({ ok: true });
+}
+
 /** Accept/dismiss (room commentator). Dismissal is silent to the
  *  requester (FR-4.2). Accept wires LiveKit elevation in Phase 5. */
 export async function PATCH(request: NextRequest) {

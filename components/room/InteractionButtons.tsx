@@ -76,6 +76,25 @@ export function InteractionButtons({
     }
   }
 
+  async function leaveQueue() {
+    setBusy(true);
+    setNote(null);
+    const res = await fetch("/api/talk", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId }),
+    });
+    setBusy(false);
+    if (res.ok || res.status === 404) {
+      // 404 = already resolved elsewhere (accepted/dismissed) — either way,
+      // nothing is pending any more
+      setTalkPending(false);
+    } else {
+      const body = await res.json().catch(() => ({}));
+      setNote(body.error ?? "Couldn't leave the queue.");
+    }
+  }
+
   async function submitTalk(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -120,22 +139,30 @@ export function InteractionButtons({
         </button>
         <button
           type="button"
-          disabled={talkPending}
+          disabled={busy}
           onClick={() => {
+            if (talkPending) {
+              // tap to leave the queue (founder 2026-07-02)
+              void leaveQueue();
+              return;
+            }
             setNote(null);
             setOpen(open === "talk" ? "none" : "talk");
           }}
           aria-expanded={open === "talk"}
+          title={talkPending ? "Tap to leave the queue" : undefined}
           className={`h-11 flex-1 rounded-lg border text-sm disabled:opacity-60 ${
             open === "talk"
               ? "border-gold font-semibold"
-              : "border-line bg-surface hover:bg-raised"
+              : talkPending
+                ? "border-red/40 font-semibold text-red hover:bg-red/10"
+                : "border-line bg-surface hover:bg-raised"
           }`}
         >
           {talkPending
             ? queuePosition != null
-              ? `In line · #${queuePosition}`
-              : "Request pending"
+              ? `In line · #${queuePosition} · tap to leave`
+              : "Pending · tap to leave"
             : "Request to Talk"}
         </button>
       </div>

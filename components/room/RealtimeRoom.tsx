@@ -227,6 +227,23 @@ export function RealtimeRoom(props: Props) {
   // call-in queue position (#N), pushed to this viewer on their own per-user
   // channel — the requester roster is never broadcast (FR-4.2). (Phase 5c)
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
+  const [leavingQueue, setLeavingQueue] = useState(false);
+  const leaveQueue = useCallback(async () => {
+    setLeavingQueue(true);
+    try {
+      const res = await fetch("/api/talk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId: room.id }),
+      });
+      // 404 = already resolved elsewhere; either way nothing is pending now
+      if (res.ok || res.status === 404) setQueuePosition(null);
+    } catch {
+      /* leave the card up; the user can retry */
+    } finally {
+      setLeavingQueue(false);
+    }
+  }, [room.id]);
   // commentator-pushed stats tab (Phase 7); nonce re-applies repeated pushes
   const [pushedStatsTab, setPushedStatsTab] = useState<StatTab | null>(null);
   const [statsPushNonce, setStatsPushNonce] = useState(0);
@@ -1150,6 +1167,14 @@ export function RealtimeRoom(props: Props) {
                     Keep listening. {room.commentatorUsername} brings you on
                     between plays.
                   </p>
+                  <button
+                    type="button"
+                    onClick={() => void leaveQueue()}
+                    disabled={leavingQueue}
+                    className="mt-3.5 inline-block rounded-[9px] border border-line px-4 py-2 text-[12.5px] font-bold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
+                  >
+                    {leavingQueue ? "Leaving…" : "Leave queue"}
+                  </button>
                 </div>
               ) : (
                 <InteractionButtons
