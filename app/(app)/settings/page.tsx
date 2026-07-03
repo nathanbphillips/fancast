@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { config } from "@/lib/config";
 import { ProfileSettingsForm } from "@/components/ProfileSettingsForm";
+import { CommentatorUpgrade } from "@/components/CommentatorUpgrade";
 
 export const metadata: Metadata = { title: "Profile settings" };
 
@@ -50,6 +51,26 @@ export default async function SettingsPage() {
           usernameLocked={usernameLocked}
           unlocksOn={unlocksOn}
         />
+      </div>
+
+      {/* Hosting (FR-18.1): self-serve commentator upgrade; commentators see
+          their standing instead */}
+      <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card">
+        {profile.role === "listener" ? (
+          <CommentatorUpgrade />
+        ) : (
+          <div>
+            <p className="text-sm font-bold">
+              {profile.role === "admin" ? "Admin account" : "Commentator account"}
+            </p>
+            <p className="mt-0.5 text-[13px] text-secondary">
+              You can host rooms.
+              {profile.commentator_terms_version
+                ? ` Commentator terms accepted (version ${profile.commentator_terms_version}).`
+                : ""}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="mt-6">
