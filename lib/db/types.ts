@@ -2,6 +2,15 @@
 
 export type Role = "listener" | "commentator" | "admin";
 
+/** Fixed platform set for commentator social links (FR-18.5). */
+export type SocialPlatform =
+  | "x"
+  | "instagram"
+  | "youtube"
+  | "tiktok"
+  | "twitch"
+  | "website";
+
 export type Profile = {
   user_id: string;
   username: string;
@@ -11,6 +20,11 @@ export type Profile = {
   theme_pref: "dark" | "light" | null;
   username_changed_at: string | null;
   created_at: string;
+  // Commentator Platform Epic (migration 0026, FR-18)
+  about: string | null;
+  social_links: Partial<Record<SocialPlatform, string>> | null;
+  commentator_terms_accepted_at: string | null;
+  commentator_terms_version: string | null;
 };
 
 export type Follow = {

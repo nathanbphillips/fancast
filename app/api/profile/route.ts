@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { config } from "@/lib/config";
+import { isReservedUsername } from "@/lib/reserved-usernames";
 import {
   createSupabaseServerClient,
   createServiceClient,
@@ -15,7 +16,13 @@ const usernameSchema = z
   .regex(
     config.usernamePattern,
     "Username must be 3-20 characters: letters, numbers, underscore.",
-  );
+  )
+  // FR-18.3: profiles live at root /{username}, so route names can never be
+  // usernames (enforced at create AND change; migration 0026 asserted no
+  // existing collision)
+  .refine((u) => !isReservedUsername(u), {
+    message: "That username isn't available.",
+  });
 
 const createSchema = z.object({ username: usernameSchema });
 
