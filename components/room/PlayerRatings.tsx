@@ -16,6 +16,7 @@ export function PlayerRatings({
   agg,
   myRatings,
   open,
+  hint,
   homeName,
   awayName,
 }: {
@@ -23,8 +24,10 @@ export function PlayerRatings({
   players: RatingPlayer[];
   agg: RatingsAggregate;
   myRatings: MyRatings;
-  /** ratings accepted (postgame, and this viewer may rate) */
+  /** ratings accepted (half-time / postgame windows, and this viewer may rate) */
   open: boolean;
+  /** phase note under the heading, e.g. "Rating the first half" */
+  hint?: string;
   homeName: string;
   awayName: string;
 }) {
@@ -114,6 +117,7 @@ export function PlayerRatings({
   return (
     <div className="mt-3 rounded-xl border-[0.75px] border-line bg-surface p-3">
       <p className="text-sm font-semibold">Player ratings</p>
+      {hint && <p className="mt-0.5 text-[11px] text-secondary">{hint}</p>}
       <div className="mt-2 space-y-3">
         {sideBlock("home", homeName)}
         {sideBlock("away", awayName)}

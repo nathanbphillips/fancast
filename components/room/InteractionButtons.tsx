@@ -23,6 +23,7 @@ export function InteractionButtons({
   hasPendingTalk,
   resolvedSignal,
   queuePosition = null,
+  askSignal = 0,
 }: {
   roomId: string;
   consentGiven: boolean;
@@ -32,6 +33,9 @@ export function InteractionButtons({
   /** this viewer's 1-based place in the call-in queue, pushed on their own
    *  per-user channel; null until known (Phase 5c) */
   queuePosition?: number | null;
+  /** bumps when the "Ask the host" pill (reactions row) is tapped — opens the
+   *  question form here so there's one implementation (founder 2026-07-02) */
+  askSignal?: number;
 }) {
   const [open, setOpen] = useState<"none" | "question" | "talk">("none");
   const [question, setQuestion] = useState("");
@@ -52,6 +56,14 @@ export function InteractionButtons({
       setNote(null);
     }
   }, [resolvedSignal]);
+
+  // "Ask the host" pill (reactions row) opens the question form here
+  useEffect(() => {
+    if (askSignal > 0) {
+      setNote(null);
+      setOpen("question");
+    }
+  }, [askSignal]);
 
   async function submitQuestion(e: React.FormEvent) {
     e.preventDefault();

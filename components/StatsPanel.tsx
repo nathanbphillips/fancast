@@ -320,12 +320,25 @@ export function StatsPanel({
                   size={size}
                 />
               );
+              // KEY EVENTS digest (Cloud Design, founder 2026-07-02): the latest
+              // few events surface right on the stats tab; the full list stays
+              // under Timeline.
+              const recentEvents = (data?.events ?? []).slice(-4);
+              const keyEvents = recentEvents.length > 0 && (
+                <div className="mt-5">
+                  <p className="mb-2.5 font-mono text-[13px] font-bold tracking-[0.08em] text-secondary uppercase">
+                    Key events
+                  </p>
+                  <EventsTimeline events={recentEvents} size={size} />
+                </div>
+              );
               return (
                 <>
                   {/* desktop: plain 13; deeper inline only when expanded to 50% */}
                   <div className="hidden lg:block">
                     {thirteen}
                     {expanded && <div className="mt-3">{deeper}</div>}
+                    {keyEvents}
                   </div>
                   {/* mobile: collapsible "Match stats" + "Advanced" (deeper always below) */}
                   <div className="space-y-3 lg:hidden">
@@ -335,6 +348,7 @@ export function StatsPanel({
                     <MobileGroup title="Advanced" defaultOpen big={big}>
                       {deeper}
                     </MobileGroup>
+                    {keyEvents}
                   </div>
                 </>
               );

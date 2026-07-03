@@ -1,14 +1,16 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 /**
  * Avatar (redesign 2026-06-29): a user's profile image, or a deterministic
- * coloured initial-circle when there's none (or it fails to load). Uses a plain
- * <img> — no next/image, since no `images.remotePatterns` is configured and the
- * CSP already allows https/data images — mirroring LinkThumb in RealtimeRoom.
- * The fallback hue is hashed from the name so a user's circle colour is stable,
- * with white text at a fixed lightness that reads on both light and dark canvas.
+ * coloured initial-circle when there's none (or it fails to load). Rendered
+ * through next/image (audit 2026-07-02): the browser only requests
+ * /_next/image on OUR origin and the optimizer fetches the upstream image
+ * server-side, so a hostile avatar host can't harvest room participants' IPs
+ * (tracking pixel). The fallback hue is hashed from the name so a user's
+ * circle colour is stable, with white text that reads on both themes.
  */
 export function Avatar({
   src,
@@ -27,10 +29,11 @@ export function Avatar({
 
   if (src && !broken) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={src}
         alt=""
+        width={size}
+        height={size}
         onError={() => setBroken(true)}
         className={`shrink-0 rounded-full border border-line object-cover ${className}`}
         style={{ width: size, height: size }}

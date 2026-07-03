@@ -8,6 +8,9 @@ import {
 import type { Profile } from "@/lib/db/types";
 import { FollowButton } from "@/components/FollowButton";
 import { UsernameForm } from "@/components/UsernameForm";
+import { Avatar } from "@/components/Avatar";
+import { AdminClearAvatar } from "@/components/AdminClearAvatar";
+import { isAdmin } from "@/lib/roles";
 
 export async function generateMetadata({
   params,
@@ -57,16 +60,12 @@ export default async function ProfilePage({
   }
 
   const isCommentator = profile.role === "commentator";
+  const viewerIsAdmin = isAdmin(viewer?.id, viewerProfile);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
       <div className="flex items-center gap-4">
-        <span
-          aria-hidden="true"
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-raised text-2xl font-bold text-secondary"
-        >
-          {profile.username.slice(0, 1).toUpperCase()}
-        </span>
+        <Avatar src={profile.avatar_url} name={profile.username} size={64} />
         <div className="min-w-0 flex-1">
           <h1
             className={`truncate text-2xl font-bold tracking-tight ${isCommentator ? "text-gold" : ""}`}
@@ -105,6 +104,12 @@ export default async function ProfilePage({
           </div>
         )}
       </div>
+
+      {viewerIsAdmin && !isOwn && profile.avatar_url && (
+        <div className="mt-4">
+          <AdminClearAvatar userId={profile.user_id} />
+        </div>
+      )}
 
       {isOwn && (
         <section

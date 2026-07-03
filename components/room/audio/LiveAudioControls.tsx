@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { RadioToggle } from "@/components/RadioToggle";
+import { Waveform } from "@/components/ui/Waveform";
 import { CallerActions } from "../CallerActions";
 import type { ListenStatus, MicStatus, Speaker } from "./useRoomAudio";
 
@@ -415,6 +416,11 @@ export function ListenerBar({
             <p className="truncate text-xs text-secondary">{statusLine}</p>
           </div>
         )}
+        {/* decorative broadcast waveform fills the dock's center on wide
+            screens (Cloud Design); clips first, never the controls */}
+        <div className="hidden min-w-0 flex-1 xl:block">
+          <Waveform bars={40} height={26} />
+        </div>
         {goOnAir}
         {liveBadge}
         {radioToggle}
@@ -505,6 +511,11 @@ export function ListenerBar({
                 {listenStatus === "live" && !radioActive && <EqTicks />}
               </div>
             )}
+
+            {/* decorative waveform box (Cloud Design mobile transport) */}
+            <div className="mb-3 rounded-[10px] border border-line bg-canvas px-3.5">
+              <Waveform bars={30} height={44} />
+            </div>
 
             {goOnAir && <div className="mb-3 flex">{goOnAir}</div>}
 

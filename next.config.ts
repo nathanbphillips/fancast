@@ -54,6 +54,15 @@ const nextConfig: NextConfig = {
   // ffmpeg-static ships a real binary; keep it out of the server bundle so
   // its __dirname-relative path resolves to node_modules, not .next.
   serverExternalPackages: ["ffmpeg-static"],
+  // Avatars are user-supplied https URLs rendered through next/image, so the
+  // BROWSER only ever hits /_next/image on our origin — the optimizer fetches
+  // the upstream server-side and caches it, killing the tracking-pixel vector
+  // (a hostile avatar host would otherwise log every room participant's IP;
+  // audit 2026-07-02). The URL itself is validated at write time in
+  // /api/profile; any https host is permitted here on purpose.
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "**" }],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

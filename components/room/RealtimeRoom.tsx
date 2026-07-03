@@ -80,6 +80,7 @@ export type RoomInfo = {
   awayScore: number;
   commentatorUsername: string;
   commentatorId: string;
+  competition: string; // league/competition name for the match-bar chip
   fixtureId: number; // the room's fixture id (PK; negative for dev seeds, epoch-ms for admin games)
   comingSoon: boolean; // admin game with no Sportmonks data yet → "Information coming soon"
 };
@@ -163,7 +164,10 @@ export function RealtimeRoom(props: Props) {
   // retired (founder decision 2026-06-24). On mobile `tab` switches Stream/Stats
   // (and Questions for the commentator); links live inside the stream now.
   const [tab, setTab] = useState<"chat" | "stats" | "questions" | "callin">("chat");
-  const [centerTab, setCenterTab] = useState<"chat" | "questions">("chat");
+  // desktop chat-column tabs: Room chat | Polls (+ Questions for the
+  // commentator). Polls hosts the interactive widgets so they stop consuming
+  // permanent chat-column height (founder 2026-07-02, Cloud Design).
+  const [centerTab, setCenterTab] = useState<"chat" | "questions" | "polls">("chat");
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
   const [questions, setQuestions] = useState<Question[]>(props.initialQuestions);
@@ -983,9 +987,6 @@ export function RealtimeRoom(props: Props) {
       myPrediction={props.myPrediction}
       activePoll={activePoll}
       myPollVote={props.myPollVote}
-      ratingsAgg={ratingsAgg}
-      myRatings={props.myRatings}
-      ratingPlayers={ratingPlayers}
       talkConsentGiven={props.talkConsentGiven}
       hasPendingTalk={props.hasPendingTalk}
       talkResolvedSignal={talkResolvedSignal}
@@ -1008,6 +1009,75 @@ export function RealtimeRoom(props: Props) {
     />
   );
 
+  // Interactive widgets (founder 2026-07-02): desktop gets a dedicated Polls
+  // tab so the widgets stop consuming permanent chat-column height; mobile
+  // keeps predictor + poll in chat and gets ratings under STATS. Ratings open
+  // at HALF-TIME (first half) and again POSTGAME (whole game, revisable).
+  const ratingsWindow = roomState === "halftime" || roomState === "postgame";
+  const predictorRelevant =
+    audioLive && (roomState === "pregame" || predictionAgg.total > 0);
+  const pollRelevant = !!activePoll || (audioLive && isRoomCommentator);
+  const ratingsRelevant =
+    (ratingsWindow || ratingsAgg.length > 0) && ratingPlayers.length > 0;
+  const pollsBadge =
+    (activePoll ? 1 : 0) +
+    (ratingsWindow && ratingPlayers.length > 0 ? 1 : 0) +
+    (roomState === "pregame" && audioLive ? 1 : 0);
+
+  const ratingsWidget = ratingsRelevant ? (
+    <PlayerRatings
+      roomId={room.id}
+      players={ratingPlayers}
+      agg={ratingsAgg}
+      myRatings={props.myRatings}
+      open={ratingsWindow && !!viewer && !isRoomCommentator}
+      hint={
+        roomState === "halftime"
+          ? "Rating the first half. Revise your scores at full time."
+          : roomState === "postgame"
+            ? "Rate the full 90."
+            : undefined
+      }
+      homeName={room.home}
+      awayName={room.away}
+    />
+  ) : null;
+
+  const pollsPanel = (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+      {pollRelevant && (
+        <div>
+          {activePoll && (
+            <PollWidget
+              poll={activePoll}
+              myVote={props.myPollVote}
+              canVote={!!viewer && !isRoomCommentator}
+              isCommentator={isRoomCommentator}
+            />
+          )}
+          {audioLive && isRoomCommentator && <PollComposer roomId={room.id} />}
+        </div>
+      )}
+      {predictorRelevant && (
+        <ScorePredictor
+          roomId={room.id}
+          myValue={props.myPrediction}
+          agg={predictionAgg}
+          open={roomState === "pregame" && !!viewer && !isRoomCommentator}
+          homeName={room.home}
+          awayName={room.away}
+        />
+      )}
+      {ratingsWidget}
+      {!pollRelevant && !predictorRelevant && !ratingsRelevant && (
+        <p className="px-1 py-6 text-center text-sm text-secondary">
+          Nothing to vote on right now. Polls and player ratings appear here
+          when the host opens them.
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <div className="flex h-dvh flex-col">
       {/* detached LiveKit audio elements live here */}
@@ -1020,6 +1090,7 @@ export function RealtimeRoom(props: Props) {
         state={roomState}
         clock={clockText}
         listeners={watching ?? undefined}
+        competition={room.competition || undefined}
         showOnMobile={isRoomCommentator}
         themeToggle={<ThemeToggle />}
         share={<ShareButton />}
@@ -1078,36 +1149,49 @@ export function RealtimeRoom(props: Props) {
             fotmob={fotmobLinks}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
           />
+          {/* mobile: RATE THE PLAYERS lives under STATS (Cloud Design); the
+              desktop copy renders in the chat column's Polls tab */}
+          {ratingsWidget && <div className="px-3 pb-3 lg:hidden">{ratingsWidget}</div>}
         </aside>
 
         <section
           aria-label="Chat"
           className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex lg:border-r lg:border-line`}
         >
-          {isRoomCommentator && (
-            <div className="hidden border-b border-line bg-surface lg:flex">
-              {(["chat", "questions"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setCenterTab(t)}
-                  aria-current={centerTab === t ? "page" : undefined}
-                  className={`h-10 px-4 text-sm font-semibold ${
-                    centerTab === t
-                      ? "border-b-2 border-gold text-primary"
-                      : "text-secondary"
-                  }`}
-                >
-                  {t === "chat" ? "Chat" : "Questions"}
-                  {t === "questions" && newQuestionCount > 0 && (
-                    <span className="ml-1.5 rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-bold text-canvas tabular-nums">
-                      {newQuestionCount}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="hidden border-b border-line bg-surface lg:flex">
+            {[
+              { id: "chat" as const, label: "Room chat", badge: 0 },
+              { id: "polls" as const, label: "Polls", badge: pollsBadge },
+              ...(isRoomCommentator
+                ? [
+                    {
+                      id: "questions" as const,
+                      label: "Questions",
+                      badge: newQuestionCount,
+                    },
+                  ]
+                : []),
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setCenterTab(t.id)}
+                aria-current={centerTab === t.id ? "page" : undefined}
+                className={`relative h-10 px-4 text-sm font-extrabold ${
+                  centerTab === t.id
+                    ? "border-b-2 border-gold text-primary"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                {t.label}
+                {t.badge > 0 && (
+                  <span className="absolute top-0.5 right-0 flex h-4 min-w-[1rem] animate-fcpulse items-center justify-center rounded-full bg-red px-1 font-mono text-[9px] font-bold text-white tabular-nums">
+                    {t.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
           {/* mobile: driven by the tab bar; desktop: by centerTab */}
           <div className={`min-h-0 flex-1 ${tab === "questions" ? "overflow-y-auto" : "flex flex-col"} lg:hidden`}>
             {tab === "questions" ? questionsPanel : chatPanel}
@@ -1115,7 +1199,9 @@ export function RealtimeRoom(props: Props) {
           <div className={`hidden min-h-0 flex-1 ${centerTab === "questions" ? "overflow-y-auto" : ""} lg:flex lg:flex-col`}>
             {centerTab === "questions" && isRoomCommentator
               ? questionsPanel
-              : chatPanel}
+              : centerTab === "polls"
+                ? pollsPanel
+                : chatPanel}
           </div>
         </section>
 
@@ -1406,9 +1492,6 @@ function LiveChat({
   myPrediction,
   activePoll,
   myPollVote,
-  ratingsAgg,
-  myRatings,
-  ratingPlayers,
   talkConsentGiven,
   hasPendingTalk,
   talkResolvedSignal,
@@ -1438,9 +1521,6 @@ function LiveChat({
   myPrediction: MyPrediction;
   activePoll: PollState;
   myPollVote: MyPollVote;
-  ratingsAgg: RatingsAggregate;
-  myRatings: MyRatings;
-  ratingPlayers: RatingPlayer[];
   talkConsentGiven: boolean;
   hasPendingTalk: boolean;
   talkResolvedSignal: number;
@@ -1452,6 +1532,9 @@ function LiveChat({
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  // "Ask the host" pill on the reactions row → opens the question form inside
+  // InteractionButtons (one implementation; founder 2026-07-02)
+  const [askSignal, setAskSignal] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [votes, setVotes] = useState(myVotes);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
@@ -2136,7 +2219,7 @@ function LiveChat({
       {/* score predictor: distribution visible to everyone; the form opens for
           signed-in listeners during pregame (FR-12.1) */}
       {inputsOpen && (roomState === "pregame" || predictionAgg.total > 0) && (
-        <div className="border-t border-line px-3 pt-3">
+        <div className="border-t border-line px-3 pt-3 lg:hidden">
           <ScorePredictor
             roomId={room.id}
             myValue={myPrediction}
@@ -2150,7 +2233,7 @@ function LiveChat({
 
       {/* half-time poll: live poll visible to all; composer is commentator-only */}
       {(activePoll || (inputsOpen && isRoomCommentator)) && (
-        <div className="border-t border-line px-3 pt-3">
+        <div className="border-t border-line px-3 pt-3 lg:hidden">
           {activePoll && (
             <PollWidget
               poll={activePoll}
@@ -2163,20 +2246,8 @@ function LiveChat({
         </div>
       )}
 
-      {/* player ratings: postgame, rate the XI + subs; visible to all */}
-      {(roomState === "postgame" || ratingsAgg.length > 0) && ratingPlayers.length > 0 && (
-        <div className="border-t border-line px-3 pt-3">
-          <PlayerRatings
-            roomId={room.id}
-            players={ratingPlayers}
-            agg={ratingsAgg}
-            myRatings={myRatings}
-            open={roomState === "postgame" && !!viewer && !isRoomCommentator}
-            homeName={room.home}
-            awayName={room.away}
-          />
-        </div>
-      )}
+      {/* player ratings moved out of chat (founder 2026-07-02): desktop →
+          Polls tab, mobile → under STATS */}
 
       {!viewer ? (
         <div className="border-t border-line p-3">
@@ -2275,6 +2346,15 @@ function LiveChat({
                 {e}
               </button>
             ))}
+            {inputsOpen && !isRoomCommentator && (
+              <button
+                type="button"
+                onClick={() => setAskSignal((s) => s + 1)}
+                className="ml-auto shrink-0 rounded-full border border-line px-3 py-1.5 font-mono text-[10px] tracking-[0.04em] text-secondary transition-colors hover:border-gold hover:text-primary"
+              >
+                Ask the host
+              </button>
+            )}
           </div>
           {notice && (
             <p role="alert" className="rounded-lg border border-line bg-raised px-3 py-1 text-xs text-secondary">
@@ -2316,6 +2396,7 @@ function LiveChat({
                 hasPendingTalk={hasPendingTalk}
                 resolvedSignal={talkResolvedSignal}
                 queuePosition={queuePosition}
+                askSignal={askSignal}
               />
               <PreferenceSlider
                 roomId={room.id}

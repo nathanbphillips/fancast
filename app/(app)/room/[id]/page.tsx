@@ -306,6 +306,7 @@ export default async function RoomPage({
     awayScore: room.fixture.away_score ?? 0,
     commentatorUsername: room.commentator.username,
     commentatorId: room.commentator_id,
+    competition: room.fixture.competition ?? "",
     fixtureId: room.fixture_id,
     // an admin game with no Sportmonks match yet (or in an uncovered comp) has
     // no upstream data — the stats/info/history panels show "coming soon"

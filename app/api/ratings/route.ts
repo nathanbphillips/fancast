@@ -6,8 +6,9 @@ import { createServiceClient } from "@/lib/db/server";
 import { ratingsAggregate } from "@/lib/ratings";
 import type { RoomState } from "@/lib/db/types";
 
-// FR-12.3: player ratings open postgame (after Stop 2H / full time).
-const OPEN_STATES: RoomState[] = ["postgame"];
+// FR-12.3 amended (founder 2026-07-02): ratings open at HALF-TIME (rate the
+// first half) and again POSTGAME (rate the whole game); scores are revisable.
+const OPEN_STATES: RoomState[] = ["halftime", "postgame"];
 
 const bodySchema = z.object({
   roomId: z.uuid(),
