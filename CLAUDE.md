@@ -80,6 +80,7 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 | **Friends**: double opt-in, silent decline (no re-request after decline), blocking ships in the same PRD (severs friendship, invisible to the blocked); no DMs | Founder decision 2026-07-03 | Final |
 | **Notifications v1**: email (Resend) + web push (PWA), no in-app inbox; batching is core design, dedupe key **(recipient, room, type)**; bulk actions collapse to one summary per recipient; every email has signed one-click unsubscribe | Founder decision 2026-07-03 | Final |
 | Matches page goes date-grouped with multi-room fixture rows now; filters/search/team pills deferred until room volume demands them. Never use an emdash in any document or user-facing string | Founder decision 2026-07-03 | Final |
+| Epic infra rulings: **build around Resend + Stripe** (domain not picked yet; both prepped for drop-in: `lib/notify/email.ts` no-ops without RESEND_API_KEY, tip rows carry recipient_user_id from day one); **all scheduling fits Vercel Hobby** (once-daily crons only): immediate notifications send inline after the response, reminders drain opportunistically from high-traffic routes + daily sweep, fixture sync = daily cron + stale-picker refresh + manual trigger | Founder decision 2026-07-03 | Final |
 
 ## Where things are specified
 
