@@ -3,7 +3,7 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
-import { rateLimit } from "@/lib/ratelimit";
+import { clientIp, rateLimit } from "@/lib/ratelimit";
 import type { RoomState } from "@/lib/db/types";
 
 /** The five reactions the composer offers (Cloud Design set). Anything else is
@@ -30,6 +30,13 @@ const LIVE_STATES: RoomState[] = [
  * subscribe-only tokens and never publish directly (golden rule 5).
  */
 export async function POST(request: NextRequest) {
+  // cheapest gate first: an IP bucket ahead of the auth/profile/room queries,
+  // so a flood is rejected before it costs 3+ Supabase calls per request
+  // (audit 2026-07-02; still per-lambda — the global store is a known backlog)
+  if (!rateLimit(`react-ip:${clientIp(request)}`, 20, 4000)) {
+    return NextResponse.json({ error: "Slow down a touch." }, { status: 429 });
+  }
+
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
 

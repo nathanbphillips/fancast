@@ -24,8 +24,13 @@ for (const [label, s] of [["dark", dark], ["null", none]] as const) {
   ok(`${label}: localStorage checked before account pref`, lsIdx >= 0 && lsIdx < acctIdx, `ls@${lsIdx} acct@${acctIdx}`);
 }
 
-// system fallback present, and an invalid pref is treated as no account pref
-ok("falls back to prefers-color-scheme", dark.includes("prefers-color-scheme: dark"));
+// Cloud Design (2026-07-01): the final fallback is DARK, not the system
+// preference — precedence is localStorage > account pref > dark default.
+ok("falls back to dark default", dark.includes('var d=t?t==="dark":true'));
+ok(
+  "prefers-color-scheme fallback removed",
+  !dark.includes("prefers-color-scheme"),
+);
 // @ts-expect-error — guard against a bad value sneaking through
 ok("invalid pref => empty", themeInitScript("blue").includes('var acct=""'));
 

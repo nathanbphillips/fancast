@@ -20,6 +20,7 @@ export function MatchHeader({
   listeners,
   competition,
   leaveHref = "/matches",
+  showOnMobile = false,
   themeToggle,
   userMenu,
   share,
@@ -33,6 +34,9 @@ export function MatchHeader({
   listeners?: number;
   competition?: string;
   leaveHref?: string;
+  /** show at all widths — the commentator has no listener transport carrying
+   *  score/clock on mobile, so their match bar must stay (audit 2026-07-02) */
+  showOnMobile?: boolean;
   themeToggle?: React.ReactNode;
   userMenu?: React.ReactNode;
   share?: React.ReactNode;
@@ -44,9 +48,9 @@ export function MatchHeader({
   return (
     <section
       aria-label="Match status"
-      // desktop-only: on mobile the room's sync transport carries leave/LIVE/
-      // clock/score itself (Cloud Design mobile room has no separate match bar)
-      className="hidden h-[54px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 lg:flex"
+      // listeners: desktop-only (the mobile sync transport carries leave/LIVE/
+      // clock/score itself). Commentators: all widths (no listener transport).
+      className={`${showOnMobile ? "flex" : "hidden"} h-[54px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 lg:flex`}
     >
       {/* left: leave · competition · title */}
       <div className="flex min-w-0 items-center gap-3">

@@ -165,7 +165,7 @@ export function CommentatorBar({
           Status
         </p>
         <p className="flex items-center gap-2 text-sm font-semibold">
-          <span className="font-display text-gold">Commentator</span>
+          <span className="font-display text-gold uppercase">Commentator</span>
           <span className="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-green uppercase">
             <span className="h-1.5 w-1.5 rounded-full bg-green" />
             Connected

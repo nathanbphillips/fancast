@@ -23,7 +23,25 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const clientId = user?.id ?? `anon:${crypto.randomUUID().slice(0, 8)}`;
+
+  // Anonymous listeners need a STABLE clientId: ably-js renews the token via
+  // authUrl before the 1h TTL, and Ably rejects a renewal whose clientId
+  // differs from the connection's — a fresh random id per request would drop
+  // every anonymous listener mid-second-half (audit 2026-07-02). Persist one
+  // in a long-lived cookie instead.
+  let anonToSet: string | null = null;
+  let clientId: string;
+  if (user) {
+    clientId = user.id;
+  } else {
+    const existing = request.cookies.get("fc_anon")?.value;
+    if (existing && /^[A-Za-z0-9-]{8,64}$/.test(existing)) {
+      clientId = `anon:${existing}`;
+    } else {
+      anonToSet = crypto.randomUUID();
+      clientId = `anon:${anonToSet}`;
+    }
+  }
 
   const capability: Record<string, string[]> = {
     [channels.chat(roomId!)]: ["subscribe", "presence", "history"],
@@ -62,5 +80,15 @@ export async function GET(request: NextRequest) {
     ttl: 60 * 60 * 1000, // 1h; ably-js renews via authUrl automatically
   });
 
-  return NextResponse.json(tokenRequest);
+  const res = NextResponse.json(tokenRequest);
+  if (anonToSet) {
+    res.cookies.set("fc_anon", anonToSet, {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      secure: process.env.NODE_ENV === "production",
+    });
+  }
+  return res;
 }

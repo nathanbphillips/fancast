@@ -227,6 +227,7 @@ export function RealtimeRoom(props: Props) {
   // call-in queue position (#N), pushed to this viewer on their own per-user
   // channel — the requester roster is never broadcast (FR-4.2). (Phase 5c)
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
+  const lastTalkResolvedTsRef = useRef(0); // newest talk_resolved Ably timestamp
   const [leavingQueue, setLeavingQueue] = useState(false);
   const leaveQueue = useCallback(async () => {
     setLeavingQueue(true);
@@ -612,11 +613,16 @@ export function RealtimeRoom(props: Props) {
       const mine = client.channels.get(`room:${room.id}:user:${viewer.userId}`, {
         params: { rewind: "5" },
       });
-      mine.subscribe("talk_resolved", () => {
+      mine.subscribe("talk_resolved", (msg) => {
         setTalkResolvedSignal((n) => n + 1);
         setQueuePosition(null); // left pending (accepted/dismissed) → no longer queued
+        // remember when we left the queue so a racing/stale queue_position
+        // (concurrent accept+withdraw, or rewind replay) can't flip the UI
+        // back to "In line #N" (audit 2026-07-02)
+        lastTalkResolvedTsRef.current = msg.timestamp ?? Date.now();
       });
       mine.subscribe("queue_position", (msg) => {
+        if ((msg.timestamp ?? 0) < lastTalkResolvedTsRef.current) return; // stale
         const pos = (msg.data as { position?: number } | null)?.position;
         setQueuePosition(typeof pos === "number" ? pos : null);
       });
@@ -926,6 +932,7 @@ export function RealtimeRoom(props: Props) {
       homeScore={liveHome}
       awayScore={liveAway}
       clock={clockText}
+      speakers={audio.speakers}
     />
   );
 
@@ -1013,6 +1020,7 @@ export function RealtimeRoom(props: Props) {
         state={roomState}
         clock={clockText}
         listeners={watching ?? undefined}
+        showOnMobile={isRoomCommentator}
         themeToggle={<ThemeToggle />}
         share={<ShareButton />}
         userMenu={

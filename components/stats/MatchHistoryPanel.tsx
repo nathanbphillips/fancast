@@ -88,7 +88,7 @@ export function MatchHistoryPanel({
       <div className="grid grid-cols-[1fr_auto_1fr] items-end gap-2">
         <span className="min-w-0 text-left">
           <span
-            className={`inline-block max-w-full truncate border-b-2 border-red pb-0.5 align-bottom font-display font-bold ${text}`}
+            className={`inline-block max-w-full truncate border-b-2 border-red pb-0.5 align-bottom font-display uppercase ${text}`}
           >
             {homeName}
           </span>
@@ -98,7 +98,7 @@ export function MatchHistoryPanel({
         </span>
         <span className="min-w-0 text-right">
           <span
-            className={`inline-block max-w-full truncate border-b-2 border-navy pb-0.5 align-bottom font-display font-bold ${text}`}
+            className={`inline-block max-w-full truncate border-b-2 border-navy pb-0.5 align-bottom font-display uppercase ${text}`}
           >
             {awayName}
           </span>

@@ -146,11 +146,22 @@ export async function POST(request: NextRequest) {
     .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
     .single<TalkRequest>();
   if (error) {
+    // 23505 = the partial unique index (0023) caught a concurrent double-tap
+    // that slipped past the check above — same outcome as the friendly path
+    if (error.code === "23505") {
+      return NextResponse.json(
+        { error: "Your request is already in." },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   // attach the caller-flag summary so the commentator's request card can
-  // warn about previously flagged callers (commentator-only channel)
+  // warn about previously flagged callers — COMMENTATOR-ONLY: it rides the
+  // private channel, never the HTTP response, which goes back to the flagged
+  // requester themselves (audit 2026-07-02; matches the snapshot route's
+  // isModerator gating and the 0007 migration's "never visible to listeners").
   const withFlags: TalkRequest = {
     ...talkRequest,
     caller_flags: await callerFlagSummary(service, caller.userId),
@@ -167,7 +178,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({ request: withFlags }, { status: 201 });
+  return NextResponse.json({ request: talkRequest }, { status: 201 });
 }
 
 const withdrawSchema = z.object({ roomId: z.uuid() });
@@ -187,35 +198,38 @@ export async function DELETE(request: NextRequest) {
 
   const service = createServiceClient();
   // guard on still-pending so a concurrent accept wins cleanly (the caller is
-  // then on air, not withdrawn)
+  // then on air, not withdrawn). Plural on purpose: if a double-tap ever slips
+  // in duplicate pending rows, withdrawing clears them all instead of erroring
+  // (audit 2026-07-02).
   const { data: withdrawn, error } = await service
     .from("talk_requests")
     .update({ status: "dismissed" })
     .eq("room_id", parsed.data.roomId)
     .eq("user_id", caller.userId)
     .eq("status", "pending")
-    .select("id")
-    .maybeSingle<{ id: string }>();
+    .select("id");
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (!withdrawn) {
+  if (!withdrawn || withdrawn.length === 0) {
     return NextResponse.json(
       { error: "No pending request to withdraw." },
       { status: 404 },
     );
   }
 
-  // commentator's pending card disappears (same event a dismissal sends)
-  await publish(channels.private(parsed.data.roomId), "talk_update", {
-    requestId: withdrawn.id,
-    status: "dismissed",
-  });
+  // commentator's pending card(s) disappear (same event a dismissal sends)
+  for (const w of withdrawn) {
+    await publish(channels.private(parsed.data.roomId), "talk_update", {
+      requestId: w.id,
+      status: "dismissed",
+    });
+  }
   // confirm to the withdrawing user's other tabs/devices
   await publish(
     channels.userPrivate(parsed.data.roomId, caller.userId),
     "talk_resolved",
-    { requestId: withdrawn.id },
+    { requestId: withdrawn[0].id },
   );
   // everyone still waiting moves up — push fresh positions (own channels only)
   const waiting = await pendingQueue(service, parsed.data.roomId);

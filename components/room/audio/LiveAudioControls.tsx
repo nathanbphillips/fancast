@@ -57,11 +57,11 @@ export function TechDifficultiesCard({ since }: { since: number | null }) {
   return (
     <div className="flex-1 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5">
       <p className="text-sm font-semibold">
-        Technical difficulties — the commentator will be right back.
+        Technical difficulties. The commentator will be right back.
       </p>
       {prolonged && (
         <p className="text-xs text-secondary">
-          It&apos;s been a while — the broadcast may have ended.
+          It&apos;s been a while; the broadcast may have ended.
         </p>
       )}
     </div>
@@ -162,6 +162,21 @@ function SyncControls({
       >
         +0.5s
       </button>
+      {syncRequested > 0 && (
+        <button
+          type="button"
+          onClick={() => onSyncAdjust(-syncRequested)}
+          aria-label="Jump back to live"
+          title="Drop the delay and jump to the live edge"
+          className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg border border-red/40 px-2.5 font-mono text-[10px] tracking-[0.06em] text-red transition-colors hover:bg-red/10"
+        >
+          <span
+            aria-hidden="true"
+            className="h-[5px] w-[5px] animate-fcpulse rounded-full bg-red"
+          />
+          LIVE
+        </button>
+      )}
     </span>
   );
 }
@@ -216,12 +231,15 @@ export function ListenerBar({
   homeScore,
   awayScore,
   clock,
+  speakers = [],
 }: {
   commentator: string;
   /** team names for the transport's score readout (mobile) */
   home: string;
   away: string;
   leaveHref?: string;
+  /** on-air roster so listeners can see who's speaking (audit 2026-07-02) */
+  speakers?: Speaker[];
   live: boolean;
   listenStatus: ListenStatus;
   onStart: () => void;
@@ -249,26 +267,55 @@ export function ListenerBar({
   clock?: string;
 }) {
   const onAir = canPublish && micStatus === "live";
+  // other people currently on air (guests/co-hosts) — shown so listeners can
+  // tell who the second voice is (audit 2026-07-02)
+  const guestNames = speakers
+    .filter((s) => !s.isCommentator && s.name !== "you")
+    .map((s) => s.name)
+    .join(", ");
   // mobile sync transport (Cloud Design): expanded by default — "tap SYNC once,
   // then collapse it". Session-local UI state only.
   const [expanded, setExpanded] = useState(true);
 
   const statusLine = radioActive
-    ? "Radio mode — a few seconds behind live"
+    ? "Radio mode · a few seconds behind live"
     : listenStatus === "live"
       ? "Live commentary"
       : listenStatus === "connecting"
         ? "Connecting…"
         : listenStatus === "error"
-          ? "Couldn't connect — tap to retry"
+          ? "Couldn't connect · tap to retry"
           : live
             ? "Tap to listen"
             : "Waiting for the show to start";
 
+  // Auto-expand the transport when the commentator elevates this listener
+  // (canPublish flips true) so the "Go on air" CTA is never hidden behind a
+  // collapsed strip (audit 2026-07-02). Also fires when they leave air, which
+  // correctly restores the full transport.
+  useEffect(() => {
+    if (canPublish && micStatus !== "live") setExpanded(true);
+  }, [canPublish, micStatus]);
+
   if (onAir) {
-    // FR-4.3: transformed ON AIR bar
+    // FR-4.3: transformed ON AIR bar. On mobile the desktop match bar is
+    // hidden, so keep a slim score + clock line above it — an on-air caller
+    // still needs the scoreline they're talking about (audit 2026-07-02).
     return (
-      <div className="flex items-center gap-3 rounded-lg border-2 border-red px-4 py-2 shadow-[0_0_12px_rgba(239,1,7,0.35)]">
+      <div>
+        <div className="flex items-center justify-center gap-2.5 border-b border-line bg-inset px-3 py-1.5 lg:hidden">
+          <span className="display text-[14px] tracking-[0.03em]">{abbr3(home)}</span>
+          <span className="text-[14px] font-bold tabular-nums">
+            {homeScore ?? 0}
+            <span className="font-normal text-secondary">–</span>
+            {awayScore ?? 0}
+          </span>
+          <span className="display text-[14px] tracking-[0.03em]">{abbr3(away)}</span>
+          {clock && (
+            <span className="font-mono text-[11px] text-secondary tabular-nums">{clock}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 rounded-lg border-2 border-red px-4 py-2 shadow-[0_0_12px_rgba(239,1,7,0.35)]">
         <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
           ON AIR
@@ -290,6 +337,7 @@ export function ListenerBar({
         >
           Leave Air
         </button>
+        </div>
       </div>
     );
   }
@@ -355,7 +403,15 @@ export function ListenerBar({
           <TechDifficultiesCard since={techSince} />
         ) : (
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{commentator}</p>
+            <p className="truncate text-sm font-semibold">
+              {commentator}
+              {guestNames && (
+                <span className="font-normal text-secondary">
+                  {" "}
+                  · on air with {guestNames}
+                </span>
+              )}
+            </p>
             <p className="truncate text-xs text-secondary">{statusLine}</p>
           </div>
         )}
@@ -490,6 +546,7 @@ export function ListenerBar({
               ‹
             </a>
             {playButton}
+            {goOnAir}
             <button
               type="button"
               onClick={() => setExpanded(true)}
@@ -512,9 +569,29 @@ export function ListenerBar({
                 </span>
                 <span className="display text-[15px] tracking-[0.03em]">{abbr3(away)}</span>
               </span>
-              {listenStatus === "live" && !radioActive && <EqTicks h={11} />}
-              <span className="ml-auto min-w-0 truncate text-right font-mono text-[9px] tracking-[0.05em] text-secondary uppercase">
-                {listenStatus === "live" ? "Synced · tap to nudge ▼" : "Tap for audio ▼"}
+              {(listenStatus === "live" || radioActive) && !techDifficulties && (
+                <EqTicks h={11} />
+              )}
+              {/* honest state label: tech trouble + radio + unsupported sync all
+                  read differently — no fake "Synced" claims (audit 2026-07-02) */}
+              <span
+                className={`ml-auto min-w-0 truncate text-right font-mono text-[9px] tracking-[0.05em] uppercase ${
+                  techDifficulties && !radioActive ? "text-red" : "text-secondary"
+                }`}
+              >
+                {techDifficulties && !radioActive
+                  ? "Tech difficulties ▼"
+                  : radioActive
+                    ? "Radio playing ▼"
+                    : listenStatus === "live"
+                      ? syncSupported
+                        ? syncRequested > 0
+                          ? "Synced · tap to nudge ▼"
+                          : "Live · tap to sync ▼"
+                        : "Live ▼"
+                      : listenStatus === "error"
+                        ? "Audio issue · expand ▼"
+                        : "Tap for audio ▼"}
               </span>
             </button>
           </div>
