@@ -75,7 +75,7 @@ export default async function SettingsPage() {
 
       <div className="mt-6">
         <Link
-          href={`/u/${profile.username}`}
+          href={`/${profile.username}`}
           className="text-sm text-secondary transition-colors hover:text-primary"
         >
           View your public profile →

@@ -66,6 +66,17 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
+  async redirects() {
+    return [
+      // FR-18.3: profiles moved from /u/{username} to root /{username};
+      // old links redirect permanently (true 301, not 308)
+      {
+        source: "/u/:username",
+        destination: "/:username",
+        statusCode: 301,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

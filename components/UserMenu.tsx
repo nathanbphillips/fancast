@@ -73,7 +73,7 @@ export function UserMenu({
           </p>
           <Link
             role="menuitem"
-            href={`/u/${username}`}
+            href={`/${username}`}
             onClick={() => setOpen(false)}
             className="block px-3 py-2 text-sm hover:bg-raised"
           >

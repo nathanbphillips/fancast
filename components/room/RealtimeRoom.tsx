@@ -2289,19 +2289,19 @@ function LiveChat({
                 <p className="mt-1 text-xs text-secondary">
                   You follow{" "}
                   <a
-                    href={`/u/${room.commentatorUsername}`}
+                    href={`/${room.commentatorUsername}`}
                     className="font-semibold text-gold hover:underline"
                   >
                     {room.commentatorUsername}
-                  </a>{" "}
-                  — see you next time.
+                  </a>
+                  . See you next time.
                 </p>
               ) : (
                 <div className="mt-3 flex flex-col items-center gap-2">
                   <p className="text-xs text-secondary">
                     Enjoyed it? Follow{" "}
                     <a
-                      href={`/u/${room.commentatorUsername}`}
+                      href={`/${room.commentatorUsername}`}
                       className="font-semibold text-gold hover:underline"
                     >
                       {room.commentatorUsername}
