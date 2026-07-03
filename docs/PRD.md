@@ -2,6 +2,8 @@
 
 Scope: Arsenal matches only, one room at a time, 10-50 concurrent listeners, responsive web + installable PWA. Roles: listener, commentator (manually granted), admin. Non-goals for MVP: multiple simultaneous rooms, other clubs, native apps, discovery/ranking, producer role, captions, Stripe Connect, video of any kind, image uploads, DMs.
 
+> **Commentator Platform Epic (2026-07-03, FR-18 to FR-26 below) retires three of these non-goals:** multiple simultaneous rooms (now supported), "commentator manually granted" (now self-serve, supersedes FR-2.2), and single-club fixture sync (now league-wide; positioning stays Arsenal-first). Still non-goals: native apps, video of any kind, DMs, captions, producer role.
+
 Room states: `scheduled → waiting → pregame → live_1h → halftime → live_2h → [extra_time] → postgame → wrapped`.
 
 ---
@@ -11,14 +13,14 @@ Room states: `scheduled → waiting → pregame → live_1h → halftime → liv
 - 1.1 Home shows the next Arsenal fixture prominently plus all known upcoming fixtures (Sportmonks): date, kickoff localized to viewer timezone, competition, assigned commentator.
 - 1.2 Rooms are enterable only in `waiting` or later. Scheduled fixtures render without a join action. A live room renders as the dominant card with LIVE indicator and listener count.
 - 1.3 Logged-in users see followed commentators' upcoming sessions first.
-- 1.4 When a followed commentator's room enters `waiting`: email to followers (Resend) + in-app notification.
+- 1.4 When a followed commentator's room enters `waiting`: email to followers (Resend) + in-app notification. *(Extended by FR-21: this becomes the `go_live` type on the notification platform; behavior kept.)*
 
 **AC:** With no live room, home shows schedule with no join affordances. Within 10s of `waiting`, home shows the room as joinable and notifications dispatch.
 
 ## FR-2: Auth, roles, follows
 
 - 2.1 Supabase magic-link email + OAuth. Unique username at first login, changeable once per 30 days.
-- 2.2 Roles: listener (default), commentator (manual grant), admin (founder).
+- 2.2 Roles: listener (default), commentator (manual grant), admin (founder). *(SUPERSEDED by FR-18.1: commentator becomes a self-serve upgrade with terms acceptance; admin grant remains as a backstop.)*
 - 2.3 Follow commentators; counts on profile and room header.
 - 2.4 Reading is open: anonymous visitors can listen and view chat/stats/links. All writes require an account; anonymous users see a join prompt where inputs would be.
 
@@ -140,7 +142,7 @@ Segments: pre-game show, first half, halftime show, second half, extra time (whe
 - 14.2 Private to commentator + admin in MVP.
 - 14.3 Retention 90 days unless pinned.
 
-## FR-15: Tipping (Stripe)
+## FR-15: Tipping (Stripe) *(extended by FR-25.6: in co-hosted rooms the listener picks which host receives the tip; no payout splitting)*
 
 - 15.1 Tip button (profile + room header) → sheet: one-time presets $3/$5/$10/custom (Checkout) and monthly $3/$5/$10 (Billing). Apple Pay / Google Pay enabled.
 - 15.2 Single-commentator MVP: funds settle to platform account; tips recorded per commentator so Connect adds later without migration.
@@ -149,7 +151,7 @@ Segments: pre-game show, first half, halftime show, second half, extra time (whe
 
 **AC:** Test-mode one-time and recurring end-to-end incl. cancellation; badge appears <1 min after subscribing.
 
-## FR-16: Notifications
+## FR-16: Notifications *(SUPERSEDED by FR-21: the notification platform. Where FR-16 defined behavior, FR-21 keeps it and adds types, preferences, batching, and dedupe. Web push moves from v1.1 into FR-21 v1.)*
 
 - 16.1 In-app: followed commentator goes live.
 - 16.2 Email (Resend): going-live to followers, one-click unsubscribe. Transactional only.
@@ -158,6 +160,114 @@ Segments: pre-game show, first half, halftime show, second half, extra time (whe
 ## FR-17: Retention instrumentation
 
 - 17.1 `listener_segments` per join/leave incl. rejoins + listening mode. Nightly computation of session duration, peak concurrency, retention ratios. No UI in MVP; weekly founder query covers: median % of session listened, return rate within two fixtures, % of room participating, call-in count, tips.
+
+---
+
+# Commentator Platform Epic (2026-07-03)
+
+FR-18 to FR-26 below come from the Commentator Platform Epic (spec: `..\Commentator Platform Epic\`, one PRD per FR block; migrations pre-assigned 0026 to 0032). Cross-cutting rules: all repo golden rules hold; every host permission check routes through a single `isRoomHost(userId, roomId)` helper once FR-19 lands; the attendance copy rule is load-bearing ("attend" only ever attaches to the room, never the match); notification batching dedupe key is (recipient, room, type).
+
+## FR-18: Commentator accounts and profiles *(PRD-01; supersedes FR-2.2 manual grant; migration 0026)*
+
+- 18.1 **Self-serve upgrade.** A signed-in listener can become a commentator from settings (and from a "Become a commentator" entry on their own profile): explain hosting, present commentator terms (per `docs/LEGAL_PAGES.md` conventions: recording ownership, no-rebroadcast), require a checkbox, then set `role = 'commentator'`. Record `commentator_terms_accepted_at` + `commentator_terms_version`. Admin grant still works.
+- 18.2 **Admin suspend.** Admin reverts a commentator to listener from the admin panel. Suspension cancels their scheduled rooms (RSVP holders and followers notified per FR-21 once it exists; before that, silent). The suspension itself is never announced.
+- 18.3 **Root profile URLs.** Profiles move from `/u/[username]` to `/{username}` (dynamic route beneath all static routes); `/u/[username]` 301-redirects permanently. A reserved-username list (in `lib/reserved-usernames.ts` or `lib/config.ts`, enforced in the username zod schema) blocks every current top-level route, plausible future routes, and infrastructure names. Migration asserts no existing username collides.
+- 18.4 **Profile sections, all users.** Avatar, username, member-since. Matches attended + fan score render once FR-24 ships (clean insertion points). Friend button once FR-23 ships.
+- 18.5 **Profile sections, commentators only.** About text (max 280 chars, plain text); social links (fixed set: X, Instagram, YouTube, TikTok, Twitch, personal website; validated https URLs, no shorteners; rendered as icons); follower count; "Upcoming rooms" list (scheduled + live, chronological; hidden when empty). Below these, a reserved stats region: a quiet horizontal strip rendering nothing in v1, held for future data so its arrival does not reflow the page.
+- 18.6 **Report action.** Any signed-in user can report a profile (reason picklist + optional note) into the existing moderation surface. Admin can clear about text or social links the same way avatars are cleared.
+
+**AC:** A listener upgrades and sees hosting controls in one session with no admin involvement. `/{username}` renders for a valid user, 404s for unknown, and every reserved word routes to its page, never a profile. `/u/{username}` 301s. Commentator profiles show about/socials/upcoming; listener profiles never show commentator sections. The reserved region renders zero visible UI.
+
+## FR-19: Room creation and scheduling *(PRD-02; depends on FR-18; migration 0027)*
+
+- 19.1 **Create flow.** A commentator picks a fixture from a chronological list of upcoming games in the fixtures cache (date, kickoff local to viewer, competition, teams). Past fixtures and ones they already host are excluded. Data the API provides is never asked of the user.
+- 19.2 **Inputs.** Exactly two: broadcast start time (default kickoff minus 15 minutes, adjustable; writes `rooms.broadcast_start`) and an optional one-line blurb (max 140 chars). Title derives at render time from fixture + host, never stored.
+- 19.3 **Room slug.** On creation, `slugify("{home} vs {away} {dd-MMM-yyyy} {creator-username}")`, lowercase kebab, date in Europe/London. Immutable, unique index; on collision append `-2`. Canonical URL `/room/{slug}`; `/room/{id}` 301s to it. A later co-host never alters the slug.
+- 19.4 **room_hosts schema now, single-host UX now.** New `room_hosts` join table; creation writes the creator as an accepted host. `rooms.commentator_id` remains as creator-of-record, but all permission checks move to a shared `isRoomHost(userId, roomId)` helper reading `room_hosts`. v1 UI stays single host; FR-25 adds invites.
+- 19.5 **Fixture sync expansion.** Sync switches from Arsenal-only to all EPL fixtures (league id 8), horizon today + 120 days. Scheduled trigger: cron every 6 hours (the Phase 7 deferral comes due); the manual admin trigger stays. Sync detects kickoff and status changes (postponed, canceled) and updates fixture rows.
+- 19.6 **Fixture-change handling.** When a fixture with scheduled rooms moves: shift each room's `scheduled_kickoff` and `broadcast_start` by the same delta; notify hosts + RSVP holders (batched, one per recipient). Postponed with no new date: room flagged postponed, drops from date listings, not canceled; host may cancel.
+- 19.7 **Cancel and no-show.** A host can cancel a scheduled room (confirmation required; RSVP holders notified). A room never opened by kickoff + 15 minutes disappears from listings; auto-cancel at kickoff + 2h. No penalties in v1. Extends FR-3.5.
+- 19.8 **Non-API games** are unsupported: the picker is the only path to a room.
+
+**AC:** Create-to-scheduled in under 30 seconds touching only the two inputs. The room resolves at `/room/{slug}` and the old id URL 301s. Two commentators can each hold a room on the same fixture; the same commentator cannot duplicate one. After a sync where a fixture moved, the room's countdown and listings reflect the new time without manual action. A room unopened 15 minutes after kickoff is absent from home and matches listings.
+
+## FR-20: Season hosting *(PRD-03; depends on FR-19; migration 0028)*
+
+- 20.1 **Subscribe.** From the fixture picker (and any fixture row), a commentator chooses "Host all {team} games in {competition} this season": creates a subscription and immediately auto-creates scheduled rooms (default broadcast start, no blurb) for every matching future fixture in the cache. Already-hosted fixtures are skipped.
+- 20.2 **Future fixtures follow.** Each sync auto-creates rooms for newly appearing fixtures matching an active subscription; rescheduled dates follow via FR-19.6.
+- 20.3 **Competition scoping.** One team in one competition for the current season; the option renders only for competitions present in the fixtures cache.
+- 20.4 **My rooms management.** Dashboard groups upcoming hosted rooms by month, shows subscription provenance, supports per-row cancel and bulk select + cancel, lists active subscriptions with Unsubscribe. Unsubscribe cancels future subscription-created rooms (RSVP holders notified, batched); past and live rooms untouched.
+- 20.5 **Collision warning.** Rooms the same host has within 3 hours of each other's kickoff get a warning badge on the dashboard. Warn only, never block.
+- 20.6 **Season end.** Subscriptions lapse when the season's last cached fixture passes. No auto-renew.
+- 20.7 **Batching (hard requirement).** Subscribing produces exactly one confirmation to the host and, once FR-21 ships, at most one summary notification per follower. Unsubscribe likewise. Per-room notifications never fire for bulk actions.
+
+**AC:** A season subscription yields one room per cached fixture in under 10 seconds, one confirmation, zero per-room notifications. A new fixture appearing in sync yields its room without user action. Unsubscribe cancels exactly the future subscription-created rooms and nothing else.
+
+## FR-21: Notification platform and follower notifications *(PRD-04; depends on FR-19; supersedes/extends FR-16 and FR-1.4; migration 0029)*
+
+- 21.1 **Channels.** Email via Resend + web push via the PWA service worker (`push_subscriptions` per device; iOS requires the installed PWA; unsupported contexts are a silent no-op with a settings hint). No in-app inbox in v1.
+- 21.2 **Type registry** (each type has independent email and push toggles in settings): `room_scheduled` (followers, on creation, bulk = one season summary; email on, push on), `pre_start_reminder` (followers, 15 min before broadcast_start; email off, push on), `go_live` (followers, room enters waiting, keeps FR-1.4; on/on), `rsvp_reminder` (RSVP holders, 30 min before broadcast_start; on/on), `room_change` (hosts + RSVP holders, fixture moved/postponed/canceled; on/on), `cohost_invite`/`cohost_response` (FR-25; on/on), `friend_request` (FR-23; on/on), `friend_accept` (FR-23; email off, push on).
+- 21.3 **Batching and dedupe.** Dedupe key (recipient, room, type): a user following both co-hosts gets one notification. Bulk actions collapse to one summary per recipient. A user who RSVPs to a room whose host they already follow gets the rsvp_reminder, not both reminders.
+- 21.4 **Delivery.** Outbox table written by the triggering API route; a cron drainer (every minute) sends due rows, marks attempts, retries transient failures. Scheduled timings are computed into the outbox at RSVP/schedule time and recomputed when a room moves.
+- 21.5 **Compliance.** Every email has a one-click unsubscribe link that disables that type's email channel (no login, signed token). Settings gains a Notifications section listing every type with its two toggles.
+
+**AC:** Follow a commentator, they schedule one room: exactly one room_scheduled email + push. Season-subscribe 38 games: exactly one summary. RSVP: email + push land 30 min before broadcast_start and re-land correctly if the fixture moves. The unsubscribe link kills that email type only, in one click. A follower of both co-hosts gets exactly one go_live push.
+
+## FR-22: RSVPs and counts *(PRD-05; depends on FR-19 and FR-21; migration 0030)*
+
+- 22.1 **RSVP.** Scheduled rooms carry a "Count me in" button for signed-in users; tapping again removes it. RSVP schedules the rsvp_reminder. Anonymous users see the button as a join prompt (FR-2.4).
+- 22.2 **Counts.** Scheduled rooms show the RSVP count; from `waiting` onward the same slot shows the live listener count. Tabular numerals, updates without reload (denormalized `rsvp_count`, recomputed on every write).
+- 22.3 **String table (load-bearing copy).** The object of "attend" is always the room; "attend this match" / "attend the match" never renders. 0 RSVPs: button only, no count line. 1: "1 person planning to attend". N of 2 or more: "{N} people planning to attend". Friend layer (FR-23 data): 1 friend: "{N} people planning to attend, including Sarah"; 2: "... including Sarah and Dave"; 3+: "... including Sarah and {k} friends"; all friends and nobody else (N == k+1 <= 3): "Sarah and Dave are planning to attend". Friend avatars render as chips beside the string. Live: "{N} listening now". All strings live in one module (`lib/strings/attendance.ts`) with unit tests; no component composes attendance copy ad hoc.
+- 22.4 **Matches page restructure.** `/matches` groups fixtures under date headers (Today, Tomorrow, then "Sat 5 Jul"). Each fixture is a header row with its rooms beneath: host badge(s), blurb, count string, RSVP or Join. Fixtures with no rooms render as today. Home teaser cards adopt the same room-row pattern. Extends FR-1.1/1.2.
+- 22.5 **Deferred by decision:** filters, team pills, search, threshold hiding of low counts.
+- 22.6 **Privacy.** An RSVP is visible as a friend chip only to accepted friends; otherwise it exists only inside the aggregate. No public attendee list.
+
+**AC:** RSVP toggles optimistically with toast on failure and the count moves on all connected clients. A room crossing into waiting flips to "listening now" without reload. Every attendance string comes from the strings module; a repo grep for "attend the match" / "attend this match" in UI code returns nothing. The matches page groups correctly across a month boundary; a fixture with three rooms lists all three under one header.
+
+## FR-23: Friends and blocking *(PRD-06; depends on FR-22 surfaces; friendship carries no messaging, DMs stay a non-goal; migration 0031)*
+
+- 23.1 **Request and accept.** Add friend from any profile (and popovers, FR-26). One pending request max per pair in either direction. Addressee sees pending requests in settings (+ friend_request via FR-21); accept creates the friendship; decline is silent (requester sees "Requested" indefinitely). After a decline the requester cannot re-request; the declining side can initiate later.
+- 23.2 **Unfriend.** Either side, instant, silent.
+- 23.3 **Rate limits.** Max 20 friend requests per day per user; requests blocked toward users who declined you.
+- 23.4 **Blocking.** Block from profile or popover overflow. Blocking severs any friendship, blocks requests both ways, removes both from each other's friend chips, and hides the pair's RSVP presence from each other (each still counts in aggregates). Unblock from settings. Block state is invisible to the blocked user (requests appear to send, silently dropped).
+- 23.5 **Surfaces.** Friend button states: Add friend / Requested / Friends (tap for unfriend confirm). Settings gains Friends (owner-only list, unfriend) and Blocked (unblock). Friend chips + string variants per FR-22.3 resolve through a viewer-scoped endpoint.
+- 23.6 **Reporting.** FR-18.6's profile report covers harassment; no new surface.
+
+**AC:** Full double opt-in round trip with correct states on both sides. A declined requester sees no change and cannot re-request. A blocked user's requests silently vanish and neither side appears in the other's chips. The 21st request in a day is rejected with a clear message. Friend lists are invisible to anyone but the owner (RLS and API both).
+
+## FR-24: Fan score and profile history *(PRD-07; depends on FR-18; raw material: weighted votes 0019 + listener_segments 0016; migration 0032)*
+
+- 24.1 **Formula.** `fan_score = max(0, comments_sent + weighted_upvotes_received - weighted_downvotes_received)`. Comments = non-hidden chat messages authored (replies included). Votes use existing established-account weighting. Floored at zero.
+- 24.2 **Components stored.** Raw + weighted up/down totals and comment count persist alongside the score, racked for future badges and levels.
+- 24.3 **Matches attended.** A room counts as attended at 15+ cumulative minutes in `listener_segments`. Profile shows the total and the most recent 10 (teams, date, host), public in v1. Hosts' own rooms count.
+- 24.4 **Display.** One prominent "Fan score" number on the profile (tabular numerals) with the attended count beside it. No leaderboards, no rank, no score in chat in v1.
+- 24.5 **Recompute.** Incremental bumps on message create/hide and vote create/change, plus a nightly cron full recompute to self-heal drift. Never computed on page load.
+- 24.6 **Anti-gaming.** Existing protections carry the weight: vote weighting, vote rate limits, no self-votes (verify a guard exists on the vote routes; add if absent). Hidden messages subtract.
+
+**AC:** Score equals the formula recomputed by hand from the DB. A hidden message and its votes drop out within the nightly cycle or on the hide event. A 20-minute listen adds one attended match; 5 minutes adds none. Heavy downvotes floor at 0, never negative.
+
+## FR-25: Co-hosting *(PRD-08; depends on FR-19 schema + FR-21 invites; supersedes single-commentator phrasing in FR-3/FR-4; max on-air becomes hosts + 2 guests)*
+
+- 25.1 **Invite.** The creating host invites one co-host by username from the room's manage view (invitee must be a commentator). Invitee gets cohost_invite + an accept/decline surface on their dashboard. Accept writes an accepted `room_hosts` row; decline notifies the inviter. Pending invites visible only to the two parties. Either host can withdraw/leave; re-send after decline once. Cap: 2 accepted hosts in v1 (schema supports N).
+- 25.2 **Equal permissions, no primary.** Every host-gated action routes through `isRoomHost()`: open waiting, start/end broadcast, clock and state, waiting toggles, stats pushes, moderation, caller accept, cancel semantics. Includes an explicit audit checklist of every current `commentator_id` comparison, each converted and tested.
+- 25.3 **Concurrency.** Both hosts pressing controls is safe: idempotent transitions (duplicate = no-op; out-of-order guard exists), two accepts of one caller resolve to one elevation.
+- 25.4 **Display.** Accepted hosts render together everywhere ("with @a and @b" on cards and the room header); both profiles list the room; both histories count it (FR-24.3). Solo display until acceptance. Slug never changes.
+- 25.5 **Leave and cancel.** Leaving a scheduled room removes the host; the room continues with the remaining host. The last host leaving = cancel (RSVP holders notified). During waiting/live, End Broadcast keeps its meaning and either host can trigger it; a disconnect is not an end.
+- 25.6 **Tips.** In a co-hosted room the tip sheet shows both hosts and the listener picks the recipient; each tip routes 100% (minus platform fee) to the chosen host. No splitting. Single-host rooms keep the FR-15 flow untouched.
+- 25.7 **Recordings.** Both hosts get full access to recordings and downloads; ownership applies jointly. Extends FR-13/14 access via `isRoomHost()`.
+- 25.8 **Notifications.** Followers of either host get room notifications; (recipient, room, type) dedupe guarantees one per person.
+
+**AC:** Invite, accept, both-badge display end to end. With host A absent, host B alone runs an entire session. Simultaneous Start presses yield one transition. A tip lands with the chosen host and is attributed in their history. A follower of both hosts gets exactly one go_live push. Last-host-leaves cancels and notifies RSVPs.
+
+## FR-26: Profile popovers *(PRD-09; depends on FR-18 and FR-23; ships last)*
+
+- 26.1 **Commentator badge popover.** Tapping a host badge (room header, waiting card, chat commentator styling) opens a popover: avatar, username, about snippet (first 100 chars), follower count, Follow button (optimistic), View profile link. Never interrupts audio; client-rendered over the room.
+- 26.2 **Listener avatar popover.** Tapping any chat avatar opens the same shape: avatar, username, fan score, matches attended, Add friend button (FR-23 states), View profile link.
+- 26.3 **View profile navigation.** Desktop: new tab. Mobile: same tab only because background audio survives navigation per FR-5; if room audio does not survive the round trip on iOS Safari, open a new tab there too (iOS Safari is the cert gate).
+- 26.4 **Overflow actions.** Report (FR-18.6) and Block (FR-23.4) for listeners; Report for hosts.
+- 26.5 **Behavior.** One popover at a time; dismiss on outside tap or Esc; content cached once per user per session; no popover for your own avatar. Anonymous viewers see Follow / Add friend as the join prompt (FR-2.4).
+
+**AC:** Opening and dismissing during live audio never audibly interrupts playback (verify on iOS Safari). Follow and Add friend work from the popover with optimistic states + toast on failure. Block takes effect immediately. Keyboard and screen-reader accessible (focus trap, labeled trigger).
 
 ---
 

@@ -2,7 +2,7 @@
 
 Rules: one phase at a time, in order. A phase is complete when every box is checked and its acceptance test passes. Check boxes in this file as you go; note deviations inline. iOS Safari gates all audio items.
 
-**Current phase: 9** (Phases 1-8 code-complete + verified, incl. Phase 7 stats/lineups on Sportmonks; full audit-hardening pass done (3 HIGH + 11 MED + 3 LOW fixed); match data live via Sportmonks. **Remaining cert gate:** Phase 5 founder device matrix (iOS Safari audio + radio). **Remaining build:** Phase 9 tipping/notifications, Phase 10 hardening + first public session. Production: https://fancast-26.vercel.app)
+**Current phase: 12 (Commentator Platform Epic)** — Phases 1-8 + 11 code-complete + verified; the Cloud Design visual redesign (2026-06-30 to 07-02, marketing + desktop room + mobile room + reactions/queue/leave-queue, see CLAUDE.md decision log) shipped outside this numbering and is live. **Still open from earlier phases:** Phase 5 founder device matrix (iOS Safari audio + radio cert gate); Phase 9 Stripe tipping (deferred, awaiting creds + fee %, now also gates FR-25.6); Phase 9 Resend emails (subsumed by Phase 13 / FR-21); Phase 10 final polish pass + first public session. **Epic build order: Phases 12-15 below** (PRDs 01-09, FR-18 to FR-26; spec in `..\Commentator Platform Epic\`). Production: https://fancast-26.vercel.app
 
 ## Phase 1: Foundation + layout + theming (days 1-3)
 - [x] Next.js + TS strict + Tailwind scaffold; deploy pipeline to Vercel *(GitHub repo nathanbphillips/fancast → Vercel auto-deploy on push, live 2026-06-11)*
@@ -93,6 +93,40 @@ Re-architects the live room: chat+links merge into one filterable, deeply-thread
 - [x] **Slice 4 — Vote sorting + abuse controls (security-gated).** *(2026-06-26 — done.)* Migration 0019: weighted vote `score` (raw up/down kept for display) + 4-arg cast RPCs added beside the 3-arg ones (deploy-window compat) + `hide_message_subtree` cascade. `lib/standing.ts` shared establishment (good standing + ≥48h) → voteWeight 1.0/0.3, flagWeight 1.0/0.5 (flag route reuses it). Vote routes: per-user rate limit (40/min, namespaced) + voter weight + `score` coerced from numeric. New/Top/Controversial sort selector (localStorage), ranked modes freeze the top-level order + batch new items behind "N new — refresh", pin-to-bottom + unread pill confined to New; replies sort by mode. Hide cascade wired into /api/chat/hide + the flag auto-hide (resolves the Slice-3 live-vs-reload divergence). Adversarial 9-agent review fixed pre-commit: stale frozen snapshot on filter change, unread pill bleeding into ranked modes, score-as-string, shared rate-limit bucket. Verified end-to-end. **Carried deferral:** "links social-signal only" + a commentator link-hide endpoint/UI — removing link vote-auto-hide needs that path first, so auto-hide is retained for now.
 - [x] **Slice 5 — Pre-game history panel.** *(2026-06-26 — done.)* StatsPanel Info tab is now a 2-col split (Info | History) on desktop, stacked on mobile. New `lib/history.ts` (cached 5-min TTL + coalesce + last-good) resolves the season (current once started, else most-recent finished — pre-season-zeros guard) and maps `/standings/seasons/{id}?include=participant;details.type;form` to each team's standing (pos, P/W/D/L, GF/GA/GD, pts, last-5 form). `GET /api/history/[fixtureId]` (public, fixtures-allowlisted, team ids from the row) + `useMatchHistory` + `MatchHistoryPanel` (home-vs-away comparison + colour-coded form chips). Verified against LIVE Sportmonks (Arsenal 1st/85, Chelsea 10th/52, Burnley 19th/22, season 2025/2026). **Deferred:** dedicated H2H + season-aggregate extras (clean sheets/xG-proxy) — gated/secondary; standings already give GF/GA. Also backfilled away_team_id=27 on the hand-made Burnley test fixture.
 - **Test:** full threaded-stream + sort + pre-game cycle in a simulated match; reconnect rebuilds threads; iOS Safari scroll/thread interaction (cert gate); vote-abuse limits hold under a scripted brigade.
+
+## Phase 12: Commentator accounts + room creation (Epic PRDs 01-02, FR-18 + FR-19)
+One PRD at a time, PRD-01 first. Migrations 0026 (profiles/reports/reserved assertion) + 0027 (slug, blurb, postponed, room_hosts backfill).
+- [ ] PRD-01: self-serve commentator upgrade (terms + version recorded); admin suspend (cancels scheduled rooms, silent pre-FR-21)
+- [ ] PRD-01: root profile URLs `/{username}` + reserved-username list (zod + migration collision assertion); `/u/[username]` 301 shim
+- [ ] PRD-01: unified profile (all-user sections; commentator about/socials/upcoming; reserved stats strip rendering nothing); profile report action + admin clear
+- [ ] PRD-02: create-room flow (fixture picker, 2 inputs, derived title); slugs + `/room/{slug}` canonical with id 301
+- [ ] PRD-02: `room_hosts` schema + `isRoomHost()` helper (all NEW checks route through it; full call-site audit lands with PRD-08)
+- [ ] PRD-02: league-wide EPL fixture sync (120-day horizon) + scheduled trigger; fixture-change handling (shift rooms, flag postponed); cancel + no-show expiry
+- [ ] PRD-02: My rooms dashboard (thin: upcoming hosted, cancel per row)
+- **Test:** listener upgrades and schedules a room in one session with no admin involvement; two commentators hold rooms on one fixture; slug URL canonical + id 301; a moved fixture shifts its rooms.
+
+## Phase 13: Season hosting + notification platform (Epic PRDs 03-04, FR-20 + FR-21)
+Migrations 0028 (host_team_subscriptions + rooms.subscription_id) + 0029 (push_subscriptions, notification_prefs, notifications_outbox). Subsumes the Phase 9 "Resend going-live emails" box (FR-16 superseded by FR-21). Requires founder-provided RESEND_API_KEY + verified domain; VAPID keys for push; a scheduler decision for the outbox drainer (see conflicts note in the epic intake report).
+- [ ] PRD-03: season subscribe (atomic bulk room creation), sync auto-creation for new fixtures, unsubscribe scope, bulk cancel, collision warnings, season lapse
+- [ ] PRD-04: outbox + drainer + type registry + per-type prefs; Resend integration; web push (service worker handlers, iOS-installed-PWA gating)
+- [ ] PRD-04: batching + (recipient, room, type) dedupe; signed one-click unsubscribe; settings Notifications section
+- **Test:** 38-room season subscribe = one confirmation + one follower summary; go_live fires once for a follower of both hosts; unsubscribe kills one email type in one click.
+
+## Phase 14: RSVPs + friends (Epic PRDs 05-06, FR-22 + FR-23)
+Migrations 0030 (room_rsvps + rooms.rsvp_count) + 0031 (friendships, user_blocks).
+- [ ] PRD-05: RSVP toggle + reminders; denormalized counts; `lib/strings/attendance.ts` with unit tests (the attendance copy rule is load-bearing: "attend" never attaches to the match)
+- [ ] PRD-05: matches page date-grouped restructure with multi-room fixture rows; home teaser adopts room rows
+- [ ] PRD-06: double opt-in friends (silent decline, no re-request), unfriend, 20/day rate limit
+- [ ] PRD-06: blocking (severs friendship, hides chips + RSVP presence both ways, invisible to the blocked); settings Friends + Blocked lists
+- [ ] PRD-06: friend chips + string variants on cards via viewer-scoped endpoint
+- **Test:** RSVP count moves live on all clients and flips to "listening now" at waiting; grep proves no "attend the match"/"attend this match" in UI code; blocked pair never see each other's chips; 21st daily request rejected.
+
+## Phase 15: Fan score + co-hosting + popovers (Epic PRDs 07-09, FR-24 + FR-25 + FR-26)
+Migration 0032 (profile_stats + backfill). PRD-07 can run any time after Phase 12. FR-25.6 (tip recipient picker) is gated on the deferred Phase 9 Stripe build; if Stripe is still absent, ship FR-25 without 25.6 and log the deferral.
+- [ ] PRD-07: profile_stats (components + score), incremental bumps + nightly recompute cron, attended-matches history (15-min threshold), profile display; verify/add self-vote guard
+- [ ] PRD-08: co-host invite/accept/decline/leave; `isRoomHost()` audit checklist of every `commentator_id` comparison, each converted + tested; concurrency-safe dual controls; both-hosts display everywhere; recordings access for both; follower-notification dedupe across hosts
+- [ ] PRD-09: in-room profile popovers (host badge + listener avatar), overflow report/block, session cache, a11y focus trap; audio never interrupted (iOS Safari cert)
+- **Test:** host B alone runs a full session; simultaneous Start presses = one transition; hand-recomputed fan score matches; popover open/dismiss during live audio is inaudible on iOS Safari.
 
 ## Deviation log
 (record any spec deviations or assumed decisions here, with date)
