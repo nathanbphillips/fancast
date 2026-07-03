@@ -191,6 +191,8 @@ export function RealtimeRoom(props: Props) {
     props.initialClockEvents,
   );
   const [clockText, setClockText] = useState<string | undefined>(undefined);
+  // clock shifted by the listener's sync delay (what they're hearing)
+  const [syncedClockText, setSyncedClockText] = useState<string | undefined>(undefined);
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
 
   // floating reaction emoji (Phase 5a) — ephemeral, capped at 12 in flight,
@@ -259,17 +261,6 @@ export function RealtimeRoom(props: Props) {
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
   const rehydratingRef = useRef(false); // guard against overlapping rehydrates
 
-  // tick locally; derivation resyncs whenever an event arrives (FR-7.3)
-  useEffect(() => {
-    const tick = () => {
-      const d = deriveClock(clockEvents, Date.now());
-      setClockText(d.running ? formatClock(d.elapsedSeconds) : undefined);
-    };
-    tick();
-    const id = setInterval(tick, 500);
-    return () => clearInterval(id);
-  }, [clockEvents]);
-
   const appendMessage = (m: ChatMessage) =>
     setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
   const appendLink = (l: Link) =>
@@ -283,6 +274,25 @@ export function RealtimeRoom(props: Props) {
     viewerId: viewer?.userId ?? null,
     isRoomCommentator,
   });
+
+  // tick locally; derivation resyncs whenever an event arrives (FR-7.3).
+  // syncedClockText = the commentator's clock MINUS this listener's sync delay:
+  // the game time the listener is actually HEARING — it should match their
+  // telly once they've synced (founder 2026-07-02).
+  useEffect(() => {
+    const tick = () => {
+      const d = deriveClock(clockEvents, Date.now());
+      setClockText(d.running ? formatClock(d.elapsedSeconds) : undefined);
+      setSyncedClockText(
+        d.running
+          ? formatClock(Math.max(0, d.elapsedSeconds - audio.syncRequested))
+          : undefined,
+      );
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [clockEvents, audio.syncRequested]);
 
   // lock-screen metadata + controls (FR-5.1)
   useEffect(() => {
@@ -936,6 +946,7 @@ export function RealtimeRoom(props: Props) {
       homeScore={liveHome}
       awayScore={liveAway}
       clock={clockText}
+      syncedClock={syncedClockText}
       speakers={audio.speakers}
     />
   );

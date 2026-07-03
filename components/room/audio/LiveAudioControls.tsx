@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Avatar } from "@/components/Avatar";
 import { RadioToggle } from "@/components/RadioToggle";
 import { Waveform } from "@/components/ui/Waveform";
 import { CallerActions } from "../CallerActions";
@@ -232,6 +233,7 @@ export function ListenerBar({
   homeScore,
   awayScore,
   clock,
+  syncedClock,
   speakers = [],
 }: {
   commentator: string;
@@ -266,6 +268,9 @@ export function ListenerBar({
   homeScore: number | null;
   awayScore: number | null;
   clock?: string;
+  /** the commentator's clock minus THIS listener's sync delay — the game time
+   *  they're hearing; matches their telly once synced (founder 2026-07-02) */
+  syncedClock?: string;
 }) {
   const onAir = canPublish && micStatus === "live";
   // other people currently on air (guests/co-hosts) — shown so listeners can
@@ -403,17 +408,29 @@ export function ListenerBar({
         {techDifficulties && !radioActive ? (
           <TechDifficultiesCard since={techSince} />
         ) : (
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">
-              {commentator}
-              {guestNames && (
-                <span className="font-normal text-secondary">
-                  {" "}
-                  · on air with {guestNames}
+          /* on-air card (Cloud Design, founder 2026-07-02): who's speaking —
+             host avatar with a red ring, HOST badge, EQ while playing, and the
+             on-air guests/co-hosts on the second line */
+          <div className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-xl border border-red/30 bg-raised py-1.5 pr-3.5 pl-1.5">
+            <Avatar
+              name={commentator}
+              size={32}
+              className="border-2 border-red"
+            />
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-[12.5px] font-extrabold">
+                <span className="truncate">{commentator}</span>
+                <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                  Host
                 </span>
-              )}
-            </p>
-            <p className="truncate text-xs text-secondary">{statusLine}</p>
+              </p>
+              <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[8.5px] text-secondary">
+                {listenStatus === "live" && !radioActive && <EqTicks h={8} />}
+                <span className="truncate">
+                  {guestNames ? `${guestNames} · on air` : statusLine}
+                </span>
+              </p>
+            </div>
           </div>
         )}
         {/* decorative broadcast waveform fills the dock's center on wide
@@ -421,6 +438,7 @@ export function ListenerBar({
         <div className="hidden min-w-0 flex-1 xl:block">
           <Waveform bars={40} height={26} />
         </div>
+        <div className="min-w-0 flex-1 xl:hidden" />
         {goOnAir}
         {liveBadge}
         {radioToggle}
@@ -441,7 +459,7 @@ export function ListenerBar({
                 "radial-gradient(120% 110% at 80% 0%, rgba(241,35,43,0.16), transparent 60%), var(--bg2)",
             }}
           >
-            {/* leave · LIVE + clock · collapse */}
+            {/* leave · LIVE (collapse moved to the bottom hint — founder 2026-07-02) */}
             <div className="mb-3 flex items-center justify-between">
               <a
                 href={leaveHref}
@@ -452,42 +470,52 @@ export function ListenerBar({
                 </span>
                 Leave
               </a>
-              <span className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.06em] text-red">
-                {live && !techDifficulties && (
+              {live && !techDifficulties && (
+                <span className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.06em] text-red">
                   <span
                     aria-hidden="true"
                     className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
                     style={{ boxShadow: "0 0 8px #f1232b" }}
                   />
-                )}
-                {live && !techDifficulties ? "LIVE" : ""}
-                {clock ? (
-                  <span className="text-primary tabular-nums">
-                    {live && !techDifficulties ? "· " : ""}
-                    {clock}
-                  </span>
-                ) : null}
-              </span>
-              <button
-                type="button"
-                onClick={() => setExpanded(false)}
-                aria-expanded={true}
-                aria-label="Collapse audio controls"
-                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-line text-xs text-secondary"
-              >
-                ▲
-              </button>
+                  LIVE
+                </span>
+              )}
             </div>
 
-            {/* score — team codes on the display face, digits body-font
-                tabular-nums (golden rule: never Anton on anything that ticks) */}
-            <div className="mb-3 flex items-center justify-center gap-3.5">
-              <span className="display text-[17px] tracking-[0.03em]">{abbr3(home)}</span>
-              <span className="text-[30px] leading-none font-bold whitespace-nowrap tabular-nums">
-                {homeScore ?? 0} <span className="font-normal text-secondary">–</span>{" "}
-                {awayScore ?? 0}
-              </span>
-              <span className="display text-[17px] tracking-[0.03em]">{abbr3(away)}</span>
+            {/* score (left) · YOUR game clock (right) — the clock is the
+                commentator's clock minus this listener's sync delay, so it
+                should read the same as their telly once synced (founder
+                2026-07-02). Team codes on the display face; every ticking
+                digit stays body-font tabular-nums. */}
+            <div className="mb-3 grid grid-cols-2 items-center">
+              <div className="flex items-center justify-center gap-2.5 border-r border-line/60">
+                <span className="display text-[17px] tracking-[0.03em]">{abbr3(home)}</span>
+                <span className="text-[28px] leading-none font-bold whitespace-nowrap tabular-nums">
+                  {homeScore ?? 0} <span className="font-normal text-secondary">–</span>{" "}
+                  {awayScore ?? 0}
+                </span>
+                <span className="display text-[17px] tracking-[0.03em]">{abbr3(away)}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center">
+                <span
+                  className={`text-[28px] leading-none font-bold tabular-nums ${
+                    syncedClock ? "" : "text-secondary"
+                  }`}
+                >
+                  {syncedClock ?? "--:--"}
+                </span>
+                <span className="mt-1 font-mono text-[9px] tracking-[0.08em] text-secondary uppercase">
+                  {syncedClock
+                    ? syncRequested > 0
+                      ? `Synced · −${
+                          Number.isInteger(syncRequested)
+                            ? syncRequested.toFixed(0)
+                            : syncRequested.toFixed(1)
+                        }s`
+                      : "Match clock"
+                    : "Clock not started"}
+                </span>
+              </div>
             </div>
 
             {/* play + host card (tech difficulties swaps in) */}
@@ -511,11 +539,6 @@ export function ListenerBar({
                 {listenStatus === "live" && !radioActive && <EqTicks />}
               </div>
             )}
-
-            {/* decorative waveform box (Cloud Design mobile transport) */}
-            <div className="mb-3 rounded-[10px] border border-line bg-canvas px-3.5">
-              <Waveform bars={30} height={44} />
-            </div>
 
             {goOnAir && <div className="mb-3 flex">{goOnAir}</div>}
 
@@ -543,9 +566,16 @@ export function ListenerBar({
               />
             </div>
 
-            <p className="mt-2.5 text-center font-mono text-[9.5px] tracking-[0.03em] text-secondary">
-              Tap SYNC when your telly hits the moment, then collapse this ▲
-            </p>
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              aria-expanded={true}
+              aria-label="Collapse audio controls"
+              className="mt-2.5 w-full py-1 text-center font-mono text-[9.5px] tracking-[0.03em] text-secondary transition-colors hover:text-primary"
+            >
+              Tap SYNC NOW when your telly matches the game time. Click here to
+              collapse.
+            </button>
           </div>
         ) : (
           <div className="flex items-center gap-2 border-b border-line bg-inset px-3 py-2">
