@@ -459,7 +459,8 @@ export function ListenerBar({
                 "radial-gradient(120% 110% at 80% 0%, rgba(241,35,43,0.16), transparent 60%), var(--bg2)",
             }}
           >
-            {/* leave · LIVE (collapse moved to the bottom hint — founder 2026-07-02) */}
+            {/* leave · LIVE · collapse — the bottom hint ALSO collapses
+                (founder 2026-07-02: both affordances) */}
             <div className="mb-3 flex items-center justify-between">
               <a
                 href={leaveHref}
@@ -480,6 +481,15 @@ export function ListenerBar({
                   LIVE
                 </span>
               )}
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                aria-expanded={true}
+                aria-label="Collapse audio controls"
+                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-line text-xs text-secondary"
+              >
+                ▲
+              </button>
             </div>
 
             {/* score (left) · YOUR game clock (right) — the clock is the
