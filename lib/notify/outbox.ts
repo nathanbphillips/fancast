@@ -302,3 +302,24 @@ export async function enqueueAndFlush(
   const ids = await enqueue(service, opts);
   await flushRows(service, ids);
 }
+
+/**
+ * Opportunistic drain from high-traffic routes (FR-21.4, Hobby ruling). A
+ * per-instance timestamp throttle keeps it to at most once per interval so a
+ * busy route doesn't drain on every request; the daily cron is the backstop.
+ * Safe to fire-and-forget inside after().
+ */
+let lastOpportunisticDrain = 0;
+const OPPORTUNISTIC_INTERVAL_MS = 60_000;
+export async function maybeOpportunisticDrain(
+  service: SupabaseClient,
+): Promise<void> {
+  const now = Date.now();
+  if (now - lastOpportunisticDrain < OPPORTUNISTIC_INTERVAL_MS) return;
+  lastOpportunisticDrain = now;
+  try {
+    await drainDue(service, 25);
+  } catch (err) {
+    console.error("opportunistic drain failed:", err);
+  }
+}

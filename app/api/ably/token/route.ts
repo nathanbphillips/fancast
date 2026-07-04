@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { ablyRest, channels } from "@/lib/ably";
-import { createSupabaseServerClient } from "@/lib/db/server";
+import { createServiceClient, createSupabaseServerClient } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
+import { maybeOpportunisticDrain } from "@/lib/notify/outbox";
 import type { Profile } from "@/lib/db/types";
 
 const roomIdSchema = z.uuid();
@@ -18,6 +20,10 @@ export async function GET(request: NextRequest) {
   if (!roomIdSchema.safeParse(roomId).success) {
     return NextResponse.json({ error: "Invalid room." }, { status: 400 });
   }
+
+  // opportunistic notification drain (FR-21.4): this route sees real traffic
+  // during live sessions; the throttle keeps it to at most once/instance/minute
+  after(() => maybeOpportunisticDrain(createServiceClient()));
 
   const supabase = await createSupabaseServerClient();
   const {

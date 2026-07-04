@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { config } from "@/lib/config";
+import { acceptedHosts } from "@/lib/roomHosts";
+import { flushRows } from "@/lib/notify/outbox";
+import { enqueueRoomChange } from "@/lib/notify/producers";
 
 /**
  * Pulls the season's Arsenal fixtures from Sportmonks (v3 football) and
@@ -184,9 +187,12 @@ export async function syncFixtures(service: SupabaseClient) {
 
   let movedRooms = 0;
   let postponedRooms = 0;
+  // rooms whose hosts should get a room_change notification (FR-19.6 / FR-21)
+  const changes: { roomId: string; slug: string; matchLabel: string; change: string }[] = [];
   for (const row of rows) {
     const prev = before.get(row.id);
     if (!prev) continue;
+    const matchLabel = `${row.home_team} vs ${row.away_team}`;
 
     const nowPostponed = isPostponedStatus(row.status);
     const wasPostponed = isPostponedStatus(prev.status);
@@ -196,8 +202,18 @@ export async function syncFixtures(service: SupabaseClient) {
         .update({ postponed: nowPostponed })
         .eq("fixture_id", row.id)
         .eq("state", "scheduled")
-        .select("id");
-      if (nowPostponed) postponedRooms += flagged?.length ?? 0;
+        .select("id, slug");
+      if (nowPostponed) {
+        postponedRooms += flagged?.length ?? 0;
+        for (const r of flagged ?? []) {
+          changes.push({
+            roomId: r.id as string,
+            slug: r.slug as string,
+            matchLabel,
+            change: "postponed",
+          });
+        }
+      }
     }
 
     const deltaMs =
@@ -205,23 +221,55 @@ export async function syncFixtures(service: SupabaseClient) {
     if (deltaMs === 0) continue;
     const { data: rooms } = await service
       .from("rooms")
-      .select("id, scheduled_kickoff, broadcast_start")
+      .select("id, slug, scheduled_kickoff, broadcast_start")
       .eq("fixture_id", row.id)
       .eq("state", "scheduled");
     for (const room of rooms ?? []) {
       const shift = (iso: string | null) =>
         iso ? new Date(new Date(iso).getTime() + deltaMs).toISOString() : null;
+      const newBroadcast = shift(room.broadcast_start as string | null);
       await service
         .from("rooms")
         .update({
           scheduled_kickoff: shift(room.scheduled_kickoff as string),
-          broadcast_start: shift(room.broadcast_start as string | null),
+          broadcast_start: newBroadcast,
           // a rescheduled fixture is no longer "postponed with no date"
           ...(nowPostponed ? {} : { postponed: false }),
         })
         .eq("id", room.id);
+      // any pending reminders for this room move with it (FR-21.4)
+      if (newBroadcast) {
+        await service
+          .from("notifications_outbox")
+          .update({
+            due_at: new Date(
+              new Date(newBroadcast).getTime() - 15 * 60 * 1000,
+            ).toISOString(),
+          })
+          .eq("room_id", room.id)
+          .eq("type", "pre_start_reminder")
+          .is("sent_at", null);
+      }
+      changes.push({
+        roomId: room.id as string,
+        slug: room.slug as string,
+        matchLabel,
+        change: "moved",
+      });
       movedRooms++;
     }
+  }
+
+  // notify each affected room's hosts (FR-19.6); recipients expand to RSVP
+  // holders in PRD-05. Inline flush is fine in this background job.
+  for (const c of changes) {
+    const hosts = await acceptedHosts(service, c.roomId);
+    const ids = await enqueueRoomChange(service, {
+      roomId: c.roomId,
+      recipientIds: hosts.map((h) => h.user_id),
+      payload: { matchLabel: c.matchLabel, roomSlug: c.slug, change: c.change },
+    });
+    await flushRows(service, ids);
   }
 
   // real data is in — clean up the dev seeds (id < 0). A room may have been

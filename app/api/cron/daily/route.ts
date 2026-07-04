@@ -3,6 +3,7 @@ import { createServiceClient } from "@/lib/db/server";
 import { matchPendingFixtures } from "@/lib/adminFixtures";
 import { sweepNoShowRooms, syncFixtures } from "@/lib/fixtures";
 import { autoCreateSubscriptionRooms } from "@/lib/seasonHosting";
+import { drainDue } from "@/lib/notify/outbox";
 
 // league-wide sync + matching can take a moment
 export const maxDuration = 300;
@@ -47,6 +48,13 @@ export async function GET(request: NextRequest) {
     results.noShowSweep = await sweepNoShowRooms(service);
   } catch (err) {
     results.noShowSweep = { ok: false, reason: String(err) };
+  }
+  // FR-21.4: drain any due notifications (the daily backstop under the
+  // opportunistic route drains). Larger batch since this is the guaranteed run.
+  try {
+    results.notificationDrain = await drainDue(service, 200);
+  } catch (err) {
+    results.notificationDrain = { ok: false, reason: String(err) };
   }
 
   console.log("daily cron:", JSON.stringify(results));

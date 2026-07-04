@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
@@ -11,6 +12,12 @@ import {
 } from "@/lib/egress";
 import { emitMarker } from "@/lib/markers";
 import { insertRoomWithHost } from "@/lib/createRoom";
+import { flushRows } from "@/lib/notify/outbox";
+import {
+  enqueueGoLive,
+  enqueuePreStartReminders,
+  enqueueRoomScheduled,
+} from "@/lib/notify/producers";
 import { triggerProcessing } from "@/lib/recording";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
@@ -134,6 +141,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // FR-21: notify the host's followers a room was scheduled (immediate) and
+    // schedule the 15-min pre-start reminder. Runs after the response.
+    const notifyScheduled = (r: Room) => {
+      const payload = {
+        matchLabel: `${fixture.home_team} vs ${fixture.away_team}`,
+        roomSlug: r.slug,
+        hostName: caller.profile.username,
+      };
+      after(async () => {
+        const svc = createServiceClient();
+        const ids = await enqueueRoomScheduled(svc, {
+          roomId: r.id,
+          hostUserId: caller.userId,
+          payload,
+        });
+        await flushRows(svc, ids);
+        await enqueuePreStartReminders(svc, {
+          roomId: r.id,
+          hostUserId: caller.userId,
+          broadcastStart: r.broadcast_start ?? broadcastStart,
+          payload,
+        });
+      });
+    };
+
     if (existing) {
       // canceled room for this fixture: revive it rather than fight the
       // unique(fixture_id, commentator_id) constraint. Clear subscription_id:
@@ -163,6 +195,7 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: "room_id,user_id" },
       );
+      if (revived) notifyScheduled(revived);
       return NextResponse.json({ room: revived }, { status: 201 });
     }
 
@@ -183,6 +216,7 @@ export async function POST(request: NextRequest) {
         { status: 500 },
       );
     }
+    notifyScheduled(room);
     return NextResponse.json({ room }, { status: 201 });
   }
 
@@ -266,6 +300,23 @@ export async function POST(request: NextRequest) {
     }
 
     await publishState(room.id, "waiting");
+
+    // FR-21 go_live: the room entered waiting; notify the hosts' followers
+    // (keeps FR-1.4). Deduped across co-hosts by the outbox key.
+    const goLiveRoom = room;
+    after(async () => {
+      const svc = createServiceClient();
+      const ids = await enqueueGoLive(svc, {
+        roomId: goLiveRoom.id,
+        payload: {
+          matchLabel: `${fixture.home_team} vs ${fixture.away_team}`,
+          roomSlug: goLiveRoom.slug,
+          hostName: caller.profile.username,
+        },
+      });
+      await flushRows(svc, ids);
+    });
+
     return NextResponse.json({ room }, { status: 201 });
   }
 

@@ -44,7 +44,7 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
-/* push-ready (FR-16.3, v1.1): wired but unused until web push ships */
+/* web push (FR-21). Payload = { title, body, url }. */
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   let payload = {};
@@ -57,7 +57,8 @@ self.addEventListener("push", (event) => {
     self.registration.showNotification(payload.title || "FanCast", {
       body: payload.body || "",
       icon: "/icons/icon-192.png",
-      data: payload.data || {},
+      badge: "/icons/icon-192.png",
+      data: { url: payload.url || payload.data?.url || "/" },
     }),
   );
 });
@@ -65,5 +66,18 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = event.notification.data?.url || "/";
-  event.waitUntil(self.clients.openWindow(target));
+  // focus an existing tab on the same origin if one is open, else open a window
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((clients) => {
+        for (const client of clients) {
+          if ("focus" in client) {
+            client.navigate?.(target);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(target);
+      }),
+  );
 });

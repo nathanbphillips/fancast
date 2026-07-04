@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
@@ -7,6 +8,8 @@ import {
   createSubscriptionRooms,
   type HostSubscription,
 } from "@/lib/seasonHosting";
+import { flushRows } from "@/lib/notify/outbox";
+import { enqueueSeasonSummary } from "@/lib/notify/producers";
 
 export const maxDuration = 60;
 
@@ -131,6 +134,26 @@ export async function POST(request: NextRequest) {
     subscription,
     caller.profile.username,
   );
+
+  // FR-20.7 / FR-21.3: exactly one season summary per follower, never one per
+  // room. Runs after the response.
+  if (result.created > 0) {
+    const sub = subscription;
+    const created = result.created;
+    after(async () => {
+      const svc = createServiceClient();
+      const ids = await enqueueSeasonSummary(svc, {
+        hostUserId: sub.user_id,
+        subscriptionId: sub.id,
+        payload: {
+          hostName: caller.profile.username,
+          profileUsername: caller.profile.username,
+          summary: `${created} ${teamName} room${created === 1 ? "" : "s"} this season`,
+        },
+      });
+      await flushRows(svc, ids);
+    });
+  }
 
   return NextResponse.json(
     {
