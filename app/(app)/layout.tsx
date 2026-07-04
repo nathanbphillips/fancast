@@ -23,6 +23,7 @@ export default async function AppLayout({
           username={profile?.username ?? null}
           avatarUrl={profile?.avatar_url ?? null}
           admin={admin}
+          host={!!profile && profile.role !== "listener"}
           userExists={!!user}
           liveCount={liveCount}
         />

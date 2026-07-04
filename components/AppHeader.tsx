@@ -18,12 +18,15 @@ export function AppHeader({
   username,
   avatarUrl,
   admin,
+  host = false,
   userExists,
   liveCount,
 }: {
   username: string | null;
   avatarUrl: string | null;
   admin: boolean;
+  /** commentator or admin: can host rooms (FR-19) */
+  host?: boolean;
   userExists: boolean;
   liveCount: number;
 }) {
@@ -62,7 +65,12 @@ export function AppHeader({
           )}
           <ThemeToggle />
           {username ? (
-            <UserMenu username={username} avatarUrl={avatarUrl} admin={admin} />
+            <UserMenu
+              username={username}
+              avatarUrl={avatarUrl}
+              admin={admin}
+              host={host}
+            />
           ) : userExists ? (
             <Button href="/welcome" variant="inverted" size="sm">
               Pick a username

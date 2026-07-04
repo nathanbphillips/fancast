@@ -10,6 +10,7 @@ import {
   stopBroadcastEgress,
 } from "@/lib/egress";
 import { emitMarker } from "@/lib/markers";
+import { insertRoomWithHost } from "@/lib/createRoom";
 import { triggerProcessing } from "@/lib/recording";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
@@ -28,6 +29,13 @@ export const maxDuration = 300;
  */
 
 const bodySchema = z.discriminatedUnion("action", [
+  // FR-19.1/19.2: schedule a room against a fixture; exactly two user inputs
+  z.object({
+    action: z.literal("create"),
+    fixtureId: z.number().int(),
+    broadcastStart: z.iso.datetime().optional(),
+    blurb: z.string().trim().max(140).optional(),
+  }),
   z.object({ action: z.literal("open_waiting"), fixtureId: z.number().int() }),
   z.object({ action: z.literal("start"), roomId: z.uuid() }),
   z.object({ action: z.literal("end"), roomId: z.uuid() }),
@@ -71,6 +79,110 @@ export async function POST(request: NextRequest) {
   const body = parsed.data;
   const service = createServiceClient();
 
+  if (body.action === "create") {
+    // FR-19.1: any commentator schedules a room from the fixture picker
+    if (
+      caller.profile.role !== "commentator" &&
+      !isAdmin(caller.userId, caller.profile)
+    ) {
+      return NextResponse.json(
+        { error: "Only commentators can create rooms." },
+        { status: 403 },
+      );
+    }
+
+    const { data: fixture } = await service
+      .from("fixtures")
+      .select("id, kickoff_utc, home_team, away_team")
+      .eq("id", body.fixtureId)
+      .maybeSingle();
+    if (!fixture) {
+      return NextResponse.json({ error: "Fixture not found." }, { status: 404 });
+    }
+    if (new Date(fixture.kickoff_utc).getTime() < Date.now()) {
+      return NextResponse.json(
+        { error: "That game has already kicked off." },
+        { status: 400 },
+      );
+    }
+
+    // one room per fixture per commentator (the unique constraint backs this;
+    // check first for the friendly message)
+    const { data: existing } = await service
+      .from("rooms")
+      .select("id, state, slug")
+      .eq("fixture_id", fixture.id)
+      .eq("commentator_id", caller.userId)
+      .maybeSingle();
+    if (existing && existing.state !== "canceled") {
+      return NextResponse.json(
+        { error: "You already have a room for this fixture." },
+        { status: 409 },
+      );
+    }
+
+    // default broadcast start: kickoff minus 15 minutes (FR-19.2)
+    const broadcastStart =
+      body.broadcastStart ??
+      new Date(
+        new Date(fixture.kickoff_utc).getTime() - 15 * 60 * 1000,
+      ).toISOString();
+    if (new Date(broadcastStart).getTime() < Date.now() - 60_000) {
+      return NextResponse.json(
+        { error: "That start time is in the past. Pick a future time." },
+        { status: 400 },
+      );
+    }
+
+    if (existing) {
+      // canceled room for this fixture: revive it rather than fight the
+      // unique(fixture_id, commentator_id) constraint
+      const { data: revived, error } = await service
+        .from("rooms")
+        .update({
+          state: "scheduled",
+          broadcast_start: broadcastStart,
+          blurb: body.blurb || null,
+          postponed: false,
+        })
+        .eq("id", existing.id)
+        .select()
+        .single<Room>();
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      await service.from("room_hosts").upsert(
+        {
+          room_id: existing.id,
+          user_id: caller.userId,
+          status: "accepted",
+          responded_at: new Date().toISOString(),
+        },
+        { onConflict: "room_id,user_id" },
+      );
+      return NextResponse.json({ room: revived }, { status: 201 });
+    }
+
+    const { room, error } = await insertRoomWithHost(service, {
+      fixtureId: fixture.id,
+      creatorId: caller.userId,
+      creatorUsername: caller.profile.username,
+      homeTeam: fixture.home_team,
+      awayTeam: fixture.away_team,
+      kickoffUtc: fixture.kickoff_utc,
+      state: "scheduled",
+      broadcastStart,
+      blurb: body.blurb || null,
+    });
+    if (error || !room) {
+      return NextResponse.json(
+        { error: error ?? "Couldn't create the room." },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json({ room }, { status: 201 });
+  }
+
   if (body.action === "open_waiting") {
     if (
       caller.profile.role !== "commentator" &&
@@ -84,7 +196,7 @@ export async function POST(request: NextRequest) {
 
     const { data: fixture } = await service
       .from("fixtures")
-      .select("id, kickoff_utc")
+      .select("id, kickoff_utc, home_team, away_team")
       .eq("id", body.fixtureId)
       .maybeSingle();
     if (!fixture) {
@@ -112,26 +224,38 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const { data: room, error } = existing
-      ? await service
-          .from("rooms")
-          .update({ state: "waiting", opened_at: now })
-          .eq("id", existing.id)
-          .select()
-          .single<Room>()
-      : await service
-          .from("rooms")
-          .insert({
-            fixture_id: body.fixtureId,
-            commentator_id: caller.userId,
-            state: "waiting",
-            opened_at: now,
-            scheduled_kickoff: fixture.kickoff_utc,
-          })
-          .select()
-          .single<Room>();
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    let room: Room;
+    if (existing) {
+      const { data: updated, error } = await service
+        .from("rooms")
+        .update({ state: "waiting", opened_at: now })
+        .eq("id", existing.id)
+        .select()
+        .single<Room>();
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      room = updated;
+    } else {
+      // creating on the fly: same path as `create` (slug + host row), just
+      // straight into waiting
+      const { room: created, error } = await insertRoomWithHost(service, {
+        fixtureId: fixture.id,
+        creatorId: caller.userId,
+        creatorUsername: caller.profile.username,
+        homeTeam: fixture.home_team,
+        awayTeam: fixture.away_team,
+        kickoffUtc: fixture.kickoff_utc,
+        state: "waiting",
+        openedAt: now,
+      });
+      if (error || !created) {
+        return NextResponse.json(
+          { error: error ?? "Couldn't open the room." },
+          { status: 500 },
+        );
+      }
+      room = created;
     }
 
     await publishState(room.id, "waiting");

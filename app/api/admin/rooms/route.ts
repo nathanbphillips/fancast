@@ -4,7 +4,7 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
 import { config } from "@/lib/config";
-import type { Room } from "@/lib/db/types";
+import { insertRoomWithHost } from "@/lib/createRoom";
 
 const bodySchema = z.object({
   homeTeam: z.string().trim().min(1).max(40),
@@ -54,24 +54,23 @@ export async function POST(request: NextRequest) {
   }
 
   const now = new Date().toISOString();
-  const { data: room, error: roomErr } = await service
-    .from("rooms")
-    .insert({
-      fixture_id: fixtureId,
-      commentator_id: caller.userId,
-      state: "waiting",
-      opened_at: now,
-      scheduled_kickoff: kickoffUtc,
-    })
-    .select()
-    .single<Room>();
+  const { room, error: roomErr } = await insertRoomWithHost(service, {
+    fixtureId,
+    creatorId: caller.userId,
+    creatorUsername: caller.profile.username,
+    homeTeam: homeTeam,
+    awayTeam: awayTeam,
+    kickoffUtc,
+    state: "waiting",
+    openedAt: now,
+  });
   if (roomErr || !room) {
     await service.from("fixtures").delete().eq("id", fixtureId); // no orphan
     return NextResponse.json(
-      { error: roomErr?.message ?? "Couldn't create the room." },
+      { error: roomErr ?? "Couldn't create the room." },
       { status: 500 },
     );
   }
 
-  return NextResponse.json({ roomId: room.id }, { status: 201 });
+  return NextResponse.json({ roomId: room.id, slug: room.slug }, { status: 201 });
 }

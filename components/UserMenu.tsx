@@ -15,10 +15,13 @@ export function UserMenu({
   username,
   avatarUrl,
   admin = false,
+  host = false,
 }: {
   username: string;
   avatarUrl?: string | null;
   admin?: boolean;
+  /** can host rooms: shows the My rooms entry (FR-19) */
+  host?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -87,6 +90,16 @@ export function UserMenu({
           >
             Edit profile
           </Link>
+          {host && (
+            <Link
+              role="menuitem"
+              href="/host"
+              onClick={() => setOpen(false)}
+              className="block px-3 py-2 text-sm hover:bg-raised"
+            >
+              My rooms
+            </Link>
+          )}
           {admin && (
             <Link
               role="menuitem"
