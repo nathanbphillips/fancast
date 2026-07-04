@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import {
+  createServiceClient,
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
+import { syncFixtures } from "@/lib/fixtures";
 import {
   RoomCreatePicker,
   type PickerFixture,
@@ -36,6 +39,30 @@ export default async function CreateRoomPage() {
       .select("fixture_id, state")
       .eq("commentator_id", user.id),
   ]);
+
+  // opportunistic refresh (FR-19.5, Hobby revision): if the sportmonks cache
+  // is older than 6h, kick a sync AFTER this response — the next visit sees
+  // fresh data without this one blocking on the upstream call
+  const { data: newest } = await supabase
+    .from("fixtures")
+    .select("updated_at")
+    .eq("source", "sportmonks")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const staleMs = newest
+    ? Date.now() - new Date(newest.updated_at as string).getTime()
+    : Infinity;
+  if (staleMs > 6 * 60 * 60 * 1000) {
+    after(async () => {
+      try {
+        const result = await syncFixtures(createServiceClient());
+        console.log("opportunistic fixture sync:", JSON.stringify(result));
+      } catch (err) {
+        console.error("opportunistic fixture sync failed:", err);
+      }
+    });
+  }
 
   const hostedFixtureIds = new Set(
     (mine ?? [])

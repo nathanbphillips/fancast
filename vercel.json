@@ -1,4 +1,4 @@
 {
   "framework": "nextjs",
-  "crons": [{ "path": "/api/admin/match-fixtures", "schedule": "0 9 * * *" }]
+  "crons": [{ "path": "/api/cron/daily", "schedule": "0 6 * * *" }]
 }

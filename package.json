@@ -37,7 +37,8 @@
     "smoke:talkcap": "tsx --env-file=.env.local scripts/talk-cap-smoke.ts",
     "smoke:lifecycle": "tsx --env-file=.env.local scripts/room-lifecycle-smoke.ts",
     "smoke:prod": "tsx --env-file=.env.local scripts/prod-smoke.ts",
-    "smoke:snapshot": "tsx --env-file=.env.local scripts/snapshot-smoke.ts"
+    "smoke:snapshot": "tsx --env-file=.env.local scripts/snapshot-smoke.ts",
+    "sync:fixtures": "tsx --env-file=.env.local scripts/fixtures-sync.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

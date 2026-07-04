@@ -101,6 +101,12 @@ export function mapSportmonksFixture(f: SmFixture, seasonYear: number) {
   };
 }
 
+/** Statuses that mean "no longer happening on this date" (Sportmonks short
+ *  codes vary; match defensively). */
+function isPostponedStatus(status: string): boolean {
+  return /^(POSTP|PST|CANC|CANCL|ABAN|SUSP)/i.test(status);
+}
+
 export async function syncFixtures(service: SupabaseClient) {
   const token = process.env.SPORTMONKS_API_TOKEN;
   if (!token) {
@@ -109,32 +115,46 @@ export async function syncFixtures(service: SupabaseClient) {
   const base =
     process.env.SPORTMONKS_BASE ?? "https://api.sportmonks.com/v3/football";
 
-  // Arsenal's fixtures across the season window (all competitions). Sportmonks
-  // filters by team + date range; each fixture's competition comes from its
-  // league include, so no hardcoded league id is needed for the sync.
-  const start = `${config.season}-07-01`;
-  const end = `${config.season + 1}-06-30`;
+  // FR-19.5 (2026-07-03): league-wide EPL, last week (fresh results) through
+  // today + 120 days (the picker horizon). The league filter replaces the old
+  // Arsenal-only team path. Sportmonks caps a `between` range at 100 days, so
+  // the window is fetched in <=95-day chunks.
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const day = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+  const windowStart = Date.now() - 7 * DAY_MS;
+  const windowEnd = Date.now() + 120 * DAY_MS;
   const include = "participants;scores;state;league;round";
 
   const fixtures: SmFixture[] = [];
-  for (let page = 1; page <= 20; page++) {
-    const url =
-      `${base}/fixtures/between/${start}/${end}/${config.arsenalTeamId}` +
-      `?include=${include}&per_page=50&page=${page}`;
-    // token via the Authorization header keeps it out of URLs/logs
-    const res = await fetch(url, {
-      headers: { Authorization: token },
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      return { ok: false as const, reason: `Sportmonks responded ${res.status}` };
+  for (
+    let chunkStart = windowStart;
+    chunkStart < windowEnd;
+    chunkStart += 95 * DAY_MS
+  ) {
+    const chunkEnd = Math.min(chunkStart + 95 * DAY_MS, windowEnd);
+    for (let page = 1; page <= 20; page++) {
+      const url =
+        `${base}/fixtures/between/${day(chunkStart)}/${day(chunkEnd)}` +
+        `?include=${include}&filters=fixtureLeagues:${config.premierLeagueId}` +
+        `&per_page=50&page=${page}`;
+      // token via the Authorization header keeps it out of URLs/logs
+      const res = await fetch(url, {
+        headers: { Authorization: token },
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        return {
+          ok: false as const,
+          reason: `Sportmonks responded ${res.status}`,
+        };
+      }
+      const payload = (await res.json()) as {
+        data?: SmFixture[];
+        pagination?: { has_more?: boolean };
+      };
+      fixtures.push(...(payload.data ?? []));
+      if (!payload.pagination?.has_more) break;
     }
-    const payload = (await res.json()) as {
-      data?: SmFixture[];
-      pagination?: { has_more?: boolean };
-    };
-    fixtures.push(...(payload.data ?? []));
-    if (!payload.pagination?.has_more) break;
   }
   if (fixtures.length === 0) {
     return { ok: false as const, reason: "Sportmonks returned no fixtures" };
@@ -142,9 +162,66 @@ export async function syncFixtures(service: SupabaseClient) {
 
   const rows = fixtures.map((f) => mapSportmonksFixture(f, config.season));
 
+  // FR-19.6: before the upsert lands, diff kickoffs against what we had so
+  // rooms scheduled on a moved fixture shift with it (scheduled_kickoff AND
+  // broadcast_start move by the same delta) and a postponed fixture flags its
+  // rooms instead of stranding them.
+  const { data: existing } = await service
+    .from("fixtures")
+    .select("id, kickoff_utc, status")
+    .in("id", rows.map((r) => r.id));
+  const before = new Map(
+    (existing ?? []).map((f) => [
+      f.id as number,
+      { kickoff: f.kickoff_utc as string, status: f.status as string },
+    ]),
+  );
+
   const { error } = await service.from("fixtures").upsert(rows);
   if (error) {
     return { ok: false as const, reason: error.message };
+  }
+
+  let movedRooms = 0;
+  let postponedRooms = 0;
+  for (const row of rows) {
+    const prev = before.get(row.id);
+    if (!prev) continue;
+
+    const nowPostponed = isPostponedStatus(row.status);
+    const wasPostponed = isPostponedStatus(prev.status);
+    if (nowPostponed !== wasPostponed) {
+      const { data: flagged } = await service
+        .from("rooms")
+        .update({ postponed: nowPostponed })
+        .eq("fixture_id", row.id)
+        .eq("state", "scheduled")
+        .select("id");
+      if (nowPostponed) postponedRooms += flagged?.length ?? 0;
+    }
+
+    const deltaMs =
+      new Date(row.kickoff_utc).getTime() - new Date(prev.kickoff).getTime();
+    if (deltaMs === 0) continue;
+    const { data: rooms } = await service
+      .from("rooms")
+      .select("id, scheduled_kickoff, broadcast_start")
+      .eq("fixture_id", row.id)
+      .eq("state", "scheduled");
+    for (const room of rooms ?? []) {
+      const shift = (iso: string | null) =>
+        iso ? new Date(new Date(iso).getTime() + deltaMs).toISOString() : null;
+      await service
+        .from("rooms")
+        .update({
+          scheduled_kickoff: shift(room.scheduled_kickoff as string),
+          broadcast_start: shift(room.broadcast_start as string | null),
+          // a rescheduled fixture is no longer "postponed with no date"
+          ...(nowPostponed ? {} : { postponed: false }),
+        })
+        .eq("id", room.id);
+      movedRooms++;
+    }
   }
 
   // real data is in — clean up the dev seeds (id < 0). A room may have been
@@ -186,5 +263,29 @@ export async function syncFixtures(service: SupabaseClient) {
     return { ok: false as const, reason: `seed purge failed: ${delErr.message}` };
   }
 
-  return { ok: true as const, count: rows.length, unremapped };
+  return {
+    ok: true as const,
+    count: rows.length,
+    unremapped,
+    movedRooms,
+    postponedRooms,
+  };
+}
+
+/**
+ * No-show expiry (FR-19.7): a scheduled room never opened by kickoff + 2h is
+ * auto-canceled (listings already hide it from kickoff + 15 min; this makes
+ * the state truthful). Runs from the daily cron; cheap enough to also ride
+ * opportunistic syncs.
+ */
+export async function sweepNoShowRooms(service: SupabaseClient) {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await service
+    .from("rooms")
+    .update({ state: "canceled" })
+    .eq("state", "scheduled")
+    .lt("scheduled_kickoff", cutoff)
+    .select("id");
+  if (error) return { ok: false as const, reason: error.message };
+  return { ok: true as const, canceled: data?.length ?? 0 };
 }
