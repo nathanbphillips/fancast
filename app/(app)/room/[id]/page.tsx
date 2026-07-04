@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import NextLink from "next/link";
-import { notFound } from "next/navigation";
-import { z } from "zod";
+import { notFound, permanentRedirect } from "next/navigation";
+import { looksLikeUuid } from "@/lib/slug";
 import { brand } from "@/lib/brand";
 import { Logo } from "@/components/Logo";
 import {
@@ -39,15 +39,18 @@ type RoomWithJoins = Room & {
   commentator: { username: string };
 };
 
-async function loadRoom(id: string) {
-  if (!z.uuid().safeParse(id).success) return null;
+// FR-19.3: the canonical room URL is /room/{slug}; old /room/{uuid} links
+// resolve too and the page permanently redirects them to the slug.
+async function loadRoom(param: string) {
+  const byId = looksLikeUuid(param);
+  if (!byId && !/^[a-z0-9-]{1,120}$/.test(param)) return null;
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase
     .from("rooms")
     .select(
       "*, fixture:fixtures(*), commentator:profiles!rooms_commentator_id_fkey(username)",
     )
-    .eq("id", id)
+    .eq(byId ? "id" : "slug", param)
     .maybeSingle<RoomWithJoins>();
   return data;
 }
@@ -72,6 +75,12 @@ export default async function RoomPage({
   const { id } = await params;
   const room = await loadRoom(id);
   if (!room) notFound();
+
+  // old id URLs move permanently to the slug (FR-19.3; Next's permanentRedirect
+  // sends 308, the method-preserving 301 equivalent)
+  if (looksLikeUuid(id) && room.slug) {
+    permanentRedirect(`/room/${room.slug}`);
+  }
 
   // FR-3.1/3.5: a scheduled room is listed but not enterable — and never 404s
   if (room.state === "scheduled") {

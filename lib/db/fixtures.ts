@@ -17,6 +17,7 @@ import type {
 type FixtureWithRooms = Fixture & {
   rooms: {
     id: string;
+    slug: string | null;
     state: RoomState;
     commentator_id: string;
     commentator: { username: string } | null;
@@ -57,7 +58,7 @@ export async function loadFixtures(): Promise<{
   const { data: fixtures, error } = await supabase
     .from("fixtures")
     .select(
-      "*, rooms(id, state, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
+      "*, rooms(id, slug, state, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
     .order("kickoff_utc", { ascending: true })
@@ -89,7 +90,8 @@ export async function loadFixtures(): Promise<{
       kickoffUtc: f.kickoff_utc,
       commentator: room?.commentator?.username,
       state: cardState(room?.state),
-      roomHref: room ? `/room/${room.id}` : undefined,
+      // canonical slug URL (FR-19.3); id fallback covers any pre-0027 cache
+      roomHref: room ? `/room/${room.slug ?? room.id}` : undefined,
     };
     const ownRoom = f.rooms.find((r) => r.commentator_id === user?.id);
     const canOpen =

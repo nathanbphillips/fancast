@@ -38,6 +38,7 @@ const UPCOMING_STATES: RoomState[] = [
 
 type UpcomingRoom = {
   id: string;
+  slug: string | null;
   state: RoomState;
   scheduled_kickoff: string;
   fixture: { home_team: string; away_team: string; competition: string | null };
@@ -111,7 +112,7 @@ export default async function ProfilePage({
       ? supabase
           .from("rooms")
           .select(
-            "id, state, scheduled_kickoff, fixture:fixtures(home_team, away_team, competition)",
+            "id, slug, state, scheduled_kickoff, fixture:fixtures(home_team, away_team, competition)",
           )
           .eq("commentator_id", profile.user_id)
           .in("state", UPCOMING_STATES)
@@ -254,7 +255,7 @@ export default async function ProfilePage({
               return enterable ? (
                 <Link
                   key={r.id}
-                  href={`/room/${r.id}`}
+                  href={`/room/${r.slug ?? r.id}`}
                   className="flex items-center gap-3 border-t border-line px-4 py-3 first:border-t-0 hover:bg-raised"
                 >
                   {row}
