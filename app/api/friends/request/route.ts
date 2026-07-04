@@ -39,10 +39,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  // rate limit: 20 requests per rolling day (DB-counted, instance-independent)
+  // rate limit: 20 requests per rolling day. Counted from an append-only event
+  // log (friend_request_events), NOT surviving friendship rows, so withdrawing
+  // each request before the next can't bypass the cap (review 2026-07-03).
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { count } = await service
-    .from("friendships")
+    .from("friend_request_events")
     .select("*", { count: "exact", head: true })
     .eq("requester_id", caller.userId)
     .gte("created_at", since);
@@ -54,7 +56,9 @@ export async function POST(request: NextRequest) {
   }
 
   // block invisibility (FR-23.4) + no-re-request-after-decline (FR-23.1): both
-  // appear to succeed but create nothing, so neither state leaks
+  // appear to succeed but create nothing, so neither state leaks. Every
+  // "requested" outcome (genuine or silently-dropped) returns the SAME 200 so
+  // the caller can't distinguish a drop by status code (review 2026-07-03).
   if (await areBlockedEitherWay(service, caller.userId, target)) {
     return NextResponse.json({ ok: true, state: "requested" });
   }
@@ -92,6 +96,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // TOCTOU: a block from the target could have committed between the check
+  // above and this insert. Re-check and drop the row if so, so a request never
+  // survives a concurrent block (review 2026-07-03).
+  if (await areBlockedEitherWay(service, caller.userId, target)) {
+    await service
+      .from("friendships")
+      .delete()
+      .eq("requester_id", caller.userId)
+      .eq("addressee_id", target)
+      .eq("status", "pending");
+    return NextResponse.json({ ok: true, state: "requested" });
+  }
+
+  // durable rate-limit event (append-only) + the friend_request notification
+  await service
+    .from("friend_request_events")
+    .insert({ requester_id: caller.userId });
   after(async () => {
     const svc = createServiceClient();
     const ids = await enqueueFriendRequest(svc, {
@@ -102,5 +123,6 @@ export async function POST(request: NextRequest) {
     await flushRows(svc, ids);
   });
 
-  return NextResponse.json({ ok: true, state: "requested" }, { status: 201 });
+  // same 200 as every other "requested" outcome (no status-code leak)
+  return NextResponse.json({ ok: true, state: "requested" });
 }

@@ -34,10 +34,13 @@ export async function POST(
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  // sever any relationship (accepted or pending, either direction)
+  // sever accepted + pending relationships (either direction). A DECLINED row
+  // is preserved: deleting it would let block -> unblock erase a decline and
+  // bypass no-re-request-after-decline (review 2026-07-03).
   await service
     .from("friendships")
     .delete()
+    .in("status", ["accepted", "pending"])
     .or(
       `and(requester_id.eq.${caller.userId},addressee_id.eq.${userId}),and(requester_id.eq.${userId},addressee_id.eq.${caller.userId})`,
     );

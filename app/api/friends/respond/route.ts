@@ -49,6 +49,16 @@ export async function POST(request: NextRequest) {
   }
 
   if (parsed.data.action === "accept") {
+    // clear any stale declined row for this pair: they're friends now, so an
+    // old decline must not linger and corrupt friendState after a later
+    // unfriend (review 2026-07-03)
+    await service
+      .from("friendships")
+      .delete()
+      .eq("status", "declined")
+      .or(
+        `and(requester_id.eq.${requesterId},addressee_id.eq.${caller.userId}),and(requester_id.eq.${caller.userId},addressee_id.eq.${requesterId})`,
+      );
     after(async () => {
       const svc = createServiceClient();
       const ids = await enqueueFriendAccept(svc, {
