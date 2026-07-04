@@ -218,8 +218,12 @@ export async function POST(request: NextRequest) {
         { status: 409 },
       );
     }
-    if (existing && existing.state !== "scheduled") {
-      // already open — just go there
+    if (
+      existing &&
+      existing.state !== "scheduled" &&
+      existing.state !== "canceled"
+    ) {
+      // already open — just go there (a canceled room instead revives below)
       return NextResponse.json({ room: existing });
     }
 

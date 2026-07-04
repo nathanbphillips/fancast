@@ -116,6 +116,7 @@ export default async function ProfilePage({
           )
           .eq("commentator_id", profile.user_id)
           .in("state", UPCOMING_STATES)
+          .eq("postponed", false)
           .order("scheduled_kickoff", { ascending: true })
           .limit(10)
       : Promise.resolve({ data: null }),

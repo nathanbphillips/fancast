@@ -19,6 +19,7 @@ type FixtureWithRooms = Fixture & {
     id: string;
     slug: string | null;
     state: RoomState;
+    postponed: boolean;
     commentator_id: string;
     commentator: { username: string } | null;
   }[];
@@ -58,7 +59,7 @@ export async function loadFixtures(): Promise<{
   const { data: fixtures, error } = await supabase
     .from("fixtures")
     .select(
-      "*, rooms(id, slug, state, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
+      "*, rooms(id, slug, state, postponed, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
     .order("kickoff_utc", { ascending: true })
@@ -81,7 +82,21 @@ export async function loadFixtures(): Promise<{
   const viewerIsCommentator = profile?.role === "commentator";
 
   const withFollowed: HomeFixture[] = (fixtures ?? []).map((f) => {
-    const room = f.rooms[0];
+    // multiple rooms per fixture are possible now (FR-19); until PRD-05's
+    // multi-room cards land, the card carries the most-advanced ACTIVE room:
+    // live-ish beats scheduled; canceled/postponed/no-show (unopened 15 min
+    // past kickoff, FR-19.7) never render
+    const kickoffCutoff =
+      new Date(f.kickoff_utc).getTime() + 15 * 60 * 1000 < Date.now();
+    const activeRooms = f.rooms.filter(
+      (r) =>
+        r.state !== "canceled" &&
+        r.state !== "wrapped" &&
+        !r.postponed &&
+        !(r.state === "scheduled" && kickoffCutoff),
+    );
+    const room =
+      activeRooms.find((r) => r.state !== "scheduled") ?? activeRooms[0];
     const card: FixtureCardData = {
       id: f.id,
       home: f.home_team,
@@ -95,7 +110,10 @@ export async function loadFixtures(): Promise<{
     };
     const ownRoom = f.rooms.find((r) => r.commentator_id === user?.id);
     const canOpen =
-      viewerIsCommentator && (!ownRoom || ownRoom.state === "scheduled");
+      viewerIsCommentator &&
+      (!ownRoom ||
+        ownRoom.state === "scheduled" ||
+        ownRoom.state === "canceled");
     return {
       card,
       canOpen,

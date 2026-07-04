@@ -82,6 +82,36 @@ export default async function RoomPage({
     permanentRedirect(`/room/${room.slug}`);
   }
 
+  // FR-19.7: a canceled room's URL stays truthful, never 404s
+  if (room.state === "canceled") {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <header className="border-b border-line px-4 py-3">
+          <NextLink href="/" aria-label={brand.name}>
+            <Logo />
+          </NextLink>
+        </header>
+        <div className="mx-auto max-w-md px-4 py-10 text-center">
+          <h1 className="text-xl font-bold">
+            {room.fixture.home_team} vs {room.fixture.away_team}
+          </h1>
+          <p className="mt-2 text-sm text-secondary">
+            This room was canceled. Check the schedule for other rooms on this
+            fixture.
+          </p>
+          <p className="mt-4">
+            <NextLink
+              href="/matches"
+              className="text-sm font-semibold text-gold hover:underline"
+            >
+              See the schedule →
+            </NextLink>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // FR-3.1/3.5: a scheduled room is listed but not enterable — and never 404s
   if (room.state === "scheduled") {
     return (

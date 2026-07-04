@@ -63,7 +63,9 @@ export type RoomState =
   | "live_2h"
   | "extra_time"
   | "postgame"
-  | "wrapped";
+  | "wrapped"
+  // FR-19.7 (migration 0027): host cancel / no-show expiry / admin suspend
+  | "canceled";
 
 export type ChatMessage = {
   id: string;

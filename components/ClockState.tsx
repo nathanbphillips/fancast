@@ -15,7 +15,9 @@ export type RoomState =
   | "live_2h"
   | "extra_time"
   | "postgame"
-  | "wrapped";
+  | "wrapped"
+  // FR-19.7 (migration 0027): host cancel / no-show expiry / admin suspend
+  | "canceled";
 
 const PERIOD_LABEL: Partial<Record<RoomState, string>> = {
   live_1h: "1H",
@@ -29,6 +31,7 @@ const STATE_WORD: Partial<Record<RoomState, string>> = {
   halftime: "HALFTIME",
   postgame: "POST-GAME",
   wrapped: "FULL TIME",
+  canceled: "CANCELED",
 };
 
 export function ClockState({
