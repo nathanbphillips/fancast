@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
   const results: Record<string, unknown> = {};
 
   try {
-    results.fixtureSync = await syncFixtures(service);
+    // the daily cron is the single serialized sync: it alone emits room_change
+    // notifications (the opportunistic page sync stays notify-off to avoid
+    // concurrent double-notify)
+    results.fixtureSync = await syncFixtures(service, { notify: true });
   } catch (err) {
     results.fixtureSync = { ok: false, reason: String(err) };
   }

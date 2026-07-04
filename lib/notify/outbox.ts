@@ -34,6 +34,10 @@ type EnqueueOpts = {
   /** overrides the room segment of the dedupe key for batched events
    *  (e.g. a season summary keyed by subscription, not room) */
   dedupeScope?: string;
+  /** one-shot types (room_scheduled, go_live): dedupe against SENT rows too so
+   *  a revive/re-trigger never re-notifies. Reminders leave this false so they
+   *  can be re-scheduled after being sent. */
+  oncePerScope?: boolean;
 };
 
 const CHANNELS: NotificationChannel[] = ["email", "push"];
@@ -118,14 +122,17 @@ export async function enqueue(
   }
   if (rows.length === 0) return [];
 
-  // pre-filter against unsent rows with the same keys, then insert the rest;
-  // the partial unique index is the hard backstop for the tiny race
+  // pre-filter against existing rows with the same keys, then insert the rest.
+  // For reschedulable reminders we only dedupe against UNSENT rows (the partial
+  // unique index is the hard backstop). For one-shot types (oncePerScope), we
+  // also dedupe against SENT rows so a revive/re-trigger never re-notifies.
   const keys = rows.map((r) => r.dedupe_key);
-  const { data: existing } = await service
+  let existingQuery = service
     .from("notifications_outbox")
     .select("dedupe_key")
-    .is("sent_at", null)
     .in("dedupe_key", keys);
+  if (!opts.oncePerScope) existingQuery = existingQuery.is("sent_at", null);
+  const { data: existing } = await existingQuery;
   const taken = new Set((existing ?? []).map((r) => r.dedupe_key as string));
   const fresh = rows.filter((r) => !taken.has(r.dedupe_key));
   if (fresh.length === 0) return [];
@@ -170,6 +177,22 @@ export async function reschedule(
   }
 }
 
+/** Cancel a user's pending (unsent) notifications for a room+type, e.g. when
+ *  they un-RSVP the rsvp_reminder is dropped. */
+export async function cancelUserRoomNotifications(
+  service: SupabaseClient,
+  recipientId: string,
+  roomId: string,
+  type: NotificationType,
+): Promise<void> {
+  const keys = CHANNELS.map((c) => dedupeKey(recipientId, roomId, type, c));
+  await service
+    .from("notifications_outbox")
+    .delete()
+    .in("dedupe_key", keys)
+    .is("sent_at", null);
+}
+
 type OutboxRow = {
   id: string;
   recipient_id: string;
@@ -179,8 +202,44 @@ type OutboxRow = {
   attempts: number;
 };
 
-/** Send one outbox row: render, dispatch to the channel, mark sent or failed. */
+/**
+ * Send one outbox row. CLAIM-then-dispatch: atomically set sent_at guarded by
+ * `sent_at IS NULL`, so exactly one worker proceeds (adversarial review
+ * 2026-07-03: two concurrent drainers, or flushRows racing a drain, were
+ * double-sending). On dispatch failure the claim is RELEASED (sent_at back to
+ * null) so the drainer retries until MAX_ATTEMPTS.
+ */
 async function sendRow(service: SupabaseClient, row: OutboxRow): Promise<boolean> {
+  // atomic claim (compare-and-set on sent_at)
+  const { data: claimed } = await service
+    .from("notifications_outbox")
+    .update({ sent_at: new Date().toISOString(), attempts: row.attempts + 1 })
+    .eq("id", row.id)
+    .is("sent_at", null)
+    .select("id")
+    .maybeSingle();
+  if (!claimed) return false; // another worker already claimed/sent it
+
+  const outcome = await dispatch(service, row);
+  if (!outcome.ok) {
+    // release for retry (attempts already incremented by the claim)
+    await service
+      .from("notifications_outbox")
+      .update({ sent_at: null, last_error: outcome.error.slice(0, 300) })
+      .eq("id", row.id);
+    return false;
+  }
+  return true;
+}
+
+type Dispatch = { ok: true } | { ok: false; error: string };
+
+/** Do the actual channel send. Returns whether it should count as delivered
+ *  (a transient failure returns ok:false so the row is released to retry). */
+async function dispatch(
+  service: SupabaseClient,
+  row: OutboxRow,
+): Promise<Dispatch> {
   const rendered = renderNotification(row.type, row.payload);
 
   if (row.channel === "email") {
@@ -188,10 +247,7 @@ async function sendRow(service: SupabaseClient, row: OutboxRow): Promise<boolean
       row.recipient_id,
     );
     const to = userRes?.user?.email;
-    if (!to) {
-      await markFailed(service, row, "no email on record");
-      return false;
-    }
+    if (!to) return { ok: false, error: "no email on record" };
     const token = unsubscribeToken(row.recipient_id, row.type);
     const unsubscribeUrl = `${siteUrl()}/api/unsubscribe?token=${token}`;
     const res = await sendEmail({
@@ -200,54 +256,41 @@ async function sendRow(service: SupabaseClient, row: OutboxRow): Promise<boolean
       html: emailHtml(rendered, unsubscribeUrl),
       text: `${rendered.body}\n\n${rendered.url}\n\nUnsubscribe: ${unsubscribeUrl}`,
     });
-    if (!res.ok) {
-      await markFailed(service, row, res.error);
-      return false;
-    }
-    await markSent(service, row);
-    return true;
+    return res.ok ? { ok: true } : { ok: false, error: res.error };
   }
 
-  // push: fan out to the recipient's live device subscriptions
+  // push: fan out to the recipient's live devices
   const { data: subs } = await service
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth")
     .eq("user_id", row.recipient_id)
     .is("revoked_at", null);
-  if (!subs || subs.length === 0) {
-    // nothing to push to; mark sent so it doesn't retry forever
-    await markSent(service, row);
-    return true;
-  }
+  if (!subs || subs.length === 0) return { ok: true }; // nothing to push to
+
+  let anySuccess = false;
+  let transientFailure: string | null = null;
   for (const sub of subs) {
     const res = await sendPush(sub, {
       title: rendered.title,
       body: rendered.body,
       url: rendered.url,
     });
-    if (!res.ok && res.gone) {
+    if (res.ok) {
+      anySuccess = true;
+    } else if (res.gone) {
+      // dead endpoint: revoke, not retryable
       await service
         .from("push_subscriptions")
         .update({ revoked_at: new Date().toISOString() })
         .eq("id", sub.id);
+    } else {
+      transientFailure = res.error; // 429/5xx/network: worth a retry
     }
   }
-  await markSent(service, row);
-  return true;
-}
-
-async function markSent(service: SupabaseClient, row: OutboxRow) {
-  await service
-    .from("notifications_outbox")
-    .update({ sent_at: new Date().toISOString(), attempts: row.attempts + 1 })
-    .eq("id", row.id);
-}
-
-async function markFailed(service: SupabaseClient, row: OutboxRow, error: string) {
-  await service
-    .from("notifications_outbox")
-    .update({ attempts: row.attempts + 1, last_error: error.slice(0, 300) })
-    .eq("id", row.id);
+  // deliver if at least one device succeeded, or the only failures were dead
+  // endpoints; retry if a transient failure hit and nothing got through
+  if (anySuccess || !transientFailure) return { ok: true };
+  return { ok: false, error: transientFailure };
 }
 
 /** Flush specific rows now (immediate producers call this inside after()). */

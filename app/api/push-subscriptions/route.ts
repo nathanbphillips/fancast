@@ -24,6 +24,28 @@ export async function POST(request: NextRequest) {
   }
 
   const service = createServiceClient();
+
+  // ownership guard (adversarial review 2026-07-03): the endpoint is globally
+  // unique, so an unscoped upsert would let any signed-in user reassign another
+  // user's device by POSTing their endpoint. Refuse to overwrite a live row
+  // that belongs to someone else; the other account must sign out on that
+  // device first. (A revoked row is free to reclaim: same browser, new login.)
+  const { data: existing } = await service
+    .from("push_subscriptions")
+    .select("user_id, revoked_at")
+    .eq("endpoint", parsed.data.endpoint)
+    .maybeSingle();
+  if (
+    existing &&
+    existing.user_id !== caller.userId &&
+    existing.revoked_at === null
+  ) {
+    return NextResponse.json(
+      { error: "This device is registered to another account." },
+      { status: 409 },
+    );
+  }
+
   const { error } = await service.from("push_subscriptions").upsert(
     {
       user_id: caller.userId,

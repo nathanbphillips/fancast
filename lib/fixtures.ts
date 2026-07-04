@@ -110,7 +110,10 @@ function isPostponedStatus(status: string): boolean {
   return /^(POSTP|PST|CANC|CANCL|ABAN|SUSP)/i.test(status);
 }
 
-export async function syncFixtures(service: SupabaseClient) {
+export async function syncFixtures(
+  service: SupabaseClient,
+  opts: { notify?: boolean } = {},
+) {
   const token = process.env.SPORTMONKS_API_TOKEN;
   if (!token) {
     return { ok: false as const, reason: "SPORTMONKS_API_TOKEN not configured" };
@@ -237,17 +240,24 @@ export async function syncFixtures(service: SupabaseClient) {
           ...(nowPostponed ? {} : { postponed: false }),
         })
         .eq("id", room.id);
-      // any pending reminders for this room move with it (FR-21.4)
+      // any pending reminders for this room move with it (FR-21.4), floored at
+      // now so a fixture pulled earlier than the lead time still fires promptly
+      // rather than in the past
       if (newBroadcast) {
+        const bs = new Date(newBroadcast).getTime();
+        const floorTo = (leadMs: number) =>
+          new Date(Math.max(Date.now(), bs - leadMs)).toISOString();
         await service
           .from("notifications_outbox")
-          .update({
-            due_at: new Date(
-              new Date(newBroadcast).getTime() - 15 * 60 * 1000,
-            ).toISOString(),
-          })
+          .update({ due_at: floorTo(15 * 60 * 1000) })
           .eq("room_id", room.id)
           .eq("type", "pre_start_reminder")
+          .is("sent_at", null);
+        await service
+          .from("notifications_outbox")
+          .update({ due_at: floorTo(30 * 60 * 1000) })
+          .eq("room_id", room.id)
+          .eq("type", "rsvp_reminder")
           .is("sent_at", null);
       }
       changes.push({
@@ -260,13 +270,26 @@ export async function syncFixtures(service: SupabaseClient) {
     }
   }
 
-  // notify each affected room's hosts (FR-19.6); recipients expand to RSVP
-  // holders in PRD-05. Inline flush is fine in this background job.
-  for (const c of changes) {
+  // notify each affected room's hosts + RSVP holders (FR-19.6). ONLY from the
+  // serialized daily cron (opts.notify): the opportunistic page-triggered sync
+  // can run concurrently for two visitors, which would double-diff and
+  // double-notify the same move (adversarial review 2026-07-03). The cache
+  // refresh + room-time shifts above are idempotent and run either way.
+  for (const c of opts.notify ? changes : []) {
     const hosts = await acceptedHosts(service, c.roomId);
+    const { data: rsvps } = await service
+      .from("room_rsvps")
+      .select("user_id")
+      .eq("room_id", c.roomId);
+    const recipients = [
+      ...new Set([
+        ...hosts.map((h) => h.user_id),
+        ...(rsvps ?? []).map((r) => r.user_id as string),
+      ]),
+    ];
     const ids = await enqueueRoomChange(service, {
       roomId: c.roomId,
-      recipientIds: hosts.map((h) => h.user_id),
+      recipientIds: recipients,
       payload: { matchLabel: c.matchLabel, roomSlug: c.slug, change: c.change },
     });
     await flushRows(service, ids);

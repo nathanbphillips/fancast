@@ -54,6 +54,8 @@ export async function enqueueRoomScheduled(
     recipientIds: recipients,
     roomId: opts.roomId,
     actorId: opts.hostUserId,
+    // one-shot per room: a revive must not re-announce (review 2026-07-03)
+    oncePerScope: true,
     payload: opts.payload,
   });
 }
@@ -75,6 +77,7 @@ export async function enqueueSeasonSummary(
     roomId: null,
     actorId: opts.hostUserId,
     dedupeScope: `sub:${opts.subscriptionId}`,
+    oncePerScope: true,
     payload: opts.payload,
   });
 }
@@ -90,6 +93,8 @@ export async function enqueueGoLive(
     type: "go_live",
     recipientIds: recipients,
     roomId: opts.roomId,
+    // one-shot per room lifetime
+    oncePerScope: true,
     payload: opts.payload,
   });
 }
@@ -121,8 +126,33 @@ export async function enqueuePreStartReminders(
   });
 }
 
-/** room_change to a fixed recipient set (hosts now; RSVP holders join in
- *  PRD-05). Immediate. */
+/** rsvp_reminder to one RSVP holder, due 30 min before broadcast_start
+ *  (FR-22.1). Skipped when the lead time has already passed. */
+const RSVP_LEAD_MS = 30 * 60 * 1000;
+export async function enqueueRsvpReminder(
+  service: SupabaseClient,
+  opts: {
+    roomId: string;
+    userId: string;
+    broadcastStart: string | null;
+    payload: NotificationPayload;
+  },
+): Promise<string[]> {
+  if (!opts.broadcastStart) return [];
+  const dueAt = new Date(
+    new Date(opts.broadcastStart).getTime() - RSVP_LEAD_MS,
+  );
+  if (dueAt.getTime() <= Date.now()) return [];
+  return enqueue(service, {
+    type: "rsvp_reminder",
+    recipientIds: [opts.userId],
+    roomId: opts.roomId,
+    dueAt,
+    payload: opts.payload,
+  });
+}
+
+/** room_change to a fixed recipient set (hosts + RSVP holders). Immediate. */
 export async function enqueueRoomChange(
   service: SupabaseClient,
   opts: {
