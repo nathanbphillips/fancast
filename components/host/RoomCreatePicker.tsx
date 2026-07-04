@@ -17,6 +17,11 @@ export type PickerFixture = {
   away_team: string;
   competition: string | null;
   kickoff_utc: string;
+  // season-hosting scope (FR-20); null when the competition isn't API-listed
+  home_team_id: number | null;
+  away_team_id: number | null;
+  league_id: number | null;
+  season: number | null;
 };
 
 function toLocalInputValue(iso: string): string {
@@ -33,10 +38,13 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
   const [blurb, setBlurb] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subBusy, setSubBusy] = useState<number | null>(null);
+  const [subDone, setSubDone] = useState<string | null>(null);
 
   function toggle(f: PickerFixture) {
     setError(null);
     setBlurb("");
+    setSubDone(null);
     if (openId === f.id) {
       setOpenId(null);
       return;
@@ -72,6 +80,28 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
       return;
     }
     router.push("/host");
+    router.refresh();
+  }
+
+  async function subscribe(f: PickerFixture, teamId: number, teamName: string) {
+    setSubBusy(teamId);
+    setError(null);
+    setSubDone(null);
+    const res = await fetch("/api/host-subscriptions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fixtureId: f.id, teamId }),
+    }).catch(() => null);
+    setSubBusy(null);
+    if (!res?.ok) {
+      const body = await res?.json().catch(() => ({}));
+      setError(body?.error ?? "Couldn't set up season hosting.");
+      return;
+    }
+    const body = await res.json().catch(() => ({ roomsCreated: 0 }));
+    setSubDone(
+      `Hosting all ${teamName} games this season: ${body.roomsCreated} room${body.roomsCreated === 1 ? "" : "s"} scheduled.`,
+    );
     router.refresh();
   }
 
@@ -168,6 +198,60 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
               >
                 {busy ? "Creating…" : "Create room"}
               </button>
+
+              {/* season hosting (FR-20.1): one click, a room for every game
+                  this team plays in this competition this season */}
+              {f.league_id != null &&
+                f.season != null &&
+                (f.home_team_id != null || f.away_team_id != null) && (
+                  <div className="mt-1 border-t border-line/60 pt-3">
+                    <p className="mb-2 font-mono text-[11px] font-bold tracking-wider text-secondary uppercase">
+                      Or host the whole season
+                    </p>
+                    {subDone ? (
+                      <p className="rounded-lg border border-gold/40 bg-inset px-3 py-2 text-sm text-primary">
+                        {subDone}
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        {f.home_team_id != null && (
+                          <button
+                            type="button"
+                            disabled={subBusy != null}
+                            onClick={() =>
+                              subscribe(f, f.home_team_id!, f.home_team)
+                            }
+                            className="rounded-lg border border-gold px-3.5 py-2 text-sm font-semibold text-gold transition-colors hover:bg-raised disabled:opacity-60"
+                          >
+                            {subBusy === f.home_team_id
+                              ? "Scheduling…"
+                              : `Host all ${f.home_team} games`}
+                          </button>
+                        )}
+                        {f.away_team_id != null && (
+                          <button
+                            type="button"
+                            disabled={subBusy != null}
+                            onClick={() =>
+                              subscribe(f, f.away_team_id!, f.away_team)
+                            }
+                            className="rounded-lg border border-gold px-3.5 py-2 text-sm font-semibold text-gold transition-colors hover:bg-raised disabled:opacity-60"
+                          >
+                            {subBusy === f.away_team_id
+                              ? "Scheduling…"
+                              : `Host all ${f.away_team} games`}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {f.competition && !subDone && (
+                      <p className="mt-1.5 text-xs text-secondary">
+                        Every {f.competition} game this season, now and as new
+                        fixtures appear.
+                      </p>
+                    )}
+                  </div>
+                )}
             </form>
           )}
         </div>

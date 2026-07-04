@@ -30,7 +30,9 @@ export default async function CreateRoomPage() {
   const [{ data: fixtures }, { data: mine }] = await Promise.all([
     supabase
       .from("fixtures")
-      .select("id, home_team, away_team, competition, kickoff_utc")
+      .select(
+        "id, home_team, away_team, competition, kickoff_utc, home_team_id, away_team_id, league_id, season",
+      )
       .gt("kickoff_utc", new Date().toISOString())
       .order("kickoff_utc", { ascending: true })
       .limit(200),

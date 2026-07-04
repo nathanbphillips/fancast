@@ -1,21 +1,23 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import type { RoomState } from "@/lib/db/types";
-import { KickoffTime } from "@/components/KickoffTime";
-import { CancelRoomButton } from "@/components/host/CancelRoomButton";
+import {
+  HostRoomsDashboard,
+  type DashboardRoom,
+  type DashboardSubscription,
+} from "@/components/host/HostRoomsDashboard";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = { title: "My rooms" };
 
 /**
- * My rooms dashboard (FR-19, thin v1): upcoming hosted rooms chronologically
- * with per-row cancel, and the Create room entry. Grows into the bulk /
- * subscription surface in PRD-03.
+ * My rooms dashboard (FR-20.4): upcoming hosted rooms grouped by month with
+ * subscription provenance + collision warnings + bulk cancel, plus the active
+ * season subscriptions. The interactive shell is HostRoomsDashboard.
  */
 
 const UPCOMING_STATES: RoomState[] = [
@@ -30,7 +32,6 @@ const UPCOMING_STATES: RoomState[] = [
 ];
 
 type HostedRoom = {
-  room_id: string;
   room: {
     id: string;
     slug: string | null;
@@ -38,6 +39,7 @@ type HostedRoom = {
     scheduled_kickoff: string;
     blurb: string | null;
     postponed: boolean;
+    subscription_id: string | null;
     fixture: { home_team: string; away_team: string; competition: string | null };
   };
 };
@@ -50,18 +52,39 @@ export default async function HostDashboardPage() {
   if (profile.role === "listener") redirect("/settings");
 
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase
-    .from("room_hosts")
-    .select(
-      "room_id, room:rooms(id, slug, state, scheduled_kickoff, blurb, postponed, fixture:fixtures(home_team, away_team, competition))",
-    )
-    .eq("user_id", user.id)
-    .eq("status", "accepted");
-  const hosted = ((data ?? []) as unknown as HostedRoom[])
+  const [{ data: hostRows }, { data: subs }] = await Promise.all([
+    supabase
+      .from("room_hosts")
+      .select(
+        "room:rooms(id, slug, state, scheduled_kickoff, blurb, postponed, subscription_id, fixture:fixtures(home_team, away_team, competition))",
+      )
+      .eq("user_id", user.id)
+      .eq("status", "accepted"),
+    supabase
+      .from("host_team_subscriptions")
+      .select("id, team_name, competition")
+      .eq("user_id", user.id)
+      .eq("active", true)
+      .order("created_at", { ascending: true }),
+  ]);
+
+  const rooms: DashboardRoom[] = ((hostRows ?? []) as unknown as HostedRoom[])
     .filter((h) => h.room && UPCOMING_STATES.includes(h.room.state))
-    .sort((a, b) =>
-      a.room.scheduled_kickoff.localeCompare(b.room.scheduled_kickoff),
-    );
+    .map((h) => ({
+      id: h.room.id,
+      slug: h.room.slug,
+      state: h.room.state,
+      scheduled_kickoff: h.room.scheduled_kickoff,
+      blurb: h.room.blurb,
+      postponed: h.room.postponed,
+      subscription_id: h.room.subscription_id,
+      home_team: h.room.fixture.home_team,
+      away_team: h.room.fixture.away_team,
+      competition: h.room.fixture.competition,
+    }))
+    .sort((a, b) => a.scheduled_kickoff.localeCompare(b.scheduled_kickoff));
+
+  const subscriptions = (subs ?? []) as DashboardSubscription[];
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -79,59 +102,13 @@ export default async function HostDashboardPage() {
       </div>
 
       <div className="mt-8">
-        {hosted.length === 0 ? (
+        {rooms.length === 0 && subscriptions.length === 0 ? (
           <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
             No upcoming rooms yet. Pick a fixture and your room is scheduled in
-            two taps.
+            two taps, or host a whole season in one click.
           </p>
         ) : (
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
-            {hosted.map(({ room: r }) => {
-              const label = `${r.fixture.home_team} vs ${r.fixture.away_team}`;
-              const enterable = r.state !== "scheduled";
-              return (
-                <div
-                  key={r.id}
-                  className="flex items-center gap-4 border-t border-line px-4 py-3.5 first:border-t-0"
-                >
-                  <span className="w-24 shrink-0 font-mono text-[10px] leading-snug tracking-wide text-secondary uppercase">
-                    <KickoffTime iso={r.scheduled_kickoff} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    {enterable ? (
-                      <Link
-                        href={`/room/${r.slug ?? r.id}`}
-                        className="block truncate text-sm font-bold tracking-[-0.01em] hover:underline"
-                      >
-                        {label}
-                      </Link>
-                    ) : (
-                      <span className="block truncate text-sm font-bold tracking-[-0.01em]">
-                        {label}
-                      </span>
-                    )}
-                    <span className="block truncate font-mono text-[10px] text-secondary uppercase">
-                      {r.postponed
-                        ? "Postponed"
-                        : (r.fixture.competition ?? "")}
-                      {r.blurb ? ` · ${r.blurb}` : ""}
-                    </span>
-                  </span>
-                  {enterable ? (
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
-                      <span
-                        aria-hidden="true"
-                        className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"
-                      />
-                      Live
-                    </span>
-                  ) : (
-                    <CancelRoomButton roomId={r.id} matchLabel={label} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          <HostRoomsDashboard rooms={rooms} subscriptions={subscriptions} />
         )}
       </div>
     </div>
