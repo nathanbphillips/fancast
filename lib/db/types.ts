@@ -200,4 +200,21 @@ export type Room = {
   ended_at: string | null;
   livekit_room: string | null;
   created_at: string;
+  // Commentator Platform Epic (migration 0027, FR-19)
+  /** immutable human URL: {home}-vs-{away}-{dd-mmm-yyyy}-{creator} */
+  slug: string;
+  /** host's one-line angle on the game (max 140) */
+  blurb: string | null;
+  /** fixture postponed upstream with no new date; drops from date listings */
+  postponed: boolean;
+};
+
+/** room_hosts row (migration 0027): equal hosts, no primary (FR-19.4/FR-25). */
+export type RoomHost = {
+  room_id: string;
+  user_id: string;
+  status: "invited" | "accepted" | "declined" | "left";
+  invited_by: string | null;
+  created_at: string;
+  responded_at: string | null;
 };
