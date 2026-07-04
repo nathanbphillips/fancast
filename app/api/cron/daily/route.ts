@@ -4,6 +4,7 @@ import { matchPendingFixtures } from "@/lib/adminFixtures";
 import { sweepNoShowRooms, syncFixtures } from "@/lib/fixtures";
 import { autoCreateSubscriptionRooms } from "@/lib/seasonHosting";
 import { drainDue } from "@/lib/notify/outbox";
+import { recomputeAll } from "@/lib/fanScore";
 
 // league-wide sync + matching can take a moment
 export const maxDuration = 300;
@@ -58,6 +59,12 @@ export async function GET(request: NextRequest) {
     results.notificationDrain = await drainDue(service, 200);
   } catch (err) {
     results.notificationDrain = { ok: false, reason: String(err) };
+  }
+  // FR-24.5: nightly full fan-score recompute (self-heal drift + weighting)
+  try {
+    results.fanScoreRecompute = await recomputeAll(service);
+  } catch (err) {
+    results.fanScoreRecompute = { ok: false, reason: String(err) };
   }
 
   console.log("daily cron:", JSON.stringify(results));

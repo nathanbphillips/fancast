@@ -35,11 +35,19 @@ export async function POST(request: NextRequest) {
   const service = createServiceClient();
   const { data: message } = await service
     .from("chat_messages")
-    .select("id, room_id")
+    .select("id, room_id, user_id")
     .eq("id", messageId)
     .maybeSingle();
   if (!message) {
     return NextResponse.json({ error: "Message not found." }, { status: 404 });
+  }
+  // no self-votes (FR-24.6): a message author can't vote their own message up
+  // to inflate their fan score
+  if (message.user_id === caller.userId) {
+    return NextResponse.json(
+      { error: "You can't vote on your own message." },
+      { status: 403 },
+    );
   }
 
   // Mutate the vote row and recompute the denormalized counts atomically
