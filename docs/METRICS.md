@@ -1,11 +1,11 @@
-# Listener metrics — founder query pack
+# Listener metrics: founder query pack
 
 Listening sessions are recorded in `public.listener_segments` (Phase 9, FR-9.4):
 one row per audio-listening session, written by `/api/listen` (service role).
 Columns: `room_id`, `user_id` (null = anonymous), `mode` (`live` | `radio`),
 `started_at`, `last_seen_at` (heartbeat), `ended_at` (null while listening).
 
-**Fastest path:** `npm run metrics` — sweeps stale open sessions and prints
+**Fastest path:** `npm run metrics` sweeps stale open sessions and prints
 per-room + overall numbers. The queries below are for the Supabase SQL editor
 when you want to slice the data yourself.
 
@@ -78,4 +78,31 @@ from (
 ) s
 group by bucket
 order by min(secs);
+```
+
+## Commentator Platform Epic: PRD-01 events (2026-07-03)
+
+The PRD-01 metrics events derive from tables (no separate event system yet):
+`commentator_upgrade_completed` = rows below; `profile_report_submitted` =
+profile_reports rows. `commentator_upgrade_started` and
+`profile_social_link_clicked` need client analytics and are deferred with the
+rest of the telemetry greenfield (see dev-docs).
+
+### Commentator upgrades
+```sql
+select username, commentator_terms_version, commentator_terms_accepted_at
+from public.profiles
+where commentator_terms_accepted_at is not null
+order by commentator_terms_accepted_at desc;
+```
+
+### Profile reports (open first)
+```sql
+select r.created_at, r.reason, r.note,
+       target.username as reported, reporter.username as reporter,
+       r.resolved_at
+from public.profile_reports r
+join public.profiles target on target.user_id = r.profile_user_id
+join public.profiles reporter on reporter.user_id = r.reporter_id
+order by (r.resolved_at is null) desc, r.created_at desc;
 ```
