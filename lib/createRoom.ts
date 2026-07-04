@@ -44,6 +44,8 @@ export async function insertRoomWithHost(
     broadcastStart?: string | null;
     blurb?: string | null;
     openedAt?: string | null;
+    /** season-hosting provenance (FR-20.4); null for manual rooms */
+    subscriptionId?: string | null;
   },
 ): Promise<{ room: Room | null; error: string | null }> {
   const slug = await generateUniqueSlug(
@@ -65,6 +67,7 @@ export async function insertRoomWithHost(
       broadcast_start: args.broadcastStart ?? null,
       blurb: args.blurb ?? null,
       opened_at: args.openedAt ?? null,
+      subscription_id: args.subscriptionId ?? null,
     })
     .select()
     .single<Room>();

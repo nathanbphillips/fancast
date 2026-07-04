@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/db/server";
 import { matchPendingFixtures } from "@/lib/adminFixtures";
 import { sweepNoShowRooms, syncFixtures } from "@/lib/fixtures";
+import { autoCreateSubscriptionRooms } from "@/lib/seasonHosting";
 
 // league-wide sync + matching can take a moment
 export const maxDuration = 300;
@@ -29,6 +30,13 @@ export async function GET(request: NextRequest) {
     results.fixtureSync = await syncFixtures(service);
   } catch (err) {
     results.fixtureSync = { ok: false, reason: String(err) };
+  }
+  // FR-20.2: after the sync, active subscriptions pick up newly-appearing
+  // fixtures (rescheduled dates already followed inside syncFixtures)
+  try {
+    results.subscriptionRooms = await autoCreateSubscriptionRooms(service);
+  } catch (err) {
+    results.subscriptionRooms = { ok: false, reason: String(err) };
   }
   try {
     results.adminMatch = await matchPendingFixtures(service);
