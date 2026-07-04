@@ -1,0 +1,160 @@
+import {
+  createSupabaseServerClient,
+  getCurrentUserAndProfile,
+} from "@/lib/db/server";
+import type { RoomState } from "@/lib/db/types";
+
+/**
+ * Date-grouped schedule for /matches (FR-22.4): every fixture with its rooms
+ * beneath it. Multiple rooms per fixture render together; fixtures with no
+ * rooms still show (schedule info, no join affordance). RSVP counts come from
+ * the denormalized rooms.rsvp_count; the viewer's own RSVP state is resolved
+ * from their room_rsvps rows (own-only RLS).
+ */
+
+export type ScheduleRoom = {
+  id: string;
+  slug: string;
+  state: RoomState;
+  hostUsername: string;
+  blurb: string | null;
+  rsvpCount: number;
+  viewerRsvped: boolean;
+  postponed: boolean;
+};
+
+export type ScheduleFixture = {
+  id: number;
+  home: string;
+  away: string;
+  competition: string | null;
+  kickoffUtc: string;
+  rooms: ScheduleRoom[];
+};
+
+export type ScheduleGroup = {
+  label: string;
+  fixtures: ScheduleFixture[];
+};
+
+type FixtureRow = {
+  id: number;
+  home_team: string;
+  away_team: string;
+  competition: string | null;
+  kickoff_utc: string;
+  rooms: {
+    id: string;
+    slug: string | null;
+    state: RoomState;
+    blurb: string | null;
+    postponed: boolean;
+    rsvp_count: number;
+    commentator: { username: string } | null;
+  }[];
+};
+
+const HIDDEN_STATES: RoomState[] = ["canceled", "wrapped"];
+
+/** London calendar day (yyyy-mm-dd) for grouping. */
+function londonDayKey(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(iso));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+/** "Today" / "Tomorrow" / "Sat 5 Jul" for a London day key. */
+function dayLabel(dayKey: string, todayKey: string, tomorrowKey: string): string {
+  if (dayKey === todayKey) return "Today";
+  if (dayKey === tomorrowKey) return "Tomorrow";
+  // dayKey is yyyy-mm-dd (London); render as "Sat 5 Jul"
+  const d = new Date(`${dayKey}T12:00:00Z`);
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "Europe/London",
+  }).format(d);
+}
+
+export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
+  const supabase = await createSupabaseServerClient();
+
+  // last 3h (keep an in-play match on the board) through the next 60 days
+  const windowStart = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+  const windowEnd = new Date(
+    Date.now() + 60 * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  const { data: fixtures, error } = await supabase
+    .from("fixtures")
+    .select(
+      "id, home_team, away_team, competition, kickoff_utc, rooms(id, slug, state, blurb, postponed, rsvp_count, commentator:profiles!rooms_commentator_id_fkey(username))",
+    )
+    .gte("kickoff_utc", windowStart)
+    .lte("kickoff_utc", windowEnd)
+    .order("kickoff_utc", { ascending: true })
+    .returns<FixtureRow[]>();
+  // a real DB failure must surface to the error boundary, not read as empty
+  if (error) throw error;
+
+  // the viewer's own RSVPs (to mark "counted in")
+  const { user } = await getCurrentUserAndProfile();
+  const rsvpedRoomIds = new Set<string>();
+  if (user) {
+    const { data: myRsvps } = await supabase
+      .from("room_rsvps")
+      .select("room_id")
+      .eq("user_id", user.id);
+    for (const r of myRsvps ?? []) rsvpedRoomIds.add(r.room_id as string);
+  }
+
+  const todayKey = londonDayKey(new Date().toISOString());
+  const tomorrowKey = londonDayKey(
+    new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+  );
+
+  const groups = new Map<string, ScheduleFixture[]>();
+  for (const f of fixtures ?? []) {
+    const rooms: ScheduleRoom[] = (f.rooms ?? [])
+      .filter((r) => !HIDDEN_STATES.includes(r.state) && r.slug)
+      .map((r) => ({
+        id: r.id,
+        slug: r.slug as string,
+        state: r.state,
+        hostUsername: r.commentator?.username ?? "unknown",
+        blurb: r.blurb,
+        rsvpCount: r.rsvp_count ?? 0,
+        viewerRsvped: rsvpedRoomIds.has(r.id),
+        postponed: r.postponed,
+      }))
+      // live-ish rooms first, then scheduled
+      .sort(
+        (a, b) =>
+          Number(b.state !== "scheduled") - Number(a.state !== "scheduled"),
+      );
+
+    const key = londonDayKey(f.kickoff_utc);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push({
+      id: f.id,
+      home: f.home_team,
+      away: f.away_team,
+      competition: f.competition,
+      kickoffUtc: f.kickoff_utc,
+      rooms,
+    });
+  }
+
+  return [...groups.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, fixtures]) => ({
+      label: dayLabel(key, todayKey, tomorrowKey),
+      fixtures,
+    }));
+}

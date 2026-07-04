@@ -1,18 +1,22 @@
 import type { Metadata } from "next";
-import { loadFixtures } from "@/lib/db/fixtures";
+import { loadMatchesSchedule } from "@/lib/db/matches";
+import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { Button } from "@/components/ui/Button";
-import { MatchesBrowser } from "@/components/marketing/MatchesBrowser";
+import { MatchesSchedule } from "@/components/matches/MatchesSchedule";
 
 /**
- * Matches: the full live + upcoming schedule (FR-1), Cloud Design. A DB failure
- * throws to the (app) error boundary rather than reading as an empty schedule.
+ * Matches: the full date-grouped schedule with multi-room fixtures + RSVP
+ * (FR-22.4). Viewer-specific (their RSVP state), so it is dynamic per request.
+ * A DB failure throws to the (app) error boundary, not an empty schedule.
  */
 
 export const metadata: Metadata = { title: "Matches" };
-export const revalidate = 60;
 
 export default async function MatchesPage() {
-  const { live, upcoming } = await loadFixtures();
+  const [groups, { user }] = await Promise.all([
+    loadMatchesSchedule(),
+    getCurrentUserAndProfile(),
+  ]);
 
   return (
     <>
@@ -51,7 +55,7 @@ export default async function MatchesPage() {
       </section>
 
       <div className="mx-auto max-w-[1180px] px-5 py-10 sm:px-10">
-        <MatchesBrowser live={live} upcoming={upcoming} />
+        <MatchesSchedule groups={groups} signedIn={!!user} />
 
         {/* HOST CTA BAND */}
         <div className="mt-9 flex flex-col items-start justify-between gap-4 rounded-2xl border border-line bg-surface px-[26px] py-6 sm:flex-row sm:items-center">
