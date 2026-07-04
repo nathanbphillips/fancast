@@ -112,6 +112,15 @@ export async function POST(request: NextRequest) {
       .select("id, user_id, team_id, league_id, season, team_name, competition")
       .single<HostSubscription>();
     if (error) {
+      // a concurrent first-time subscribe (double-tap / two tabs) lost the race
+      // on unique(user_id, team_id, league_id, season): report the friendly 409
+      // instead of leaking the raw DB error (adversarial review 2026-07-03)
+      if (error.code === "23505") {
+        return NextResponse.json(
+          { error: `You already host all ${teamName} games this season.` },
+          { status: 409 },
+        );
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     subscription = data;

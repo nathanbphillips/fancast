@@ -61,31 +61,83 @@ export async function createSubscriptionRooms(
     return { created: 0, skipped: 0, error: null };
   }
 
-  // fixtures this commentator already has a live/scheduled room on: skip, never
-  // duplicate (FR-20.1). A canceled room does not count, so a fixture the host
-  // previously dropped can be re-hosted by the subscription.
   const fixtureIds = fixtures.map((f) => f.id);
-  const { data: existing } = await service
+
+  // Fixtures already COVERED by a non-canceled room this user hosts (their own
+  // OR one they co-host): skip, never duplicate (FR-20.1). Membership is read
+  // from room_hosts, not commentator_id, per the epic host-check rule.
+  const { data: coveredRows } = await service
     .from("rooms")
-    .select("fixture_id, state")
+    .select("fixture_id, room_hosts!inner(user_id, status)")
+    .in("fixture_id", fixtureIds)
+    .neq("state", "canceled")
+    .eq("room_hosts.user_id", subscription.user_id)
+    .eq("room_hosts.status", "accepted");
+  const covered = new Set(
+    (coveredRows ?? []).map((r) => r.fixture_id as number),
+  );
+
+  // This user's OWN rooms (any state) on these fixtures: the collision domain
+  // for unique(fixture_id, commentator_id). A canceled own room must be
+  // REVIVED, not re-inserted, or the insert collides and the fixture is
+  // silently dropped forever (adversarial review 2026-07-03).
+  const { data: ownRooms } = await service
+    .from("rooms")
+    .select("id, fixture_id, state")
     .eq("commentator_id", subscription.user_id)
     .in("fixture_id", fixtureIds);
-  const alreadyHosted = new Set(
-    (existing ?? [])
-      .filter((r) => r.state !== "canceled")
-      .map((r) => r.fixture_id as number),
-  );
+  const ownByFixture = new Map<number, { id: string; state: string }>();
+  for (const r of ownRooms ?? []) {
+    ownByFixture.set(r.fixture_id as number, {
+      id: r.id as string,
+      state: r.state as string,
+    });
+  }
 
   let created = 0;
   let skipped = 0;
   for (const f of fixtures) {
-    if (alreadyHosted.has(f.id)) {
+    if (covered.has(f.id)) {
       skipped++;
       continue;
     }
     const broadcastStart = new Date(
       new Date(f.kickoff_utc).getTime() - DEFAULT_LEAD_MS,
     ).toISOString();
+
+    const own = ownByFixture.get(f.id);
+    if (own) {
+      // an own room exists but isn't covered, so it's canceled: revive it in
+      // place (the unique constraint forbids a fresh insert)
+      const { error } = await service
+        .from("rooms")
+        .update({
+          state: "scheduled",
+          subscription_id: subscription.id,
+          broadcast_start: broadcastStart,
+          blurb: null,
+          postponed: false,
+        })
+        .eq("id", own.id);
+      if (error) {
+        console.error("subscription room revive failed for fixture", f.id, error);
+        skipped++;
+        continue;
+      }
+      // the accepted host row survives a cancel, but assert it defensively
+      await service.from("room_hosts").upsert(
+        {
+          room_id: own.id,
+          user_id: subscription.user_id,
+          status: "accepted",
+          responded_at: new Date().toISOString(),
+        },
+        { onConflict: "room_id,user_id" },
+      );
+      created++;
+      continue;
+    }
+
     const { error } = await insertRoomWithHost(service, {
       fixtureId: f.id,
       creatorId: subscription.user_id,

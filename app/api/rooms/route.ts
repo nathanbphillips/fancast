@@ -136,7 +136,9 @@ export async function POST(request: NextRequest) {
 
     if (existing) {
       // canceled room for this fixture: revive it rather than fight the
-      // unique(fixture_id, commentator_id) constraint
+      // unique(fixture_id, commentator_id) constraint. Clear subscription_id:
+      // a manual re-create is host-authored, so a later unsubscribe must not
+      // sweep it away (adversarial review 2026-07-03).
       const { data: revived, error } = await service
         .from("rooms")
         .update({
@@ -144,6 +146,7 @@ export async function POST(request: NextRequest) {
           broadcast_start: broadcastStart,
           blurb: body.blurb || null,
           postponed: false,
+          subscription_id: null,
         })
         .eq("id", existing.id)
         .select()
