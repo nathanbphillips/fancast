@@ -152,6 +152,43 @@ export async function enqueueRsvpReminder(
   });
 }
 
+/** friend_request to the addressee (FR-23). Immediate. */
+export async function enqueueFriendRequest(
+  service: SupabaseClient,
+  opts: { addresseeId: string; requesterId: string; requesterName: string },
+): Promise<string[]> {
+  return enqueue(service, {
+    type: "friend_request",
+    recipientIds: [opts.addresseeId],
+    roomId: null,
+    actorId: opts.requesterId,
+    dedupeScope: `friend:${opts.requesterId}`,
+    payload: { actorName: opts.requesterName },
+  });
+}
+
+/** friend_accept to the original requester (FR-23). Immediate. */
+export async function enqueueFriendAccept(
+  service: SupabaseClient,
+  opts: {
+    requesterId: string;
+    accepterId: string;
+    accepterName: string;
+  },
+): Promise<string[]> {
+  return enqueue(service, {
+    type: "friend_accept",
+    recipientIds: [opts.requesterId],
+    roomId: null,
+    actorId: opts.accepterId,
+    dedupeScope: `friend:${opts.accepterId}`,
+    payload: {
+      actorName: opts.accepterName,
+      profileUsername: opts.accepterName,
+    },
+  });
+}
+
 /** room_change to a fixed recipient set (hosts + RSVP holders). Immediate. */
 export async function enqueueRoomChange(
   service: SupabaseClient,
