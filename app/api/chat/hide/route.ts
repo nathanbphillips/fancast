@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { recomputeUser } from "@/lib/fanScore";
 import { isAdmin } from "@/lib/roles";
 
 const bodySchema = z.object({ messageId: z.uuid() });
@@ -52,12 +54,26 @@ export async function POST(request: NextRequest) {
     p_message_id: messageId,
     p_hidden_by: hiddenBy,
   });
-  for (const row of (cascadeData ?? []) as { id: string }[]) {
+  const affectedIds = ((cascadeData ?? []) as { id: string }[]).map((r) => r.id);
+  for (const id of affectedIds) {
     await publish(channels.chat(message.room_id), "hide", {
-      messageId: row.id,
+      messageId: id,
       hiddenBy,
     });
   }
+
+  // FR-24.5/24.6: a hidden message and its votes drop out of the author's fan
+  // score; recompute every affected author (the cascade may span authors)
+  after(async () => {
+    const svc = createServiceClient();
+    if (affectedIds.length === 0) return;
+    const { data: authors } = await svc
+      .from("chat_messages")
+      .select("user_id")
+      .in("id", affectedIds);
+    const uniq = [...new Set((authors ?? []).map((a) => a.user_id as string))];
+    for (const uid of uniq) await recomputeUser(svc, uid);
+  });
 
   return NextResponse.json({ hidden: true });
 }

@@ -1,8 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { recomputeUser } from "@/lib/fanScore";
 import type { ChatMessage } from "@/lib/db/types";
 import { isFetchableUrl, unfurl } from "@/lib/unfurl";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -186,5 +188,9 @@ export async function POST(request: NextRequest) {
   }
 
   await publish(channels.chat(roomId), "message", message);
+
+  // FR-24.5: a new comment bumps the author's fan score (nightly cron heals)
+  after(() => recomputeUser(createServiceClient(), caller.userId));
+
   return NextResponse.json({ message }, { status: 201 });
 }

@@ -10,6 +10,7 @@ import type { Profile, RoomState, SocialPlatform } from "@/lib/db/types";
 import { isReservedUsername } from "@/lib/reserved-usernames";
 import { isAdmin } from "@/lib/roles";
 import { friendState, hasBlocked, type FriendState } from "@/lib/friends";
+import { loadAttendedMatches } from "@/lib/fanScore";
 import { FriendButton } from "@/components/friends/FriendButton";
 import { Avatar } from "@/components/Avatar";
 import { AdminClearAvatar } from "@/components/AdminClearAvatar";
@@ -152,6 +153,20 @@ export default async function ProfilePage({
     ]);
   }
 
+  // fan score + attended matches (FR-24): read the precomputed row (never
+  // computed on page load) + the recent-10 attended history
+  const statsSvc = createServiceClient();
+  const [{ data: stats }, attended] = await Promise.all([
+    statsSvc
+      .from("profile_stats")
+      .select("fan_score, matches_attended")
+      .eq("user_id", profile.user_id)
+      .maybeSingle<{ fan_score: number; matches_attended: number }>(),
+    loadAttendedMatches(statsSvc, profile.user_id, 10),
+  ]);
+  const fanScore = stats?.fan_score ?? 0;
+  const matchesAttended = stats?.matches_attended ?? 0;
+
   const viewerIsAdmin = isAdmin(viewer?.id, viewerProfile);
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-GB", {
     month: "long",
@@ -185,8 +200,22 @@ export default async function ProfilePage({
               </span>
             )}
             <span>Member since {memberSince}</span>
-            {/* FR-24 insertion point: fan score + matches attended render here */}
           </p>
+          {/* fan score + matches attended (FR-24.4) */}
+          <div className="mt-2 flex items-center gap-5">
+            <span>
+              <span className="text-lg font-bold tabular-nums">{fanScore}</span>{" "}
+              <span className="text-[13px] text-secondary">Fan score</span>
+            </span>
+            <span>
+              <span className="text-lg font-bold tabular-nums">
+                {matchesAttended}
+              </span>{" "}
+              <span className="text-[13px] text-secondary">
+                {matchesAttended === 1 ? "match" : "matches"} attended
+              </span>
+            </span>
+          </div>
         </div>
         {isCommentator && !isOwn && (
           <div className="shrink-0">
@@ -302,6 +331,39 @@ export default async function ProfilePage({
           v1. Future data (teams supported, bias meter, ratio) arrives as a
           quiet horizontal strip here without reflowing the page. */}
       {isCommentator && <div aria-hidden="true" data-reserved-stats />}
+
+      {/* matches attended (FR-24.3): recent 10, public in v1 */}
+      {attended.length > 0 && (
+        <section aria-label="Matches attended" className="mt-8">
+          <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
+            Recent matches
+          </h2>
+          <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
+            {attended.map((m) => (
+              <Link
+                key={m.roomId}
+                href={`/room/${m.roomSlug ?? m.roomId}`}
+                className="flex items-center gap-3 border-t border-line/60 px-4 py-2.5 first:border-t-0 hover:bg-raised"
+              >
+                <span className="w-20 shrink-0 font-mono text-[10px] text-secondary tabular-nums">
+                  {m.kickoffUtc
+                    ? new Date(m.kickoffUtc).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                      })
+                    : ""}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-[-0.01em]">
+                  {m.home} vs {m.away}
+                </span>
+                <span className="shrink-0 font-mono text-[10px] text-secondary">
+                  @{m.hostUsername}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* own-profile entries */}
       {isOwn && profile.role === "listener" && (

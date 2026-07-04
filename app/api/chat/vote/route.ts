@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { rateLimit } from "@/lib/ratelimit";
 import { voteWeight } from "@/lib/standing";
+import { recomputeUser } from "@/lib/fanScore";
 
 const bodySchema = z.object({
   messageId: z.uuid(),
@@ -77,5 +79,11 @@ export async function POST(request: NextRequest) {
     down,
     score,
   });
+
+  // FR-24.5: a vote changes the message author's fan score (incremental bump;
+  // the nightly cron self-heals any drift)
+  const authorId = message.user_id;
+  after(() => recomputeUser(createServiceClient(), authorId));
+
   return NextResponse.json({ up, down, score });
 }
