@@ -11,6 +11,8 @@ import { isAdmin } from "@/lib/roles";
 import { Avatar } from "@/components/Avatar";
 import { AdminClearAvatar } from "@/components/AdminClearAvatar";
 import { AdminSuspendCommentator } from "@/components/AdminSuspendCommentator";
+import { AdminClearProfileText } from "@/components/AdminClearProfileText";
+import { ReportProfile } from "@/components/ReportProfile";
 import { FollowButton } from "@/components/FollowButton";
 import { UsernameForm } from "@/components/UsernameForm";
 import { KickoffTime } from "@/components/KickoffTime";
@@ -310,11 +312,27 @@ export default async function ProfilePage({
         </section>
       )}
 
+      {/* report (FR-18.6): any signed-in viewer, never on your own profile */}
+      {viewer && !isOwn && (
+        <div className="mt-8">
+          <ReportProfile userId={profile.user_id} />
+        </div>
+      )}
+
       {/* admin moderation */}
       {viewerIsAdmin && !isOwn && (
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           {profile.avatar_url && <AdminClearAvatar userId={profile.user_id} />}
-          {isCommentator && (
+          {profile.about && (
+            <AdminClearProfileText userId={profile.user_id} section="about" />
+          )}
+          {socials.length > 0 && (
+            <AdminClearProfileText
+              userId={profile.user_id}
+              section="social_links"
+            />
+          )}
+          {profile.role === "commentator" && (
             <AdminSuspendCommentator
               userId={profile.user_id}
               username={profile.username}

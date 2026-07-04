@@ -50,6 +50,9 @@ export default async function SettingsPage() {
           initialAvatarUrl={profile.avatar_url}
           usernameLocked={usernameLocked}
           unlocksOn={unlocksOn}
+          isCommentator={profile.role !== "listener"}
+          initialAbout={profile.about}
+          initialSocialLinks={profile.social_links}
         />
       </div>
 

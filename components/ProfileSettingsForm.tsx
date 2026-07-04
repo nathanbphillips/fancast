@@ -4,27 +4,53 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/Button";
+import type { SocialPlatform } from "@/lib/db/types";
 
 /**
- * Bare-bones profile editor (Cloud Design): the name + photo a room sees.
- * Photo is a free-text https image URL for the MVP (no upload bucket yet, so
- * this needs no migration); PATCH /api/profile persists it alongside the
- * username. Username keeps its 30-day change lock (enforced server-side).
+ * Profile editor: the name + photo a room sees, plus the commentator sections
+ * (about + social links, FR-18.5) when the account can host. Photo is a
+ * free-text https image URL for the MVP (no upload bucket yet); PATCH
+ * /api/profile persists everything. Username keeps its 30-day change lock
+ * (enforced server-side).
  */
+const SOCIAL_FIELDS: { key: SocialPlatform; label: string; placeholder: string }[] = [
+  { key: "x", label: "X", placeholder: "https://x.com/yourhandle" },
+  { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/yourhandle" },
+  { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@yourchannel" },
+  { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@yourhandle" },
+  { key: "twitch", label: "Twitch", placeholder: "https://twitch.tv/yourchannel" },
+  { key: "website", label: "Website", placeholder: "https://yoursite.com" },
+];
+
 export function ProfileSettingsForm({
   initialUsername,
   initialAvatarUrl,
   usernameLocked,
   unlocksOn,
+  isCommentator = false,
+  initialAbout = null,
+  initialSocialLinks = null,
 }: {
   initialUsername: string;
   initialAvatarUrl: string | null;
   usernameLocked: boolean;
   unlocksOn: string | null;
+  isCommentator?: boolean;
+  initialAbout?: string | null;
+  initialSocialLinks?: Partial<Record<SocialPlatform, string>> | null;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState(initialUsername);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? "");
+  const [about, setAbout] = useState(initialAbout ?? "");
+  const [socials, setSocials] = useState<Record<SocialPlatform, string>>({
+    x: initialSocialLinks?.x ?? "",
+    instagram: initialSocialLinks?.instagram ?? "",
+    youtube: initialSocialLinks?.youtube ?? "",
+    tiktok: initialSocialLinks?.tiktok ?? "",
+    twitch: initialSocialLinks?.twitch ?? "",
+    website: initialSocialLinks?.website ?? "",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -34,9 +60,15 @@ export function ProfileSettingsForm({
     setError(null);
     setSaved(false);
     setBusy(true);
-    const body: Record<string, string> = { avatar_url: avatarUrl.trim() };
+    const body: Record<string, unknown> = { avatar_url: avatarUrl.trim() };
     if (username.trim().toLowerCase() !== initialUsername.toLowerCase()) {
       body.username = username.trim();
+    }
+    if (isCommentator) {
+      body.about = about.trim();
+      body.social_links = Object.fromEntries(
+        Object.entries(socials).map(([k, v]) => [k, v.trim()]),
+      );
     }
     const res = await fetch("/api/profile", {
       method: "PATCH",
@@ -122,6 +154,62 @@ export function ProfileSettingsForm({
             : "3–20 characters: letters, numbers, underscore. Changeable once every 30 days."}
         </p>
       </div>
+
+      {/* commentator profile sections (FR-18.5) */}
+      {isCommentator && (
+        <>
+          <div>
+            <label
+              htmlFor="about"
+              className="mb-2 block font-mono text-[11px] font-bold tracking-wider text-secondary uppercase"
+            >
+              About
+            </label>
+            <textarea
+              id="about"
+              value={about}
+              onChange={(e) => setAbout(e.target.value)}
+              maxLength={280}
+              rows={3}
+              placeholder="Who you are on the mic. Plain text, 280 characters."
+              className="w-full rounded-lg border border-line bg-inset px-3.5 py-2.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+            />
+            <p className="mt-1 text-right font-mono text-[10px] text-secondary tabular-nums">
+              {about.length}/280
+            </p>
+          </div>
+
+          <div>
+            <p className="mb-2 font-mono text-[11px] font-bold tracking-wider text-secondary uppercase">
+              Social links
+            </p>
+            <div className="space-y-2">
+              {SOCIAL_FIELDS.map((f) => (
+                <div key={f.key} className="flex items-center gap-2">
+                  <span className="w-20 shrink-0 text-[13px] font-semibold">
+                    {f.label}
+                  </span>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    value={socials[f.key]}
+                    onChange={(e) =>
+                      setSocials((s) => ({ ...s, [f.key]: e.target.value }))
+                    }
+                    placeholder={f.placeholder}
+                    aria-label={`${f.label} URL`}
+                    className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-inset px-3 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-secondary">
+              Full https links only; shorteners are rejected. Leave a field
+              blank to remove it.
+            </p>
+          </div>
+        </>
+      )}
 
       <Button type="submit" variant="red" disabled={busy} className="w-full sm:w-auto">
         {busy ? "Saving…" : "Save changes"}

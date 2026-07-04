@@ -37,11 +37,63 @@ const avatarSchema = z
     message: "Avatar must be an https:// image URL.",
   });
 
+// FR-18.5: commentator social links are validated https URLs on a fixed
+// platform set, no shorteners (they defeat the reader's ability to see where
+// a link goes). Empty string removes a platform's link.
+const URL_SHORTENERS = new Set([
+  "bit.ly",
+  "t.co",
+  "tinyurl.com",
+  "goo.gl",
+  "is.gd",
+  "ow.ly",
+  "buff.ly",
+  "rb.gy",
+  "cutt.ly",
+  "shorturl.at",
+  "tiny.cc",
+  "rebrand.ly",
+  "v.gd",
+  "s.id",
+]);
+const socialUrlSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v), {
+    message: "Social links must be https:// URLs.",
+  })
+  .refine(
+    (v) => {
+      if (v === "") return true;
+      try {
+        const host = new URL(v).hostname.replace(/^www\./, "").toLowerCase();
+        return !URL_SHORTENERS.has(host);
+      } catch {
+        return false;
+      }
+    },
+    { message: "Link shorteners aren't allowed. Use the full URL." },
+  );
+const socialLinksSchema = z
+  .object({
+    x: socialUrlSchema.optional(),
+    instagram: socialUrlSchema.optional(),
+    youtube: socialUrlSchema.optional(),
+    tiktok: socialUrlSchema.optional(),
+    twitch: socialUrlSchema.optional(),
+    website: socialUrlSchema.optional(),
+  })
+  .strict();
+
 const updateSchema = z
   .object({
     username: usernameSchema.optional(),
     avatar_url: avatarSchema.optional(),
     theme_pref: z.enum(["dark", "light"]).nullable().optional(),
+    // commentator-only profile sections (FR-18.5); plain text, no markup
+    about: z.string().trim().max(280).optional(),
+    social_links: socialLinksSchema.optional(),
   })
   .refine((b) => Object.keys(b).length > 0, { message: "Nothing to update." });
 
@@ -131,6 +183,29 @@ export async function PATCH(request: NextRequest) {
 
   if (parsed.data.avatar_url !== undefined) {
     update.avatar_url = parsed.data.avatar_url === "" ? null : parsed.data.avatar_url;
+  }
+
+  // about + social links are commentator profile sections (FR-18.5); a
+  // listener profile never shows or stores them
+  if (parsed.data.about !== undefined || parsed.data.social_links !== undefined) {
+    if (profile.role === "listener") {
+      return NextResponse.json(
+        { error: "About and social links are commentator profile sections." },
+        { status: 403 },
+      );
+    }
+    if (parsed.data.about !== undefined) {
+      update.about = parsed.data.about === "" ? null : parsed.data.about;
+    }
+    if (parsed.data.social_links !== undefined) {
+      const cleaned = Object.fromEntries(
+        Object.entries(parsed.data.social_links).filter(([, v]) => v !== ""),
+      );
+      update.social_links =
+        Object.keys(cleaned).length > 0
+          ? (cleaned as Profile["social_links"])
+          : null;
+    }
   }
 
   if (
