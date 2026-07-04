@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
+  createServiceClient,
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import type { Profile, RoomState, SocialPlatform } from "@/lib/db/types";
 import { isReservedUsername } from "@/lib/reserved-usernames";
 import { isAdmin } from "@/lib/roles";
+import { friendState, hasBlocked, type FriendState } from "@/lib/friends";
+import { FriendButton } from "@/components/friends/FriendButton";
 import { Avatar } from "@/components/Avatar";
 import { AdminClearAvatar } from "@/components/AdminClearAvatar";
 import { AdminSuspendCommentator } from "@/components/AdminSuspendCommentator";
@@ -138,6 +141,17 @@ export default async function ProfilePage({
     isFollowing = follow !== null;
   }
 
+  // friend state (FR-23): sanitized, service-role computed
+  let friendStateValue: FriendState = "none";
+  let viewerBlocked = false;
+  if (viewer && !isOwn) {
+    const svc = createServiceClient();
+    [friendStateValue, viewerBlocked] = await Promise.all([
+      friendState(svc, viewer.id, profile.user_id),
+      hasBlocked(svc, viewer.id, profile.user_id),
+    ]);
+  }
+
   const viewerIsAdmin = isAdmin(viewer?.id, viewerProfile);
   const memberSince = new Date(profile.created_at).toLocaleDateString("en-GB", {
     month: "long",
@@ -191,8 +205,18 @@ export default async function ProfilePage({
             )}
           </div>
         )}
-        {/* FR-23 insertion point: friend button renders here for listeners */}
       </div>
+
+      {/* friends (FR-23): any signed-in viewer on someone else's profile */}
+      {viewer && !isOwn && (
+        <div className="mt-4">
+          <FriendButton
+            targetUserId={profile.user_id}
+            initialState={friendStateValue}
+            initialBlocked={viewerBlocked}
+          />
+        </div>
+      )}
 
       {/* commentator sections (FR-18.5) */}
       {isCommentator && profile.about && (

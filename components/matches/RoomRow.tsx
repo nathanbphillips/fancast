@@ -26,7 +26,10 @@ export function RoomRow({
   const [busy, setBusy] = useState(false);
 
   const enterable = room.state !== "scheduled";
-  const line = attendanceLine(count);
+  // friend chips + the friend-aware attendance line (FR-22.3); when the viewer
+  // has un-RSVP'd we don't fabricate friends, so the friend layer only shows
+  // with the server-provided names
+  const line = attendanceLine(count, room.friendNames);
 
   async function toggle() {
     if (!signedIn) return;
@@ -68,8 +71,19 @@ export function RoomRow({
           </span>
         )}
         {!enterable && line && (
-          <span className="block text-[12px] text-secondary tabular-nums">
-            {line}
+          <span className="mt-0.5 flex items-center gap-1.5">
+            {room.friendNames.length > 0 && (
+              <span className="flex -space-x-1.5">
+                {room.friendNames.slice(0, 3).map((n) => (
+                  <span key={n} className="ring-1 ring-surface rounded-full">
+                    <Avatar src={null} name={n} size={16} />
+                  </span>
+                ))}
+              </span>
+            )}
+            <span className="text-[12px] text-secondary tabular-nums">
+              {line}
+            </span>
           </span>
         )}
       </span>

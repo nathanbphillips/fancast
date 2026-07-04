@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
+  createServiceClient,
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
+import { loadFriendsForSettings } from "@/lib/friends";
+import { FriendsSettings } from "@/components/friends/FriendsSettings";
 import { config } from "@/lib/config";
 import {
   NOTIFICATION_TYPES,
@@ -40,6 +43,9 @@ export default async function SettingsPage() {
   }
 
   const isCommentator = profile.role === "commentator";
+
+  // friends lists (FR-23.5): owner-only, service-role read
+  const friendLists = await loadFriendsForSettings(createServiceClient(), user.id);
 
   // notification prefs: stored deviations over the registry defaults (FR-21.2)
   const supabase = await createSupabaseServerClient();
@@ -111,6 +117,16 @@ export default async function SettingsPage() {
             </p>
           </div>
         )}
+      </div>
+
+      {/* Friends (FR-23.5): requests, friends, blocked */}
+      <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card">
+        <p className="mb-4 text-sm font-bold">Friends</p>
+        <FriendsSettings
+          incoming={friendLists.incoming}
+          friends={friendLists.friends}
+          blocked={friendLists.blocked}
+        />
       </div>
 
       {/* Notifications (FR-21.5): every type with its two toggles + push */}

@@ -1,7 +1,9 @@
 import {
+  createServiceClient,
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
+import { friendIdsOf } from "@/lib/friends";
 import type { RoomState } from "@/lib/db/types";
 
 /**
@@ -21,6 +23,8 @@ export type ScheduleRoom = {
   rsvpCount: number;
   viewerRsvped: boolean;
   postponed: boolean;
+  /** the viewer's accepted friends among this room's RSVPs (FR-22.3 chips) */
+  friendNames: string[];
 };
 
 export type ScheduleFixture = {
@@ -114,6 +118,36 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
     for (const r of myRsvps ?? []) rsvpedRoomIds.add(r.room_id as string);
   }
 
+  // friend chips (FR-22.3): the viewer's accepted friends among each room's
+  // RSVPs. room_rsvps is own-only under RLS, so this viewer-scoped join uses
+  // the service role but only ever reveals the viewer's OWN friends.
+  const friendRsvpNames = new Map<string, string[]>(); // roomId -> usernames
+  if (user) {
+    const allRoomIds = (fixtures ?? []).flatMap((f) =>
+      (f.rooms ?? []).map((r) => r.id),
+    );
+    const service = createServiceClient();
+    const friendIds = await friendIdsOf(service, user.id);
+    if (friendIds.length > 0 && allRoomIds.length > 0) {
+      const { data: fr } = await service
+        .from("room_rsvps")
+        .select(
+          "room_id, user:profiles!room_rsvps_user_id_fkey(username)",
+        )
+        .in("room_id", allRoomIds)
+        .in("user_id", friendIds);
+      for (const r of fr ?? []) {
+        const name = (r.user as unknown as { username: string } | null)
+          ?.username;
+        if (!name) continue;
+        const roomId = r.room_id as string;
+        const list = friendRsvpNames.get(roomId) ?? [];
+        list.push(name);
+        friendRsvpNames.set(roomId, list);
+      }
+    }
+  }
+
   const todayKey = londonDayKey(new Date().toISOString());
   const tomorrowKey = londonDayKey(
     new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -132,6 +166,7 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
         rsvpCount: r.rsvp_count ?? 0,
         viewerRsvped: rsvpedRoomIds.has(r.id),
         postponed: r.postponed,
+        friendNames: friendRsvpNames.get(r.id) ?? [],
       }))
       // live-ish rooms first, then scheduled
       .sort(

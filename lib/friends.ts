@@ -96,6 +96,68 @@ export async function hasBlocked(
   return data !== null;
 }
 
+export type PersonRow = {
+  userId: string;
+  username: string;
+  avatarUrl: string | null;
+};
+
+type ProfileEmbed = {
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+} | null;
+
+/** Owner-only lists for the settings Friends section (FR-23.5). */
+export async function loadFriendsForSettings(
+  service: SupabaseClient,
+  userId: string,
+): Promise<{ incoming: PersonRow[]; friends: PersonRow[]; blocked: PersonRow[] }> {
+  const toRow = (p: ProfileEmbed): PersonRow | null =>
+    p ? { userId: p.user_id, username: p.username, avatarUrl: p.avatar_url } : null;
+
+  const [incomingRes, friendRes, blockRes] = await Promise.all([
+    service
+      .from("friendships")
+      .select(
+        "requester:profiles!friendships_requester_id_fkey(user_id, username, avatar_url)",
+      )
+      .eq("addressee_id", userId)
+      .eq("status", "pending"),
+    service
+      .from("friendships")
+      .select(
+        "requester_id, addressee_id, requester:profiles!friendships_requester_id_fkey(user_id, username, avatar_url), addressee:profiles!friendships_addressee_id_fkey(user_id, username, avatar_url)",
+      )
+      .eq("status", "accepted")
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`),
+    service
+      .from("user_blocks")
+      .select(
+        "blocked:profiles!user_blocks_blocked_id_fkey(user_id, username, avatar_url)",
+      )
+      .eq("blocker_id", userId),
+  ]);
+
+  const incoming = (incomingRes.data ?? [])
+    .map((r) => toRow(r.requester as unknown as ProfileEmbed))
+    .filter((r): r is PersonRow => r !== null);
+  const friends = (friendRes.data ?? [])
+    .map((r) =>
+      toRow(
+        (r.requester_id === userId
+          ? r.addressee
+          : r.requester) as unknown as ProfileEmbed,
+      ),
+    )
+    .filter((r): r is PersonRow => r !== null);
+  const blocked = (blockRes.data ?? [])
+    .map((r) => toRow(r.blocked as unknown as ProfileEmbed))
+    .filter((r): r is PersonRow => r !== null);
+
+  return { incoming, friends, blocked };
+}
+
 /**
  * Accepted friends' user ids for a user, EXCLUDING anyone in a block relation
  * with them (a block removes both from each other's chips, FR-23.4).
