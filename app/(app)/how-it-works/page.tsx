@@ -76,7 +76,7 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
 
 function StepCard({ n, t, d }: { n: string; t: string; d: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface px-6 pt-6 pb-7">
+    <div className="rounded-2xl border border-line bg-surface px-6 pt-6 pb-7 shadow-card">
       <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold font-mono text-sm font-bold text-[#141210]">
         {n}
       </span>

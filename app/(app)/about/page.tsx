@@ -120,19 +120,6 @@ export default function AboutPage() {
             "radial-gradient(120% 90% at 15% -20%, rgba(241,35,43,0.18), transparent 56%), var(--bg-base)",
         }}
       >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgb(var(--hair) / 0.04) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--hair) / 0.04) 1px, transparent 1px)",
-            backgroundSize: "54px 54px",
-            maskImage:
-              "radial-gradient(120% 100% at 20% 0%, black, transparent 72%)",
-            WebkitMaskImage:
-              "radial-gradient(120% 100% at 20% 0%, black, transparent 72%)",
-          }}
-        />
         <div className="relative mx-auto max-w-[1180px] px-5 py-16 sm:px-10 sm:py-[70px]">
           <p className="mb-5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
             <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
@@ -194,7 +181,7 @@ export default function AboutPage() {
           {PRINCIPLES.map((p, i) => (
             <div
               key={p.k}
-              className="flex gap-[18px] rounded-2xl border border-line bg-surface px-[26px] pt-[26px] pb-7"
+              className="flex gap-[18px] rounded-2xl border border-line bg-surface px-[26px] pt-[26px] pb-7 shadow-card"
             >
               <span className="display text-[34px] leading-[0.9] text-gold/90">
                 0{i + 1}

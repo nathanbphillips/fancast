@@ -85,6 +85,17 @@ export default async function SignInPage({
           <Link href="/" aria-label={brand.name} className="inline-flex">
             <Logo />
           </Link>
+          {/* condensed value block for mobile (the full panel is lg-only) */}
+          <div className="mt-6 rounded-2xl border border-line bg-surface p-5 lg:hidden">
+            <Pill variant="red" live>
+              Live every match
+            </Pill>
+            <p className="display mt-3 text-2xl">Pull up a seat.</p>
+            <p className="mt-1.5 text-sm text-secondary">
+              Sign up to join in. It takes under a minute, and lets you chat,
+              vote, and call in. Free to listen either way.
+            </p>
+          </div>
           <h2 className="display mt-8 text-3xl">Sign in or join</h2>
           <p className="mt-2 text-sm text-secondary">
             Enter your email and we&apos;ll send a one-tap link. No passwords.

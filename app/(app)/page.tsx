@@ -195,7 +195,7 @@ export default async function HomePage() {
                 Early access
               </span>
             </div>
-            <h1 className="display text-[42px] leading-[0.98] tracking-[0.005em] text-white sm:text-[66px]">
+            <h1 className="display text-[42px] leading-[0.98] tracking-[0.005em] text-primary sm:text-[66px]">
               Turn the pundits off. Tune in to real{" "}
               <span
                 className="text-red"
@@ -271,7 +271,7 @@ export default async function HomePage() {
             {STEPS.map((s) => (
               <div
                 key={s.n}
-                className="relative overflow-hidden rounded-2xl border border-line bg-surface px-6 pt-6 pb-7"
+                className="relative overflow-hidden rounded-2xl border border-line bg-surface px-6 pt-6 pb-7 shadow-card"
               >
                 <span
                   aria-hidden="true"
