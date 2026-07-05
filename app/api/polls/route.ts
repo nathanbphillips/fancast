@@ -88,9 +88,9 @@ export async function POST(request: NextRequest) {
   if (body.action === "close") {
     const { data: poll } = await service
       .from("polls")
-      .select("id, room_id, room:rooms(commentator_id)")
+      .select("id, room_id")
       .eq("id", body.pollId)
-      .maybeSingle<{ id: string; room_id: string; room: { commentator_id: string } }>();
+      .maybeSingle<{ id: string; room_id: string }>();
     if (!poll) {
       return NextResponse.json({ error: "Poll not found." }, { status: 404 });
     }

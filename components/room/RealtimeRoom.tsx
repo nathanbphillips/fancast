@@ -80,6 +80,8 @@ export type RoomInfo = {
   homeScore: number;
   awayScore: number;
   commentatorUsername: string;
+  /** all accepted hosts, creator first (FR-25.4 both-badge display) */
+  hosts: { username: string; avatarUrl: string | null }[];
   commentatorId: string;
   competition: string; // league/competition name for the match-bar chip
   fixtureId: number; // the room's fixture id (PK; negative for dev seeds, epoch-ms for admin games)
@@ -916,7 +918,7 @@ export function RealtimeRoom(props: Props) {
     />
   ) : (
     <ListenerBar
-      commentator={room.commentatorUsername}
+      commentator={room.hosts.map((h) => h.username).join(" & ")}
       home={room.home}
       away={room.away}
       live={audioLive}
@@ -1296,20 +1298,25 @@ export function RealtimeRoom(props: Props) {
                 On air now
               </p>
               <div className="space-y-2">
-                <div className="flex items-center gap-2.5 rounded-xl border border-line bg-raised px-3 py-2.5">
-                  <Avatar name={room.commentatorUsername} size={34} />
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
-                      <span className="truncate">{room.commentatorUsername}</span>
-                      <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
-                        Host
-                      </span>
-                    </p>
-                    <p className="font-mono text-[9px] text-secondary">
-                      {audioLive ? "speaking" : "show hasn't started"}
-                    </p>
+                {room.hosts.map((h) => (
+                  <div
+                    key={h.username}
+                    className="flex items-center gap-2.5 rounded-xl border border-line bg-raised px-3 py-2.5"
+                  >
+                    <Avatar src={h.avatarUrl} name={h.username} size={34} />
+                    <div className="min-w-0 flex-1">
+                      <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
+                        <span className="truncate">{h.username}</span>
+                        <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                          Host
+                        </span>
+                      </p>
+                      <p className="font-mono text-[9px] text-secondary">
+                        {audioLive ? "speaking" : "show hasn't started"}
+                      </p>
+                    </div>
                   </div>
-                </div>
+                ))}
                 {audio.speakers
                   .filter((s) => !s.isCommentator && s.name !== "you")
                   .map((s) => (

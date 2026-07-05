@@ -3,10 +3,20 @@ import {
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import type { Fixture, RoomState } from "@/lib/db/types";
-import type {
-  FixtureCardData,
-  FixtureCardState,
-} from "@/components/FixtureCard";
+
+/** Home-teaser fixture card shape (was in the now-removed FixtureCard). */
+export type FixtureCardState = "scheduled" | "waiting" | "live";
+export type FixtureCardData = {
+  id: number;
+  home: string;
+  away: string;
+  competition: string;
+  kickoffUtc: string;
+  commentator?: string;
+  state: FixtureCardState;
+  roomHref?: string;
+  listeners?: number;
+};
 
 /**
  * Shared loader for the home teaser and the /matches schedule (FR-1). Returns
@@ -141,7 +151,7 @@ const OPEN_ROOM_STATES: RoomState[] = [
 ];
 
 /** Count of currently-open rooms (waiting through post-game) for the nav
- *  "N LIVE" pill. Head-count only — cheap enough for the shared layout. */
+ *  "N LIVE" pill. Head-count only, cheap enough for the shared layout. */
 export async function countLiveRooms(): Promise<number> {
   const supabase = await createSupabaseServerClient();
   const { count } = await supabase

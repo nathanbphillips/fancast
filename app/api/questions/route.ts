@@ -82,12 +82,11 @@ export async function PATCH(request: NextRequest) {
   const service = createServiceClient();
   const { data: question } = await service
     .from("questions")
-    .select("id, room_id, room:rooms!questions_room_id_fkey(commentator_id)")
+    .select("id, room_id")
     .eq("id", parsed.data.questionId)
     .maybeSingle<{
       id: string;
       room_id: string;
-      room: { commentator_id: string };
     }>();
   if (!question) {
     return NextResponse.json({ error: "Question not found." }, { status: 404 });

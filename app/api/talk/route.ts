@@ -259,16 +259,13 @@ export async function PATCH(request: NextRequest) {
   const service = createServiceClient();
   const { data: talkRequest } = await service
     .from("talk_requests")
-    .select(
-      "id, room_id, user_id, status, room:rooms!talk_requests_room_id_fkey(commentator_id)",
-    )
+    .select("id, room_id, user_id, status")
     .eq("id", parsed.data.requestId)
     .maybeSingle<{
       id: string;
       room_id: string;
       user_id: string;
       status: string;
-      room: { commentator_id: string };
     }>();
   if (!talkRequest) {
     return NextResponse.json({ error: "Request not found." }, { status: 404 });

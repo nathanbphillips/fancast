@@ -32,6 +32,7 @@ import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
 import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { StatOverrides } from "@/lib/statOverrides";
 
 type RoomWithJoins = Room & {
@@ -181,8 +182,12 @@ export default async function RoomPage({
     lv?.forEach((v) => (myLinkVotes[v.link_id] = v.value as 1 | -1));
   }
 
+  const service = createServiceClient();
   const admin = isAdmin(user?.id, profile);
-  const isRoomCommentator = user?.id === room.commentator_id;
+  // a co-host gets the full moderator UI too (FR-25.2): gate on isRoomHost, not
+  // the single creator
+  const isRoomCommentator =
+    !!user && (await isRoomHost(service, user.id, room.id));
   const isModerator = isRoomCommentator || admin;
 
   const viewer: Viewer =
@@ -198,7 +203,6 @@ export default async function RoomPage({
       : null;
 
   // commentator-only initial data (questions + pending talk requests)
-  const service = createServiceClient();
   let initialQuestions: Question[] = [];
   let initialTalkRequests: TalkRequest[] = [];
   if (isModerator) {
@@ -335,6 +339,25 @@ export default async function RoomPage({
     .maybeSingle<{ overrides: StatOverrides }>();
   const initialStatOverrides = ovRow?.overrides ?? null;
 
+  // accepted hosts for both-badge display (FR-25.4), creator first
+  const { data: hostRows } = await service
+    .from("room_hosts")
+    .select(
+      "created_at, host:profiles!room_hosts_user_id_fkey(username, avatar_url)",
+    )
+    .eq("room_id", room.id)
+    .eq("status", "accepted")
+    .order("created_at", { ascending: true });
+  const hosts = (hostRows ?? [])
+    .map((r) => {
+      const h = r.host as unknown as {
+        username: string;
+        avatar_url: string | null;
+      } | null;
+      return h ? { username: h.username, avatarUrl: h.avatar_url } : null;
+    })
+    .filter((h): h is { username: string; avatarUrl: string | null } => !!h);
+
   const roomInfo: RoomInfo = {
     id: room.id,
     state: room.state,
@@ -344,6 +367,10 @@ export default async function RoomPage({
     homeScore: room.fixture.home_score ?? 0,
     awayScore: room.fixture.away_score ?? 0,
     commentatorUsername: room.commentator.username,
+    hosts:
+      hosts.length > 0
+        ? hosts
+        : [{ username: room.commentator.username, avatarUrl: null }],
     commentatorId: room.commentator_id,
     competition: room.fixture.competition ?? "",
     fixtureId: room.fixture_id,
