@@ -45,35 +45,58 @@ export async function POST(
   }
 
   if (parsed.data.action === "accept") {
-    // re-check the cap: another accept may have filled the last seat
-    const { count } = await service
-      .from("room_hosts")
-      .select("*", { count: "exact", head: true })
-      .eq("room_id", roomId)
-      .eq("status", "accepted");
-    if ((count ?? 0) >= HOST_CAP) {
+    // FR-25.1 (out of scope): don't add a host after the room left
+    // scheduled/waiting (e.g. it went live). Review 2026-07-03.
+    const { data: room } = await service
+      .from("rooms")
+      .select("state")
+      .eq("id", roomId)
+      .maybeSingle<{ state: string }>();
+    if (!room || (room.state !== "scheduled" && room.state !== "waiting")) {
+      return NextResponse.json(
+        { error: "This room is no longer accepting co-hosts." },
+        { status: 409 },
+      );
+    }
+
+    // atomic accept: an advisory-locked RPC enforces the cap so two concurrent
+    // accepts of the last seat can't both succeed (review 2026-07-03)
+    const { data: result, error } = await service.rpc("accept_cohost", {
+      p_room_id: roomId,
+      p_user_id: caller.userId,
+      p_cap: HOST_CAP,
+    });
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (result === "no_invite") {
+      return NextResponse.json(
+        { error: "The invite is no longer pending." },
+        { status: 409 },
+      );
+    }
+    if (result === "full") {
       return NextResponse.json(
         { error: "This room already has the maximum number of hosts." },
         { status: 409 },
       );
     }
-  }
-
-  const nextStatus = parsed.data.action === "accept" ? "accepted" : "declined";
-  // atomic claim: only flip a still-'invited' row
-  const { data: updated } = await service
-    .from("room_hosts")
-    .update({ status: nextStatus, responded_at: new Date().toISOString() })
-    .eq("room_id", roomId)
-    .eq("user_id", caller.userId)
-    .eq("status", "invited")
-    .select("user_id")
-    .maybeSingle();
-  if (!updated) {
-    return NextResponse.json(
-      { error: "The invite is no longer pending." },
-      { status: 409 },
-    );
+  } else {
+    // decline: flip the pending row (no cap concern)
+    const { data: updated } = await service
+      .from("room_hosts")
+      .update({ status: "declined", responded_at: new Date().toISOString() })
+      .eq("room_id", roomId)
+      .eq("user_id", caller.userId)
+      .eq("status", "invited")
+      .select("user_id")
+      .maybeSingle();
+    if (!updated) {
+      return NextResponse.json(
+        { error: "The invite is no longer pending." },
+        { status: 409 },
+      );
+    }
   }
 
   if (invite.invited_by) {

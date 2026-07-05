@@ -76,15 +76,19 @@ export async function POST(
     );
   }
 
-  // host cap (accepted only) + existing-row handling
+  // host cap counts accepted AND pending invites, so you can't stack two
+  // pending invites for one remaining seat (which enabled an accept race,
+  // review 2026-07-03)
   const { data: hosts } = await service
     .from("room_hosts")
     .select("user_id, status")
     .eq("room_id", roomId);
-  const acceptedCount = (hosts ?? []).filter((h) => h.status === "accepted").length;
-  if (acceptedCount >= HOST_CAP) {
+  const takenCount = (hosts ?? []).filter(
+    (h) => h.status === "accepted" || h.status === "invited",
+  ).length;
+  if (takenCount >= HOST_CAP) {
     return NextResponse.json(
-      { error: `A room can have at most ${HOST_CAP} hosts.` },
+      { error: `This room already has ${HOST_CAP} hosts or pending invites.` },
       { status: 409 },
     );
   }

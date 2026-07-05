@@ -167,7 +167,9 @@ export async function enqueueCohostInvite(
     recipientIds: [opts.inviteeId],
     roomId: opts.roomId,
     actorId: opts.inviterId,
-    dedupeScope: `cohost:${opts.roomId}:${opts.inviterId}`,
+    // scope by the invitee too: inviting B then C, or re-inviting after a
+    // sent decline, must not dedupe each other (review 2026-07-03)
+    dedupeScope: `cohost:${opts.roomId}:${opts.inviteeId}`,
     payload: opts.payload,
   });
 }
