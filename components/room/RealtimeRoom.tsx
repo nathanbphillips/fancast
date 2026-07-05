@@ -51,6 +51,7 @@ import { useToast } from "@/components/Toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { Avatar } from "@/components/Avatar";
+import { ProfilePopover } from "@/components/ProfilePopover";
 import { ShareButton } from "@/components/room/ShareButton";
 import NextLink from "next/link";
 
@@ -1961,12 +1962,26 @@ function LiveChat({
             }`}
           >
             <div className="flex gap-2.5">
-              <Avatar
-                src={m.author?.avatar_url}
-                name={m.author?.username}
-                size={30}
-                className="mt-0.5 self-start"
-              />
+              {/* FR-26: tapping a chat avatar opens a profile popover */}
+              {m.author?.username ? (
+                <ProfilePopover
+                  username={m.author.username}
+                  className="mt-0.5 shrink-0 self-start"
+                >
+                  <Avatar
+                    src={m.author?.avatar_url}
+                    name={m.author?.username}
+                    size={30}
+                  />
+                </ProfilePopover>
+              ) : (
+                <Avatar
+                  src={m.author?.avatar_url}
+                  name={m.author?.username}
+                  size={30}
+                  className="mt-0.5 self-start"
+                />
+              )}
               <div className="min-w-0 flex-1">
                 {/* header: name · host badge · time · (mod actions) */}
                 <div className="flex items-center gap-2">
