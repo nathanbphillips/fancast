@@ -63,8 +63,29 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const room = await loadRoom((await params).id);
   if (!room) return { title: "Room" };
+  const title = `${room.fixture.home_team} vs ${room.fixture.away_team}`;
+  const host = room.commentator?.username;
+  // Compliance: describe the LISTENING room, never a broadcast of the match
+  // ("your own stream", "listen alongside"). Rich preview for shared room links.
+  const description = room.blurb
+    ? room.blurb
+    : `Live fan commentary for ${title}${host ? `, hosted by @${host}` : ""}. Listen alongside the match on your own stream, with chat and live stats. Free to listen.`;
+  const canonical = room.slug ? `/room/${room.slug}` : undefined;
   return {
-    title: `${room.fixture.home_team} vs ${room.fixture.away_team}`,
+    title,
+    description,
+    ...(canonical ? { alternates: { canonical } } : {}),
+    openGraph: {
+      title: `${title} · ${brand.name}`,
+      description,
+      ...(canonical ? { url: canonical } : {}),
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} · ${brand.name}`,
+      description,
+    },
   };
 }
 

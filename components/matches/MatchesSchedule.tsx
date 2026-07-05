@@ -57,7 +57,12 @@ export function MatchesSchedule({
                 {fixture.rooms.length > 0 ? (
                   <div className="divide-y divide-line/40 px-4">
                     {fixture.rooms.map((room) => (
-                      <RoomRow key={room.id} room={room} signedIn={signedIn} />
+                      <RoomRow
+                        key={room.id}
+                        room={room}
+                        signedIn={signedIn}
+                        matchLabel={`${fixture.home} vs ${fixture.away}`}
+                      />
                     ))}
                   </div>
                 ) : (

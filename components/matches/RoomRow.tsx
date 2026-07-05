@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { brand } from "@/lib/brand";
 import { useToast } from "@/components/Toast";
 import { attendanceLine } from "@/lib/strings/attendance";
 import type { ScheduleRoom } from "@/lib/db/matches";
 import { Avatar } from "@/components/Avatar";
+import { ShareButton } from "@/components/room/ShareButton";
 
 /**
  * One room under a fixture (FR-22.1/22.3). Scheduled rooms carry a "Count me
@@ -16,9 +18,12 @@ import { Avatar } from "@/components/Avatar";
 export function RoomRow({
   room,
   signedIn,
+  matchLabel,
 }: {
   room: ScheduleRoom;
   signedIn: boolean;
+  /** "Home vs Away", for a meaningful share message */
+  matchLabel: string;
 }) {
   const toast = useToast();
   const [rsvped, setRsvped] = useState(room.viewerRsvped);
@@ -95,39 +100,46 @@ export function RoomRow({
         )}
       </span>
 
-      {enterable ? (
-        <Link
-          href={`/room/${room.slug}`}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg bg-red px-3.5 py-2 text-[13px] font-bold text-white hover:bg-red-hover"
-        >
-          <span
-            aria-hidden="true"
-            className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"
-          />
-          Join live
-        </Link>
-      ) : signedIn ? (
-        <button
-          type="button"
-          onClick={() => void toggle()}
-          disabled={busy}
-          aria-pressed={rsvped}
-          className={`shrink-0 rounded-lg border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-60 ${
-            rsvped
-              ? "border-gold bg-gold/10 text-gold"
-              : "border-line hover:bg-raised"
-          }`}
-        >
-          {rsvped ? "You're in" : "Count me in"}
-        </button>
-      ) : (
-        <Link
-          href={`/signin?next=${encodeURIComponent(`/room/${room.slug}`)}`}
-          className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-[13px] font-semibold hover:bg-raised"
-        >
-          Count me in
-        </Link>
-      )}
+      <div className="flex shrink-0 items-center gap-2">
+        {enterable ? (
+          <Link
+            href={`/room/${room.slug}`}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-red px-3.5 py-2 text-[13px] font-bold text-white hover:bg-red-hover"
+          >
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"
+            />
+            Join live
+          </Link>
+        ) : signedIn ? (
+          <button
+            type="button"
+            onClick={() => void toggle()}
+            disabled={busy}
+            aria-pressed={rsvped}
+            className={`shrink-0 rounded-lg border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-60 ${
+              rsvped
+                ? "border-gold bg-gold/10 text-gold"
+                : "border-line hover:bg-raised"
+            }`}
+          >
+            {rsvped ? "You're in" : "Count me in"}
+          </button>
+        ) : (
+          <Link
+            href={`/signin?next=${encodeURIComponent(`/room/${room.slug}`)}`}
+            className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-[13px] font-semibold hover:bg-raised"
+          >
+            Count me in
+          </Link>
+        )}
+        <ShareButton
+          compact
+          url={`/room/${room.slug}`}
+          text={`Listen to ${matchLabel} with the room on ${brand.name}`}
+        />
+      </div>
     </div>
   );
 }
