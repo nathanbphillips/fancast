@@ -14,12 +14,13 @@ import type { SocialPlatform } from "@/lib/db/types";
  * (enforced server-side).
  */
 const SOCIAL_FIELDS: { key: SocialPlatform; label: string; placeholder: string }[] = [
-  { key: "x", label: "X", placeholder: "https://x.com/yourhandle" },
+  { key: "bluesky", label: "Bluesky", placeholder: "https://bsky.app/profile/yourhandle" },
   { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/yourhandle" },
   { key: "youtube", label: "YouTube", placeholder: "https://youtube.com/@yourchannel" },
   { key: "tiktok", label: "TikTok", placeholder: "https://tiktok.com/@yourhandle" },
   { key: "twitch", label: "Twitch", placeholder: "https://twitch.tv/yourchannel" },
   { key: "website", label: "Website", placeholder: "https://yoursite.com" },
+  { key: "x", label: "X", placeholder: "https://x.com/yourhandle" },
 ];
 
 export function ProfileSettingsForm({
@@ -44,12 +45,13 @@ export function ProfileSettingsForm({
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? "");
   const [about, setAbout] = useState(initialAbout ?? "");
   const [socials, setSocials] = useState<Record<SocialPlatform, string>>({
-    x: initialSocialLinks?.x ?? "",
+    bluesky: initialSocialLinks?.bluesky ?? "",
     instagram: initialSocialLinks?.instagram ?? "",
     youtube: initialSocialLinks?.youtube ?? "",
     tiktok: initialSocialLinks?.tiktok ?? "",
     twitch: initialSocialLinks?.twitch ?? "",
     website: initialSocialLinks?.website ?? "",
+    x: initialSocialLinks?.x ?? "",
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

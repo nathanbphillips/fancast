@@ -4,12 +4,13 @@ export type Role = "listener" | "commentator" | "admin";
 
 /** Fixed platform set for commentator social links (FR-18.5). */
 export type SocialPlatform =
-  | "x"
+  | "bluesky"
   | "instagram"
   | "youtube"
   | "tiktok"
   | "twitch"
-  | "website";
+  | "website"
+  | "x";
 
 export type Profile = {
   user_id: string;

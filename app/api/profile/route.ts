@@ -77,12 +77,13 @@ const socialUrlSchema = z
   );
 const socialLinksSchema = z
   .object({
-    x: socialUrlSchema.optional(),
+    bluesky: socialUrlSchema.optional(),
     instagram: socialUrlSchema.optional(),
     youtube: socialUrlSchema.optional(),
     tiktok: socialUrlSchema.optional(),
     twitch: socialUrlSchema.optional(),
     website: socialUrlSchema.optional(),
+    x: socialUrlSchema.optional(),
   })
   .strict();
 
