@@ -148,7 +148,7 @@ export default async function RoomPage({
           {room.fixture.home_team} vs {room.fixture.away_team}
         </h1>
         <p className="mt-2 text-sm text-secondary">
-          Doors aren&apos;t open yet — {room.commentator.username} hasn&apos;t
+          Doors aren&apos;t open yet. {room.commentator.username} hasn&apos;t
           opened the waiting room. Check back closer to kickoff.
         </p>
           <Countdown targetIso={room.scheduled_kickoff} heading="Kickoff in" />
