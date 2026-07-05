@@ -7,7 +7,7 @@ import { brand } from "@/lib/brand";
  * and a red live dot. No photography/crest (golden rule + affiliation safety).
  */
 
-export const alt = `${brand.name} — live fan commentary for Arsenal matches`;
+export const alt = `${brand.name}: live fan commentary for Arsenal matches`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

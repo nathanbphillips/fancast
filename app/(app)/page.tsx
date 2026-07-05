@@ -175,7 +175,7 @@ export default async function HomePage() {
                 See what&apos;s live <span aria-hidden="true">→</span>
               </Link>
               <Link
-                href="#how"
+                href="/how-it-works"
                 className="inline-flex items-center rounded-[11px] border border-gold/45 px-[22px] py-[15px] text-[15px] font-bold text-gold transition-colors hover:border-gold"
               >
                 How it works
@@ -242,6 +242,20 @@ export default async function HomePage() {
                 </p>
               </div>
             ))}
+          </div>
+          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2">
+            <Link
+              href="/how-it-works"
+              className="text-sm font-bold text-gold hover:underline"
+            >
+              Read the full guide →
+            </Link>
+            <Link
+              href="/how-it-works#hosting"
+              className="text-sm font-semibold text-secondary hover:text-primary"
+            >
+              Want to commentate? →
+            </Link>
           </div>
         </div>
       </section>

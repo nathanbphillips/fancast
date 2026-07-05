@@ -44,7 +44,7 @@ export function AppHeader({
             <Logo />
           </Link>
           <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
-            <Link href="/#how" className={navLink}>
+            <Link href="/how-it-works" className={navLink}>
               How it works
             </Link>
             <Link href="/matches" className={navLink}>
