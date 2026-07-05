@@ -50,7 +50,7 @@ export default async function MatchesPage() {
           <h1 className="display text-6xl leading-[0.9] sm:text-7xl">Matches</h1>
           <p className="mt-4 max-w-[520px] text-[17px] leading-[1.5] text-secondary">
             Every Arsenal fixture with a room. Join the live show when the host
-            opens the doors.
+            opens the doors. Free to listen, no account needed.
           </p>
         </div>
       </section>

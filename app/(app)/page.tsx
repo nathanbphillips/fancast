@@ -5,6 +5,7 @@ import { loadFixtures } from "@/lib/db/fixtures";
 import { KickoffTime } from "@/components/KickoffTime";
 import { OnAirCard } from "@/components/marketing/OnAirCard";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
+import { Faq } from "@/components/marketing/Faq";
 
 /**
  * Home (Cloud Design "1a"): hero + bobbing ON AIR card → how it works → live +
@@ -100,6 +101,27 @@ const FEATURES = [
     n: "06",
     k: "Yours to keep",
     d: "Every show is recorded into downloadable segments. The host owns it; we claim nothing.",
+  },
+];
+
+// The objections that block signup, answered where the decision is made (the
+// full set lives on /about). Compliance-safe: never implies we show the match.
+const HOME_FAQ = [
+  {
+    q: "Do I need to pay or sign up?",
+    a: "No. Anyone can listen and read the chat and stats with no account. You only sign up, in under a minute, to chat, vote, ask a question, or call in.",
+  },
+  {
+    q: "Do you show the match?",
+    a: "No, and we never will. You watch the game however you already do; we ride alongside it with fan audio, chat, and stats, lined up to your screen.",
+  },
+  {
+    q: "Is this official Arsenal?",
+    a: "No. FanCast is an unofficial, fan-made platform and is not affiliated with or endorsed by Arsenal, the Premier League, or any broadcaster.",
+  },
+  {
+    q: "Does it work on my iPhone?",
+    a: "Yes. It runs in the browser including iOS Safari, installs to your home screen, and keeps playing audio on the lock screen like a radio.",
   },
 ];
 
@@ -277,7 +299,7 @@ export default async function HomePage() {
               Read the full guide →
             </Link>
             <Link
-              href="/how-it-works#hosting"
+              href="/host"
               className="text-sm font-semibold text-secondary hover:text-primary"
             >
               Want to commentate? →
@@ -506,6 +528,27 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FAQ — the objections that block signup, answered at the decision point */}
+      <section className="border-t border-line">
+        <div className="mx-auto max-w-[760px] px-5 py-16 sm:px-10">
+          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            Good to know
+          </p>
+          <h2 className="display text-4xl leading-[0.95] sm:text-[46px]">
+            The quick questions
+          </h2>
+          <Faq items={HOME_FAQ} />
+          <p className="mt-5 text-sm text-secondary">
+            More in the{" "}
+            <Link href="/about" className="font-semibold text-gold hover:underline">
+              full FAQ
+            </Link>
+            .
+          </p>
         </div>
       </section>
 

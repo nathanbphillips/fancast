@@ -3,17 +3,16 @@ import Link from "next/link";
 import { brand } from "@/lib/brand";
 
 /**
- * How it works (in depth): a listeners section up top, then a commentators
- * section anchored at #hosting so links elsewhere can jump straight to it.
- * Marketing content page, self-contained (Cloud Design tokens). Compliance:
- * "watch" only ever = the viewer's own stream; we never show the match or carry
- * broadcast audio. No em-dashes.
+ * How it works (in depth): the listener side of the product (the host story now
+ * lives on its own page at /host). Marketing content page, self-contained (Cloud
+ * Design tokens). Compliance: "watch" only ever = the viewer's own stream; we
+ * never show the match or carry broadcast audio. No em-dashes.
  */
 
 export const metadata: Metadata = {
   title: "How it works",
   description:
-    "How to listen along to live fan commentary, and how to host your own room.",
+    "How to listen along to live fan commentary, synced to your own screen. Bring your stream, tap in, and watch with a room full of fans.",
 };
 
 const LISTENER_STEPS = [
@@ -66,39 +65,6 @@ const LISTENER_FEATURES = [
   },
 ];
 
-const HOST_STEPS = [
-  {
-    n: "01",
-    t: "Become a commentator",
-    d: "Any account can upgrade from settings: read the terms, tick the box, and you can host today. No application, no waiting.",
-  },
-  {
-    n: "02",
-    t: "Create a room",
-    d: "Pick an upcoming fixture from the schedule. Two inputs, that is it: when your show starts (it defaults to fifteen minutes before kickoff) and an optional one-line blurb. Everything else comes from the fixture, and your room gets a clean, shareable link.",
-  },
-  {
-    n: "03",
-    t: "Host a whole season",
-    d: "One click schedules a room for every game your team plays this season, and new fixtures get their room automatically as they appear.",
-  },
-  {
-    n: "04",
-    t: "Bring a co-host",
-    d: "Invite another commentator to share the room as an equal. Either of you can run everything, both of you appear on the room, and both of you keep the recordings.",
-  },
-  {
-    n: "05",
-    t: "Go on air",
-    d: "Open the waiting room, start the broadcast, run the clock, moderate the chat, take call-ins, and push stats. Your listeners are with you the whole way.",
-  },
-  {
-    n: "06",
-    t: "Keep your show",
-    d: `Every broadcast is recorded and cut into downloadable segments. You own them, one hundred percent. ${brand.name} takes no license, no exclusivity, nothing.`,
-  },
-];
-
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
     <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
@@ -133,12 +99,13 @@ export default function HowItWorksPage() {
       >
         <div className="relative mx-auto max-w-[1180px] px-5 pt-16 pb-10 sm:px-10">
           <Eyebrow>How it works</Eyebrow>
-          <h1 className="display max-w-[760px] text-[42px] leading-[0.96] tracking-[0.005em] text-white sm:text-[62px]">
-            Listen along, or host the room yourself.
+          <h1 className="display max-w-[760px] text-[42px] leading-[0.96] tracking-[0.005em] text-primary sm:text-[62px]">
+            Listen along, synced to your screen.
           </h1>
           <p className="mt-5 max-w-[560px] text-[18px] leading-[1.55] text-secondary">
             {brand.name} sits beside the match you are already watching. Here is
-            how it works, whether you are pulling up a seat or running the show.
+            how you pull up a seat, tap in, and line the commentary up to your
+            own feed.
           </p>
           <div className="mt-8 flex flex-wrap gap-3.5">
             <Link
@@ -148,10 +115,10 @@ export default function HowItWorksPage() {
               See what&apos;s on <span aria-hidden="true">→</span>
             </Link>
             <Link
-              href="#hosting"
+              href="/host"
               className="inline-flex items-center rounded-[11px] border border-gold/45 px-[22px] py-[15px] text-[15px] font-bold text-gold transition-colors hover:border-gold"
             >
-              Want to commentate? <span aria-hidden="true">↓</span>
+              Host your own room <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>
@@ -212,63 +179,23 @@ export default function HowItWorksPage() {
               any of them.
             </p>
           </div>
-        </div>
-      </section>
 
-      {/* FOR COMMENTATORS (anchor target) */}
-      <section
-        id="hosting"
-        className="scroll-mt-24 border-t border-line"
-        style={{
-          background:
-            "radial-gradient(100% 80% at 50% 0%, rgba(241,35,43,0.06), transparent 60%)",
-        }}
-      >
-        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
-          <Eyebrow>For commentators</Eyebrow>
-          <h2 className="display max-w-[680px] text-4xl leading-[0.95] sm:text-[52px]">
-            Host your own room
-          </h2>
-          <p className="mt-4 max-w-[580px] text-[15px] leading-[1.6] text-secondary">
-            If you know the club and you can hold a mic, there is a seat for you
-            at the front. Setting up a room takes about a minute, and the whole
-            show is yours to keep.
-          </p>
-
-          <div className="mt-9 grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
-            {HOST_STEPS.map((s) => (
-              <StepCard key={s.n} {...s} />
-            ))}
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-red/30 bg-inset px-6 py-6">
-            <p className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-red uppercase">
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-red" />
-              The one rule
-            </p>
-            <h4 className="text-lg font-extrabold tracking-[-0.01em]">
-              Audio only, always
-            </h4>
-            <p className="mt-2 max-w-[680px] text-sm leading-[1.6] text-secondary">
-              Your show is your voice and your guests. Never play match video or
-              broadcast audio through it, even in the background. That rule is
-              what keeps the whole platform on the right side of the line, and it
-              is the one thing we cannot bend.
-            </p>
-          </div>
-
-          <div className="mt-9 flex flex-wrap items-center gap-3.5">
+          {/* pointer to the host story (which lives at /host now) */}
+          <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border border-line bg-inset px-6 py-6 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-lg font-extrabold tracking-[-0.01em]">
+                Rather run the show?
+              </p>
+              <p className="mt-1 max-w-lg text-sm text-secondary">
+                Any account can become a commentator and host a room in about a
+                minute. The whole show is yours to keep.
+              </p>
+            </div>
             <Link
-              href="/settings"
-              className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
+              href="/host"
+              className="inline-flex shrink-0 items-center gap-2 rounded-[11px] border border-gold/45 px-[22px] py-[13px] text-[15px] font-bold text-gold transition-colors hover:border-gold"
             >
-              Become a commentator <span aria-hidden="true">→</span>
-            </Link>
-            <Link
-              href="/about"
-              className="inline-flex items-center rounded-[11px] border border-line px-[22px] py-[15px] text-[15px] font-bold transition-colors hover:bg-surface"
-            >
-              Read more about {brand.name}
+              Host your own room <span aria-hidden="true">→</span>
             </Link>
           </div>
         </div>

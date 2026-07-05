@@ -15,13 +15,18 @@ import {
   type CohostInvite,
 } from "@/components/host/CohostInvites";
 import { Button } from "@/components/ui/Button";
+import { HostLanding } from "@/components/marketing/HostLanding";
 
-export const metadata: Metadata = { title: "My rooms" };
+export const metadata: Metadata = { title: "Host a room" };
 
 /**
- * My rooms dashboard (FR-20.4): upcoming hosted rooms grouped by month with
- * subscription provenance + collision warnings + bulk cancel, plus the active
- * season subscriptions. The interactive shell is HostRoomsDashboard.
+ * /host is role-aware (front-end review item 12): commentators get the "My
+ * rooms" dashboard (FR-20.4); everyone else (signed-out or listener) gets the
+ * HostLanding marketing pitch instead of being redirected away, so every "host
+ * a room" CTA across the site has one real destination.
+ *
+ * Dashboard: upcoming hosted rooms grouped by month with subscription
+ * provenance + collision warnings + bulk cancel, plus active subscriptions.
  */
 
 const UPCOMING_STATES: RoomState[] = [
@@ -50,10 +55,27 @@ type HostedRoom = {
 
 export default async function HostDashboardPage() {
   const { user, profile } = await getCurrentUserAndProfile();
-  if (!user) redirect("/signin");
+  // Non-commentators get the marketing pitch (not a redirect). Signed-out visitors
+  // are sent through sign-in back to the upgrade flow; listeners go straight to it.
+  if (!user) {
+    return (
+      <HostLanding
+        ctaHref="/signin?next=%2Fsettings"
+        ctaLabel="Sign in to host"
+        note="New here? Signing in and upgrading to a commentator takes about a minute."
+      />
+    );
+  }
   if (!profile) redirect("/welcome");
-  // listeners get pointed at the upgrade flow instead of a dead page
-  if (profile.role === "listener") redirect("/settings");
+  if (profile.role === "listener") {
+    return (
+      <HostLanding
+        ctaHref="/settings"
+        ctaLabel="Become a commentator"
+        note="You are signed in. Upgrade from settings and you can host today."
+      />
+    );
+  }
 
   const supabase = await createSupabaseServerClient();
   const [{ data: hostRows }, { data: subs }] = await Promise.all([
