@@ -50,18 +50,52 @@ const securityHeaders = [
   },
 ];
 
+// Avatars now upload to our own Supabase Storage `avatars` bucket, so next/image
+// is locked to that host instead of any-https. The optimizer already meant the
+// browser only ever hit /_next/image on our origin (killing the tracking-pixel
+// IP-harvest vector; audit 2026-07-02), but pinning the upstream host removes
+// the SSRF-ish "optimizer fetches an arbitrary attacker URL" surface too. The
+// `*.supabase.{co,in}` wildcards cover any Supabase project; the derived host
+// covers a custom storage domain. Path is pinned to public storage objects.
+const supabaseHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname || null;
+  } catch {
+    return null;
+  }
+})();
+const avatarRemotePatterns: NonNullable<
+  NextConfig["images"]
+>["remotePatterns"] = [
+  {
+    protocol: "https",
+    hostname: "*.supabase.co",
+    pathname: "/storage/v1/object/public/**",
+  },
+  {
+    protocol: "https",
+    hostname: "*.supabase.in",
+    pathname: "/storage/v1/object/public/**",
+  },
+];
+if (
+  supabaseHost &&
+  !supabaseHost.endsWith(".supabase.co") &&
+  !supabaseHost.endsWith(".supabase.in")
+) {
+  avatarRemotePatterns.push({
+    protocol: "https",
+    hostname: supabaseHost,
+    pathname: "/storage/v1/object/public/**",
+  });
+}
+
 const nextConfig: NextConfig = {
   // ffmpeg-static ships a real binary; keep it out of the server bundle so
   // its __dirname-relative path resolves to node_modules, not .next.
   serverExternalPackages: ["ffmpeg-static"],
-  // Avatars are user-supplied https URLs rendered through next/image, so the
-  // BROWSER only ever hits /_next/image on our origin — the optimizer fetches
-  // the upstream server-side and caches it, killing the tracking-pixel vector
-  // (a hostile avatar host would otherwise log every room participant's IP;
-  // audit 2026-07-02). The URL itself is validated at write time in
-  // /api/profile; any https host is permitted here on purpose.
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "**" }],
+    remotePatterns: avatarRemotePatterns,
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

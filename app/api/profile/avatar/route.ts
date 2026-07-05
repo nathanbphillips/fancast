@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const declared = Number(request.headers.get("content-length") ?? 0);
   if (declared && declared > MAX_UPLOAD_BYTES + 4096) {
     return NextResponse.json(
-      { error: "That image is too large (5 MB max)." },
+      { error: "That image is too large (4 MB max)." },
       { status: 413 },
     );
   }
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   }
   if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json(
-      { error: "That image is too large (5 MB max)." },
+      { error: "That image is too large (4 MB max)." },
       { status: 413 },
     );
   }

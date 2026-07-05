@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Avatar } from "@/components/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -43,6 +43,9 @@ export function ProfileSettingsForm({
   const router = useRouter();
   const [username, setUsername] = useState(initialUsername);
   const [avatarUrl, setAvatarUrl] = useState(initialAvatarUrl ?? "");
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [about, setAbout] = useState(initialAbout ?? "");
   const [socials, setSocials] = useState<Record<SocialPlatform, string>>({
     bluesky: initialSocialLinks?.bluesky ?? "",
@@ -62,7 +65,8 @@ export function ProfileSettingsForm({
     setError(null);
     setSaved(false);
     setBusy(true);
-    const body: Record<string, unknown> = { avatar_url: avatarUrl.trim() };
+    // the photo is managed by its own upload endpoint, not this form save
+    const body: Record<string, unknown> = {};
     if (username.trim().toLowerCase() !== initialUsername.toLowerCase()) {
       body.username = username.trim();
     }
@@ -71,6 +75,11 @@ export function ProfileSettingsForm({
       body.social_links = Object.fromEntries(
         Object.entries(socials).map(([k, v]) => [k, v.trim()]),
       );
+    }
+    if (Object.keys(body).length === 0) {
+      setBusy(false);
+      setSaved(true); // nothing to change; the photo saves on upload
+      return;
     }
     const res = await fetch("/api/profile", {
       method: "PATCH",
@@ -85,6 +94,53 @@ export function ProfileSettingsForm({
     }
     setSaved(true);
     router.refresh();
+  }
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    // let the same file be re-picked after a failure
+    e.target.value = "";
+    if (!file) return;
+    setAvatarError(null);
+    setAvatarBusy(true);
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await fetch("/api/profile/avatar", {
+        method: "POST",
+        body: data,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAvatarError(json.error ?? "Couldn't upload that image.");
+        return;
+      }
+      setAvatarUrl(json.avatarUrl ?? "");
+      router.refresh();
+    } catch {
+      setAvatarError("Couldn't upload that image.");
+    } finally {
+      setAvatarBusy(false);
+    }
+  }
+
+  async function removeAvatar() {
+    setAvatarError(null);
+    setAvatarBusy(true);
+    try {
+      const res = await fetch("/api/profile/avatar", { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        setAvatarError(json.error ?? "Couldn't remove your photo.");
+        return;
+      }
+      setAvatarUrl("");
+      router.refresh();
+    } catch {
+      setAvatarError("Couldn't remove your photo.");
+    } finally {
+      setAvatarBusy(false);
+    }
   }
 
   return (
@@ -105,27 +161,49 @@ export function ProfileSettingsForm({
 
       {/* photo */}
       <div>
-        <label
-          htmlFor="avatar"
-          className="mb-2 block font-mono text-[11px] font-bold tracking-wider text-secondary uppercase"
-        >
+        <span className="mb-2 block font-mono text-[11px] font-bold tracking-wider text-secondary uppercase">
           Photo
-        </label>
+        </span>
         <div className="flex items-center gap-4">
           <Avatar src={avatarUrl.trim() || null} name={username} size={64} />
           <div className="min-w-0 flex-1">
             <input
-              id="avatar"
-              type="url"
-              inputMode="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="https://…/your-photo.jpg"
-              className="h-11 w-full rounded-lg border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+              ref={fileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={onPickFile}
+              className="hidden"
             />
-            <p className="mt-1.5 text-xs text-secondary">
-              Paste an https image link. Leave blank to use your initial.
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={avatarBusy}
+                onClick={() => fileRef.current?.click()}
+              >
+                {avatarBusy
+                  ? "Working…"
+                  : avatarUrl
+                    ? "Change photo"
+                    : "Upload photo"}
+              </Button>
+              {avatarUrl && !avatarBusy && (
+                <button
+                  type="button"
+                  onClick={removeAvatar}
+                  className="text-xs text-secondary underline underline-offset-2 hover:text-red"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {avatarError ? (
+              <p className="mt-1.5 text-xs text-red">{avatarError}</p>
+            ) : (
+              <p className="mt-1.5 text-xs text-secondary">
+                PNG, JPEG, or WebP up to 4 MB. Cropped to a square.
+              </p>
+            )}
           </div>
         </div>
       </div>

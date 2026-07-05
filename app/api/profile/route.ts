@@ -26,17 +26,6 @@ const usernameSchema = z
 
 const createSchema = z.object({ username: usernameSchema });
 
-// Avatar is a free-text image URL for the MVP (no upload bucket yet). Require
-// https to avoid mixed content; empty string clears it back to the initial-circle
-// fallback. Bare-bones profile fields (FR-2.x); file upload is a later slice.
-const avatarSchema = z
-  .string()
-  .trim()
-  .max(500)
-  .refine((v) => v === "" || /^https:\/\/\S+$/i.test(v), {
-    message: "Avatar must be an https:// image URL.",
-  });
-
 // FR-18.5: commentator social links are validated https URLs on a fixed
 // platform set, no shorteners (they defeat the reader's ability to see where
 // a link goes). Empty string removes a platform's link.
@@ -90,7 +79,8 @@ const socialLinksSchema = z
 const updateSchema = z
   .object({
     username: usernameSchema.optional(),
-    avatar_url: avatarSchema.optional(),
+    // avatar is managed by POST/DELETE /api/profile/avatar (upload bucket), not
+    // here — no free-text external URL, so the next/image host stays pinned
     theme_pref: z.enum(["dark", "light"]).nullable().optional(),
     // commentator-only profile sections (FR-18.5); plain text, no markup
     about: z.string().trim().max(280).optional(),
@@ -180,10 +170,6 @@ export async function PATCH(request: NextRequest) {
 
   if (parsed.data.theme_pref !== undefined) {
     update.theme_pref = parsed.data.theme_pref;
-  }
-
-  if (parsed.data.avatar_url !== undefined) {
-    update.avatar_url = parsed.data.avatar_url === "" ? null : parsed.data.avatar_url;
   }
 
   // about + social links are commentator profile sections (FR-18.5); a

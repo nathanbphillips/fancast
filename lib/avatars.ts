@@ -8,8 +8,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  */
 
 export const AVATAR_BUCKET = "avatars";
-/** hard cap on the uploaded body before we even decode it */
-export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
+/** Hard cap on the uploaded body before we decode it. Kept under Vercel's
+ *  ~4.5 MB serverless request-body limit (with room for multipart overhead) so
+ *  OUR friendly 413 fires instead of the platform's opaque one, and so the body
+ *  buffered by formData() before the size check is provably small. Any avatar
+ *  is re-encoded to a 256px WebP anyway, so this is generous. */
+export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024; // 4 MB
 /** stored avatar edge length */
 export const OUTPUT_SIZE = 256;
 /** decompression-bomb guard: refuse to fully decode past this pixel count */
