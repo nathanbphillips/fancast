@@ -3,6 +3,7 @@ import { loadMatchesSchedule } from "@/lib/db/matches";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { Button } from "@/components/ui/Button";
 import { MatchesSchedule } from "@/components/matches/MatchesSchedule";
+import { NotifyForm } from "@/components/marketing/NotifyForm";
 
 /**
  * Matches: the full date-grouped schedule with multi-room fixtures + RSVP
@@ -57,6 +58,18 @@ export default async function MatchesPage() {
       <div className="mx-auto max-w-[1180px] px-5 py-10 sm:px-10">
         <MatchesSchedule groups={groups} signedIn={!!user} />
 
+        {/* NOTIFY BAND — turn "no room yet" into a real action + launch list */}
+        <div className="mt-9 rounded-2xl border border-line bg-surface px-[26px] py-6">
+          <p className="text-lg font-extrabold tracking-[-0.01em]">
+            Don&apos;t want to keep checking back?
+          </p>
+          <p className="mt-1 mb-4 max-w-lg text-[13.5px] text-secondary">
+            Rooms are just starting to open. Get an email when there&apos;s one
+            for a match you want to watch with the room.
+          </p>
+          <NotifyForm source="matches" className="max-w-md" />
+        </div>
+
         {/* HOST CTA BAND */}
         <div className="mt-9 flex flex-col items-start justify-between gap-4 rounded-2xl border border-line bg-surface px-[26px] py-6 sm:flex-row sm:items-center">
           <div>
@@ -68,8 +81,8 @@ export default async function MatchesPage() {
               there&apos;ll be room for you too.
             </p>
           </div>
-          <Button href="/about" variant="red">
-            Read more →
+          <Button href="/host" variant="red">
+            Start your first room →
           </Button>
         </div>
       </div>

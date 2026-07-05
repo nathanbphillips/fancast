@@ -145,7 +145,7 @@ export default function HowItWorksPage() {
               href="/matches"
               className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
             >
-              See what&apos;s live <span aria-hidden="true">→</span>
+              See what&apos;s on <span aria-hidden="true">→</span>
             </Link>
             <Link
               href="#hosting"

@@ -337,7 +337,7 @@ export default function AboutPage() {
               className="inline-flex items-center gap-2.5 rounded-xl bg-red px-7 py-4 text-base font-bold text-white transition-colors hover:bg-red-hover"
               style={{ boxShadow: "0 16px 40px -10px rgba(241,35,43,0.7)" }}
             >
-              See what&apos;s live <span aria-hidden="true">→</span>
+              See what&apos;s on <span aria-hidden="true">→</span>
             </a>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { brand } from "@/lib/brand";
 import { loadFixtures } from "@/lib/db/fixtures";
 import { KickoffTime } from "@/components/KickoffTime";
 import { OnAirCard } from "@/components/marketing/OnAirCard";
+import { NotifyForm } from "@/components/marketing/NotifyForm";
 
 /**
  * Home (Cloud Design "1a"): hero + bobbing ON AIR card → how it works → live +
@@ -360,19 +361,21 @@ export default async function HomePage() {
                 </>
               ) : (
                 <>
-                  <h3 className="display mb-3 text-[38px] leading-[0.96]">
+                  <h3 className="display mb-3 text-[34px] leading-[0.96]">
                     No match live
                     <br />
                     right now
                   </h3>
-                  <p className="mb-5 max-w-sm text-sm text-secondary">
-                    The next Arsenal room will show up here the moment it opens.
+                  <p className="mb-4 max-w-sm text-sm text-secondary">
+                    Get an email when the first Arsenal rooms open, and be there
+                    for the first whistle.
                   </p>
+                  <NotifyForm source="home_empty" className="max-w-sm" />
                   <Link
                     href="/matches"
-                    className="inline-flex items-center gap-2.5 rounded-[10px] bg-inverted px-5 py-3 text-sm font-bold text-inverted-fg transition-opacity hover:opacity-90"
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary"
                   >
-                    See the schedule <span aria-hidden="true">→</span>
+                    Or see the schedule <span aria-hidden="true">→</span>
                   </Link>
                 </>
               )}
@@ -459,6 +462,53 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* SECOND SCREEN / DIFFERENTIATION */}
+      <section className="border-t border-line">
+        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
+          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            Not just a group call
+          </p>
+          <h2 className="display max-w-[720px] text-4xl leading-[0.95] sm:text-[52px]">
+            One second screen. Everything in it.
+          </h2>
+          <p className="mt-4 max-w-[620px] text-[15px] leading-[1.6] text-secondary">
+            A Spaces call is just audio. A watchalong is one shared stream on
+            someone else&apos;s delay. The group chat scrolls past you.{" "}
+            {brand.name} is all of it in one place, lined up to your screen: the
+            audio, the chat, and the stats together.
+          </p>
+          <div className="mt-9 grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
+            {[
+              {
+                k: "Synced to you",
+                d: "Fan audio locks to your own stream's delay with one tap, then nudges half a second either way. A single shared stream can't line up to your screen.",
+              },
+              {
+                k: "Audio, chat and stats in one",
+                d: "Live commentary, a chat worth reading, polls, and real match stats share one screen. No juggling a call in one app and a feed in another.",
+              },
+              {
+                k: "Yours to keep",
+                d: "Every show is recorded into downloadable segments the host owns outright. A live call just disappears when it ends.",
+              },
+            ].map((c) => (
+              <div
+                key={c.k}
+                className="bg-canvas px-6 pt-[26px] pb-7 transition-colors hover:bg-surface"
+              >
+                <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+                  {c.k}
+                </h3>
+                <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
+                  {c.d}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* FINAL CTA */}
       <section
         className="relative overflow-hidden border-t border-line"
@@ -496,11 +546,14 @@ export default async function HomePage() {
               className="inline-flex items-center gap-2.5 rounded-xl bg-red px-[30px] py-[17px] text-base font-bold text-white transition-colors hover:bg-red-hover"
               style={{ boxShadow: "0 16px 40px -10px rgba(241,35,43,0.7)" }}
             >
-              See what&apos;s live <span aria-hidden="true">→</span>
+              Find your next room <span aria-hidden="true">→</span>
             </Link>
           </div>
           <p className="mt-6 font-mono text-[11px] tracking-[0.05em] text-secondary uppercase">
-            Arsenal first · More clubs to come · Fancy hosting a room?
+            Arsenal first · More clubs to come ·{" "}
+            <Link href="/host" className="text-gold hover:underline">
+              Fancy hosting a room?
+            </Link>
           </p>
         </div>
       </section>
