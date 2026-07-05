@@ -34,7 +34,7 @@ const STATS = [
   { n: "0", c: "pundits on the payroll", gold: true },
   { n: "100%", c: "of recordings owned by hosts" },
   { n: "<1min", c: "to sign up and join in" },
-  { n: "90", c: "minutes live, every match" },
+  { n: "$0", c: "to listen, no account needed" },
 ];
 
 const PRINCIPLES = [
@@ -58,19 +58,16 @@ const PRINCIPLES = [
 
 const HOSTS = [
   {
-    name: "nathan",
-    handle: "@n8_afc",
-    bio: "A Gooner since the Highbury days. Calls it like he sees it.",
+    role: "The lifelong Gooner",
+    bio: "Lives and dies with every result and calls it exactly like they see it. Never neutral, never on the fence.",
   },
   {
-    name: "priya",
-    handle: "@priyagooner",
-    bio: "Tactics head. Will explain the xG and then ignore it when we score a worldie.",
+    role: "The tactics head",
+    bio: "Will talk you through the xG and the press triggers, then happily ignore all of it the second we score a worldie.",
   },
   {
-    name: "deniz",
-    handle: "@denizN5",
-    bio: "Half-time poll enforcer. Runs the call-in mic on big nights.",
+    role: "The call-in host",
+    bio: "Runs the half-time poll and the call-in mic on the big nights, so the whole room gets a say.",
   },
 ];
 
@@ -215,6 +212,41 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* MAKER */}
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-5 sm:px-10">
+        <div className="rounded-2xl border border-line bg-surface px-6 py-8 sm:px-9 sm:py-10">
+          <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            Who&apos;s behind it
+          </p>
+          <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+            Made by a fan, not a media company
+          </h2>
+          <div className="mt-5 max-w-[680px] space-y-4 text-[15px] leading-[1.6] text-secondary">
+            <p>
+              {brand.name} is built by Nathan Phillips, an Arsenal supporter who
+              grew up in Detroit and adopted a team in North London the way
+              plenty of us did: from afar, at odd hours, often on the sofa alone.
+              Watching with pundits who did not care about the result stopped
+              being fun, so this is the room he wanted to watch in.
+            </p>
+            <p>
+              It is early and it is independent, built in the open rather than
+              behind a press release. If you have a thought, a bug, or a club you
+              want to see next, the door is open.
+            </p>
+          </div>
+          <a
+            href="https://bsky.app/profile/nathanphillips.bsky.social"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-gold hover:underline"
+          >
+            Say hello on Bluesky <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </section>
+
       {/* HOSTS */}
       <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-7 sm:px-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
@@ -224,17 +256,17 @@ export default function AboutPage() {
               The voices
             </p>
             <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
-              Your hosts
+              The kind of voice you&apos;ll hear
             </h2>
           </div>
           <p className="max-w-[240px] text-right font-mono text-[11px] leading-[1.5] text-secondary">
-            Illustrative line-up. Real hosts appear here as rooms open.
+            Real supporters, not pundits. Named hosts show up here as rooms open.
           </p>
         </div>
         <div className="grid gap-[18px] sm:grid-cols-3">
           {HOSTS.map((h) => (
             <div
-              key={h.handle}
+              key={h.role}
               className="overflow-hidden rounded-2xl border border-line bg-inset"
             >
               <div
@@ -259,12 +291,9 @@ export default function AboutPage() {
                 />
               </div>
               <div className="px-5 pt-[18px] pb-[22px]">
-                <div className="mb-1.5 flex items-baseline gap-2">
-                  <span className="text-[17px] font-extrabold">{h.name}</span>
-                  <span className="font-mono text-[11px] text-gold">
-                    {h.handle}
-                  </span>
-                </div>
+                <h3 className="mb-1.5 text-[17px] font-extrabold tracking-[-0.01em]">
+                  {h.role}
+                </h3>
                 <p className="text-[13.5px] leading-[1.5] text-secondary">
                   {h.bio}
                 </p>

@@ -118,6 +118,22 @@ export default async function HomePage() {
       ? "Join the waiting room"
       : "See the schedule";
 
+  // Hero primary CTA stays honest about state: it never promises "live" when
+  // nothing is, and when a room is on it deep-links straight in (rooms are
+  // readable with no account, so this is the "listen free" wedge).
+  const heroPrimary =
+    featured && featuredLive
+      ? {
+          href: featuredRoomHref ?? "/matches",
+          label:
+            featured.card.state === "live"
+              ? "Listen now, free"
+              : "Join the waiting room",
+        }
+      : featuredRoomHref
+        ? { href: featuredRoomHref, label: "Join the next room" }
+        : { href: "/matches", label: "See the schedule" };
+
   return (
     <>
       {/* HERO */}
@@ -143,14 +159,19 @@ export default async function HomePage() {
         />
         <div className="relative mx-auto grid max-w-[1180px] items-center gap-12 px-5 py-16 sm:px-10 lg:grid-cols-[1.04fr_.96fr] lg:py-[76px]">
           <div>
-            <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-line px-3 py-[7px] font-mono text-[11px] tracking-[0.14em] text-secondary uppercase">
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
-                style={{ boxShadow: "0 0 10px #f1232b" }}
-              />
-              Live fan commentary · Arsenal
-            </span>
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-[7px] font-mono text-[11px] tracking-[0.14em] text-secondary uppercase">
+                <span
+                  aria-hidden="true"
+                  className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
+                  style={{ boxShadow: "0 0 10px #f1232b" }}
+                />
+                Live fan commentary · Arsenal
+              </span>
+              <span className="inline-flex items-center rounded-full border border-gold/40 px-3 py-[7px] font-mono text-[11px] tracking-[0.14em] text-gold uppercase">
+                Early access
+              </span>
+            </div>
             <h1 className="display text-[42px] leading-[0.98] tracking-[0.005em] text-white sm:text-[66px]">
               Turn the pundits off. Tune in to real{" "}
               <span
@@ -161,18 +182,19 @@ export default async function HomePage() {
               </span>{" "}
               fans.
             </h1>
-            <p className="mt-5 max-w-[452px] text-[18px] leading-[1.55] text-secondary">
-              Keep watching the match however you already do. {brand.name} rides
-              alongside it with live fan commentary, discussions, and the stats
-              that matter. No pundits. No fluff. Just football.
+            <p className="mt-5 max-w-[468px] text-[18px] leading-[1.55] text-secondary">
+              Press play on live fan audio and listen while you watch the match
+              your own way. A real supporter in your ear, a chat worth reading,
+              and the stats that matter, all in sync with your screen. No
+              pundits. No fluff. Just football.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3.5">
               <Link
-                href="/matches"
+                href={heroPrimary.href}
                 className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
                 style={{ boxShadow: "0 12px 34px -8px rgba(241,35,43,0.6)" }}
               >
-                See what&apos;s live <span aria-hidden="true">→</span>
+                {heroPrimary.label} <span aria-hidden="true">→</span>
               </Link>
               <Link
                 href="/how-it-works"
@@ -181,16 +203,19 @@ export default async function HomePage() {
                 How it works
               </Link>
             </div>
-            <div className="mt-6 flex flex-wrap items-center gap-4 font-mono text-[11px] tracking-[0.06em] text-secondary uppercase">
-              <span>Live every match</span>
+            <p className="mt-5 text-[13px] text-secondary">
+              Free to listen. No account needed to hear the room.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-4 font-mono text-[11px] tracking-[0.06em] text-secondary uppercase">
+              <span>Arsenal first</span>
               <span aria-hidden="true" className="text-line">
                 /
               </span>
-              <span>Fan-hosted</span>
+              <span>More clubs coming</span>
               <span aria-hidden="true" className="text-line">
                 /
               </span>
-              <span className="text-primary/85">1,204 in the room</span>
+              <span className="text-primary/85">Independent &amp; unaffiliated</span>
             </div>
           </div>
           <OnAirCard />

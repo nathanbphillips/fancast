@@ -27,6 +27,18 @@ export function SiteFooter() {
               {brand.name} is an unofficial, fan-made platform and is not
               affiliated with or endorsed by any club, league, or broadcaster.
             </p>
+            <p className="mt-3 text-sm text-secondary">
+              Questions or feedback?{" "}
+              <a
+                href="https://bsky.app/profile/nathanphillips.bsky.social"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline underline-offset-2 hover:text-red"
+              >
+                Say hello
+              </a>
+              .
+            </p>
           </div>
           <div className="flex gap-16">
             <nav className="flex flex-col gap-3" aria-label="Platform">

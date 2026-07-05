@@ -3,8 +3,10 @@ import { EqBars } from "@/components/ui/EqBars";
 
 /**
  * Marketing "ON AIR" player card for the home hero (Cloud Design) — a bobbing
- * mock of the room transport. Illustrative, no real data; team marks are
- * abstract CSS stripe swatches (no real crests). Decorative.
+ * mock of the room transport. Explicitly labelled "Preview" and hosted by a
+ * generic "Your host" so it reads as a UI demo, not a live broadcast happening
+ * now (trust: no fabricated live event). Team marks are abstract CSS stripe
+ * swatches (no real crests). Decorative, no real data.
  */
 const swatch =
   "repeating-linear-gradient(45deg, rgb(var(--hair) / 0.14), rgb(var(--hair) / 0.14) 4px, rgb(var(--hair) / 0.05) 4px, rgb(var(--hair) / 0.05) 8px)";
@@ -21,8 +23,13 @@ export function OnAirCard() {
           />
           ON AIR
         </span>
-        <span className="font-mono text-[13px] tracking-wide text-secondary tabular-nums">
-          1H 23:14
+        <span className="flex items-center gap-2">
+          <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[9px] tracking-[0.12em] text-secondary uppercase">
+            Preview
+          </span>
+          <span className="font-mono text-[13px] tracking-wide text-secondary tabular-nums">
+            1H 23:14
+          </span>
         </span>
       </div>
 
@@ -63,12 +70,12 @@ export function OnAirCard() {
         />
         <div className="flex-1">
           <p className="flex items-center gap-2 text-[15px] font-bold">
-            nathan
+            Your host
             <span className="rounded border border-gold/50 px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-gold uppercase">
               Host
             </span>
           </p>
-          <p className="text-[12.5px] text-secondary">Gooner · lifelong</p>
+          <p className="text-[12.5px] text-secondary">A real Arsenal supporter</p>
         </div>
         <EqBars />
       </div>
