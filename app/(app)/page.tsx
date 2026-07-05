@@ -151,15 +151,15 @@ export default async function HomePage() {
               />
               Live fan commentary · Arsenal
             </span>
-            <h1 className="display text-[42px] leading-[0.98] tracking-[0.005em] sm:text-[66px]">
-              Turn the pundits off. Tune in to{" "}
+            <h1 className="display text-[42px] leading-[0.98] tracking-[0.005em] text-white sm:text-[66px]">
+              Turn the pundits off. Tune in to real{" "}
               <span
                 className="text-red"
                 style={{ textShadow: "0 0 34px rgba(241,35,43,0.45)" }}
               >
-                real Arsenal fans
-              </span>
-              .
+                Arsenal
+              </span>{" "}
+              fans.
             </h1>
             <p className="mt-5 max-w-[452px] text-[18px] leading-[1.55] text-secondary">
               Keep watching the match however you already do. {brand.name} rides
