@@ -230,7 +230,7 @@ export function ProfileSettingsForm({
         />
         <p className="mt-1.5 text-xs text-secondary">
           {usernameLocked
-            ? `Locked until ${unlocksOn} — names change once every 30 days.`
+            ? `Locked until ${unlocksOn}. Names change once every 30 days.`
             : "3–20 characters: letters, numbers, underscore. Changeable once every 30 days."}
         </p>
       </div>
