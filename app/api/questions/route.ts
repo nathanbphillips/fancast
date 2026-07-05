@@ -5,6 +5,7 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import type { Question, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 
 const OPEN_STATES: RoomState[] = [
   "pregame",
@@ -92,7 +93,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Question not found." }, { status: 404 });
   }
   if (
-    question.room.commentator_id !== caller.userId &&
+    !(await isRoomHost(service, caller.userId, question.room_id)) &&
     !isAdmin(caller.userId, caller.profile)
   ) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });

@@ -5,6 +5,7 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { loadActivePoll } from "@/lib/polls";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { RoomState } from "@/lib/db/types";
 
 // the commentator can pose a poll any time the broadcast is live (FR-12.2 frames
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (!room) {
       return NextResponse.json({ error: "Room not found." }, { status: 404 });
     }
-    if (room.commentator_id !== caller.userId && !isAdmin(caller.userId, caller.profile)) {
+    if (!(await isRoomHost(service, caller.userId, room.id)) && !isAdmin(caller.userId, caller.profile)) {
       return NextResponse.json({ error: "Not allowed." }, { status: 403 });
     }
     if (!OPEN_STATES.includes(room.state as RoomState)) {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     if (!poll) {
       return NextResponse.json({ error: "Poll not found." }, { status: 404 });
     }
-    if (poll.room.commentator_id !== caller.userId && !isAdmin(caller.userId, caller.profile)) {
+    if (!(await isRoomHost(service, caller.userId, poll.room_id)) && !isAdmin(caller.userId, caller.profile)) {
       return NextResponse.json({ error: "Not allowed." }, { status: 403 });
     }
     await service.from("polls").update({ status: "closed" }).eq("id", poll.id);

@@ -152,6 +152,46 @@ export async function enqueueRsvpReminder(
   });
 }
 
+/** cohost_invite to the invitee (FR-25.1). Immediate. */
+export async function enqueueCohostInvite(
+  service: SupabaseClient,
+  opts: {
+    roomId: string;
+    inviteeId: string;
+    inviterId: string;
+    payload: NotificationPayload;
+  },
+): Promise<string[]> {
+  return enqueue(service, {
+    type: "cohost_invite",
+    recipientIds: [opts.inviteeId],
+    roomId: opts.roomId,
+    actorId: opts.inviterId,
+    dedupeScope: `cohost:${opts.roomId}:${opts.inviterId}`,
+    payload: opts.payload,
+  });
+}
+
+/** cohost_response to the original inviter (FR-25.1). Immediate. */
+export async function enqueueCohostResponse(
+  service: SupabaseClient,
+  opts: {
+    roomId: string;
+    inviterId: string;
+    responderId: string;
+    payload: NotificationPayload;
+  },
+): Promise<string[]> {
+  return enqueue(service, {
+    type: "cohost_response",
+    recipientIds: [opts.inviterId],
+    roomId: opts.roomId,
+    actorId: opts.responderId,
+    dedupeScope: `cohostresp:${opts.roomId}:${opts.responderId}`,
+    payload: opts.payload,
+  });
+}
+
 /** friend_request to the addressee (FR-23). Immediate. */
 export async function enqueueFriendRequest(
   service: SupabaseClient,

@@ -5,6 +5,7 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { recomputeUser } from "@/lib/fanScore";
+import { isRoomHost } from "@/lib/roomHosts";
 import { isAdmin } from "@/lib/roles";
 
 const bodySchema = z.object({ messageId: z.uuid() });
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   // room-scoped: only THIS room's commentator (or an admin) may hide here —
   // the global commentator role alone is not enough (cross-room hide hole)
-  const ownsRoom = message.room.commentator_id === caller.userId;
+  const ownsRoom = await isRoomHost(service, caller.userId, message.room_id);
   if (!ownsRoom && !admin) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
   }

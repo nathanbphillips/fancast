@@ -5,6 +5,7 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { recomputeUser } from "@/lib/fanScore";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { ChatMessage } from "@/lib/db/types";
 import { isFetchableUrl, unfurl } from "@/lib/unfurl";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
   if (
     room.state === "waiting" &&
     !room.chat_open &&
-    room.commentator_id !== caller.userId
+    !(await isRoomHost(service, caller.userId, room.id))
   ) {
     return NextResponse.json(
       { error: "Chat opens when the broadcast starts." },

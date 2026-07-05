@@ -3,6 +3,7 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 import { statOverridesSchema, type StatOverrides } from "@/lib/statOverrides";
 
 /**
@@ -40,7 +41,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     .eq("id", id)
     .maybeSingle<{ id: string; commentator_id: string }>();
   if (!room) return NextResponse.json({ error: "Room not found." }, { status: 404 });
-  if (room.commentator_id !== caller.userId && !isAdmin(caller.userId, caller.profile)) {
+  if (!(await isRoomHost(service, caller.userId, room.id)) && !isAdmin(caller.userId, caller.profile)) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
   }
 

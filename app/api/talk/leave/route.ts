@@ -5,6 +5,7 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { setPublishPermission } from "@/lib/livekit";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 
 const bodySchema = z.object({
   roomId: z.uuid(),
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
   }
   if (
     isRemoval &&
-    room.commentator_id !== caller.userId &&
+    !(await isRoomHost(service, caller.userId, room.id)) &&
     !isAdmin(caller.userId, caller.profile)
   ) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });

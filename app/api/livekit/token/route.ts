@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/server";
 import { mintToken } from "@/lib/livekit";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { Profile, RoomState } from "@/lib/db/types";
 
 const AUDIO_STATES: RoomState[] = [
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Your account is banned." }, { status: 403 });
     }
 
-    if (user.id === room.commentator_id || isAdmin(user.id, profile)) {
+    if ((await isRoomHost(service, user.id, room.id)) || isAdmin(user.id, profile)) {
       canPublish = true;
     } else {
       const { data: accepted } = await service

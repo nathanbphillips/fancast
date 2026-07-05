@@ -5,6 +5,7 @@ import { ablyRest, channels } from "@/lib/ably";
 import { createServiceClient, createSupabaseServerClient } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
 import { maybeOpportunisticDrain } from "@/lib/notify/outbox";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { Profile } from "@/lib/db/types";
 
 const roomIdSchema = z.uuid();
@@ -63,19 +64,17 @@ export async function GET(request: NextRequest) {
     // the shared control channel (FR-4.2)
     capability[channels.userPrivate(roomId!, user.id)] = ["subscribe", "history"];
 
-    // the room's commentator (and admins) may subscribe to the private
-    // channel: questions + talk requests (FR-10.1, FR-4.2)
-    const { data: room } = await supabase
-      .from("rooms")
-      .select("commentator_id")
-      .eq("id", roomId!)
-      .maybeSingle();
+    // the room's hosts (and admins) may subscribe to the private channel:
+    // questions + talk requests (FR-10.1, FR-4.2; equal co-hosts per FR-25.2)
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle<Profile>();
-    if (room?.commentator_id === user.id || isAdmin(user.id, profile)) {
+    if (
+      (await isRoomHost(supabase, user.id, roomId!)) ||
+      isAdmin(user.id, profile)
+    ) {
       capability[channels.private(roomId!)] = ["subscribe", "history"];
     }
   }

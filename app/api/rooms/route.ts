@@ -12,6 +12,7 @@ import {
 } from "@/lib/egress";
 import { emitMarker } from "@/lib/markers";
 import { insertRoomWithHost } from "@/lib/createRoom";
+import { isRoomHost } from "@/lib/roomHosts";
 import { flushRows } from "@/lib/notify/outbox";
 import {
   enqueueGoLive,
@@ -329,12 +330,13 @@ export async function POST(request: NextRequest) {
   if (!room) {
     return NextResponse.json({ error: "Room not found." }, { status: 404 });
   }
+  // FR-25.2: any accepted host (equal hosts, no primary) can run the room
   if (
-    room.commentator_id !== caller.userId &&
+    !(await isRoomHost(service, caller.userId, room.id)) &&
     !isAdmin(caller.userId, caller.profile)
   ) {
     return NextResponse.json(
-      { error: "Only the room's commentator can do that." },
+      { error: "Only the room's hosts can do that." },
       { status: 403 },
     );
   }

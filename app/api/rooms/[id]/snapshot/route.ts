@@ -12,6 +12,7 @@ import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
 import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { StatOverrides } from "@/lib/statOverrides";
 
 /**
@@ -97,7 +98,8 @@ export async function GET(
 
   const { user, profile } = await getCurrentUserAndProfile();
   const isModerator =
-    !!user && (user.id === room.commentator_id || isAdmin(user.id, profile));
+    !!user &&
+    ((await isRoomHost(service, user.id, id)) || isAdmin(user.id, profile));
 
   let questions: Question[] = [];
   let talkRequests: TalkRequest[] = [];

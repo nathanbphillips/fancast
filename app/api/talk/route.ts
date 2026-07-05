@@ -11,6 +11,7 @@ import { createServiceClient } from "@/lib/db/server";
 import { setPublishPermission } from "@/lib/livekit";
 import type { RoomState, TalkRequest } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 
 const OPEN_STATES: RoomState[] = [
   "pregame",
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       { status: 403 },
     );
   }
-  if (room.commentator_id === caller.userId) {
+  if (await isRoomHost(service, caller.userId, room.id)) {
     return NextResponse.json(
       { error: "You're already on air." },
       { status: 400 },
@@ -273,7 +274,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Request not found." }, { status: 404 });
   }
   if (
-    talkRequest.room.commentator_id !== caller.userId &&
+    !(await isRoomHost(service, caller.userId, talkRequest.room_id)) &&
     !isAdmin(caller.userId, caller.profile)
   ) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });

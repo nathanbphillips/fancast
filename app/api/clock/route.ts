@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/db/server";
 import { emitClockMarker } from "@/lib/markers";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 
 /**
  * Commentator clock controls (FR-7.3/7.4). Clock transitions drive room
@@ -59,11 +60,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Room not found." }, { status: 404 });
   }
   if (
-    room.commentator_id !== caller.userId &&
+    !(await isRoomHost(service, caller.userId, room.id)) &&
     !isAdmin(caller.userId, caller.profile)
   ) {
     return NextResponse.json(
-      { error: "Only the room's commentator can run the clock." },
+      { error: "Only the room's hosts can run the clock." },
       { status: 403 },
     );
   }

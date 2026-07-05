@@ -6,6 +6,7 @@ import { createServiceClient } from "@/lib/db/server";
 import { triggerProcessing } from "@/lib/recording";
 import { ensureRecordingsPrivate } from "@/lib/egress";
 import { isAdmin } from "@/lib/roles";
+import { isRoomHost } from "@/lib/roomHosts";
 
 const REC_BUCKET = "recordings";
 
@@ -29,7 +30,8 @@ async function authorizeRoom(
       fixture: { home_team: string; away_team: string; kickoff_utc: string };
     }>();
   if (!room) return { error: "not_found" as const };
-  if (room.commentator_id !== userId && !admin) {
+  // FR-25.7: both accepted hosts get full recording access
+  if (!(await isRoomHost(service, userId, room.id)) && !admin) {
     return { error: "forbidden" as const };
   }
   return { room };

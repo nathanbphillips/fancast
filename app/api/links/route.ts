@@ -3,6 +3,7 @@ import { z } from "zod";
 import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
+import { isRoomHost } from "@/lib/roomHosts";
 import type { Link } from "@/lib/db/types";
 import { rateLimit } from "@/lib/ratelimit";
 import { isFetchableUrl, unfurl } from "@/lib/unfurl";
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
   if (
     (room.state === "waiting" || room.state === "scheduled") &&
     !(room.state === "waiting" && room.links_open) &&
-    room.commentator_id !== caller.userId
+    !(await isRoomHost(service, caller.userId, room.id))
   ) {
     return NextResponse.json(
       { error: "Links open when the broadcast starts." },
