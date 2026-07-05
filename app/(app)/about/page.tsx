@@ -122,10 +122,10 @@ export default function AboutPage() {
       >
         <div className="relative mx-auto max-w-[1180px] px-5 py-16 sm:px-10 sm:py-[70px]">
           <p className="mb-5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             About {brand.name}
           </p>
-          <h1 className="display max-w-[900px] text-5xl leading-[0.92] sm:text-[74px]">
+          <h1 className="display max-w-[900px] t-hero">
             Not a broadcaster.
             <br />
             <span
@@ -145,17 +145,17 @@ export default function AboutPage() {
       </section>
 
       {/* STORY */}
-      <section className="mx-auto grid max-w-[1180px] gap-8 px-5 pt-14 pb-5 sm:grid-cols-3 sm:px-10">
+      <section className="mx-auto grid max-w-[1180px] gap-8 px-5 pt-12 pb-6 sm:grid-cols-3 sm:px-10">
         {STORY.map((s) => (
           <div key={s.h}>
-            <p className="display mb-3.5 text-3xl text-gold">{s.h}</p>
+            <p className="display mb-3.5 t-h3 text-gold">{s.h}</p>
             <p className="text-[15px] leading-[1.6] text-secondary">{s.p}</p>
           </div>
         ))}
       </section>
 
       {/* STAT BAND */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-10 pb-2 sm:px-10">
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
         <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {STATS.map((s) => (
             <div key={s.c} className="bg-inset px-6 py-7">
@@ -169,9 +169,9 @@ export default function AboutPage() {
       </section>
 
       {/* PRINCIPLES */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-14 pb-5 sm:px-10">
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
         <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
           What we stand for
         </p>
         <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
@@ -187,7 +187,7 @@ export default function AboutPage() {
                 0{i + 1}
               </span>
               <div>
-                <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+                <h3 className="t-title font-extrabold tracking-[-0.01em]">
                   {p.k}
                 </h3>
                 <p className="mt-2 text-sm leading-[1.55] text-secondary">
@@ -200,13 +200,13 @@ export default function AboutPage() {
       </section>
 
       {/* MAKER */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-5 sm:px-10">
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
         <div className="rounded-2xl border border-line bg-surface px-6 py-8 sm:px-9 sm:py-10">
           <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             Who&apos;s behind it
           </p>
-          <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+          <h2 className="display t-h2">
             Made by a fan, not a media company
           </h2>
           <div className="mt-5 max-w-[680px] space-y-4 text-[15px] leading-[1.6] text-secondary">
@@ -235,14 +235,14 @@ export default function AboutPage() {
       </section>
 
       {/* HOSTS */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-7 sm:px-10">
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
               The voices
             </p>
-            <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
+            <h2 className="display t-h2">
               The kind of voice you&apos;ll hear
             </h2>
           </div>
@@ -278,7 +278,7 @@ export default function AboutPage() {
                 />
               </div>
               <div className="px-5 pt-[18px] pb-[22px]">
-                <h3 className="mb-1.5 text-[17px] font-extrabold tracking-[-0.01em]">
+                <h3 className="mb-1.5 t-title font-extrabold tracking-[-0.01em]">
                   {h.role}
                 </h3>
                 <p className="text-[13.5px] leading-[1.5] text-secondary">
@@ -291,9 +291,9 @@ export default function AboutPage() {
       </section>
 
       {/* FAQ (kept for compliance) */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-8 pb-14 sm:px-10">
+      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-12 sm:px-10">
         <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
           Questions, answered
         </p>
         <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
@@ -311,7 +311,7 @@ export default function AboutPage() {
         }}
       >
         <div className="relative mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-10">
-          <h2 className="display mx-auto max-w-2xl text-5xl leading-[0.92] sm:text-[56px]">
+          <h2 className="display mx-auto max-w-2xl t-hero">
             Pull up a seat.
           </h2>
           <p className="mx-auto mt-4 max-w-[460px] text-[17px] text-secondary">

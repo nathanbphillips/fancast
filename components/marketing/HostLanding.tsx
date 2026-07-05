@@ -70,10 +70,10 @@ export function HostLanding({
       >
         <div className="relative mx-auto max-w-[1180px] px-5 pt-16 pb-10 sm:px-10">
           <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             For commentators
           </p>
-          <h1 className="display max-w-[720px] text-[42px] leading-[0.96] tracking-[0.005em] sm:text-[62px]">
+          <h1 className="display max-w-[720px] t-hero tracking-[0.005em]">
             Host your own room
           </h1>
           <p className="mt-5 max-w-[580px] text-[18px] leading-[1.55] text-secondary">
@@ -106,7 +106,7 @@ export function HostLanding({
         <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
           {PROMISES.map((p) => (
             <div key={p.k} className="bg-surface px-6 pt-[26px] pb-7">
-              <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+              <h3 className="t-title font-extrabold tracking-[-0.01em]">
                 {p.k}
               </h3>
               <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
@@ -119,7 +119,7 @@ export function HostLanding({
 
       {/* STEPS */}
       <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-5 sm:px-10">
-        <h2 className="display max-w-[680px] text-4xl leading-[0.95] sm:text-[52px]">
+        <h2 className="display max-w-[680px] t-h2">
           From account to on air
         </h2>
         <div className="mt-9 grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
@@ -128,10 +128,10 @@ export function HostLanding({
               key={s.n}
               className="rounded-2xl border border-line bg-surface px-6 pt-6 pb-7 shadow-card"
             >
-              <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold font-mono text-sm font-bold text-[#141210]">
+              <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold-bright font-mono text-sm font-bold text-[#141210]">
                 {s.n}
               </span>
-              <h3 className="mt-5 text-xl font-extrabold tracking-[-0.01em]">
+              <h3 className="mt-5 t-title font-extrabold tracking-[-0.01em]">
                 {s.t}
               </h3>
               <p className="mt-2.5 text-sm leading-[1.55] text-secondary">

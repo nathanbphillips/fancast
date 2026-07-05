@@ -48,7 +48,7 @@ export default async function SignInPage({
           </Pill>
         </div>
         <div className="relative">
-          <h1 className="display text-6xl leading-[0.9]">Pull up a seat.</h1>
+          <h1 className="display t-hero">Pull up a seat.</h1>
           <p className="mt-4 max-w-sm text-secondary">
             Sign up to join in. It takes under a minute, and lets you chat, vote,
             and call in.
@@ -93,13 +93,13 @@ export default async function SignInPage({
             <Pill variant="red" live>
               Live every match
             </Pill>
-            <p className="display mt-3 text-2xl">Pull up a seat.</p>
+            <p className="display mt-3 t-h3">Pull up a seat.</p>
             <p className="mt-1.5 text-sm text-secondary">
               Sign up to join in. It takes under a minute, and lets you chat,
               vote, and call in. Free to listen either way.
             </p>
           </div>
-          <h2 className="display mt-8 text-3xl">Sign in or join</h2>
+          <h2 className="display mt-8 t-h3">Sign in or join</h2>
           <p className="mt-2 text-sm text-secondary">
             Use your email for a one-tap link, or continue with Google. No
             passwords either way.

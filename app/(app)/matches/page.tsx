@@ -31,10 +31,10 @@ export default async function MatchesPage() {
       >
         <div className="relative mx-auto max-w-[1180px] px-5 pt-14 pb-8 sm:px-10">
           <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             Full schedule · Arsenal
           </p>
-          <h1 className="display text-6xl leading-[0.9] sm:text-7xl">Matches</h1>
+          <h1 className="display t-hero">Matches</h1>
           <p className="mt-4 max-w-[520px] text-[17px] leading-[1.5] text-secondary">
             Every Arsenal fixture with a room. Join the live show when the host
             opens the doors. Free to listen, no account needed.

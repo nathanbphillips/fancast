@@ -204,7 +204,7 @@ export default async function HomePage() {
                 Early access
               </span>
             </div>
-            <h1 className="display text-[42px] leading-[0.98] tracking-[0.005em] text-primary sm:text-[66px]">
+            <h1 className="display t-hero tracking-[0.005em] text-primary">
               Turn the pundits off. Tune in to real{" "}
               <span
                 className="text-red"
@@ -262,11 +262,11 @@ export default async function HomePage() {
               <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
                 <span
                   aria-hidden="true"
-                  className="h-1.5 w-1.5 rounded-full bg-gold"
+                  className="h-1.5 w-1.5 rounded-full bg-gold-bright"
                 />
                 How it works
               </p>
-              <h2 className="display text-4xl leading-[0.95] sm:text-[52px]">
+              <h2 className="display t-h2">
                 Three taps to the room
               </h2>
             </div>
@@ -288,10 +288,10 @@ export default async function HomePage() {
                 >
                   {s.icon}
                 </span>
-                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold font-mono text-sm font-bold text-[#141210]">
+                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold-bright font-mono text-sm font-bold text-[#141210]">
                   {s.n}
                 </span>
-                <h3 className="mt-[54px] text-xl font-extrabold tracking-[-0.01em]">
+                <h3 className="mt-[54px] t-title font-extrabold tracking-[-0.01em]">
                   {s.t}
                 </h3>
                 <p className="mt-2.5 text-sm leading-[1.55] text-secondary">
@@ -352,7 +352,7 @@ export default async function HomePage() {
                 <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-gold uppercase">
                   <span
                     aria-hidden="true"
-                    className="h-1.5 w-1.5 rounded-full bg-gold"
+                    className="h-1.5 w-1.5 rounded-full bg-gold-bright"
                   />
                   {featured ? "Next up" : "The room's open"}
                 </span>
@@ -468,10 +468,10 @@ export default async function HomePage() {
       >
         <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
           <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             Why you&apos;ll stay
           </p>
-          <h2 className="display max-w-[700px] text-4xl leading-[0.95] sm:text-[52px]">
+          <h2 className="display max-w-[700px] t-h2">
             Built for the 90 minutes, and the bits around them
           </h2>
           <div className="mt-9 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 md:grid-cols-3">
@@ -481,7 +481,7 @@ export default async function HomePage() {
                 className="bg-canvas px-6 pt-[26px] pb-7 transition-colors hover:bg-surface"
               >
                 <p className="mb-3.5 font-mono text-[11px] text-gold">{f.n}</p>
-                <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+                <h3 className="t-title font-extrabold tracking-[-0.01em]">
                   {f.k}
                 </h3>
                 <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
@@ -497,10 +497,10 @@ export default async function HomePage() {
       <section className="border-t border-line">
         <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
           <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             Not just a group call
           </p>
-          <h2 className="display max-w-[720px] text-4xl leading-[0.95] sm:text-[52px]">
+          <h2 className="display max-w-[720px] t-h2">
             One second screen. Everything in it.
           </h2>
           <p className="mt-4 max-w-[620px] text-[15px] leading-[1.6] text-secondary">
@@ -528,7 +528,7 @@ export default async function HomePage() {
                 key={c.k}
                 className="bg-canvas px-6 pt-[26px] pb-7 transition-colors hover:bg-surface"
               >
-                <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+                <h3 className="t-title font-extrabold tracking-[-0.01em]">
                   {c.k}
                 </h3>
                 <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
@@ -544,10 +544,10 @@ export default async function HomePage() {
       <section className="border-t border-line">
         <div className="mx-auto max-w-[760px] px-5 py-16 sm:px-10">
           <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
             Good to know
           </p>
-          <h2 className="display text-4xl leading-[0.95] sm:text-[46px]">
+          <h2 className="display t-h2">
             The quick questions
           </h2>
           <Faq items={HOME_FAQ} />
@@ -583,7 +583,7 @@ export default async function HomePage() {
           }}
         />
         <div className="relative mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-10">
-          <h2 className="display mx-auto text-5xl leading-[0.92] sm:text-[68px]">
+          <h2 className="display mx-auto t-hero">
             The room&apos;s open.
             <br />
             Come in.
