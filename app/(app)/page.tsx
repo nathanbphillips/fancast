@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { brand } from "@/lib/brand";
@@ -15,6 +16,14 @@ import { Faq } from "@/components/marketing/Faq";
  */
 
 export const revalidate = 60;
+
+// The home page is the most-shared URL, so give it its own description + canonical
+// instead of inheriting the bare site default (front-end review item 23).
+export const metadata: Metadata = {
+  description:
+    "The matchday room for Arsenal fans. Turn the pundits off and listen with real supporters, in sync with your own stream. Free to listen, no account needed.",
+  alternates: { canonical: "/" },
+};
 
 // Step watermark icons (design: 72px, gold, opacity .55, top-right of each card).
 const stepIcon = (paths: ReactNode) => (

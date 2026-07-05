@@ -122,7 +122,7 @@ export function RoomRow({
         </button>
       ) : (
         <Link
-          href="/signin"
+          href={`/signin?next=${encodeURIComponent(`/room/${room.slug}`)}`}
           className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-[13px] font-semibold hover:bg-raised"
         >
           Count me in

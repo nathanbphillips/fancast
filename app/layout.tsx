@@ -54,10 +54,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0f0f11" },
-    { media: "(prefers-color-scheme: light)", color: "#f7f5f0" },
-  ],
+  // Single dark value: the app is dark by default regardless of OS scheme (see
+  // the pre-paint theme script), so keying themeColor off prefers-color-scheme
+  // framed the dark page with a beige status bar on light-OS phones. This
+  // matches the manifest (also #0f0f11).
+  themeColor: "#0f0f11",
 };
 
 export default async function RootLayout({
@@ -69,11 +70,28 @@ export default async function RootLayout({
   const raw = (await cookies()).get(THEME_COOKIE)?.value;
   const accountPref: ThemeChoice | null =
     raw === "dark" || raw === "light" ? raw : null;
+
+  // Organization JSON-LD (front-end review item 23). Describes the company/site,
+  // never a broadcast of any match, keeping the compliance line clean.
+  const orgLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: brand.name,
+    description: brand.tagline,
+    ...(process.env.NEXT_PUBLIC_APP_URL
+      ? { url: process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "") }
+      : {}),
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{ __html: themeInitScript(accountPref) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgLd) }}
         />
       </head>
       <body

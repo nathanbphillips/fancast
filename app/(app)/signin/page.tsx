@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { brand } from "@/lib/brand";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
+import { safeNextPath } from "@/lib/redirect";
 import { SignInForm } from "@/components/SignInForm";
 import { Logo } from "@/components/Logo";
 import { Pill } from "@/components/ui/Pill";
@@ -18,13 +19,15 @@ const BENEFITS = [
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const { user, profile } = await getCurrentUserAndProfile();
   if (user && profile) redirect("/");
   if (user && !profile) redirect("/welcome");
 
-  const { error } = await searchParams;
+  const { error, next: rawNext } = await searchParams;
+  // sanitize here too; the auth callback re-validates before redirecting
+  const next = rawNext ? safeNextPath(rawNext) : null;
 
   return (
     <div className="grid lg:min-h-[calc(100dvh-61px)] lg:grid-cols-[1.05fr_.95fr]">
@@ -98,10 +101,11 @@ export default async function SignInPage({
           </div>
           <h2 className="display mt-8 text-3xl">Sign in or join</h2>
           <p className="mt-2 text-sm text-secondary">
-            Enter your email and we&apos;ll send a one-tap link. No passwords.
+            Use your email for a one-tap link, or continue with Google. No
+            passwords either way.
           </p>
           <div className="mt-6">
-            <SignInForm initialError={error} />
+            <SignInForm initialError={error} next={next} />
           </div>
           <p className="mt-6 text-xs text-secondary">
             By continuing you agree to our{" "}

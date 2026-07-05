@@ -9,10 +9,26 @@ import { Button } from "@/components/ui/Button";
  * works once the Supabase provider is enabled — until then it surfaces the
  * provider error rather than faking success.
  */
-export function SignInForm({ initialError }: { initialError?: string }) {
+export function SignInForm({
+  initialError,
+  next,
+}: {
+  initialError?: string;
+  /** post-signin destination, already sanitized server-side (RSVP intent etc.) */
+  next?: string | null;
+}) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(initialError ?? null);
+
+  // Carry the sanitized `next` through to the auth callback, which re-validates
+  // it, so intent (e.g. the room a signed-out user tried to RSVP) survives.
+  const callbackUrl = () => {
+    const base = `${window.location.origin}/auth/callback`;
+    return next && next !== "/"
+      ? `${base}?next=${encodeURIComponent(next)}`
+      : base;
+  };
 
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +37,7 @@ export function SignInForm({ initialError }: { initialError?: string }) {
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      options: { emailRedirectTo: callbackUrl() },
     });
     if (error) {
       setError(error.message);
@@ -36,9 +52,14 @@ export function SignInForm({ initialError }: { initialError?: string }) {
     const supabase = createSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl() },
     });
-    if (error) setError(error.message);
+    // If the Google provider isn't enabled (or the redirect fails), fall back to
+    // a friendly nudge toward the always-available email link rather than dumping
+    // a raw provider error on the user.
+    if (error) {
+      setError("Couldn't start Google sign-in. Use your email link instead.");
+    }
   }
 
   if (state === "sent") {
