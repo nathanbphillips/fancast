@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { KickoffTime } from "@/components/KickoffTime";
+import { InviteCohost } from "@/components/host/InviteCohost";
 import type { RoomState } from "@/lib/db/types";
 
 /**
@@ -23,6 +24,10 @@ export type DashboardRoom = {
   home_team: string;
   away_team: string;
   competition: string | null;
+  /** other accepted hosts (FR-25.4) */
+  coHosts: string[];
+  /** room has a free host seat and is invitable (scheduled/waiting) */
+  canInvite: boolean;
 };
 
 export type DashboardSubscription = {
@@ -296,6 +301,13 @@ export function HostRoomsDashboard({
                         </span>
                       )}
                     </span>
+                    {(r.coHosts.length > 0 || r.canInvite) && (
+                      <InviteCohost
+                        roomId={r.id}
+                        coHosts={r.coHosts}
+                        canInvite={r.canInvite}
+                      />
+                    )}
                   </span>
                   {enterable ? (
                     <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">

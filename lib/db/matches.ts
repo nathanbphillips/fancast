@@ -19,6 +19,8 @@ export type ScheduleRoom = {
   slug: string;
   state: RoomState;
   hostUsername: string;
+  /** all accepted hosts, creator first (FR-25.4 both-badge display) */
+  hostUsernames: string[];
   blurb: string | null;
   rsvpCount: number;
   viewerRsvped: boolean;
@@ -148,6 +150,29 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
     }
   }
 
+  // accepted hosts per room (FR-25.4): both badges. room_hosts is world-readable.
+  const allRoomIds2 = (fixtures ?? []).flatMap((f) =>
+    (f.rooms ?? []).map((r) => r.id),
+  );
+  const hostsByRoom = new Map<string, string[]>();
+  if (allRoomIds2.length > 0) {
+    const { data: hostRows } = await supabase
+      .from("room_hosts")
+      .select(
+        "room_id, created_at, host:profiles!room_hosts_user_id_fkey(username)",
+      )
+      .in("room_id", allRoomIds2)
+      .eq("status", "accepted")
+      .order("created_at", { ascending: true });
+    for (const h of hostRows ?? []) {
+      const name = (h.host as unknown as { username: string } | null)?.username;
+      if (!name) continue;
+      const list = hostsByRoom.get(h.room_id as string) ?? [];
+      list.push(name);
+      hostsByRoom.set(h.room_id as string, list);
+    }
+  }
+
   const todayKey = londonDayKey(new Date().toISOString());
   const tomorrowKey = londonDayKey(
     new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -162,6 +187,9 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
         slug: r.slug as string,
         state: r.state,
         hostUsername: r.commentator?.username ?? "unknown",
+        hostUsernames:
+          hostsByRoom.get(r.id) ??
+          (r.commentator?.username ? [r.commentator.username] : []),
         blurb: r.blurb,
         rsvpCount: r.rsvp_count ?? 0,
         viewerRsvped: rsvpedRoomIds.has(r.id),

@@ -10,6 +10,10 @@ import {
   type DashboardRoom,
   type DashboardSubscription,
 } from "@/components/host/HostRoomsDashboard";
+import {
+  CohostInvites,
+  type CohostInvite,
+} from "@/components/host/CohostInvites";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = { title: "My rooms" };
@@ -68,21 +72,82 @@ export default async function HostDashboardPage() {
       .order("created_at", { ascending: true }),
   ]);
 
-  const rooms: DashboardRoom[] = ((hostRows ?? []) as unknown as HostedRoom[])
-    .filter((h) => h.room && UPCOMING_STATES.includes(h.room.state))
-    .map((h) => ({
-      id: h.room.id,
-      slug: h.room.slug,
-      state: h.room.state,
-      scheduled_kickoff: h.room.scheduled_kickoff,
-      blurb: h.room.blurb,
-      postponed: h.room.postponed,
-      subscription_id: h.room.subscription_id,
-      home_team: h.room.fixture.home_team,
-      away_team: h.room.fixture.away_team,
-      competition: h.room.fixture.competition,
-    }))
+  const hostedRooms = ((hostRows ?? []) as unknown as HostedRoom[]).filter(
+    (h) => h.room && UPCOMING_STATES.includes(h.room.state),
+  );
+  const roomIds = hostedRooms.map((h) => h.room.id);
+
+  // accepted hosts of these rooms (for co-host chips) + pending invites TO the
+  // caller (FR-25.1/25.4)
+  const [{ data: allHosts }, { data: myInvites }] = await Promise.all([
+    roomIds.length
+      ? supabase
+          .from("room_hosts")
+          .select(
+            "room_id, status, host:profiles!room_hosts_user_id_fkey(user_id, username)",
+          )
+          .in("room_id", roomIds)
+          .eq("status", "accepted")
+      : Promise.resolve({ data: [] as unknown[] }),
+    supabase
+      .from("room_hosts")
+      .select(
+        "room_id, inviter:profiles!room_hosts_invited_by_fkey(username), room:rooms(state, fixture:fixtures(home_team, away_team))",
+      )
+      .eq("user_id", user.id)
+      .eq("status", "invited"),
+  ]);
+
+  const coHostsByRoom = new Map<string, string[]>();
+  for (const h of (allHosts ?? []) as unknown as {
+    room_id: string;
+    host: { user_id: string; username: string } | null;
+  }[]) {
+    if (!h.host || h.host.user_id === user.id) continue;
+    const list = coHostsByRoom.get(h.room_id) ?? [];
+    list.push(h.host.username);
+    coHostsByRoom.set(h.room_id, list);
+  }
+
+  const rooms: DashboardRoom[] = hostedRooms
+    .map((h) => {
+      const coHosts = coHostsByRoom.get(h.room.id) ?? [];
+      const invitable = h.room.state === "scheduled" || h.room.state === "waiting";
+      return {
+        id: h.room.id,
+        slug: h.room.slug,
+        state: h.room.state,
+        scheduled_kickoff: h.room.scheduled_kickoff,
+        blurb: h.room.blurb,
+        postponed: h.room.postponed,
+        subscription_id: h.room.subscription_id,
+        home_team: h.room.fixture.home_team,
+        away_team: h.room.fixture.away_team,
+        competition: h.room.fixture.competition,
+        coHosts,
+        canInvite: invitable && coHosts.length < 1, // cap 2 hosts total
+      };
+    })
     .sort((a, b) => a.scheduled_kickoff.localeCompare(b.scheduled_kickoff));
+
+  const invites: CohostInvite[] = (
+    (myInvites ?? []) as unknown as {
+      room_id: string;
+      inviter: { username: string } | null;
+      room: {
+        state: string;
+        fixture: { home_team: string; away_team: string } | null;
+      } | null;
+    }[]
+  )
+    .filter((i) => i.room && (i.room.state === "scheduled" || i.room.state === "waiting"))
+    .map((i) => ({
+      roomId: i.room_id,
+      matchLabel: i.room?.fixture
+        ? `${i.room.fixture.home_team} vs ${i.room.fixture.away_team}`
+        : "a match",
+      inviterName: i.inviter?.username ?? "someone",
+    }));
 
   const subscriptions = (subs ?? []) as DashboardSubscription[];
 
@@ -102,6 +167,7 @@ export default async function HostDashboardPage() {
       </div>
 
       <div className="mt-8">
+        <CohostInvites invites={invites} />
         {rooms.length === 0 && subscriptions.length === 0 ? (
           <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
             No upcoming rooms yet. Pick a fixture and your room is scheduled in

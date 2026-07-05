@@ -59,12 +59,19 @@ export function RoomRow({
         <Avatar src={null} name={room.hostUsername} size={28} />
       </span>
       <span className="min-w-0 flex-1">
-        <Link
-          href={`/${room.hostUsername}`}
-          className="text-[13px] font-bold tracking-[-0.01em] hover:underline"
-        >
-          @{room.hostUsername}
-        </Link>
+        <span className="text-[13px] font-bold tracking-[-0.01em]">
+          {(room.hostUsernames.length > 0
+            ? room.hostUsernames
+            : [room.hostUsername]
+          ).map((h, i) => (
+            <span key={h}>
+              {i > 0 && <span className="text-secondary"> · </span>}
+              <Link href={`/${h}`} className="hover:underline">
+                @{h}
+              </Link>
+            </span>
+          ))}
+        </span>
         {room.blurb && (
           <span className="block truncate text-[12.5px] text-secondary">
             {room.blurb}
