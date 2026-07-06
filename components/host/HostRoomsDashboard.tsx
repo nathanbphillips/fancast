@@ -271,18 +271,14 @@ export function HostRoomsDashboard({
                     <KickoffTime iso={r.scheduled_kickoff} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    {enterable ? (
-                      <Link
-                        href={`/room/${r.slug ?? r.id}`}
-                        className="block truncate text-sm font-bold tracking-[-0.01em] hover:underline"
-                      >
-                        {label}
-                      </Link>
-                    ) : (
-                      <span className="block truncate text-sm font-bold tracking-[-0.01em]">
-                        {label}
-                      </span>
-                    )}
+                    {/* both live and scheduled rows link to the room; a host
+                        opens a scheduled room's waiting room from there */}
+                    <Link
+                      href={`/room/${r.slug ?? r.id}`}
+                      className="block truncate text-sm font-bold tracking-[-0.01em] hover:underline"
+                    >
+                      {label}
+                    </Link>
                     <span className="flex flex-wrap items-center gap-x-1.5 font-mono text-[10px] text-secondary uppercase">
                       <span className="truncate">
                         {r.postponed
@@ -318,14 +314,22 @@ export function HostRoomsDashboard({
                       Live
                     </span>
                   ) : isScheduled ? (
-                    <button
-                      type="button"
-                      onClick={() => void cancelOne(r.id, label)}
-                      disabled={busy}
-                      className="shrink-0 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
-                    >
-                      Cancel
-                    </button>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <Link
+                        href={`/room/${r.slug ?? r.id}`}
+                        className="rounded-md border border-gold px-2.5 py-1.5 text-xs font-semibold text-gold transition-colors hover:bg-raised"
+                      >
+                        Open
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => void cancelOne(r.id, label)}
+                        disabled={busy}
+                        className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </span>
                   ) : null}
                 </div>
               );

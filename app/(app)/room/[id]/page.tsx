@@ -10,6 +10,7 @@ import {
   type Viewer,
 } from "@/components/room/RealtimeRoom";
 import { Countdown } from "@/components/room/Countdown";
+import { OpenWaitingButton } from "@/components/OpenWaitingButton";
 import { callerFlagSummary } from "@/lib/callers";
 import {
   createServiceClient,
@@ -134,8 +135,14 @@ export default async function RoomPage({
     );
   }
 
-  // FR-3.1/3.5: a scheduled room is listed but not enterable — and never 404s
+  // FR-3.1/3.5: a scheduled room is listed but not enterable by listeners — and
+  // never 404s. A HOST of the room, however, gets the "Open waiting room"
+  // control here (this is the only surface that flips scheduled -> waiting).
   if (room.state === "scheduled") {
+    const { user: schedUser } = await getCurrentUserAndProfile();
+    const schedService = createServiceClient();
+    const viewerIsHost =
+      !!schedUser && (await isRoomHost(schedService, schedUser.id, room.id));
     return (
       <div className="flex min-h-dvh flex-col">
         <header className="border-b border-line px-4 py-3">
@@ -144,14 +151,35 @@ export default async function RoomPage({
           </NextLink>
         </header>
         <div className="mx-auto max-w-md px-4 py-10 text-center">
-        <h1 className="text-xl font-bold">
-          {room.fixture.home_team} vs {room.fixture.away_team}
-        </h1>
-        <p className="mt-2 text-sm text-secondary">
-          Doors aren&apos;t open yet. {room.commentator.username} hasn&apos;t
-          opened the waiting room. Check back closer to kickoff.
-        </p>
-          <Countdown targetIso={room.scheduled_kickoff} heading="Kickoff in" />
+          <h1 className="text-xl font-bold">
+            {room.fixture.home_team} vs {room.fixture.away_team}
+          </h1>
+          {viewerIsHost ? (
+            <>
+              <p className="mt-2 text-sm text-secondary">
+                You&apos;re hosting this room. Open the waiting room whenever
+                you&apos;re ready and your listeners can start arriving.
+              </p>
+              <div className="mt-5 flex justify-center">
+                <OpenWaitingButton fixtureId={room.fixture_id} />
+              </div>
+              <div className="mt-6">
+                <Countdown
+                  targetIso={room.broadcast_start ?? room.scheduled_kickoff}
+                  heading="Your show starts in"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-sm text-secondary">
+                Doors aren&apos;t open yet. {room.commentator.username}{" "}
+                hasn&apos;t opened the waiting room. Check back closer to
+                kickoff.
+              </p>
+              <Countdown targetIso={room.scheduled_kickoff} heading="Kickoff in" />
+            </>
+          )}
         </div>
       </div>
     );

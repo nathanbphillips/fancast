@@ -331,9 +331,9 @@ export default function DevDocsPage() {
               rows={[
                 [<C key="a">app/(app)/</C>, "The product + marketing site. Marketing: / (hybrid landing), /matches (schedule + RSVP), /how-it-works (listeners), /host (role-aware: marketing pitch OR the commentator dashboard), /about (manifesto + founder + FAQ). Product: /room/[id] (canonical /room/{slug}; uuid 301s), /{username} (root profiles; /u/* 301s), /settings, /host/new (fixture picker), /admin, /signin, /welcome, legal pages, and this /dev-docs. Has the app layout (AppHeader with mobile hamburger nav, SiteFooter, ToastProvider)."],
                 [<C key="b">app/api/</C>, "All server routes (zod-validated). Grouped below. Also app/robots.ts, app/sitemap.ts, app/opengraph-image.tsx (default OG card) + app/(app)/room/[id]/opengraph-image.tsx (per-room OG card)."],
-                [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures (league-wide sync), adminFixtures, ably, livekit, egress, recording, unfurl, redirect (safeNextPath), ratelimit, standing, predictions/polls/ratings, callers, roles, api (auth helpers), config, brand, theme, slug, roomHosts (isRoomHost), createRoom, seasonHosting, friends, fanScore, avatars, reserved-usernames, commentator-terms. lib/notify/ = the notification engine (types, outbox, producers, email, push, render, tokens, urls). lib/strings/attendance.ts = the load-bearing attendance copy. lib/db/ = Supabase client/server/types + threads/matches/fixtures loaders. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
+                [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures (league-wide sync), adminFixtures, ably, livekit, egress, recording, unfurl, redirect (safeNextPath), ratelimit, standing, predictions/polls/ratings, callers, roles, api (auth helpers), config, brand, theme, slug, roomHosts (isRoomHost), createRoom, fixtureSearch (custom-room suggest), seasonHosting, friends, fanScore, avatars, reserved-usernames, commentator-terms. lib/notify/ = the notification engine (types, outbox, producers, email, push, render, tokens, urls). lib/strings/attendance.ts = the load-bearing attendance copy. lib/db/ = Supabase client/server/types + threads/matches/fixtures loaders. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
                 [<C key="d">components/</C>, "UI. components/room/ (RealtimeRoom orchestrator, CommentatorBar, ClockControls, ShareButton, audio/, widgets), components/stats/ (StatsPanel + bars/timeline/lineups/pitch/info/history/editor), components/marketing/ (OnAirCard, HostLanding, NotifyForm, Faq), components/matches/ (MatchesSchedule, RoomRow), components/host/ (dashboard, cohost invites, RoomCreatePicker), components/friends/, components/admin/, plus shared (AppHeader, MatchHeader, Avatar, ProfilePopover, ClockState, Toast, Legal, SiteFooter…)."],
-                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0036 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
+                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0037 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
                 [<C key="f">scripts/</C>, "tsx scripts: migrate, grant-role, metrics, and ~25 phase smoke / unit-ish tests (see package.json). No Jest/Vitest - tests are standalone tsx scripts."],
                 [<C key="g">docs/</C>, "The spec: ARCHITECTURE, PRD, DESIGN, PHASES (living status), METRICS, RUNBOOK, LEGAL_PAGES, AUDIT*. CLAUDE.md (repo root) is the agent/dev brief + decision log (the most current record of founder rulings)."],
               ]}
@@ -342,7 +342,7 @@ export default function DevDocsPage() {
 
           <Section id="data" title="Data model (Supabase, RLS everywhere)">
             <p>
-              ~40 tables across migrations 0001–0036. The ones you&apos;ll touch most:
+              ~40 tables across migrations 0001–0037. The ones you&apos;ll touch most:
             </p>
             <Table
               head={["Table", "Purpose / key fields"]}
@@ -369,6 +369,7 @@ export default function DevDocsPage() {
                 ["friendships / user blocks", "Double opt-in friends with silent decline + blocking that severs the friendship and is invisible to the blocked (migrations 0031/0034, FR-23). No DMs."],
                 ["profile_reports", "Listener reports on profiles (PRD-01/09 moderation), admin backstop tools alongside suspend/clear-avatar/clear-profile-text."],
                 ["waitlist", "Pre-launch email capture (migration 0036): RLS on with NO anon policy (no address harvesting); the public POST /api/waitlist writes via service role, IP rate-limited, idempotent. Doubles as the launch list."],
+                ["league_requests", "Free-text league/competition requests from the custom-room create page (migration 0037): service-role only, rate-limited, triaged by hand."],
                 ["blocklist_domains / bans", "Moderation: link-domain blocklist + user/device bans."],
               ]}
             />
@@ -405,7 +406,10 @@ export default function DevDocsPage() {
             <UL>
               <li>
                 <b className="text-primary">Room lifecycle:</b> <C>/api/rooms</C> (POST{" "}
-                <C>action:&quot;create&quot;</C> = commentator create from a fixture, FR-19.1; plus
+                <C>action:&quot;create&quot;</C> = commentator create from a fixture, FR-19.1;{" "}
+                <C>action:&quot;create_custom&quot;</C> = host-set title + start time, optionally
+                linked to a Sportmonks fixture via the suggest, else a synthetic fixture the daily
+                matcher may resolve later; an immediate start opens the waiting room directly; plus
                 open/start/end transitions), <C>DELETE /api/rooms/[id]</C> (host cancel),{" "}
                 <C>/api/rooms/bulk-cancel</C>, <C>/api/rooms/[id]/cohost-invite</C> + <C>/cohost-respond</C>{" "}
                 + <C>/leave</C> (FR-25), <C>/api/clock</C>, <C>/api/rooms/[id]/snapshot</C> (reconnect),{" "}
@@ -443,7 +447,10 @@ export default function DevDocsPage() {
                 <b className="text-primary">Match data:</b> <C>/api/stats/[fixtureId]</C> (Sportmonks
                 proxy, 10s cache + coalescing + last-good), <C>/api/history/[fixtureId]</C> (standings/form),{" "}
                 <C>/api/stats-tab</C> (commentator tab push), <C>/api/rooms/[id]/overrides</C> (commentator
-                Info/lineup edits), <C>/api/fotmob/resolve</C> (player links), <C>/api/fixtures/sync</C>.
+                Info/lineup edits), <C>/api/fotmob/resolve</C> (player links), <C>/api/fixtures/sync</C>,{" "}
+                <C>/api/fixtures/search</C> (commentator-gated suggest for custom rooms; 60s cache in{" "}
+                <C>lib/fixtureSearch.ts</C>), <C>/api/league-requests</C> (free-text &quot;add this
+                league&quot; box, rate-limited).
               </li>
               <li>
                 <b className="text-primary">Admin / cron:</b> <C>/api/cron/daily</C> - THE single daily
@@ -641,9 +648,13 @@ export default function DevDocsPage() {
             <H3>The commentator platform (PRDs 01–09)</H3>
             <p>
               Self-serve upgrade from <C>/settings</C> (versioned terms acceptance; admin suspend as
-              backstop). Create a room in two inputs from <C>/host/new</C>; one-click{" "}
-              <b className="text-primary">season hosting</b> auto-creates a room per fixture; invite one
-              equal <b className="text-primary">co-host</b>; cancel with RSVP-holder notifications.
+              backstop). Create a room in two inputs from <C>/host/new</C>, or a{" "}
+              <b className="text-primary">custom room</b> for any unlisted game (host-set title +
+              start, now or later, with a Sportmonks suggest that links covered matches for live
+              stats; unlinked rooms show &quot;coming soon&quot; stats + a league-request box);
+              one-click <b className="text-primary">season hosting</b> auto-creates a room per
+              fixture; invite one equal <b className="text-primary">co-host</b>; cancel with
+              RSVP-holder notifications.
               Rooms live at immutable slugs; profiles at root <C>/{"{username}"}</C> with uploads,
               about/socials, fan score, and upcoming rooms. Listeners follow hosts, RSVP
               (&quot;Count me in&quot;), add friends (double opt-in, blockable), and get batched

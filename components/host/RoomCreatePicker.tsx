@@ -3,13 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { KickoffTime } from "@/components/KickoffTime";
+import { CustomRoomForm } from "@/components/host/CustomRoomForm";
 
 /**
  * Fixture picker + create form (FR-19.1/19.2). Chronological upcoming
  * fixtures; tapping one expands the ONLY two inputs a room needs: broadcast
  * start (default kickoff minus 15 minutes) and an optional 140-char blurb.
- * Everything else comes from the API. No search in v1: the horizon is
- * scrollable.
+ * Everything else comes from the API. Above the list, CustomRoomForm covers
+ * games that aren't listed (founder 2026-07-06): custom title + start time,
+ * with a Sportmonks suggest to link covered matches.
  */
 export type PickerFixture = {
   id: number;
@@ -107,14 +109,19 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
 
   if (fixtures.length === 0) {
     return (
-      <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
-        No upcoming fixtures you don&apos;t already host. New games appear here
-        as the schedule fills in.
-      </p>
+      <div>
+        <CustomRoomForm />
+        <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
+          No upcoming fixtures you don&apos;t already host. New games appear
+          here as the schedule fills in, or create your own room above.
+        </p>
+      </div>
     );
   }
 
   return (
+    <div>
+    <CustomRoomForm />
     <div className="overflow-hidden rounded-2xl border border-line bg-surface">
       {fixtures.map((f) => (
         <div key={f.id} className="border-t border-line first:border-t-0">
@@ -256,6 +263,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
           )}
         </div>
       ))}
+    </div>
     </div>
   );
 }

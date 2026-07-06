@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { config } from "@/lib/config";
 import { acceptedHosts } from "@/lib/roomHosts";
-import { flushRows } from "@/lib/notify/outbox";
+import { flushRows, purgeUnsentRoomReminders } from "@/lib/notify/outbox";
 import { enqueueRoomChange } from "@/lib/notify/producers";
 
 /**
@@ -344,10 +344,11 @@ export async function syncFixtures(
 }
 
 /**
- * No-show expiry (FR-19.7): a scheduled room never opened by kickoff + 2h is
- * auto-canceled (listings already hide it from kickoff + 15 min; this makes
- * the state truthful). Runs from the daily cron; cheap enough to also ride
- * opportunistic syncs.
+ * No-show expiry (FR-19.7): a scheduled room never opened is auto-canceled once
+ * BOTH its kickoff and its host-set show start are more than 2h past, so a
+ * custom/post-match room whose show starts well after kickoff is not swept
+ * before it can open (review 2026-07-06). Runs from the daily cron; cheap
+ * enough to also ride opportunistic syncs.
  */
 export async function sweepNoShowRooms(service: SupabaseClient) {
   const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
@@ -356,7 +357,15 @@ export async function sweepNoShowRooms(service: SupabaseClient) {
     .update({ state: "canceled" })
     .eq("state", "scheduled")
     .lt("scheduled_kickoff", cutoff)
+    // broadcast_start is null for rooms that never set one; otherwise it must
+    // also be 2h past. or() spans BOTH conditions, so kickoff+2h alone is not
+    // enough when a later show start is set.
+    .or(`broadcast_start.is.null,broadcast_start.lt.${cutoff}`)
     .select("id");
   if (error) return { ok: false as const, reason: error.message };
+  // canceled rooms' pending reminders must not fire (review 2026-07-06)
+  for (const r of data ?? []) {
+    await purgeUnsentRoomReminders(service, r.id as string);
+  }
   return { ok: true as const, canceled: data?.length ?? 0 };
 }

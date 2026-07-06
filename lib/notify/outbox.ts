@@ -293,6 +293,24 @@ async function dispatch(
   return { ok: false, error: transientFailure };
 }
 
+/**
+ * Delete a room's UNSENT scheduled reminders (pre_start / rsvp). Called when a
+ * room is canceled or swept so a later revive doesn't inherit a reminder that
+ * fires at the old, now-wrong time (review 2026-07-06). Sent rows are history
+ * and left alone.
+ */
+export async function purgeUnsentRoomReminders(
+  service: SupabaseClient,
+  roomId: string,
+): Promise<void> {
+  await service
+    .from("notifications_outbox")
+    .delete()
+    .eq("room_id", roomId)
+    .is("sent_at", null)
+    .in("type", ["pre_start_reminder", "rsvp_reminder"]);
+}
+
 /** Flush specific rows now (immediate producers call this inside after()). */
 export async function flushRows(
   service: SupabaseClient,

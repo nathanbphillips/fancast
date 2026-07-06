@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { enqueue, flushRows } from "@/lib/notify/outbox";
+import {
+  enqueue,
+  flushRows,
+  purgeUnsentRoomReminders,
+} from "@/lib/notify/outbox";
 import { acceptedHosts } from "@/lib/roomHosts";
 import type { NotificationPayload } from "@/lib/notify/render";
 
@@ -266,6 +270,11 @@ export async function notifyRoomsCanceled(
 ): Promise<void> {
   for (const roomId of roomIds) {
     try {
+      // a canceled room's pending pre-start/RSVP reminders must not fire (they
+      // would arrive for a dead room, or wrong-time after a revive; review
+      // 2026-07-06)
+      await purgeUnsentRoomReminders(service, roomId);
+
       const { data: room } = await service
         .from("rooms")
         .select("id, slug, fixture:fixtures(home_team, away_team)")

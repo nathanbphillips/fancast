@@ -187,6 +187,20 @@ export default function HostGuidePage() {
               ]}
             />
             <p>
+              <B>Match not in the list? Create your own room.</B> On the create
+              page, <B>Create your own room</B> takes just a title and a start
+              time, and the start can be right now (your waiting room opens
+              immediately) or any time in the future. Give it a title like
+              &quot;Arsenal vs Chelsea&quot;; as you type, we search the
+              competitions we cover, and picking a suggestion links the room to
+              the real match so live stats flow automatically. If your game
+              isn&apos;t in our data feed, the room still works fully (chat,
+              audio, recordings, everything); it just shows &quot;Information
+              coming soon&quot; in place of stats, and the create page has a box
+              to tell us which league we should add next. We&apos;re early and
+              started with a handful of competitions; more are on the way.
+            </p>
+            <p>
               <B>Host a whole season:</B> in the fixture picker, <B>Or host the
               whole season</B> schedules a room for every game your team plays
               in that competition this season, and new fixtures get their room

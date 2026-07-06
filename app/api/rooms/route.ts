@@ -11,9 +11,12 @@ import {
   stopBroadcastEgress,
 } from "@/lib/egress";
 import { emitMarker } from "@/lib/markers";
+import { config } from "@/lib/config";
 import { insertRoomWithHost } from "@/lib/createRoom";
+import { fetchSportmonksFixtureRow } from "@/lib/fixtureSearch";
+import { rateLimit } from "@/lib/ratelimit";
 import { isRoomHost } from "@/lib/roomHosts";
-import { flushRows } from "@/lib/notify/outbox";
+import { flushRows, purgeUnsentRoomReminders } from "@/lib/notify/outbox";
 import {
   enqueueGoLive,
   enqueuePreStartReminders,
@@ -43,6 +46,16 @@ const bodySchema = z.discriminatedUnion("action", [
     fixtureId: z.number().int(),
     broadcastStart: z.iso.datetime().optional(),
     blurb: z.string().trim().max(140).optional(),
+  }),
+  // founder 2026-07-06: a room not tied to a listed fixture. The title is the
+  // matchup ("Home vs Away"); optionally linked to a real fixture found via
+  // /api/fixtures/search; the start can be immediate or in the future.
+  z.object({
+    action: z.literal("create_custom"),
+    title: z.string().trim().min(3).max(90),
+    startIso: z.iso.datetime(),
+    blurb: z.string().trim().max(140).optional(),
+    sportmonksFixtureId: z.number().int().positive().optional(),
   }),
   z.object({ action: z.literal("open_waiting"), fixtureId: z.number().int() }),
   z.object({ action: z.literal("start"), roomId: z.uuid() }),
@@ -218,6 +231,293 @@ export async function POST(request: NextRequest) {
       );
     }
     notifyScheduled(room);
+    return NextResponse.json({ room }, { status: 201 });
+  }
+
+  if (body.action === "create_custom") {
+    // same gate as create (founder 2026-07-06: rooms without a listed fixture)
+    if (
+      caller.profile.role !== "commentator" &&
+      !isAdmin(caller.userId, caller.profile)
+    ) {
+      return NextResponse.json(
+        { error: "Only commentators can create rooms." },
+        { status: 403 },
+      );
+    }
+
+    // flood control: unlike the picker create (bounded by unique(fixture_id,
+    // commentator_id) over listed fixtures), an unlinked custom room mints a
+    // fresh synthetic fixture each call, so bound it explicitly (review
+    // 2026-07-06). Rate limit + a generous active-room backstop that never hits
+    // a legit season-hoster.
+    if (!rateLimit(`customroom:${caller.userId}`, 10, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "That's a lot of rooms at once. Give it a minute and try again." },
+        { status: 429 },
+      );
+    }
+    {
+      const { count: activeRooms } = await service
+        .from("rooms")
+        .select("id", { count: "exact", head: true })
+        .eq("commentator_id", caller.userId)
+        .in("state", ["scheduled", "waiting"]);
+      if ((activeRooms ?? 0) >= 100) {
+        return NextResponse.json(
+          {
+            error:
+              "You have a lot of upcoming rooms already. Open, host, or cancel some before adding more.",
+          },
+          { status: 429 },
+        );
+      }
+    }
+
+    const startMs = new Date(body.startIso).getTime();
+    if (startMs < Date.now() - 60_000) {
+      return NextResponse.json(
+        { error: "That start time is in the past. Pick now or a future time." },
+        { status: 400 },
+      );
+    }
+    if (startMs > Date.now() + 180 * 86_400_000) {
+      return NextResponse.json(
+        { error: "Pick a start within the next six months." },
+        { status: 400 },
+      );
+    }
+
+    // an immediate room opens its waiting room right away; a future one is
+    // scheduled exactly like a picker room
+    const immediate = startMs <= Date.now() + 10 * 60_000;
+    const nowIso = new Date().toISOString();
+
+    // resolve the fixture this room hangs off (a linked game, an existing
+    // fixture we dedupe onto, or a fresh synthetic one) + the display matchup
+    let fixtureId = 0;
+    let home = "";
+    let away = "";
+    let kickoffUtc = body.startIso;
+    let mintedFixtureId: number | null = null; // set only when WE inserted it (rollback)
+
+    if (body.sportmonksFixtureId != null) {
+      // linked to a suggested game: fetch server-side (never trust client
+      // names/kickoffs). Insert-if-absent so we NEVER overwrite a fixture other
+      // hosts' rooms depend on (review 2026-07-06); an existing row already
+      // carries the sportmonks id, so stats keep working.
+      let row: Awaited<ReturnType<typeof fetchSportmonksFixtureRow>> = null;
+      try {
+        row = await fetchSportmonksFixtureRow(body.sportmonksFixtureId);
+      } catch {
+        row = null;
+      }
+      if (!row) {
+        return NextResponse.json(
+          {
+            error:
+              "We couldn't load that match from the data feed. Try again, or create the room without linking it.",
+          },
+          { status: 404 },
+        );
+      }
+      if (new Date(row.kickoff_utc).getTime() < Date.now() - 3 * 3_600_000) {
+        return NextResponse.json(
+          { error: "That match has already finished." },
+          { status: 400 },
+        );
+      }
+      fixtureId = row.id;
+      home = row.home_team;
+      away = row.away_team;
+      kickoffUtc = row.kickoff_utc;
+      const { data: existingFx } = await service
+        .from("fixtures")
+        .select("id")
+        .eq("id", fixtureId)
+        .maybeSingle();
+      if (!existingFx) {
+        const { error: insErr } = await service.from("fixtures").insert(row);
+        if (insErr) {
+          return NextResponse.json({ error: insErr.message }, { status: 500 });
+        }
+      }
+    } else {
+      // unlinked: the title IS the matchup. "Home vs Away" keeps the slug,
+      // scoreboard, and daily auto-matcher working.
+      const parts = body.title
+        .split(/\s+vs?\.?\s+/i)
+        .map((s) => s.trim())
+        .filter(Boolean);
+      if (parts.length !== 2 || parts[0].length > 40 || parts[1].length > 40) {
+        return NextResponse.json(
+          {
+            error:
+              'Give the room a title like "Arsenal vs Chelsea" (Home vs Away).',
+          },
+          { status: 400 },
+        );
+      }
+      home = parts[0];
+      away = parts[1];
+      kickoffUtc = body.startIso;
+
+      // dedupe: if a fixture for this matchup already exists near this time (a
+      // covered game the host didn't link, or another host's custom room),
+      // reuse it instead of duplicating the public listing (review 2026-07-06)
+      const { data: dup } = await service
+        .from("fixtures")
+        .select("id, home_team, away_team, kickoff_utc")
+        .ilike("home_team", home)
+        .ilike("away_team", away)
+        .gte("kickoff_utc", new Date(startMs - 24 * 3_600_000).toISOString())
+        .lte("kickoff_utc", new Date(startMs + 24 * 3_600_000).toISOString())
+        .order("kickoff_utc", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (dup) {
+        fixtureId = dup.id;
+        home = dup.home_team;
+        away = dup.away_team;
+        kickoffUtc = dup.kickoff_utc;
+      } else {
+        // synthetic id, retried on the rare same-millisecond PK collision
+        // (concurrent creates); wall-clock is not a safe PK on its own
+        let inserted = false;
+        for (let attempt = 0; attempt < 5 && !inserted; attempt++) {
+          const candidate =
+            Date.now() * 1000 + Math.floor(Math.random() * 1000);
+          const { error: fxErr } = await service.from("fixtures").insert({
+            id: candidate,
+            source: "admin",
+            competition: "Match",
+            home_team: home,
+            away_team: away,
+            season: config.season,
+            kickoff_utc: kickoffUtc,
+          });
+          if (!fxErr) {
+            fixtureId = candidate;
+            mintedFixtureId = candidate;
+            inserted = true;
+          } else if (fxErr.code !== "23505") {
+            return NextResponse.json(
+              { error: "Couldn't set up the room. Try again." },
+              { status: 500 },
+            );
+          }
+        }
+        if (!inserted) {
+          return NextResponse.json(
+            { error: "Couldn't set up the room. Try again." },
+            { status: 500 },
+          );
+        }
+      }
+    }
+
+    // notifications mirror the picker flows: scheduled -> room_scheduled +
+    // pre-start reminder; immediate (straight into waiting) -> go_live
+    const notifyCustom = (r: Room) => {
+      const payload = {
+        matchLabel: `${home} vs ${away}`,
+        roomSlug: r.slug,
+        hostName: caller.profile.username,
+      };
+      after(async () => {
+        const svc = createServiceClient();
+        if (immediate) {
+          const ids = await enqueueGoLive(svc, { roomId: r.id, payload });
+          await flushRows(svc, ids);
+        } else {
+          const ids = await enqueueRoomScheduled(svc, {
+            roomId: r.id,
+            hostUserId: caller.userId,
+            payload,
+          });
+          await flushRows(svc, ids);
+          await enqueuePreStartReminders(svc, {
+            roomId: r.id,
+            hostUserId: caller.userId,
+            broadcastStart: body.startIso,
+            payload,
+          });
+        }
+      });
+    };
+
+    // one room per fixture per commentator (shared with the picker rule): a
+    // canceled one revives, an active one is a friendly 409
+    const { data: existing } = await service
+      .from("rooms")
+      .select("id, state")
+      .eq("fixture_id", fixtureId)
+      .eq("commentator_id", caller.userId)
+      .maybeSingle();
+    if (existing && existing.state !== "canceled") {
+      return NextResponse.json(
+        { error: "You already have a room for this match." },
+        { status: 409 },
+      );
+    }
+    if (existing) {
+      const { data: revived, error } = await service
+        .from("rooms")
+        .update({
+          state: immediate ? "waiting" : "scheduled",
+          broadcast_start: body.startIso,
+          blurb: body.blurb || null,
+          postponed: false,
+          subscription_id: null,
+          opened_at: immediate ? nowIso : null,
+        })
+        .eq("id", existing.id)
+        .select()
+        .single<Room>();
+      if (error || !revived) {
+        return NextResponse.json(
+          { error: error?.message ?? "Couldn't create the room." },
+          { status: 500 },
+        );
+      }
+      await service.from("room_hosts").upsert(
+        {
+          room_id: existing.id,
+          user_id: caller.userId,
+          status: "accepted",
+          responded_at: nowIso,
+        },
+        { onConflict: "room_id,user_id" },
+      );
+      // the pre-cancel schedule may have left unsent reminders; the cancel path
+      // purges them, but purge again so a revive with a new start is clean
+      await purgeUnsentRoomReminders(service, existing.id);
+      notifyCustom(revived);
+      return NextResponse.json({ room: revived }, { status: 201 });
+    }
+
+    const { room, error } = await insertRoomWithHost(service, {
+      fixtureId,
+      creatorId: caller.userId,
+      creatorUsername: caller.profile.username,
+      homeTeam: home,
+      awayTeam: away,
+      kickoffUtc,
+      state: immediate ? "waiting" : "scheduled",
+      broadcastStart: body.startIso,
+      blurb: body.blurb || null,
+      openedAt: immediate ? nowIso : null,
+    });
+    if (error || !room) {
+      if (mintedFixtureId != null) {
+        await service.from("fixtures").delete().eq("id", mintedFixtureId); // no orphan
+      }
+      return NextResponse.json(
+        { error: error ?? "Couldn't create the room." },
+        { status: 500 },
+      );
+    }
+    notifyCustom(room);
     return NextResponse.json({ room }, { status: 201 });
   }
 
