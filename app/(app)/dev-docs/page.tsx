@@ -6,10 +6,11 @@ import { brand } from "@/lib/brand";
  * Developer handoff overview at /dev-docs. A single, comprehensive, accurate
  * map of the build for an incoming developer (telemetry + features). Reflects
  * what is ACTUALLY built, not the aspirational spec in docs/ARCHITECTURE.md.
+ * Last full refresh: 2026-07-06 (post Cloud Design overhaul, Commentator
+ * Platform Epic PRDs 01-09, avatar uploads, front-end review pass).
  *
- * Visibility: public but noindex (an unlisted handoff URL — no account needed).
- * To restrict it to admins instead, gate it like app/(app)/admin/page.tsx
- * (getCurrentUserAndProfile + isAdmin + redirect).
+ * Visibility: noindex + HTTP Basic auth in middleware.ts (any username;
+ * password = DEV_DOCS_PASSWORD env, with a built-in fallback).
  */
 export const metadata: Metadata = {
   title: "Developer overview",
@@ -100,13 +101,14 @@ export default function DevDocsPage() {
           {brand.name} — developer overview
         </h1>
         <p className="mt-2 max-w-3xl text-[15px] text-secondary">
-          A live fan-commentary platform for football (working name; rename pending). A commentator
-          broadcasts live audio for a match; listeners watch their own stream and get a synced clock,
-          live stats, a threaded chat/links stream, questions, call-ins, and recordings. This page is a
-          self-contained map of how it&apos;s built — written for an incoming developer reviewing the
-          codebase and adding telemetry + features. It reflects what is{" "}
-          <em>actually built</em> (the spec in <C>docs/</C> drifts ahead of the code in places — those
-          gaps are called out).
+          A live fan-commentary platform for football (working name; rename pending). Self-serve
+          commentators (solo or with an equal co-host) broadcast live audio for a match; listeners
+          watch their own stream and get a synced clock, live stats, a threaded chat/links stream,
+          reactions, questions, call-ins, RSVPs, and recordings — plus profiles, friends, follows, and
+          email/push notifications around it. This page is a self-contained map of how it&apos;s
+          built — written for an incoming developer reviewing the codebase and adding telemetry +
+          features. It reflects what is <em>actually built</em> (the spec in <C>docs/</C> drifts in
+          places — gaps are called out).
         </p>
         <p className="mt-2 text-sm text-secondary">
           Production: <C>https://fancast-26.vercel.app</C> · Repo: <C>nathanbphillips/fancast</C> ·
@@ -133,10 +135,11 @@ export default function DevDocsPage() {
           <Section id="tldr" title="TL;DR">
             <UL>
               <li>
-                <b className="text-primary">Mental model:</b> one commentator broadcasts audio per
-                &quot;room&quot; (a match). Listeners watch their own TV/stream and sync our commentary to
-                it. The product is <b className="text-primary">audio-only</b> — it never touches match
-                video (legal foundation; see Non-negotiables).
+                <b className="text-primary">Mental model:</b> commentators broadcast audio per
+                &quot;room&quot; (a match) — up to two equal hosts, every host check through one{" "}
+                <C>isRoomHost()</C> helper. Listeners watch their own TV/stream and sync our commentary
+                to it. The product is <b className="text-primary">audio-only</b> — it never touches
+                match video (legal foundation; see Non-negotiables).
               </li>
               <li>
                 <b className="text-primary">Architecture in one line:</b> the database is the source of
@@ -145,9 +148,14 @@ export default function DevDocsPage() {
                 reconnect.
               </li>
               <li>
-                <b className="text-primary">Status:</b> Phases 1–11 are code-complete and verified;
-                pre-launch. Deferred: Stripe tipping, Resend email notifications, the iOS-Safari audio
-                certification pass, and a final mobile/Lighthouse polish.
+                <b className="text-primary">Status:</b> Phases 1–11, the Cloud Design visual overhaul
+                (marketing site + room), the Commentator Platform Epic (PRDs 01–09: self-serve
+                commentators, slugs/co-hosts, season subscriptions, notifications, RSVPs, friends, fan
+                score, profile cards), avatar uploads, and a founder-ranked front-end review pass are
+                all code-complete and deployed; pre-launch. Deferred: Stripe tipping, the iOS-Safari
+                audio certification pass, favicon + rename (both awaiting final branding). Email/push
+                notification <em>infrastructure is built</em> but no-ops until{" "}
+                <C>RESEND_API_KEY</C>/<C>EMAIL_FROM</C> and the VAPID keys are set.
               </li>
               <li>
                 <b className="text-primary">Telemetry today:</b> essentially none beyond{" "}
@@ -196,6 +204,18 @@ export default function DevDocsPage() {
                 security; the anon key can read only what&apos;s public. Service-role writes happen only
                 server-side in API routes after an explicit auth check.
               </li>
+              <li>
+                <b className="text-primary">Copy compliance is load-bearing.</b> Never imply we
+                stream/show the match or carry broadcast audio (&quot;watch&quot; only ever = the
+                user&apos;s own stream; we &quot;listen alongside&quot;); never imply official
+                club/league/broadcaster affiliation; no crests/kits/player/broadcast imagery
+                (abstract SVG only); &quot;attend&quot; only ever attaches to the <em>room</em>, never
+                the match (strings in <C>lib/strings/attendance.ts</C>).
+              </li>
+              <li>
+                <b className="text-primary">Never use an em-dash</b> in any document or user-facing
+                string (founder rule). Code comments are exempt.
+              </li>
             </ol>
           </Section>
 
@@ -209,9 +229,11 @@ export default function DevDocsPage() {
                 ["Audio", "LiveKit Cloud", "WebRTC broadcast, call-in permission elevation, room-composite recording, HLS egress. @livekit/rtc-node is used in test scripts only."],
                 ["Match data", "Sportmonks v3 (football)", "Plan covers Premier League / FA Cup / Carabao Cup / 2. Bundesliga ONLY. Arsenal=team 19, EPL=league 8 (lib/config.ts)."],
                 ["Player links", "Fotmob (unofficial suggest endpoint)", "Link-out only, never embedded. Resolved server-side + cached."],
-                ["Media processing", "ffmpeg-static in a Vercel function", "MP3 stream-copy segment cutting on a wrapped recording."],
+                ["Media processing", "ffmpeg-static + sharp in Vercel functions", "ffmpeg: MP3 stream-copy segment cutting on a wrapped recording. sharp: avatar uploads re-encoded to a 256px WebP (metadata stripped)."],
                 ["Validation", "zod v4", "Every API route validates input before touching the DB."],
-                ["Payments / email", "Stripe / Resend", "DEFERRED — not yet built (no Stripe dep, no /api/stripe). Tipping + going-live emails are Phase 9 remainder."],
+                ["Notifications", "Resend (email) + web-push (PWA push)", "BUILT (PRD-04): outbox with dedupe, per-user prefs, signed one-click unsubscribe, service worker. lib/notify/email.ts no-ops (logs) until RESEND_API_KEY + EMAIL_FROM are set; push needs the VAPID keys."],
+                ["Fonts", "Anton / Hanken Grotesk / Space Mono (next/font)", "Cloud Design type system: Anton display via the .display class (uppercase, NEVER on tabular-nums), Hanken body/UI, Space Mono labels/eyebrows."],
+                ["Payments", "Stripe", "DEFERRED — not yet built (no Stripe dep, no /api/stripe). Tipping is the Phase 9 remainder; tip rows will carry recipient_user_id from day one (co-host ruling)."],
               ]}
             />
           </Section>
@@ -249,30 +271,32 @@ export default function DevDocsPage() {
             <Table
               head={["Path", "What's there"]}
               rows={[
-                [<C key="a">app/(app)/</C>, "The product. Pages: / (home schedule), /room/[id], /admin, /signin, /welcome, /u/[username], /guidelines, /terms, /privacy, and this /dev-docs. Has the app layout (header, footer, ToastProvider)."],
-                [<C key="b">app/api/</C>, "All server routes (zod-validated). Grouped below."],
-                [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures, adminFixtures, ably, livekit, egress, recording, unfurl, redirect, ratelimit, standing, predictions/polls/ratings, roles, api (auth helpers), config, brand, theme. lib/db/ = Supabase client/server/types + thread loader. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
-                [<C key="d">components/</C>, "UI. components/room/ (RealtimeRoom orchestrator, CommentatorBar, ClockControls, audio/, widgets), components/stats/ (StatsPanel + bars/timeline/lineups/pitch/info/history/editor), components/admin/, plus shared (MatchHeader, ClockState, Toast, Legal, SiteFooter…)."],
-                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0023 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
-                [<C key="f">scripts/</C>, "tsx scripts: migrate, grant-role, metrics, and ~20 phase smoke / unit-ish tests (see package.json)."],
-                [<C key="g">docs/</C>, "The spec: ARCHITECTURE, PRD, DESIGN, PHASES (living status), METRICS, RUNBOOK, LEGAL_PAGES, AUDIT*. CLAUDE.md (repo root) is the agent/dev brief + decision log."],
+                [<C key="a">app/(app)/</C>, "The product + marketing site. Marketing: / (hybrid landing), /matches (schedule + RSVP), /how-it-works (listeners), /host (role-aware: marketing pitch OR the commentator dashboard), /about (manifesto + founder + FAQ). Product: /room/[id] (canonical /room/{slug}; uuid 301s), /{username} (root profiles; /u/* 301s), /settings, /host/new (fixture picker), /admin, /signin, /welcome, legal pages, and this /dev-docs. Has the app layout (AppHeader with mobile hamburger nav, SiteFooter, ToastProvider)."],
+                [<C key="b">app/api/</C>, "All server routes (zod-validated). Grouped below. Also app/robots.ts, app/sitemap.ts, app/opengraph-image.tsx (default OG card) + app/(app)/room/[id]/opengraph-image.tsx (per-room OG card)."],
+                [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures (league-wide sync), adminFixtures, ably, livekit, egress, recording, unfurl, redirect (safeNextPath), ratelimit, standing, predictions/polls/ratings, callers, roles, api (auth helpers), config, brand, theme, slug, roomHosts (isRoomHost), createRoom, seasonHosting, friends, fanScore, avatars, reserved-usernames, commentator-terms. lib/notify/ = the notification engine (types, outbox, producers, email, push, render, tokens, urls). lib/strings/attendance.ts = the load-bearing attendance copy. lib/db/ = Supabase client/server/types + threads/matches/fixtures loaders. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
+                [<C key="d">components/</C>, "UI. components/room/ (RealtimeRoom orchestrator, CommentatorBar, ClockControls, ShareButton, audio/, widgets), components/stats/ (StatsPanel + bars/timeline/lineups/pitch/info/history/editor), components/marketing/ (OnAirCard, HostLanding, NotifyForm, Faq), components/matches/ (MatchesSchedule, RoomRow), components/host/ (dashboard, cohost invites, RoomCreatePicker), components/friends/, components/admin/, plus shared (AppHeader, MatchHeader, Avatar, ProfilePopover, ClockState, Toast, Legal, SiteFooter…)."],
+                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0036 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
+                [<C key="f">scripts/</C>, "tsx scripts: migrate, grant-role, metrics, and ~25 phase smoke / unit-ish tests (see package.json). No Jest/Vitest — tests are standalone tsx scripts."],
+                [<C key="g">docs/</C>, "The spec: ARCHITECTURE, PRD, DESIGN, PHASES (living status), METRICS, RUNBOOK, LEGAL_PAGES, AUDIT*. CLAUDE.md (repo root) is the agent/dev brief + decision log (the most current record of founder rulings)."],
               ]}
             />
           </Section>
 
           <Section id="data" title="Data model (Supabase, RLS everywhere)">
             <p>
-              ~30 tables across migrations 0001–0023. The ones you&apos;ll touch most:
+              ~40 tables across migrations 0001–0036. The ones you&apos;ll touch most:
             </p>
             <Table
               head={["Table", "Purpose / key fields"]}
               rows={[
-                ["profiles", "user_id, username, role (listener/commentator/admin), standing, theme_pref. Establishment for vote/flag weighting = good standing + account ≥48h."],
+                ["profiles", "user_id, username, role (listener/commentator/admin), standing, theme_pref, avatar_url (upload-only; see Security), about + social_links (commentator sections, fixed platform set incl. Bluesky), commentator_terms_accepted_at/version (self-serve upgrade, migration 0026), fan-score columns (migration 0032: comments + net weighted votes, floored at 0; matches attended at 15+min). Usernames exclude the reserved-route list; profiles live at root /{username}."],
                 ["follows", "follower_id → commentator_id."],
-                ["fixtures", "Match cache. id (PK), sportmonks_fixture_id (real upstream id; null until matched), source ('sportmonks'|'admin'), home/away team + ids, kickoff_utc, competition. Admin-created games use a synthetic epoch-ms PK."],
-                ["rooms", "id, fixture_id, commentator_id, state (scheduled/waiting/pregame/live/postgame/wrapped…), scheduled_kickoff, broadcast_start, chat_open, links_open, hls_url, livekit_room."],
+                ["room_hosts", "Equal co-hosts (migration 0027, cap 2 in v1, schema supports N): room_id, user_id, status (invited/accepted/declined/left), invited_by. Every host permission check goes through lib/roomHosts.ts isRoomHost()."],
+                ["host_team_subscriptions", "Season hosting (migration 0028, FR-20): one click schedules a room for every fixture a team plays; the daily cron auto-creates rooms for newly-appearing fixtures."],
+                ["fixtures", "Match cache. id (PK), sportmonks_fixture_id (real upstream id; null until matched), source ('sportmonks'|'admin'), home/away team + ids, kickoff_utc, competition. League-wide EPL sync (FR-19.5). Admin-created games use a synthetic epoch-ms PK."],
+                ["rooms", "id, fixture_id, commentator_id (creator), state (scheduled/waiting/pregame/live/postgame/wrapped/canceled), slug (immutable {home}-vs-{away}-{dd-mmm-yyyy}-{host}, canonical URL), blurb (140ch), postponed, rsvp_count (denormalized), scheduled_kickoff, broadcast_start, chat_open, links_open, hls_url, livekit_room."],
                 ["clock_events", "Event-sourced clock (action, server_ts, offset_seconds). Never a ticking value."],
-                ["chat_messages", "Threaded: parent_id / root_id / depth (migration 0018, BEFORE-INSERT trigger). hidden_by, score (weighted), created_at. Replies are just chat_messages rows on the same channel."],
+                ["chat_messages", "Threaded: parent_id / root_id / depth (migration 0018, BEFORE-INSERT trigger). hidden_by, score (weighted), created_at, inline link-preview fields (migration 0024). Replies are just chat_messages rows on the same channel."],
                 ["message_votes / message_flags", "Per-user votes (±1, weighted) + flags (weight, 10/match budget, ≥3.0 weighted hides)."],
                 ["links / link_votes", "Submitted links (server-side OG unfurl), hidden flag (RLS-redacted like chat, migration 0017)."],
                 ["questions / talk_requests / speaker_events", "Private commentator inbox + call-in lifecycle + on-air audit."],
@@ -282,14 +306,20 @@ export default function DevDocsPage() {
                 ["player_fotmob", "Cache of Sportmonks player id → Fotmob profile URL (migration 0021)."],
                 ["fixture_stats_cache", "Daily-warmed snapshot of a fixture's match data (migration 0022) — cold-start/outage fallback for the stats proxy."],
                 ["room_stat_overrides", "Commentator corrections to the Info + Line-ups panels (migration 0023), merged onto Sportmonks data client-side."],
+                ["notifications_outbox / notification_prefs / push_subscriptions", "The notification engine (migration 0029, FR-21): outbox rows with a (recipient, room, type) dedupe key, per-user channel prefs (email/push per type), and browser push endpoints. Immediate sends flush inline after the response; reminders drain opportunistically + via the daily cron."],
+                ["room_rsvps", "Explicit RSVP (migration 0030, FR-22): own-rows-only RLS; the public count is denormalized onto rooms.rsvp_count; friend chips resolve viewer-scoped server-side. 'Attend' copy only ever attaches to the room."],
+                ["friendships / user blocks", "Double opt-in friends with silent decline + blocking that severs the friendship and is invisible to the blocked (migrations 0031/0034, FR-23). No DMs."],
+                ["profile_reports", "Listener reports on profiles (PRD-01/09 moderation), admin backstop tools alongside suspend/clear-avatar/clear-profile-text."],
+                ["waitlist", "Pre-launch email capture (migration 0036): RLS on with NO anon policy (no address harvesting); the public POST /api/waitlist writes via service role, IP rate-limited, idempotent. Doubles as the launch list."],
                 ["blocklist_domains / bans", "Moderation: link-domain blocklist + user/device bans."],
               ]}
             />
             <p className="text-[13px]">
               RLS highlights: <C>questions</C>/<C>talk_requests</C> readable only by author + the room
-              commentator/admin; <C>message_flags</C> write-only for listeners; hidden chat/link bodies
-              redacted from anon; <C>recordings</C> commentator/admin-only. Note: <C>tips</C>/
-              <C>subscriptions</C> appear in the spec but are not built (tipping deferred).
+              hosts/admin; <C>message_flags</C> write-only for listeners; hidden chat/link bodies
+              redacted from anon; <C>recordings</C> commentator/admin-only; <C>room_rsvps</C> own-rows
+              only; <C>waitlist</C> unreadable by anon. Note: <C>tips</C>/<C>subscriptions</C> (the
+              Stripe kind) appear in the spec but are not built (tipping deferred).
             </p>
           </Section>
 
@@ -301,7 +331,8 @@ export default function DevDocsPage() {
                 [<C key="b">room:{"{id}"}:links</C>, "New links, vote updates, hides.", "Server only"],
                 [<C key="c">room:{"{id}"}:control</C>, "Room state, clock events, markers, stats-tab push, widget aggregates, stat_overrides, broadcast_start, radio, features.", "Server only"],
                 [<C key="d">room:{"{id}"}:private</C>, "Questions + talk-request status.", "Subscribe via commentator capability token; listeners write via API."],
-                [<C key="e">room:{"{id}"}:user:{"{uid}"}</C>, "Per-viewer signals (e.g. talk-request resolution).", "Server only"],
+                [<C key="e">room:{"{id}"}:user:{"{uid}"}</C>, "Per-viewer signals (e.g. talk-request resolution, call-in queue position).", "Server only"],
+                [<C key="f">room:{"{id}"}:reactions</C>, "Ephemeral floating emoji (no DB rows; rate-limited via /api/reactions; intentionally NOT rehydrated on reconnect).", "Server only"],
               ]}
             />
             <p>
@@ -315,18 +346,36 @@ export default function DevDocsPage() {
             <p>Every route validates input before touching the DB. Grouped by area:</p>
             <UL>
               <li>
-                <b className="text-primary">Room lifecycle:</b> <C>/api/rooms</C> (open/start/end/state),{" "}
-                <C>/api/clock</C>, <C>/api/rooms/[id]/snapshot</C> (reconnect), <C>/api/listen</C>{" "}
-                (audio-session start/heartbeat/stop).
+                <b className="text-primary">Room lifecycle:</b> <C>/api/rooms</C> (POST{" "}
+                <C>action:&quot;create&quot;</C> = commentator create from a fixture, FR-19.1; plus
+                open/start/end transitions), <C>DELETE /api/rooms/[id]</C> (host cancel),{" "}
+                <C>/api/rooms/bulk-cancel</C>, <C>/api/rooms/[id]/cohost-invite</C> + <C>/cohost-respond</C>{" "}
+                + <C>/leave</C> (FR-25), <C>/api/clock</C>, <C>/api/rooms/[id]/snapshot</C> (reconnect),{" "}
+                <C>/api/listen</C> (audio-session start/heartbeat/stop),{" "}
+                <C>/api/host-subscriptions</C> (season hosting).
               </li>
               <li>
                 <b className="text-primary">Stream:</b> <C>/api/chat</C> (+ <C>/hide</C>, <C>/flag</C>,{" "}
-                <C>/vote</C>), <C>/api/links</C> (+ <C>/vote</C>) — submit does server-side OG unfurl.
+                <C>/vote</C>), <C>/api/links</C> (+ <C>/vote</C>) — submit does server-side OG unfurl —
+                and <C>/api/reactions</C> (ephemeral emoji, hard rate-limit).
               </li>
               <li>
                 <b className="text-primary">Interaction:</b> <C>/api/questions</C>, <C>/api/talk</C> (+{" "}
                 <C>/leave</C>), <C>/api/slider</C>, <C>/api/predictions</C>, <C>/api/polls</C>,{" "}
-                <C>/api/ratings</C>, <C>/api/callers</C>, <C>/api/follow</C>.
+                <C>/api/ratings</C>, <C>/api/callers</C>, <C>/api/follow</C>,{" "}
+                <C>/api/rooms/[id]/rsvp</C> (POST/DELETE, recomputes the denormalized count + schedules
+                the reminder).
+              </li>
+              <li>
+                <b className="text-primary">Profiles / social:</b> <C>/api/profile</C> (username/theme/
+                about/socials), <C>/api/profile/avatar</C> (POST/DELETE image upload — see Security),{" "}
+                <C>/api/profile/report</C>, <C>/api/profiles/[username]/card</C> (popover),{" "}
+                <C>/api/commentator/upgrade</C> (terms-versioned self-serve role upgrade),{" "}
+                <C>/api/friends/*</C> (request/respond/remove), <C>/api/blocks/[userId]</C>.
+              </li>
+              <li>
+                <b className="text-primary">Notifications:</b> <C>/api/notification-prefs</C>,{" "}
+                <C>/api/push-subscriptions</C>, <C>/api/unsubscribe</C> (signed one-click token).
               </li>
               <li>
                 <b className="text-primary">Audio:</b> <C>/api/livekit/token</C> (role-scoped grants),{" "}
@@ -339,29 +388,33 @@ export default function DevDocsPage() {
                 Info/lineup edits), <C>/api/fotmob/resolve</C> (player links), <C>/api/fixtures/sync</C>.
               </li>
               <li>
-                <b className="text-primary">Admin / cron:</b> <C>/api/admin/rooms</C> (create a room for any
-                game), <C>/api/admin/match-fixtures</C> (daily matcher + cache-warm; GET = Vercel cron with{" "}
-                <C>CRON_SECRET</C>), <C>/api/admin/ban</C>, <C>/api/admin/purge</C>,{" "}
-                <C>/api/admin/blocklist</C>.
+                <b className="text-primary">Admin / cron:</b> <C>/api/cron/daily</C> — THE single daily
+                platform cron (Bearer <C>CRON_SECRET</C>; fans out to league-wide fixture sync,
+                admin-game matching + cache-warm, no-show room expiry, subscription auto-create,
+                notification drain, fan-score recompute). Plus <C>/api/admin/rooms</C>,{" "}
+                <C>/api/admin/match-fixtures</C> (manual trigger), <C>/api/admin/ban</C> / <C>/purge</C> /{" "}
+                <C>/blocklist</C> / <C>/suspend-commentator</C> / <C>/clear-avatar</C> /{" "}
+                <C>/clear-profile-text</C>.
               </li>
               <li>
-                <b className="text-primary">Infra:</b> <C>/api/ably/token</C>, <C>/api/profile</C>,{" "}
-                <C>/api/health</C>.
+                <b className="text-primary">Infra / growth:</b> <C>/api/ably/token</C>,{" "}
+                <C>/api/health</C>, <C>/api/waitlist</C> (public pre-launch email capture, IP-limited).
               </li>
             </UL>
             <p className="text-[13px]">
               Auth helpers in <C>lib/api.ts</C> (<C>requireParticipant</C>) + <C>lib/roles.ts</C> (
-              <C>isAdmin</C>). Commentator-gated routes check{" "}
-              <C>room.commentator_id === caller.userId || isAdmin</C>.
+              <C>isAdmin</C>). Host-gated routes check{" "}
+              <C>isRoomHost(service, userId, roomId) || isAdmin</C> — never{" "}
+              <C>commentator_id</C> directly (co-hosts are equals).
             </p>
           </Section>
 
           <Section id="audio" title="Audio pipeline (LiveKit)">
             <UL>
               <li>
-                <b className="text-primary">Broadcast:</b> one LiveKit room per match room. The commentator
-                publishes mic → Web Audio delay node (self-delay 0–5s) → LiveKit. Going on air requires a
-                live mic.
+                <b className="text-primary">Broadcast:</b> one LiveKit room per match room. A host
+                publishes mic → Web Audio delay node (self-delay 0–5s) → LiveKit; co-hosts are equal
+                (either can run everything). Going on air requires a live mic.
               </li>
               <li>
                 <b className="text-primary">Call-ins:</b> permission elevation on Accept; an ON AIR bar;
@@ -466,6 +519,20 @@ export default function DevDocsPage() {
                 stats proxy is fixture-allowlisted (no client-supplied upstream URL).
               </li>
               <li>
+                <b className="text-primary">Avatar uploads:</b> <C>/api/profile/avatar</C> is the ONLY
+                write path (no free-text URL). Owner-only, 12/hr, 4MB cap (under Vercel&apos;s body
+                limit), magic-byte sniff (PNG/JPEG/WebP only; SVG rejected), 30M-pixel decompression
+                guard, then a <C>sharp</C> re-encode to a 256px WebP (strips metadata, neutralizes
+                payloads) into the public <C>avatars</C> bucket. <C>next/image remotePatterns</C> is
+                pinned to the Supabase Storage host (was any-https), and avatars render through the
+                optimizer so a hostile host can&apos;t harvest viewer IPs.
+              </li>
+              <li>
+                <b className="text-primary">Redirect safety:</b> <C>safeNextPath()</C> (
+                <C>lib/redirect.ts</C>) sanitizes every <C>?next=</C> (sign-in intent carry-through, the
+                auth callback) against open redirects + control-char smuggling.
+              </li>
+              <li>
                 <b className="text-primary">Headers:</b> a CSP (strict frame-ancestors/object-src/base-uri,
                 permissive media/transport so audio + realtime work) + signed-URL scoping for recordings (1h
                 TTL, per-object, commentator/admin-only).
@@ -501,6 +568,29 @@ export default function DevDocsPage() {
               news → venue/referee/weather) + a soccer-pitch line-up view; the commentator can push a tab to
               everyone and edit the Info/Line-up data live (see Match-data pipeline).
             </p>
+            <H3>The marketing site (Cloud Design)</H3>
+            <p>
+              Hybrid landing at <C>/</C> (honest state-aware hero + &quot;ON AIR&quot; preview card,
+              how-it-works teaser, live/coming-up from real fixtures, a &quot;second screen&quot;
+              differentiation section, FAQ, waitlist capture in empty states), <C>/matches</C>{" "}
+              (date-grouped schedule + RSVP + share buttons), <C>/how-it-works</C> (listener guide),{" "}
+              <C>/host</C> (role-aware: supply-side pitch for visitors/listeners, dashboard for
+              commentators), <C>/about</C> (manifesto, real founder section, archetypal host cards,
+              compliance FAQ). Trust posture is deliberately <em>honestly early</em> — no fabricated
+              stats, hosts, or live events (front-end review 2026-07-05). SEO: robots + sitemap +
+              Organization JSON-LD + per-room OG cards.
+            </p>
+            <H3>The commentator platform (PRDs 01–09)</H3>
+            <p>
+              Self-serve upgrade from <C>/settings</C> (versioned terms acceptance; admin suspend as
+              backstop). Create a room in two inputs from <C>/host/new</C>; one-click{" "}
+              <b className="text-primary">season hosting</b> auto-creates a room per fixture; invite one
+              equal <b className="text-primary">co-host</b>; cancel with RSVP-holder notifications.
+              Rooms live at immutable slugs; profiles at root <C>/{"{username}"}</C> with uploads,
+              about/socials, fan score, and upcoming rooms. Listeners follow hosts, RSVP
+              (&quot;Count me in&quot;), add friends (double opt-in, blockable), and get batched
+              email/push notifications with one-click unsubscribe.
+            </p>
             <H3>Admin</H3>
             <p>
               <C>/admin</C> (admin-gated): create a room for any game from team names + kickoff; &quot;Run
@@ -514,12 +604,14 @@ export default function DevDocsPage() {
               head={["Area", "State"]}
               rows={[
                 ["Phases 1–8 (foundation, auth, chat/links/mod, room lifecycle, audio, sync/clock, stats, recording)", <span key="a" className="font-semibold text-green">Code-complete + verified</span>],
-                ["Phase 9a (widgets) + 9d (listener metrics) + Info tab", <span key="b" className="font-semibold text-green">Done</span>],
-                ["Phase 10 (functional hardening: error states, reconnect drills, RLS audit, CSP, legal pages)", <span key="c" className="font-semibold text-green">Done</span>],
-                ["Phase 11 (merged threaded stream, vote sorting, pre-game history) + admin rooms + stats enrichment + commentator editing + Fotmob + cache-warming", <span key="d" className="font-semibold text-green">Done</span>],
-                ["Phase 9b/9c — Stripe tipping + Resend going-live emails", <span key="e" className="font-semibold text-gold">Deferred (no Stripe/Resend deps or routes yet)</span>],
-                ["iOS Safari audio certification (device matrix)", <span key="f" className="font-semibold text-gold">Pending founder devices</span>],
-                ["Final mobile polish + Lighthouse/contrast pass; first public session", <span key="g" className="font-semibold text-gold">Pending</span>],
+                ["Phase 9a (widgets) + 9d (listener metrics) + Phase 10 (functional hardening) + Phase 11 (merged threaded stream, vote sorting, pre-game history) + admin rooms + stats enrichment + commentator editing + Fotmob + cache-warming", <span key="b" className="font-semibold text-green">Done</span>],
+                ["Cloud Design visual overhaul: dark-default token system, Anton/Hanken/Space Mono, marketing pages, room restructure (desktop + mobile), reactions, call-in queue, locked type scale + gold split", <span key="c" className="font-semibold text-green">Done</span>],
+                ["Commentator Platform Epic PRDs 01–09 (self-serve commentators, root profiles, slugs + co-hosts, season subscriptions, notifications, RSVPs, friends/blocks, fan score, profile cards) — migrations 0026–0035", <span key="d" className="font-semibold text-green">Done + deployed</span>],
+                ["Avatar image uploads (sharp pipeline) + front-end review pass (honest trust signals, funnel, mobile nav, /host landing, SEO, waitlist, room sharing) — migration 0036", <span key="e" className="font-semibold text-green">Done + deployed (2026-07-05)</span>],
+                ["Notification SENDING (email + push)", <span key="f" className="font-semibold text-gold">Infra built; no-ops until RESEND_API_KEY / EMAIL_FROM / VAPID keys are set</span>],
+                ["Stripe tipping (Phase 9b/9c)", <span key="g" className="font-semibold text-gold">Deferred (no Stripe dep or routes yet)</span>],
+                ["iOS Safari audio certification (device matrix)", <span key="h" className="font-semibold text-gold">Pending founder devices</span>],
+                ["Favicon + final name (brand.ts rename)", <span key="i" className="font-semibold text-gold">Pending final branding</span>],
               ]}
             />
             <p className="text-[13px]">
@@ -542,8 +634,8 @@ export default function DevDocsPage() {
               </li>
               <li>
                 <b className="text-primary">Everything else is implicit in the DB:</b> chats, votes, links,
-                widget responses, follows, talk requests are all queryable rows, but there is no event stream,
-                funnel, or dashboard.
+                widget responses, follows, friendships, RSVPs, waitlist signups, notification outbox rows,
+                and talk requests are all queryable, but there is no event stream, funnel, or dashboard.
               </li>
               <li>
                 <b className="text-primary">Not present at all:</b> error tracking (Sentry et al.), APM/traces,
@@ -623,9 +715,17 @@ export default function DevDocsPage() {
                 <b className="text-primary">Sportmonks:</b> <C>SPORTMONKS_API_TOKEN</C>, <C>SPORTMONKS_BASE</C>.
               </li>
               <li>
+                <b className="text-primary">Notifications:</b> <C>RESEND_API_KEY</C> + <C>EMAIL_FROM</C>{" "}
+                (email — <C>lib/notify/email.ts</C> logs + no-ops until both are set),{" "}
+                <C>NEXT_PUBLIC_VAPID_PUBLIC_KEY</C> / <C>VAPID_PUBLIC_KEY</C> / <C>VAPID_PRIVATE_KEY</C> /{" "}
+                <C>VAPID_SUBJECT</C> (web push), <C>NEXT_PUBLIC_SITE_URL</C> (absolute links in
+                emails/push).
+              </li>
+              <li>
                 <b className="text-primary">Ops:</b> <C>ADMIN_USER_IDS</C> (comma-list),{" "}
-                <C>CRON_SECRET</C> (Bearer for the daily cron — set it in Vercel to enable auto-matching +
-                cache-warming). <C>EMAIL_FROM</C>/Resend land with notifications.
+                <C>CRON_SECRET</C> (Bearer for the daily platform cron), <C>NEXT_PUBLIC_APP_URL</C>{" "}
+                (metadataBase / sitemap / robots), <C>DEV_DOCS_PASSWORD</C> (Basic-auth gate for this
+                page, enforced in <C>middleware.ts</C>).
               </li>
             </UL>
             <H3>Deployment</H3>
@@ -637,8 +737,10 @@ export default function DevDocsPage() {
                 connection is IPv6-only).
               </li>
               <li>
-                One Vercel cron in <C>vercel.json</C>: <C>/api/admin/match-fixtures</C> daily (needs{" "}
-                <C>CRON_SECRET</C>).
+                One Vercel cron in <C>vercel.json</C>: <C>/api/cron/daily</C> at 06:00 UTC (needs{" "}
+                <C>CRON_SECRET</C>) — the single entry point that fans out to fixture sync, admin-game
+                matching + cache-warm, no-show expiry, subscription auto-create, notification drain, and
+                fan-score recompute (everything fits Vercel Hobby&apos;s once-daily crons by design).
               </li>
             </UL>
             <H3>Run it locally</H3>
@@ -656,12 +758,21 @@ export default function DevDocsPage() {
               <li>All Supabase access through <C>lib/db/</C> helpers; no inline queries in components.</li>
               <li>Every API route validates input with zod before the DB.</li>
               <li>
-                Design tokens are CSS variables in <C>app/globals.css</C> (<C>--gold</C>, <C>--green</C>,{" "}
-                <C>--red</C>, <C>--line</C>, <C>--surface</C>, <C>--canvas</C>, <C>--primary</C>,{" "}
-                <C>--secondary</C>, <C>--raised</C>); Tailwind references them. Both light + dark themes ship
-                with every component. Tabular numerals on anything that ticks.
+                Design tokens are CSS variables in <C>app/globals.css</C> (Cloud Design system:{" "}
+                <C>--bg-base/surface/raised</C>, <C>--red</C> #F1232B, <C>--gold</C> (AA text gold, dark
+                olive in light) vs <C>--gold-bright</C> (vivid decorative fills only), <C>--line</C>,{" "}
+                <C>--text-primary/secondary</C>); Tailwind references them.{" "}
+                <b className="text-primary">Dark is the default theme</b>; light is first-class parity.
+                Type: the <C>.display</C> class = Anton (uppercase, weight 400 — NEVER on body text or
+                tabular-nums); the locked modular scale is <C>.t-hero/.t-h2/.t-h3/.t-title/.t-lead</C>{" "}
+                (fluid clamp — use these, not <C>text-[NNpx]</C>); <C>--section-y</C> for section rhythm.
+                Tabular numerals on anything that ticks.
               </li>
-              <li>Brand strings only from <C>lib/brand.ts</C> (rename pending).</li>
+              <li>Brand strings only from <C>lib/brand.ts</C> (rename pending; tagline carries the category stance).</li>
+              <li>
+                Copy rules travel with every string: no em-dash, no &quot;watch the match with us&quot;
+                framing (their stream, our audio), &quot;attend&quot; = the room. See Non-negotiables 7–8.
+              </li>
               <li>
                 <b className="text-primary">Gotcha:</b> running <C>next build</C> while <C>next dev</C> is
                 running corrupts the shared <C>.next</C> cache (missing vendor chunks). Stop dev before
@@ -681,28 +792,44 @@ export default function DevDocsPage() {
           <Section id="gaps" title="Known gaps / TODO">
             <UL>
               <li>
-                <b className="text-primary">Tipping (Stripe)</b> and <b className="text-primary">going-live
-                emails (Resend)</b> — designed but not built.
+                <b className="text-primary">Notification sending is keyed off:</b> set{" "}
+                <C>RESEND_API_KEY</C> + <C>EMAIL_FROM</C> (domain not picked yet) and generate the VAPID
+                keypair to turn the built engine on. Until then emails log to console and push is
+                unavailable.
+              </li>
+              <li>
+                <b className="text-primary">Tipping (Stripe)</b> — designed (10% platform fee placeholder,
+                listener picks the recipient host, no payout splitting) but not built.
+              </li>
+              <li>
+                <b className="text-primary">Google OAuth:</b> the sign-in button ships with a friendly
+                email fallback on failure — confirm the Google provider is actually enabled in the
+                Supabase dashboard.
               </li>
               <li>
                 <b className="text-primary">iOS Safari audio cert</b> — the device matrix (locked-screen radio
                 + sync) is the outstanding gate before a real audio session.
               </li>
               <li>
+                <b className="text-primary">Favicon</b> — none yet (blank tab icon), deliberately awaiting
+                the final logo design. Add <C>app/icon.svg</C> when it lands.
+              </li>
+              <li>
                 <b className="text-primary">Hard rate limits</b> — current limiter is per-lambda-instance;
                 move the bucket to Upstash/Redis for a global limit.
               </li>
               <li>
-                <b className="text-primary">CRON_SECRET</b> must be set in Vercel for the daily matcher +
-                cache-warming to run (the manual &quot;Run match check&quot; button works without it).
+                <b className="text-primary">CRON_SECRET</b> must be set in Vercel for the daily platform
+                cron (sync, matching, expiry, subscriptions, notification drain, fan score) to run.
               </li>
               <li>
                 <b className="text-primary">Legal placeholders</b> in <C>docs/LEGAL_PAGES.md</C> must be filled
                 before public launch.
               </li>
               <li>
-                <b className="text-primary">A full visual/UX redesign</b> is planned later — the current UI is
-                deliberately functional-first; don&apos;t over-invest in polish that the redesign will replace.
+                <b className="text-primary">Deferred product bets</b> (founder-approved, waiting on
+                assets): the hero card playing a real fan-audio clip (once a clip exists), an interactive
+                sync demo, an always-on demo room.
               </li>
             </UL>
           </Section>
@@ -723,9 +850,9 @@ export default function DevDocsPage() {
               </li>
             </UL>
             <p className="pt-2 text-[13px] text-secondary">
-              This page is generated, not auto-synced — if the build moves, update{" "}
-              <C>app/(app)/dev-docs/page.tsx</C>. It&apos;s <C>noindex</C> and unlisted; to restrict it to
-              admins, gate it like <C>app/(app)/admin/page.tsx</C>.
+              This page is written by hand, not auto-synced — if the build moves, update{" "}
+              <C>app/(app)/dev-docs/page.tsx</C> (last refresh 2026-07-06). It&apos;s <C>noindex</C> and
+              behind HTTP Basic auth (<C>DEV_DOCS_PASSWORD</C> in <C>middleware.ts</C>).
             </p>
           </Section>
         </main>
