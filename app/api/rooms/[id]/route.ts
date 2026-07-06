@@ -1,15 +1,16 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, after } from "next/server";
 import { z } from "zod";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { isRoomHost } from "@/lib/roomHosts";
 import { isAdmin } from "@/lib/roles";
+import { notifyRoomsCanceled } from "@/lib/notify/producers";
 
 /**
  * Cancel a scheduled room (FR-19.7). Host-only via isRoomHost (admin as
  * backstop); only `scheduled` rooms cancel this way (waiting/live rooms end
- * through End Broadcast). RSVP holders get a cancellation notification once
- * FR-21 ships; silent until then.
+ * through End Broadcast). RSVP holders + the co-host get a room_change
+ * ("canceled") notification (FR-21), sent after the response.
  */
 export async function DELETE(
   _request: NextRequest,
@@ -61,6 +62,12 @@ export async function DELETE(
       { status: 409 },
     );
   }
+
+  // FR-21: tell RSVP holders + the co-host, excluding the canceling host
+  const actorId = caller.userId;
+  after(async () => {
+    await notifyRoomsCanceled(createServiceClient(), [room.id], actorId);
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { enqueue } from "@/lib/notify/outbox";
+import { enqueue, flushRows } from "@/lib/notify/outbox";
 import { acceptedHosts } from "@/lib/roomHosts";
 import type { NotificationPayload } from "@/lib/notify/render";
 
@@ -249,4 +249,61 @@ export async function enqueueRoomChange(
     dedupeScope: `${opts.roomId}:${opts.payload.change ?? "change"}`,
     payload: opts.payload,
   });
+}
+
+/**
+ * Cancellation notifications (FR-19.7 x FR-21): room_change("canceled") to
+ * each room's RSVP holders + co-hosts, excluding the acting host. Shared by
+ * the single-cancel, bulk-cancel, and unsubscribe routes; call inside after()
+ * so a notification failure never blocks the cancel itself. Per-room rows for
+ * now (dedupe-keyed); collapsing a bulk cancel to one summary per recipient
+ * (FR-20.7) is a follow-up once volumes make it matter.
+ */
+export async function notifyRoomsCanceled(
+  service: SupabaseClient,
+  roomIds: string[],
+  actorId: string | null,
+): Promise<void> {
+  for (const roomId of roomIds) {
+    try {
+      const { data: room } = await service
+        .from("rooms")
+        .select("id, slug, fixture:fixtures(home_team, away_team)")
+        .eq("id", roomId)
+        .maybeSingle();
+      if (!room) continue;
+      const fixture = room.fixture as unknown as {
+        home_team: string;
+        away_team: string;
+      } | null;
+      const matchLabel = fixture
+        ? `${fixture.home_team} vs ${fixture.away_team}`
+        : "Your room";
+
+      const hosts = await acceptedHosts(service, roomId);
+      const { data: rsvps } = await service
+        .from("room_rsvps")
+        .select("user_id")
+        .eq("room_id", roomId);
+      const recipients = [
+        ...new Set([
+          ...hosts.map((h) => h.user_id),
+          ...(rsvps ?? []).map((r) => r.user_id as string),
+        ]),
+      ].filter((id) => id !== actorId);
+
+      const ids = await enqueueRoomChange(service, {
+        roomId,
+        recipientIds: recipients,
+        payload: {
+          matchLabel,
+          roomSlug: (room.slug as string | null) ?? undefined,
+          change: "canceled",
+        },
+      });
+      await flushRows(service, ids);
+    } catch {
+      // never let a notification failure surface into the cancel path
+    }
+  }
 }

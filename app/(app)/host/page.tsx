@@ -183,9 +183,14 @@ export default async function HostDashboardPage() {
           </p>
           <h1 className="display text-4xl">My rooms</h1>
         </div>
-        <Button href="/host/new" variant="red">
-          Create room →
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button href="/host/guide" variant="ghost" size="sm">
+            Host handbook
+          </Button>
+          <Button href="/host/new" variant="red">
+            Create room →
+          </Button>
+        </div>
       </div>
 
       <div className="mt-8">

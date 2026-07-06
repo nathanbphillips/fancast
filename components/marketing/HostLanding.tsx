@@ -89,10 +89,10 @@ export function HostLanding({
               {ctaLabel} <span aria-hidden="true">→</span>
             </Link>
             <Link
-              href="/about"
+              href="/host/guide"
               className="inline-flex items-center rounded-[11px] border border-line px-[22px] py-[15px] text-[15px] font-bold transition-colors hover:bg-surface"
             >
-              Read more about {brand.name}
+              Read the host handbook
             </Link>
           </div>
           {note ? (

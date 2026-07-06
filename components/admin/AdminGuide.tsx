@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 
 /**
  * Admin user guide — a reference for how the room + admin tools are built and
- * how to drive them. Written for the founder now; the seed of the future
- * "introductory commentator guide" for new users. Kept in sync with the actual
- * controls (CommentatorBar, ClockControls, MicControls, the Phase 11 stream).
+ * how to drive them. The commentator-facing version of this now lives at
+ * /host/guide (the Host handbook); keep the two in sync when controls change
+ * (CommentatorBar, ClockControls, MicControls, the Phase 11 stream).
  */
 
 function Section({

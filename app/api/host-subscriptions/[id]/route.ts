@@ -1,13 +1,15 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextRequest, after } from "next/server";
 import { z } from "zod";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
+import { notifyRoomsCanceled } from "@/lib/notify/producers";
 
 /**
  * Unsubscribe (FR-20.4): deactivate the subscription and cancel the FUTURE
  * scheduled rooms it created. Past and live rooms are untouched; RSVP holders
- * of the canceled rooms are notified once FR-21 ships (batched, one summary).
+ * + co-hosts of the canceled rooms get room_change("canceled") per room
+ * (FR-21; a one-summary-per-recipient collapse is a follow-up).
  */
 export async function DELETE(
   _request: NextRequest,
@@ -54,5 +56,13 @@ export async function DELETE(
     return NextResponse.json({ error: cancelErr.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, roomsCanceled: canceled?.length ?? 0 });
+  const canceledIds = (canceled ?? []).map((r) => r.id as string);
+  if (canceledIds.length > 0) {
+    const actorId = caller.userId;
+    after(async () => {
+      await notifyRoomsCanceled(createServiceClient(), canceledIds, actorId);
+    });
+  }
+
+  return NextResponse.json({ ok: true, roomsCanceled: canceledIds.length });
 }
