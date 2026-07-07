@@ -18,7 +18,7 @@ const HOST_STEPS = [
   {
     n: "02",
     t: "Create a room",
-    d: "Pick an upcoming fixture from the schedule. Two inputs, that is it: when your show starts (it defaults to fifteen minutes before kickoff) and an optional one-line blurb. Everything else comes from the fixture, and your room gets a clean, shareable link.",
+    d: "Pick an upcoming fixture and set two things: when your show starts (it defaults to fifteen minutes before kickoff) and an optional one-line blurb. Not in the list? Create your own room for any game from a title and a start time, now or later. Either way your room gets a clean, shareable link.",
   },
   {
     n: "03",

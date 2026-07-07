@@ -197,8 +197,8 @@ export default async function HostDashboardPage() {
         <CohostInvites invites={invites} />
         {rooms.length === 0 && subscriptions.length === 0 ? (
           <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
-            No upcoming rooms yet. Pick a fixture and your room is scheduled in
-            two taps, or host a whole season in one click.
+            No upcoming rooms yet. Pick a fixture, create your own room for any
+            game, or host a whole season in one click.
           </p>
         ) : (
           <HostRoomsDashboard rooms={rooms} subscriptions={subscriptions} />

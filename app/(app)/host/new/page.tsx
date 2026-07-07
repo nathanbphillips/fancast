@@ -83,8 +83,8 @@ export default async function CreateRoomPage() {
       </p>
       <h1 className="display text-4xl">Create a room</h1>
       <p className="mt-3 max-w-lg text-sm text-secondary">
-        Pick a fixture. The match details come from the schedule; you only set
-        when your show starts and, if you like, a one-line blurb.
+        Pick a fixture and set when your show starts (plus an optional blurb),
+        or create your own room for any game we don&apos;t list yet.
       </p>
 
       <div className="mt-8">
