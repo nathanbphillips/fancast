@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
   }
 
   const out: Record<string, unknown> = {
+    build: "trace-fix",
     platform: process.platform,
     arch: process.arch,
     node: process.versions.node,

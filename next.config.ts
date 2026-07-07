@@ -98,6 +98,26 @@ const nextConfig: NextConfig = {
   //     resolution on Vercel's linux runtime (works in `next dev`, 500s in prod),
   //     which is what broke avatar uploads. Externalize like ffmpeg-static.
   serverExternalPackages: ["ffmpeg-static", "sharp"],
+  // sharp 0.33+ ships its native binary in a SEPARATE package
+  // (@img/sharp-linux-x64, which in turn needs @img/sharp-libvips-linux-x64).
+  // @vercel/nft's static trace doesn't reliably pull those .node addons into
+  // the serverless function bundle, so the route that re-encodes avatars
+  // loads sharp fine locally but 500s on Vercel's Linux runtime with "Could
+  // not load the sharp module using the linux-x64 runtime". Force-include the
+  // Linux binary packages in the trace for the routes that use sharp. Keys are
+  // route globs (picomatch), values are globs from the project root.
+  outputFileTracingIncludes: {
+    "/api/profile/avatar": [
+      "./node_modules/sharp/**/*",
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+    "/api/_diag/sharp": [
+      "./node_modules/sharp/**/*",
+      "./node_modules/@img/sharp-linux-x64/**/*",
+      "./node_modules/@img/sharp-libvips-linux-x64/**/*",
+    ],
+  },
   images: {
     remotePatterns: avatarRemotePatterns,
   },
