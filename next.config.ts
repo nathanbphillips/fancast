@@ -91,9 +91,13 @@ if (
 }
 
 const nextConfig: NextConfig = {
-  // ffmpeg-static ships a real binary; keep it out of the server bundle so
-  // its __dirname-relative path resolves to node_modules, not .next.
-  serverExternalPackages: ["ffmpeg-static"],
+  // Native modules must stay OUT of the webpack server bundle so their
+  // platform-specific binaries resolve from node_modules at runtime (not .next).
+  //   - ffmpeg-static: __dirname-relative binary path.
+  //   - sharp: loads @img/sharp-{platform} .node addons; bundling breaks that
+  //     resolution on Vercel's linux runtime (works in `next dev`, 500s in prod),
+  //     which is what broke avatar uploads. Externalize like ffmpeg-static.
+  serverExternalPackages: ["ffmpeg-static", "sharp"],
   images: {
     remotePatterns: avatarRemotePatterns,
   },
