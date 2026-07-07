@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server";
-import sharp from "sharp";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { rateLimit } from "@/lib/ratelimit";
@@ -15,11 +14,23 @@ import {
 // image processing needs a bit of headroom
 export const maxDuration = 30;
 
+/** Readable message from any thrown value (for owner-only debug detail). */
+function errMsg(err: unknown): string {
+  return err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+}
+
 /**
  * Avatar upload (owner-only). Every image is sniffed by magic bytes, decoded
  * under a pixel cap (decompression-bomb guard), and re-encoded to a fixed 256px
  * WebP before storage. The re-encode strips metadata and neutralizes embedded
  * payloads, so the stored file is always small and safe. SVG is rejected.
+ *
+ * sharp is imported lazily (not at module top): if its native Linux binary
+ * fails to load on Vercel, that surfaces as a clean JSON error to the
+ * authenticated owner instead of crashing the whole route module into an opaque
+ * 500. Same for service-client init. `detail` is returned only to the
+ * already-authenticated caller and carries a library/config message, never user
+ * data — kept temporarily to diagnose the production upload failure.
  */
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
@@ -65,27 +76,47 @@ export async function POST(request: NextRequest) {
 
   let output: Buffer;
   try {
+    const sharp = (await import("sharp")).default;
     output = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
       .rotate() // apply EXIF orientation before it is stripped
       .resize(OUTPUT_SIZE, OUTPUT_SIZE, { fit: "cover", position: "centre" })
       .webp({ quality: 80 })
       .toBuffer();
-  } catch {
+  } catch (err) {
     return NextResponse.json(
-      { error: "Couldn't process that image. Try another." },
-      { status: 400 },
+      {
+        error: "Couldn't process that image. Try another.",
+        stage: "encode",
+        detail: errMsg(err),
+      },
+      { status: 500 },
     );
   }
 
-  const service = createServiceClient();
-  await ensureAvatarBucket(service);
+  let service: ReturnType<typeof createServiceClient>;
+  try {
+    service = createServiceClient();
+    await ensureAvatarBucket(service);
+  } catch (err) {
+    return NextResponse.json(
+      {
+        error: "Storage is temporarily unavailable. Try again.",
+        stage: "storage-init",
+        detail: errMsg(err),
+      },
+      { status: 500 },
+    );
+  }
 
   const path = `${caller.userId}.webp`;
   const { error: upErr } = await service.storage
     .from(AVATAR_BUCKET)
     .upload(path, output, { contentType: "image/webp", upsert: true });
   if (upErr) {
-    return NextResponse.json({ error: upErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: upErr.message, stage: "upload" },
+      { status: 500 },
+    );
   }
 
   const {
@@ -99,7 +130,10 @@ export async function POST(request: NextRequest) {
     .update({ avatar_url: avatarUrl })
     .eq("user_id", caller.userId);
   if (dbErr) {
-    return NextResponse.json({ error: dbErr.message }, { status: 500 });
+    return NextResponse.json(
+      { error: dbErr.message, stage: "db" },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ avatarUrl });

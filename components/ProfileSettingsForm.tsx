@@ -112,7 +112,11 @@ export function ProfileSettingsForm({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setAvatarError(json.error ?? "Couldn't upload that image.");
+        // temporary: surface the server's failing stage + detail so a prod-only
+        // upload failure can be diagnosed on screen (owner-only response)
+        const base = json.error ?? "Couldn't upload that image.";
+        const diag = [json.stage, json.detail].filter(Boolean).join(" — ");
+        setAvatarError(diag ? `${base} [${diag}]` : base);
         return;
       }
       setAvatarUrl(json.avatarUrl ?? "");
