@@ -38,7 +38,7 @@ export default async function SignInPage({
             className="absolute -top-20 -left-10 h-96 w-96 rounded-full opacity-40 blur-3xl"
             style={{
               background:
-                "radial-gradient(circle, rgba(241,35,43,0.2), transparent 70%)",
+                "radial-gradient(circle, rgba(239,1,7,0.22), transparent 70%)",
             }}
           />
         </div>
@@ -58,7 +58,7 @@ export default async function SignInPage({
               <li key={b} className="flex items-center gap-3">
                 <span
                   aria-hidden="true"
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gold text-inverted-fg"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-green text-inverted-fg"
                 >
                   <svg
                     viewBox="0 0 24 24"
