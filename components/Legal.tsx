@@ -39,7 +39,7 @@ export function Ph({ children }: { children: ReactNode }) {
   return (
     <mark
       title="Founder placeholder — fill before launch"
-      className="rounded bg-gold/20 px-1 font-medium text-gold"
+      className="rounded bg-red/20 px-1 font-medium text-red"
     >
       {children}
     </mark>

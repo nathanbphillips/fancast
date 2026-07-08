@@ -13,14 +13,14 @@ export function Eyebrow({
 }) {
   return (
     <p
-      className={`flex items-center gap-2 font-mono text-[11px] font-bold tracking-[0.14em] text-gold uppercase ${className}`}
+      className={`flex items-center gap-2 font-mono text-[11px] font-bold tracking-[0.14em] text-red uppercase ${className}`}
     >
       {dot === "live" ? (
         <LiveDot />
       ) : dot === "gold" ? (
         <span
           aria-hidden="true"
-          className="inline-block h-1.5 w-1.5 rounded-full bg-gold-bright"
+          className="inline-block h-1.5 w-1.5 rounded-full bg-red"
         />
       ) : null}
       {children}

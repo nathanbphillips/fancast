@@ -197,7 +197,7 @@ export function ProfilePopover({
                 <div className="min-w-0">
                   <Link
                     href={`/${card.username}`}
-                    className={`block truncate text-sm font-bold ${card.isHost ? "text-gold" : ""}`}
+                    className={`block truncate text-sm font-bold ${card.isHost ? "text-red" : ""}`}
                   >
                     {card.username}
                   </Link>

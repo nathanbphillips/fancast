@@ -125,7 +125,7 @@ export function FriendButton({
           type="button"
           onClick={() => void unfriend()}
           disabled={busy}
-          className="rounded-lg border border-gold bg-gold/10 px-4 py-2 text-sm font-semibold text-gold hover:bg-gold/20 disabled:opacity-60"
+          className="rounded-lg border border-green/40 bg-green/10 px-4 py-2 text-sm font-semibold text-green hover:bg-green/20 disabled:opacity-60"
         >
           Friends
         </button>

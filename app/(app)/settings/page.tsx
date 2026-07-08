@@ -75,8 +75,8 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-xl px-5 py-14 sm:px-10">
-      <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+      <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-red uppercase">
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-red" />
         Your account
       </p>
       <h1 className="display text-4xl sm:text-5xl">Profile</h1>

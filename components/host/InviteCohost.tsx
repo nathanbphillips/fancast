@@ -47,7 +47,7 @@ export function InviteCohost({
   return (
     <div className="mt-1 flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase">
       {coHosts.map((h) => (
-        <span key={h} className="rounded-sm bg-gold/20 px-1 text-gold normal-case">
+        <span key={h} className="rounded-sm bg-red/10 px-1 text-red normal-case">
           with @{h}
         </span>
       ))}

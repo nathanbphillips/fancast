@@ -29,10 +29,10 @@ export function CohostInvites({ invites }: { invites: CohostInvite[] }) {
 
   return (
     <section aria-label="Co-host invites" className="mb-8">
-      <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-gold uppercase">
+      <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-red uppercase">
         Co-host invites
       </h2>
-      <div className="overflow-hidden rounded-2xl border border-gold/40 bg-surface">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         {invites.map((i) => (
           <div
             key={i.roomId}

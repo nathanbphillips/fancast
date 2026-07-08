@@ -96,7 +96,7 @@ export function CommentatorUpgrade() {
           type="checkbox"
           checked={accepted}
           onChange={(e) => setAccepted(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-(--gold)"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-(--red)"
         />
         <span>
           I've read and agree to the commentator terms above and the{" "}

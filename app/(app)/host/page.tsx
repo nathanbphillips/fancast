@@ -177,8 +177,8 @@ export default async function HostDashboardPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold" />
+          <p className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-red uppercase">
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-red" />
             Hosting
           </p>
           <h1 className="display text-4xl">My rooms</h1>

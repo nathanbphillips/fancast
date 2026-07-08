@@ -52,7 +52,7 @@ export function ShareButton({
         onClick={share}
         aria-label="Share this room"
         title={copied ? "Copied" : "Share"}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-gold hover:text-primary ${className}`}
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-line hover:text-primary ${className}`}
       >
         {copied ? (
           <span className="font-mono text-[9px] tracking-tight uppercase">
@@ -84,7 +84,7 @@ export function ShareButton({
     <button
       type="button"
       onClick={share}
-      className={`shrink-0 rounded-lg border border-line px-3 py-1.5 text-[12.5px] font-semibold text-secondary transition-colors hover:border-gold hover:text-primary ${className}`}
+      className={`shrink-0 rounded-lg border border-line px-3 py-1.5 text-[12.5px] font-semibold text-secondary transition-colors hover:border-line hover:text-primary ${className}`}
     >
       {copied ? "Copied" : "Share"}
     </button>

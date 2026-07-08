@@ -169,7 +169,7 @@ export function HostRoomsDashboard({
       {notice && (
         <p
           role="status"
-          className="rounded-lg border border-gold/40 bg-inset px-3 py-2 text-sm text-primary"
+          className="rounded-lg border border-line bg-inset px-3 py-2 text-sm text-primary"
         >
           {notice}
         </p>
@@ -287,7 +287,7 @@ export function HostRoomsDashboard({
                         {r.blurb ? ` · ${r.blurb}` : ""}
                       </span>
                       {r.subscription_id && (
-                        <span className="rounded-sm bg-gold/20 px-1 text-gold">
+                        <span className="rounded-sm bg-red/10 px-1 text-red">
                           Season
                         </span>
                       )}
@@ -317,7 +317,7 @@ export function HostRoomsDashboard({
                     <span className="flex shrink-0 items-center gap-2">
                       <Link
                         href={`/room/${r.slug ?? r.id}`}
-                        className="rounded-md border border-gold px-2.5 py-1.5 text-xs font-semibold text-gold transition-colors hover:bg-raised"
+                        className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-raised"
                       >
                         Open
                       </Link>

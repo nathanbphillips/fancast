@@ -105,7 +105,7 @@ export function UserMenu({
               role="menuitem"
               href="/admin"
               onClick={() => setOpen(false)}
-              className="block px-3 py-2 text-sm font-semibold text-gold hover:bg-raised"
+              className="block px-3 py-2 text-sm font-semibold text-red hover:bg-raised"
             >
               Admin
             </Link>

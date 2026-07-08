@@ -172,7 +172,7 @@ export function CustomRoomForm() {
         <button
           type="button"
           onClick={openForm}
-          className="shrink-0 rounded-lg border border-gold px-3.5 py-2 text-sm font-semibold text-gold transition-colors hover:bg-raised"
+          className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-raised"
         >
           Create your own room
         </button>
@@ -265,9 +265,9 @@ export function CustomRoomForm() {
       </div>
 
       {linked ? (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-gold/40 bg-inset px-3 py-2">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-green/40 bg-inset px-3 py-2">
           <p className="text-[12.5px] text-secondary">
-            <span className="font-semibold text-gold">Linked:</span>{" "}
+            <span className="font-semibold text-green">Linked:</span>{" "}
             {linked.home} vs {linked.away} ({linked.competition}). Live stats
             will flow automatically.
           </p>

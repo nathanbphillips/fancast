@@ -43,7 +43,7 @@ export function ThemeToggle() {
     >
       <span
         aria-hidden="true"
-        className="absolute h-4 w-4 rounded-full bg-gold transition-transform duration-200"
+        className="absolute h-4 w-4 rounded-full bg-red transition-transform duration-200"
         style={{ transform: light ? "translateX(23px)" : "translateX(3px)" }}
       />
     </button>

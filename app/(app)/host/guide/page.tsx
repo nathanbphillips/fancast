@@ -84,10 +84,10 @@ export default function HostGuidePage() {
         }}
       >
         <div className="relative mx-auto max-w-[1180px] px-5 pt-14 pb-10 sm:px-10">
-          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
+          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-red uppercase">
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 rounded-full bg-gold-bright"
+              className="h-1.5 w-1.5 rounded-full bg-red"
             />
             Host handbook
           </p>
@@ -98,7 +98,7 @@ export default function HostGuidePage() {
             The working manual for hosting on {brand.name}: setting up, going on
             air, running the show, and what you keep afterwards. If you are
             deciding <em>whether</em> to host, start with{" "}
-            <Link href="/host" className="font-semibold text-gold hover:underline">
+            <Link href="/host" className="font-semibold text-red hover:underline">
               the pitch
             </Link>
             ; this page is for when you are ready to do it.
@@ -146,7 +146,7 @@ export default function HostGuidePage() {
                 <B>Audio only, never the match.</B> Your show is your voice and
                 your guests; never play match video or broadcast audio through
                 it. Breaking this means suspension (see{" "}
-                <a href="#rule" className="text-gold hover:underline">
+                <a href="#rule" className="text-red hover:underline">
                   the one rule
                 </a>
                 ).
@@ -382,7 +382,7 @@ export default function HostGuidePage() {
                 <B>Can I see what listeners experience?</B> Yes, read{" "}
                 <Link
                   href="/how-it-works"
-                  className="text-gold hover:underline"
+                  className="text-red hover:underline"
                 >
                   how it works
                 </Link>{" "}
@@ -414,7 +414,7 @@ export default function HostGuidePage() {
               </Link>
               <Link
                 href="/host/new"
-                className="inline-flex items-center rounded-[11px] border border-gold/45 px-[22px] py-[15px] text-[15px] font-bold text-gold transition-colors hover:border-gold"
+                className="inline-flex items-center rounded-[11px] border border-line px-[22px] py-[15px] text-[15px] font-bold text-primary transition-colors hover:border-primary"
               >
                 Create your first room
               </Link>

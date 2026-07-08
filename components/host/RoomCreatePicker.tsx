@@ -216,7 +216,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                       Or host the whole season
                     </p>
                     {subDone ? (
-                      <p className="rounded-lg border border-gold/40 bg-inset px-3 py-2 text-sm text-primary">
+                      <p className="rounded-lg border border-green/40 bg-inset px-3 py-2 text-sm text-primary">
                         {subDone}
                       </p>
                     ) : (
@@ -228,7 +228,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                             onClick={() =>
                               subscribe(f, f.home_team_id!, f.home_team)
                             }
-                            className="rounded-lg border border-gold px-3.5 py-2 text-sm font-semibold text-gold transition-colors hover:bg-raised disabled:opacity-60"
+                            className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-raised disabled:opacity-60"
                           >
                             {subBusy === f.home_team_id
                               ? "Scheduling…"
@@ -242,7 +242,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                             onClick={() =>
                               subscribe(f, f.away_team_id!, f.away_team)
                             }
-                            className="rounded-lg border border-gold px-3.5 py-2 text-sm font-semibold text-gold transition-colors hover:bg-raised disabled:opacity-60"
+                            className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-raised disabled:opacity-60"
                           >
                             {subBusy === f.away_team_id
                               ? "Scheduling…"

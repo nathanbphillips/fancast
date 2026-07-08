@@ -198,13 +198,13 @@ export default async function ProfilePage({
         <Avatar src={profile.avatar_url} name={profile.username} size={72} />
         <div className="min-w-0 flex-1">
           <h1
-            className={`truncate text-2xl font-bold tracking-tight ${isCommentator ? "text-gold" : ""}`}
+            className={`truncate text-2xl font-bold tracking-tight ${isCommentator ? "text-red" : ""}`}
           >
             {profile.username}
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-secondary">
             {isCommentator && (
-              <span className="rounded-sm bg-gold px-1.5 py-0.5 text-[10px] font-bold text-canvas">
+              <span className="rounded-sm bg-red px-1.5 py-0.5 text-[10px] font-bold text-white">
                 COMMENTATOR
               </span>
             )}
@@ -276,7 +276,7 @@ export default async function ProfilePage({
               rel="noopener noreferrer nofollow"
               aria-label={SOCIAL_META[platform].label}
               title={SOCIAL_META[platform].label}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-gold hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-red hover:text-primary"
             >
               <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current" aria-hidden="true">
                 <path d={SOCIAL_META[platform].icon} />
@@ -391,7 +391,7 @@ export default async function ProfilePage({
           </div>
           <Link
             href="/settings"
-            className="shrink-0 rounded-lg border border-gold px-4 py-2 text-sm font-semibold text-gold hover:bg-raised"
+            className="shrink-0 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-primary hover:bg-raised"
           >
             Get started
           </Link>

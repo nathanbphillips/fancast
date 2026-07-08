@@ -17,7 +17,7 @@ export function Pill({
     variant === "red"
       ? "bg-red text-white"
       : variant === "gold"
-        ? "border border-gold text-gold"
+        ? "border border-line text-secondary"
         : "border border-line text-secondary";
   return (
     <span
