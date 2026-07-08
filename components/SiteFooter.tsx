@@ -46,8 +46,14 @@ export function SiteFooter() {
               <Link href="/matches" className={link}>
                 Matches
               </Link>
+              <Link href="/how-it-works" className={link}>
+                How it works
+              </Link>
+              <Link href="/host" className={link}>
+                Host a room
+              </Link>
               <Link href="/about" className={link}>
-                About
+                Voices
               </Link>
               <Link href="/signin" className={link}>
                 Sign in

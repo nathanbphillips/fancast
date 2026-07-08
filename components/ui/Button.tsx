@@ -2,23 +2,25 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 /**
- * Shared CTA/button (Cloud Design). `red` = primary (brand red + glow),
- * `inverted` = high-emphasis (SYNC NOW / Sign in), `outline` = gold outline,
- * `ghost` = quiet. Renders a `<Link>` when `href` is set, else a `<button>`.
+ * Shared CTA/button (Matchday redesign). `red` = primary gradient + glow with an
+ * opt-in `shine` sweep (for hero/nav CTAs); `inverted` = high-emphasis solid;
+ * `outline` = neutral hairline (gold retired); `ghost` = quiet. Renders a
+ * `<Link>` when `href` is set, else a `<button>`.
  */
 type Variant = "red" | "inverted" | "outline" | "ghost";
-type Size = "sm" | "md";
+type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
-  red: "bg-red text-white hover:bg-red-hover shadow-glow",
+  red: "btn-grad-red text-white",
   inverted: "bg-inverted text-inverted-fg hover:opacity-90",
-  outline: "border border-gold text-gold hover:bg-raised",
+  outline: "border border-line text-primary hover:bg-raised",
   ghost: "text-secondary hover:bg-raised hover:text-primary",
 };
 
 const SIZES: Record<Size, string> = {
   sm: "h-9 px-4 text-sm",
-  md: "h-11 px-5 text-sm",
+  md: "h-11 px-5 text-[15px]",
+  lg: "h-[54px] px-7 text-[15px]",
 };
 
 export function Button({
@@ -30,6 +32,7 @@ export function Button({
   onClick,
   disabled = false,
   className = "",
+  shine = false,
   "aria-label": ariaLabel,
 }: {
   children: ReactNode;
@@ -40,13 +43,23 @@ export function Button({
   onClick?: () => void;
   disabled?: boolean;
   className?: string;
+  /** specular sweep — only meaningful on the red variant, for hero/nav CTAs */
+  shine?: boolean;
   "aria-label"?: string;
 }) {
-  const cls = `inline-flex items-center justify-center gap-1.5 rounded-lg font-semibold transition-colors disabled:opacity-60 ${SIZES[size]} ${VARIANTS[variant]} ${className}`;
+  const cls = `inline-flex items-center justify-center gap-1.5 rounded-[11px] font-semibold transition-colors disabled:opacity-60 ${SIZES[size]} ${VARIANTS[variant]} ${className}`;
+  const inner = (
+    <>
+      {children}
+      {shine && variant === "red" ? (
+        <span aria-hidden="true" className="btn-shine" />
+      ) : null}
+    </>
+  );
   if (href) {
     return (
       <Link href={href} className={cls} aria-label={ariaLabel}>
-        {children}
+        {inner}
       </Link>
     );
   }
@@ -58,7 +71,7 @@ export function Button({
       aria-label={ariaLabel}
       className={cls}
     >
-      {children}
+      {inner}
     </button>
   );
 }
