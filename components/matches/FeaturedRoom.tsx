@@ -213,6 +213,21 @@ export function FeaturedRoom({
 
             <Waveform bars={40} height={36} />
 
+            {/* sample chat line (founder-authored demo; founder decision
+                2026-07-08, self-attributed so no third-party privacy issue) */}
+            {live && (
+              <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-line bg-surface px-3 py-2.5">
+                <Avatar src={null} name="Nathan" size={24} />
+                <div className="min-w-0 flex-1 text-[11px] leading-tight">
+                  <span className="font-bold">Nathan</span>{" "}
+                  <span className="text-secondary">Ødegaard, take a bow.</span>
+                </div>
+                <span className="shrink-0 font-mono text-[10px] font-bold text-red">
+                  ▲142
+                </span>
+              </div>
+            )}
+
             {live && tiles.length > 0 ? (
               <div
                 className="mt-3 grid gap-2"
