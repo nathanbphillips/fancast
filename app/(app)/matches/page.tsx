@@ -1,21 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { loadMatchesSchedule, type ScheduleFixture, type ScheduleRoom } from "@/lib/db/matches";
+import {
+  loadMatchesSchedule,
+  loadLiveRoomPreview,
+  type ScheduleFixture,
+  type ScheduleRoom,
+} from "@/lib/db/matches";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
+import { goingLine } from "@/lib/strings/attendance";
 import { Avatar } from "@/components/Avatar";
 import { Waveform } from "@/components/ui/Waveform";
-import { Countdown } from "@/components/marketing/Countdown";
+import { FeaturedRoom } from "@/components/matches/FeaturedRoom";
 import { ScheduleBoard } from "@/components/matches/ScheduleBoard";
 import { RsvpButton } from "@/components/matches/RsvpButton";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
 
 /**
- * Matches (Matchday design): header + filter pills, a featured hero (the live
- * room if one is on, else the soonest scheduled room, real data only), an
- * "Up next · Arsenal" strip, the full date-grouped schedule as flat rows, and
- * the Notify + Host bands. Hybrid honesty: real fixtures/rooms/RSVP state;
- * NO fabricated listening/going counts or live scores. A DB failure throws to
- * the (app) error boundary. Viewer-specific (RSVP), so dynamic per request.
+ * Matches (Matches.dc.html): header + filter pills, a featured hero (the live
+ * room if one is on, else the soonest scheduled room), an "Up next · Arsenal"
+ * strip, the full date-grouped schedule as flat rows, and the Notify + Host
+ * bands. Founder rule "real data, gated": the live hero's scoreline, listener
+ * count and xG/possession/shots come from REAL data (`loadLiveRoomPreview`) and
+ * degrade to a countdown + real RSVP count when nothing's live — never a
+ * fabricated number. A DB failure throws to the (app) error boundary.
+ * Viewer-specific (RSVP), so dynamic per request.
  */
 
 export const metadata: Metadata = { title: "Matches" };
@@ -54,6 +62,13 @@ export default async function MatchesPage() {
       }
     }
   }
+
+  // real extras for the LIVE hero only (listener count + live stats); the
+  // scheduled hero degrades to a countdown + RSVP with no fabricated activity
+  const preview =
+    hero?.live && hero.room
+      ? await loadLiveRoomPreview(hero.room.id, hero.f.sportmonksFixtureId)
+      : null;
 
   // up next · Arsenal: Arsenal fixtures with a scheduled room, excluding the hero
   const upNext = flat
@@ -94,86 +109,63 @@ export default async function MatchesPage() {
       </section>
 
       <div className="mx-auto max-w-[1120px] px-5 py-9 sm:px-10">
-        {/* FEATURED HERO */}
-        {hero && (
+        {/* FEATURED HERO — real live data, gated (degrades to next-up) */}
+        {hero ? (
+          <FeaturedRoom
+            fixture={hero.f}
+            room={hero.room}
+            dateLabel={hero.dateLabel}
+            live={hero.live}
+            preview={preview}
+            signedIn={signedIn}
+          />
+        ) : (
+          /* honest empty state: no live/scheduled room in-window yet. Keeps the
+             page intentional (never blank) without inventing any activity. */
           <div className="mb-9">
             <div className="mb-3.5 flex items-center gap-2.5">
-              <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red">
-                <span
-                  className={`h-2 w-2 rounded-full bg-red ${hero.live ? "animate-fcpulse" : "animate-fc-blink"}`}
-                />
-                {hero.live ? "LIVE NOW" : "NEXT UP"}
-              </span>
-              <span className="font-mono text-[12px] text-tertiary">
-                {hero.live ? "doors are up" : hero.dateLabel}
+              <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-tertiary">
+                <span className="h-2 w-2 rounded-full bg-tertiary/50" />
+                NOTHING LIVE RIGHT NOW
               </span>
             </div>
-            <Link
-              href={`/room/${hero.room.slug}`}
-              className="relative block overflow-hidden rounded-[20px] border p-7 transition-transform hover:-translate-y-[3px]"
-              style={{
-                background:
-                  "linear-gradient(120deg, rgba(239,1,7,.18), transparent 55%), var(--bg-surface)",
-                borderColor: "rgba(239,1,7,.32)",
-                boxShadow: "0 30px 60px -40px rgba(239,1,7,.5)",
-              }}
-            >
-              <div className="relative z-[2] grid items-center gap-7 lg:grid-cols-[1.05fr_1fr]">
+            <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-7">
+              <div className="grid items-center gap-7 lg:grid-cols-[1.05fr_1fr]">
                 <div>
-                  <div className="mb-3 font-mono text-[11px] tracking-[0.06em] text-red">
-                    {hero.f.competition ?? "Premier League"}
+                  <h2 className="display t-h3">No rooms are open yet.</h2>
+                  <p className="mt-3 max-w-[440px] text-[14px] leading-[1.55] text-secondary">
+                    Rooms open on matchday, usually about fifteen minutes before
+                    kick-off. Browse the full schedule below, or get pinged the
+                    moment one opens.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Link
+                      href="#notify"
+                      className="btn-grad-red inline-flex items-center rounded-[11px] px-5 py-3 text-[13px] font-semibold text-white"
+                    >
+                      Get matchday alerts →
+                    </Link>
+                    <a
+                      href="#schedule"
+                      className="inline-flex items-center rounded-[11px] border border-line bg-surface/40 px-5 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-raised"
+                    >
+                      See the schedule
+                    </a>
                   </div>
-                  <div className="display text-[34px] leading-[1.02]">
-                    {hero.f.home} <span className="text-secondary">v</span>{" "}
-                    {hero.f.away}
-                  </div>
-                  <div className="mt-3.5 mb-5 flex items-center gap-2.5">
-                    <Avatar src={null} name={hostsOf(hero.room)[0]} size={32} />
-                    <div className="text-[12.5px] text-secondary">
-                      {hero.room.blurb ? (
-                        <span className="text-primary">{hero.room.blurb}</span>
-                      ) : (
-                        <span>
-                          Hosted by{" "}
-                          {hostsOf(hero.room).map((h, i) => (
-                            <span key={h}>
-                              {i > 0 && " · "}@{h}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {hero.live ? (
-                    <span className="btn-grad-red inline-flex items-center gap-2 rounded-[11px] px-[22px] py-3 text-[14px] font-semibold text-white">
-                      <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white" />
-                      Join the room →
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-4">
-                      <span className="btn-grad-red inline-flex items-center gap-2 rounded-[11px] px-[22px] py-3 text-[14px] font-semibold text-white">
-                        Join the waiting room →
-                      </span>
-                      <span className="font-mono text-[12px] text-tertiary tabular-nums">
-                        <Countdown iso={hero.f.kickoffUtc} /> to kickoff
-                      </span>
-                    </span>
-                  )}
                 </div>
-                {/* decorative mini preview — no fabricated data */}
                 <div className="hidden rounded-2xl border border-line bg-canvas p-4 lg:block">
-                  <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[10px] text-red">
-                    <span className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red" />
+                  <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[10px] text-tertiary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-tertiary/50" />
                     IN THE ROOM
                   </div>
-                  <Waveform bars={40} height={40} />
+                  <Waveform bars={40} height={36} />
                   <p className="mt-3 font-mono text-[11px] leading-[1.5] text-tertiary">
-                    Live fan audio, a chat worth reading and match stats, all in
-                    sync with your screen.
+                    When a host opens the doors you get live fan audio, a chat
+                    worth reading and match stats, all in sync with your screen.
                   </p>
                 </div>
               </div>
-            </Link>
+            </div>
           </div>
         )}
 
@@ -212,12 +204,19 @@ export default async function MatchesPage() {
                       ))}
                     </span>
                   </div>
-                  <RsvpButton
-                    roomId={room.id}
-                    slug={room.slug}
-                    initialRsvped={room.viewerRsvped}
-                    signedIn={signedIn}
-                  />
+                  <div className="flex items-center gap-3">
+                    <RsvpButton
+                      roomId={room.id}
+                      slug={room.slug}
+                      initialRsvped={room.viewerRsvped}
+                      signedIn={signedIn}
+                    />
+                    {goingLine(room.rsvpCount) && (
+                      <span className="font-mono text-[12px] text-tertiary tabular-nums">
+                        {goingLine(room.rsvpCount)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -225,7 +224,9 @@ export default async function MatchesPage() {
         )}
 
         {/* FULL SCHEDULE (filter pills + flat rows) */}
-        <ScheduleBoard groups={groups} signedIn={signedIn} />
+        <div id="schedule" className="scroll-mt-20">
+          <ScheduleBoard groups={groups} signedIn={signedIn} />
+        </div>
 
         {/* NOTIFY + HOST bands */}
         <div id="notify" className="mt-10 grid gap-3.5 md:grid-cols-[1.3fr_1fr]">

@@ -4,6 +4,7 @@ import {
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import { friendIdsOf } from "@/lib/friends";
+import { getFixtureStats } from "@/lib/stats";
 import type { RoomState } from "@/lib/db/types";
 
 /**
@@ -31,10 +32,17 @@ export type ScheduleRoom = {
 
 export type ScheduleFixture = {
   id: number;
+  /** upstream Sportmonks id for live stats; null for an unmatched admin game */
+  sportmonksFixtureId: number | null;
   home: string;
   away: string;
   competition: string | null;
+  round: string | null;
   kickoffUtc: string;
+  /** provider status label (e.g. "1H", "HT", "FT", "NS"); NOT a clock */
+  status: string;
+  homeScore: number | null;
+  awayScore: number | null;
   rooms: ScheduleRoom[];
 };
 
@@ -45,10 +53,15 @@ export type ScheduleGroup = {
 
 type FixtureRow = {
   id: number;
+  sportmonks_fixture_id: number | null;
   home_team: string;
   away_team: string;
   competition: string | null;
+  round: string | null;
   kickoff_utc: string;
+  status: string;
+  home_score: number | null;
+  away_score: number | null;
   rooms: {
     id: string;
     slug: string | null;
@@ -100,7 +113,7 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
   const { data: fixtures, error } = await supabase
     .from("fixtures")
     .select(
-      "id, home_team, away_team, competition, kickoff_utc, rooms(id, slug, state, blurb, postponed, rsvp_count, commentator:profiles!rooms_commentator_id_fkey(username))",
+      "id, sportmonks_fixture_id, home_team, away_team, competition, round, kickoff_utc, status, home_score, away_score, rooms(id, slug, state, blurb, postponed, rsvp_count, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
     .lte("kickoff_utc", windowEnd)
@@ -206,10 +219,15 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push({
       id: f.id,
+      sportmonksFixtureId: f.sportmonks_fixture_id,
       home: f.home_team,
       away: f.away_team,
       competition: f.competition,
+      round: f.round,
       kickoffUtc: f.kickoff_utc,
+      status: f.status,
+      homeScore: f.home_score,
+      awayScore: f.away_score,
       rooms,
     });
   }
@@ -220,4 +238,64 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
       label: dayLabel(key, todayKey, tomorrowKey),
       fixtures,
     }));
+}
+
+export type LivePreview = {
+  /** currently-listening head count (0 when none / unknown) */
+  listeners: number;
+  /** live match figures, or null before kickoff / no data / upstream error */
+  stats: { xg: number | null; possHome: number | null; shots: number | null } | null;
+};
+
+/**
+ * Real, aggregate extras for the LIVE featured room on /matches. Every figure
+ * here is real or omitted — never fabricated (founder honesty rule). `listeners`
+ * counts currently-listening sessions (active `listener_segments`, 90s
+ * freshness); it's an aggregate head-count with no PII, read via the service
+ * role to sidestep the own-only RLS. `stats` comes from the live Sportmonks
+ * feed through the cached/coalesced loader, and is null before kickoff, for an
+ * unmatched fixture, or on any upstream/env error so the card degrades cleanly.
+ */
+export async function loadLiveRoomPreview(
+  roomId: string,
+  sportmonksFixtureId: number | null,
+): Promise<LivePreview> {
+  const service = createServiceClient();
+  const freshCutoff = new Date(Date.now() - 90 * 1000).toISOString();
+  let listeners = 0;
+  try {
+    const { count } = await service
+      .from("listener_segments")
+      .select("id", { count: "exact", head: true })
+      .eq("room_id", roomId)
+      .is("ended_at", null)
+      .gte("last_seen_at", freshCutoff);
+    listeners = count ?? 0;
+  } catch {
+    listeners = 0;
+  }
+
+  let stats: LivePreview["stats"] = null;
+  if (sportmonksFixtureId && sportmonksFixtureId > 0) {
+    try {
+      const fs = await getFixtureStats(sportmonksFixtureId);
+      const bar = (code: string) => fs.stats.find((s) => s.code === code) ?? null;
+      const poss = bar("ball-possession");
+      const shots = bar("shots-total");
+      const shotsTotal = shots ? shots.home + shots.away : null;
+      const xgTotal = fs.deep?.xg ? fs.deep.xg.home + fs.deep.xg.away : null;
+      // only surface the block when at least one real figure exists
+      if (poss || shotsTotal !== null || xgTotal !== null) {
+        stats = {
+          xg: xgTotal,
+          possHome: poss ? poss.home : null,
+          shots: shotsTotal,
+        };
+      }
+    } catch {
+      stats = null;
+    }
+  }
+
+  return { listeners, stats };
 }

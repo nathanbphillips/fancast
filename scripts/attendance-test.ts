@@ -1,7 +1,7 @@
 /** Unit tests for the load-bearing attendance copy (lib/strings/attendance.ts).
  *  Run: npm run test:attendance */
 import assert from "node:assert/strict";
-import { attendanceLine, listeningLine } from "../lib/strings/attendance";
+import { attendanceLine, listeningLine, goingLine } from "../lib/strings/attendance";
 
 let failures = 0;
 function test(name: string, fn: () => void) {
@@ -69,6 +69,14 @@ test("just over the special-case size falls back to including", () => {
 test("live listening line", () => {
   assert.equal(listeningLine(0), "0 listening now");
   assert.equal(listeningLine(37), "37 listening now");
+});
+
+// terse "going" line for compact cards
+test("going line: zero shows nothing, N is terse + grouped", () => {
+  assert.equal(goingLine(0), null);
+  assert.equal(goingLine(-3), null);
+  assert.equal(goingLine(1), "1 going");
+  assert.equal(goingLine(1240), "1,240 going");
 });
 
 // THE load-bearing rule: never attach "attend" to the match

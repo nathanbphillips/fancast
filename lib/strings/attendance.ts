@@ -47,3 +47,13 @@ export function attendanceLine(
 export function listeningLine(count: number): string {
   return `${count} listening now`;
 }
+
+/**
+ * Terse RSVP count for compact card slots (the /matches up-next cards):
+ * "1,240 going". "going" attaches to the ROOM, never the match. Returns null
+ * when there is nothing to show (0 RSVPs) so callers can omit the line.
+ */
+export function goingLine(count: number): string | null {
+  if (count <= 0) return null;
+  return `${count.toLocaleString("en-GB")} going`;
+}
