@@ -104,7 +104,7 @@ export function RoomRow({
         {enterable ? (
           <Link
             href={`/room/${room.slug}`}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-red px-3.5 py-2 text-[13px] font-bold text-white hover:bg-red-hover"
+            className="btn-grad-red flex shrink-0 items-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[13px] font-semibold text-white"
           >
             <span
               aria-hidden="true"
@@ -118,13 +118,13 @@ export function RoomRow({
             onClick={() => void toggle()}
             disabled={busy}
             aria-pressed={rsvped}
-            className={`shrink-0 rounded-lg border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-60 ${
+            className={`shrink-0 rounded-[10px] border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-60 ${
               rsvped
-                ? "border-gold bg-gold/10 text-gold"
+                ? "border-green bg-green/10 text-green"
                 : "border-line hover:bg-raised"
             }`}
           >
-            {rsvped ? "You're in" : "Count me in"}
+            {rsvped ? "You're in ✓" : "Count me in"}
           </button>
         ) : (
           <Link

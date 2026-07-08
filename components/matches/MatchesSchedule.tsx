@@ -27,7 +27,7 @@ export function MatchesSchedule({
     <div className="space-y-10">
       {groups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h2 className="mb-3 font-mono text-[12px] font-bold tracking-[0.14em] text-gold uppercase">
+          <h2 className="mb-3 font-mono text-[12px] font-bold tracking-[0.14em] text-tertiary uppercase">
             {group.label}
           </h2>
           <div className="space-y-3">
