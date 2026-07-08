@@ -1,13 +1,25 @@
 import Link from "next/link";
 import { brand } from "@/lib/brand";
+import { Faq } from "@/components/marketing/Faq";
+import { HeroProductShot } from "@/components/marketing/HeroProductShot";
 
 /**
- * Marketing host-landing (front-end review items 12/14): the supply-side pitch,
- * shown at /host to anyone who isn't yet a commentator (signed-out or listener).
- * Commentators get the dashboard instead. This is the single home for the host
- * story, moved out of the bottom of /how-it-works so every host CTA has one real
- * destination. Compliance: the "audio only" rule is the load-bearing one.
+ * Marketing host-landing (Matchday redesign): the supply-side pitch shown at
+ * /host to anyone who isn't yet a commentator (signed-out or listener).
+ * Commentators get the dashboard instead. The single home for the host story.
+ * Compliance: the "audio only" rule is the load-bearing one and stays prominent.
+ * Honesty: ownership/fee/co-host figures are policy facts, not fabricated counts.
  */
+
+const eyebrow =
+  "inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red";
+
+const OWNERSHIP = [
+  { n: "100%", l: "of every recording is yours", red: true },
+  { n: "£0", l: "platform fee to host", red: false },
+  { n: "2", l: "equal co-hosts, no primary", red: false },
+  { n: "<1min", l: "from account to on air", red: false },
+];
 
 const HOST_STEPS = [
   {
@@ -43,9 +55,37 @@ const HOST_STEPS = [
 ];
 
 const PROMISES = [
-  { k: "You own 100%", d: "Every recording is yours. We take no license and no cut of it." },
-  { k: "No platform fee to host", d: "Hosting a room is free. Tips go to you, minus only payment costs." },
-  { k: "Equal co-hosts", d: "Share a room with another supporter. No primary, both keep the recordings." },
+  {
+    k: "You own 100%",
+    d: "Every recording is yours. We take no license and no cut of it.",
+  },
+  {
+    k: "No platform fee to host",
+    d: "Hosting a room is free. Tips go to you, minus only payment costs.",
+  },
+  {
+    k: "Equal co-hosts",
+    d: "Share a room with another supporter. No primary, both keep the recordings.",
+  },
+];
+
+const HOST_FAQ = [
+  {
+    q: "What gear do I need?",
+    a: "Just a phone or laptop and a reasonably quiet room. A cheap USB mic helps but isn't required. You run the whole show from the browser, including iOS Safari.",
+  },
+  {
+    q: "Do my listeners have to pay?",
+    a: "No. Listening and reading are always free, with no account needed. Listeners can tip you if they want to, and tips go to you, minus only the payment processor's cut.",
+  },
+  {
+    q: "What if the game isn't listed?",
+    a: "Create your own room for any match from a title and a start time, now or later. We're adding more competitions as fast as we can, and you can request one from the create screen.",
+  },
+  {
+    q: "What if something breaks mid-show?",
+    a: "Your recording keeps going and is cut into segments regardless. If you drop off, reopen the room and pick straight back up. Ending or losing a call is neutral, with no effect on anyone's standing.",
+  },
 ];
 
 export function HostLanding({
@@ -61,54 +101,69 @@ export function HostLanding({
   return (
     <>
       {/* HERO */}
-      <section
-        className="relative overflow-hidden border-b border-line"
-        style={{
-          background:
-            "radial-gradient(110% 90% at 85% -20%, rgba(241,35,43,0.16), transparent 56%), var(--bg-base)",
-        }}
-      >
-        <div className="relative mx-auto max-w-[1180px] px-5 pt-16 pb-10 sm:px-10">
-          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-            For commentators
-          </p>
-          <h1 className="display max-w-[720px] t-hero tracking-[0.005em]">
-            Host your own room
+      <section className="relative overflow-hidden px-5 pt-16 pb-10 sm:px-10">
+        <div
+          aria-hidden="true"
+          className="animate-fc-glow pointer-events-none absolute -top-40 right-0 h-[560px] w-[760px]"
+          style={{
+            background:
+              "radial-gradient(54% 56% at 60% 40%, rgba(239,1,7,.16), transparent 72%)",
+          }}
+        />
+        <div className="relative z-[2] mx-auto max-w-[760px] text-center">
+          <div className={`${eyebrow} justify-center`}>FOR COMMENTATORS</div>
+          <h1 className="display mt-4 t-hero text-primary">
+            Hold a mic. Host the room.
           </h1>
-          <p className="mt-5 max-w-[580px] text-[18px] leading-[1.55] text-secondary">
+          <p className="mx-auto mt-5 max-w-[580px] text-[18px] leading-[1.6] text-secondary">
             If you know the club and you can hold a mic, there is a seat for you
             at the front. Setting up a room takes about a minute, and the whole
             show is yours to keep.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3.5">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href={ctaHref}
-              className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
+              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
             >
               {ctaLabel} <span aria-hidden="true">→</span>
             </Link>
             <Link
               href="/host/guide"
-              className="inline-flex items-center rounded-[11px] border border-line px-[22px] py-[15px] text-[15px] font-bold transition-colors hover:bg-surface"
+              className="inline-flex items-center gap-2 rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary transition-colors hover:bg-raised"
             >
               Read the host handbook
             </Link>
           </div>
-          {note ? (
-            <p className="mt-4 text-sm text-secondary">{note}</p>
-          ) : null}
+          {note ? <p className="mt-4 text-sm text-secondary">{note}</p> : null}
+        </div>
+        <HeroProductShot />
+      </section>
+
+      {/* OWNERSHIP STAT BAND */}
+      <section className="border-y border-line px-5 py-9 sm:px-10">
+        <div className="mx-auto grid max-w-[1010px] grid-cols-2 md:grid-cols-4">
+          {OWNERSHIP.map((s, i) => (
+            <div
+              key={s.l}
+              className={`px-5 py-2 text-center ${i > 0 ? "md:border-l md:border-line" : ""}`}
+            >
+              <div
+                className={`display text-[42px] ${s.red ? "text-red" : "text-primary"}`}
+              >
+                {s.n}
+              </div>
+              <div className="mt-1 text-[13px] text-secondary">{s.l}</div>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* PROMISES */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-2 sm:px-10">
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-3">
+      <section className="mx-auto max-w-[1010px] px-5 pt-14 pb-2 sm:px-10">
+        <div className="grid gap-3 sm:grid-cols-3">
           {PROMISES.map((p) => (
-            <div key={p.k} className="bg-surface px-6 pt-[26px] pb-7">
-              <h3 className="t-title font-extrabold tracking-[-0.01em]">
-                {p.k}
-              </h3>
+            <div key={p.k} className="rounded-2xl border border-line bg-raised px-6 pt-[26px] pb-7">
+              <h3 className="t-title font-extrabold">{p.k}</h3>
               <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
                 {p.d}
               </p>
@@ -118,22 +173,21 @@ export function HostLanding({
       </section>
 
       {/* STEPS */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-5 sm:px-10">
-        <h2 className="display max-w-[680px] t-h2">
-          From account to on air
-        </h2>
+      <section className="mx-auto max-w-[1010px] px-5 pt-12 pb-5 sm:px-10">
+        <h2 className="display max-w-[680px] t-h2">From account to on air</h2>
         <div className="mt-9 grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
           {HOST_STEPS.map((s) => (
             <div
               key={s.n}
-              className="rounded-2xl border border-line bg-surface px-6 pt-6 pb-7 shadow-card"
+              className="rounded-2xl border border-line bg-raised px-6 pt-6 pb-7 shadow-card"
             >
-              <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold-bright font-mono text-sm font-bold text-[#141210]">
+              <span
+                className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] font-mono text-sm font-bold text-red"
+                style={{ background: "rgba(239,1,7,.12)" }}
+              >
                 {s.n}
               </span>
-              <h3 className="mt-5 t-title font-extrabold tracking-[-0.01em]">
-                {s.t}
-              </h3>
+              <h3 className="mt-5 t-title font-extrabold">{s.t}</h3>
               <p className="mt-2.5 text-sm leading-[1.55] text-secondary">
                 {s.d}
               </p>
@@ -141,30 +195,77 @@ export function HostLanding({
           ))}
         </div>
 
-        {/* the one rule */}
-        <div className="mt-8 rounded-2xl border border-red/30 bg-inset px-6 py-6">
-          <p className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-red uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-red" />
-            The one rule
-          </p>
-          <h3 className="text-lg font-extrabold tracking-[-0.01em]">
-            Audio only, always
-          </h3>
-          <p className="mt-2 max-w-[680px] text-sm leading-[1.6] text-secondary">
+        {/* THE ONE RULE — audio only (load-bearing compliance) */}
+        <div className="mt-8 rounded-2xl border border-red/30 bg-inset px-6 py-7">
+          <div className={`${eyebrow} mb-3`}>THE ONE RULE</div>
+          <h3 className="display t-h3">Audio only, always</h3>
+          <p className="mt-2 mb-5 max-w-[680px] text-sm leading-[1.6] text-secondary">
             Your show is your voice and your guests. Never play match video or
             broadcast audio through it, even in the background. That rule is what
             keeps the whole platform on the right side of the line, and it is the
             one thing we cannot bend.
           </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div
+              className="flex items-center gap-3 rounded-xl border px-4 py-3.5"
+              style={{
+                background: "rgba(52,209,122,.08)",
+                borderColor: "rgba(52,209,122,.3)",
+              }}
+            >
+              <span className="text-lg font-extrabold text-green">✓</span>
+              <span className="text-[13.5px] font-semibold text-primary">
+                Your voice, your guests, your takes
+              </span>
+            </div>
+            <div
+              className="flex items-center gap-3 rounded-xl border px-4 py-3.5"
+              style={{
+                background: "rgba(239,1,7,.06)",
+                borderColor: "rgba(239,1,7,.3)",
+              }}
+            >
+              <span className="text-lg font-extrabold text-red">✗</span>
+              <span className="text-[13.5px] font-semibold text-primary">
+                Match video or broadcast audio, ever
+              </span>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <div className="mt-9 flex flex-wrap items-center gap-3.5">
-          <Link
-            href={ctaHref}
-            className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
-          >
-            {ctaLabel} <span aria-hidden="true">→</span>
-          </Link>
+      {/* FAQ */}
+      <section className="mx-auto max-w-[760px] px-5 pt-8 pb-4 sm:px-10">
+        <div className={`${eyebrow} mb-3.5`}>QUESTIONS FROM HOSTS</div>
+        <h2 className="display t-h2">Before you go on</h2>
+        <Faq items={HOST_FAQ} />
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="relative overflow-hidden border-t border-line px-5 py-16 text-center sm:px-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-1/2 h-[460px] w-[860px] -translate-x-1/2 -translate-y-1/2"
+          style={{
+            background:
+              "radial-gradient(50% 60% at 50% 50%, rgba(239,1,7,.18), transparent 70%)",
+          }}
+        />
+        <div className="relative z-[2]">
+          <h2 className="display mx-auto t-h2">There&apos;s a seat at the front. Take it.</h2>
+          <p className="mx-auto mt-4 max-w-[480px] text-[16px] text-secondary">
+            Become a commentator in about a minute. No platform fee, tips are
+            yours, every recording is yours to keep.
+          </p>
+          <div className="mt-7 flex justify-center">
+            <Link
+              href={ctaHref}
+              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
+            >
+              {ctaLabel} <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="btn-shine" />
+            </Link>
+          </div>
         </div>
       </section>
     </>
