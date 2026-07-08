@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { Faq } from "@/components/marketing/Faq";
 
 /**
- * About (Cloud Design "1a"): manifesto hero → story 3-col → stat band →
- * principles → hosts → FAQ → CTA. Copy is verbatim from the design (no
- * em-dashes). The compliance FAQ is kept per the founder's decision log
- * ("explicit 'we don't show the match' + FAQ kept prominent"). Hosts are
- * illustrative personas; no real photos (abstract marks only).
+ * About / Voices (Matchday redesign): manifesto hero → story → stat band →
+ * principles → maker → the voices (archetypes) → FAQ → CTA. Copy verbatim (no
+ * em-dashes). The compliance FAQ is kept prominent per the founder's decision
+ * log. Voices are illustrative archetypes; no real photos, no fabricated
+ * follower counts (hybrid-honesty rule).
  */
 
 export const metadata: Metadata = {
-  title: "About",
+  title: "Voices",
   description: `What ${brand.name} is, how a matchday works, and why it's fans in your ear instead of pundits.`,
 };
+
+const eyebrow =
+  "inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red";
 
 const STORY = [
   {
@@ -31,10 +35,10 @@ const STORY = [
 ];
 
 const STATS = [
-  { n: "0", c: "pundits on the payroll", gold: true },
-  { n: "100%", c: "of recordings owned by hosts" },
-  { n: "<1min", c: "to sign up and join in" },
-  { n: "$0", c: "to listen, no account needed" },
+  { n: "0", c: "pundits on the payroll", red: false },
+  { n: "100%", c: "of recordings owned by hosts", red: true },
+  { n: "<1min", c: "to sign up and join in", red: false },
+  { n: "£0", c: "to listen, no account needed", red: false },
 ];
 
 const PRINCIPLES = [
@@ -106,9 +110,6 @@ const FAQ = [
   },
 ];
 
-const stripe =
-  "repeating-linear-gradient(135deg, var(--bg2), var(--bg2) 9px, var(--bg-raised) 9px, var(--bg-raised) 18px)";
-
 export default function AboutPage() {
   return (
     <>
@@ -117,20 +118,20 @@ export default function AboutPage() {
         className="relative overflow-hidden border-b border-line"
         style={{
           background:
-            "radial-gradient(120% 90% at 15% -20%, rgba(241,35,43,0.18), transparent 56%), var(--bg-base)",
+            "radial-gradient(120% 90% at 15% -20%, rgba(239,1,7,0.18), transparent 56%), var(--bg-base)",
         }}
       >
-        <div className="relative mx-auto max-w-[1180px] px-5 py-16 sm:px-10 sm:py-[70px]">
-          <p className="mb-5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-            About {brand.name}
-          </p>
+        <div className="relative mx-auto max-w-[1120px] px-5 py-16 sm:px-10 sm:py-[70px]">
+          <div className={`${eyebrow} mb-5`}>THE VOICES · {brand.name.toUpperCase()}</div>
           <h1 className="display max-w-[900px] t-hero">
             Not a broadcaster.
             <br />
             <span
-              className="text-red"
-              style={{ textShadow: "0 0 38px rgba(241,35,43,0.5)" }}
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206)",
+              }}
             >
               Fans &amp; friends hanging out.
             </span>
@@ -145,21 +146,23 @@ export default function AboutPage() {
       </section>
 
       {/* STORY */}
-      <section className="mx-auto grid max-w-[1180px] gap-8 px-5 pt-12 pb-6 sm:grid-cols-3 sm:px-10">
+      <section className="mx-auto grid max-w-[1120px] gap-8 px-5 pt-12 pb-6 sm:grid-cols-3 sm:px-10">
         {STORY.map((s) => (
           <div key={s.h}>
-            <p className="display mb-3.5 t-h3 text-gold">{s.h}</p>
+            <p className="display mb-3.5 t-h3 text-red">{s.h}</p>
             <p className="text-[15px] leading-[1.6] text-secondary">{s.p}</p>
           </div>
         ))}
       </section>
 
       {/* STAT BAND */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
+      <section className="mx-auto max-w-[1120px] px-5 pt-12 pb-6 sm:px-10">
         <div className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           {STATS.map((s) => (
             <div key={s.c} className="bg-inset px-6 py-7">
-              <p className={`display text-[46px] leading-none ${s.gold ? "text-gold" : ""}`}>
+              <p
+                className={`display text-[46px] leading-none ${s.red ? "text-red" : "text-primary"}`}
+              >
                 {s.n}
               </p>
               <p className="mt-2 text-[13px] text-secondary">{s.c}</p>
@@ -169,27 +172,20 @@ export default function AboutPage() {
       </section>
 
       {/* PRINCIPLES */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
-        <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-          What we stand for
-        </p>
-        <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
-          Four things we won&apos;t budge on
-        </h2>
+      <section className="mx-auto max-w-[1120px] px-5 pt-12 pb-6 sm:px-10">
+        <div className={`${eyebrow} mb-3.5`}>WHAT WE STAND FOR</div>
+        <h2 className="display t-h2">Four things we won&apos;t budge on</h2>
         <div className="mt-8 grid gap-[18px] sm:grid-cols-2">
           {PRINCIPLES.map((p, i) => (
             <div
               key={p.k}
-              className="flex gap-[18px] rounded-2xl border border-line bg-surface px-[26px] pt-[26px] pb-7 shadow-card"
+              className="flex gap-[18px] rounded-2xl border border-line bg-raised px-[26px] pt-[26px] pb-7 shadow-card"
             >
-              <span className="display text-[34px] leading-[0.9] text-gold/90">
+              <span className="display text-[34px] leading-[0.9] text-red">
                 0{i + 1}
               </span>
               <div>
-                <h3 className="t-title font-extrabold tracking-[-0.01em]">
-                  {p.k}
-                </h3>
+                <h3 className="t-title font-extrabold">{p.k}</h3>
                 <p className="mt-2 text-sm leading-[1.55] text-secondary">
                   {p.d}
                 </p>
@@ -200,15 +196,10 @@ export default function AboutPage() {
       </section>
 
       {/* MAKER */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
-        <div className="rounded-2xl border border-line bg-surface px-6 py-8 sm:px-9 sm:py-10">
-          <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-            Who&apos;s behind it
-          </p>
-          <h2 className="display t-h2">
-            Made by a fan, not a media company
-          </h2>
+      <section className="mx-auto max-w-[1120px] px-5 pt-12 pb-6 sm:px-10">
+        <div className="rounded-2xl border border-line bg-raised px-6 py-8 sm:px-9 sm:py-10">
+          <div className={`${eyebrow} mb-3.5`}>WHO&apos;S BEHIND IT</div>
+          <h2 className="display t-h2">Made by a fan, not a media company</h2>
           <div className="mt-5 max-w-[680px] space-y-4 text-[15px] leading-[1.6] text-secondary">
             <p>
               {brand.name} is built by Nathan Phillips, an Arsenal supporter who
@@ -227,60 +218,52 @@ export default function AboutPage() {
             href="https://bsky.app/profile/nathanphillips.bsky.social"
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-gold hover:underline"
+            className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-red hover:underline"
           >
             Say hello on Bluesky <span aria-hidden="true">→</span>
           </a>
         </div>
       </section>
 
-      {/* HOSTS */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-6 sm:px-10">
+      {/* THE VOICES */}
+      <section className="mx-auto max-w-[1120px] px-5 pt-12 pb-6 sm:px-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-              The voices
-            </p>
-            <h2 className="display t-h2">
-              The kind of voice you&apos;ll hear
-            </h2>
+            <div className={`${eyebrow} mb-3.5`}>THE VOICES</div>
+            <h2 className="display t-h2">The kind of voice you&apos;ll hear</h2>
           </div>
-          <p className="max-w-[240px] text-right font-mono text-[11px] leading-[1.5] text-secondary">
+          <p className="max-w-[240px] text-right font-mono text-[11px] leading-[1.5] text-tertiary">
             Real supporters, not pundits. Named hosts show up here as rooms open.
           </p>
         </div>
         <div className="grid gap-[18px] sm:grid-cols-3">
-          {HOSTS.map((h) => (
+          {HOSTS.map((h, i) => (
             <div
               key={h.role}
-              className="overflow-hidden rounded-2xl border border-line bg-inset"
+              className="overflow-hidden rounded-2xl border border-line bg-raised"
             >
               <div
-                className="relative flex h-[150px] items-end p-3.5"
-                style={{ background: stripe }}
+                className="relative flex h-[130px] items-end p-3.5"
+                style={{
+                  background:
+                    "radial-gradient(80% 90% at 50% 0%, rgba(239,1,7,0.16), transparent 62%), var(--bg-inset)",
+                }}
               >
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(80% 80% at 50% 0%, rgba(232,181,74,0.18), transparent 60%)",
-                  }}
-                />
                 <span
                   aria-hidden="true"
-                  className="relative h-14 w-14 rounded-full border-2 border-inset"
+                  className="relative h-14 w-14 rounded-full border-2 border-raised"
                   style={{
                     background:
-                      "radial-gradient(circle at 35% 30%, #3a3a40, #1b1b1f)",
+                      i === 1
+                        ? "linear-gradient(135deg,#1f6f4a,#0c3a26)"
+                        : i === 2
+                          ? "linear-gradient(135deg,#2a4a8a,#12224a)"
+                          : "linear-gradient(135deg,#ef0107,#7a0a12)",
                   }}
                 />
               </div>
               <div className="px-5 pt-[18px] pb-[22px]">
-                <h3 className="mb-1.5 t-title font-extrabold tracking-[-0.01em]">
-                  {h.role}
-                </h3>
+                <h3 className="mb-1.5 t-title font-extrabold">{h.role}</h3>
                 <p className="text-[13.5px] leading-[1.5] text-secondary">
                   {h.bio}
                 </p>
@@ -291,14 +274,9 @@ export default function AboutPage() {
       </section>
 
       {/* FAQ (kept for compliance) */}
-      <section className="mx-auto max-w-[1180px] px-5 pt-12 pb-12 sm:px-10">
-        <p className="mb-3.5 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-          Questions, answered
-        </p>
-        <h2 className="display text-4xl leading-[0.95] sm:text-5xl">
-          The bits people ask
-        </h2>
+      <section className="mx-auto max-w-[1120px] px-5 pt-12 pb-12 sm:px-10">
+        <div className={`${eyebrow} mb-3.5`}>QUESTIONS, ANSWERED</div>
+        <h2 className="display t-h2">The bits people ask</h2>
         <Faq items={FAQ} />
       </section>
 
@@ -307,25 +285,23 @@ export default function AboutPage() {
         className="relative overflow-hidden border-t border-line"
         style={{
           background:
-            "radial-gradient(90% 130% at 50% 120%, rgba(241,35,43,0.28), transparent 60%), var(--bg-base)",
+            "radial-gradient(90% 130% at 50% 120%, rgba(239,1,7,0.28), transparent 60%), var(--bg-base)",
         }}
       >
-        <div className="relative mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-10">
-          <h2 className="display mx-auto max-w-2xl t-hero">
-            Pull up a seat.
-          </h2>
+        <div className="relative mx-auto max-w-[1120px] px-5 py-20 text-center sm:px-10">
+          <h2 className="display mx-auto max-w-2xl t-hero">Pull up a seat.</h2>
           <p className="mx-auto mt-4 max-w-[460px] text-[17px] text-secondary">
             Jump in and listen along. Sign up when you want to chat, vote, or
             call in.
           </p>
           <div className="mt-7 flex justify-center">
-            <a
+            <Link
               href="/matches"
-              className="inline-flex items-center gap-2.5 rounded-xl bg-red px-7 py-4 text-base font-bold text-white transition-colors hover:bg-red-hover"
-              style={{ boxShadow: "0 16px 40px -10px rgba(241,35,43,0.7)" }}
+              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
             >
               See what&apos;s on <span aria-hidden="true">→</span>
-            </a>
+              <span aria-hidden="true" className="btn-shine" />
+            </Link>
           </div>
         </div>
       </section>
