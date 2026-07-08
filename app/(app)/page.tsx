@@ -1,136 +1,48 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { brand } from "@/lib/brand";
 import { loadFixtures } from "@/lib/db/fixtures";
 import { KickoffTime } from "@/components/KickoffTime";
-import { OnAirCard } from "@/components/marketing/OnAirCard";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
-import { Faq } from "@/components/marketing/Faq";
+import { HeroProductShot } from "@/components/marketing/HeroProductShot";
+import { SyncDiagram } from "@/components/marketing/SyncDiagram";
+import { Countdown } from "@/components/marketing/Countdown";
 
 /**
- * Home (Cloud Design "1a"): hero + bobbing ON AIR card → how it works → live +
- * coming-up teaser (real fixtures) → features → final CTA. Copy is verbatim from
- * the design (no em-dashes). Compliance: "watch" only ever = the viewer's own
- * stream; the unaffiliated disclaimer rides the shared footer.
+ * Home (Matchday redesign): centred hero + product-shot preview → honest stat
+ * band → signature sync differentiator → bento → stickiness → Voices archetypes
+ * → real schedule/RSVP → host + closing CTAs. Real fixtures drive every live/
+ * upcoming state via loadFixtures; the design's fabricated counts (listeners,
+ * messages, followers, streak) are dropped or replaced with archetypes per the
+ * hybrid-honesty rule. Compliance: "watch" only ever = the viewer's own stream.
  */
 
 export const revalidate = 60;
 
-// The home page is the most-shared URL, so give it its own description + canonical
-// instead of inheriting the bare site default (front-end review item 23).
 export const metadata: Metadata = {
   description:
     "The matchday room for Arsenal fans. Turn the pundits off and listen with real supporters, in sync with your own stream. Free to listen, no account needed.",
   alternates: { canonical: "/" },
 };
 
-// Step watermark icons (design: 72px, gold, opacity .55, top-right of each card).
-const stepIcon = (paths: ReactNode) => (
-  <svg
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-    className="h-[72px] w-[72px]"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.4}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    {paths}
-  </svg>
-);
+const eyebrow =
+  "inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red";
 
-const STEPS = [
+const VOICES = [
   {
-    n: "01",
-    t: "Bring your own stream",
-    d: "Watch the match the way you always do: your telly, your app, your subscription. FanCast doesn't show the game; it sits beside it.",
-    icon: stepIcon(
-      <>
-        <rect x="2.5" y="4" width="19" height="12" rx="2" />
-        <line x1="8" y1="20" x2="16" y2="20" />
-        <line x1="12" y1="16" x2="12" y2="20" />
-      </>,
-    ),
+    t: "The lifelong Gooner",
+    d: "Lives and dies with every result. Never on the fence, never neutral.",
+    grad: "linear-gradient(135deg,#ef0107,#7a0a12)",
   },
   {
-    n: "02",
-    t: "Press play and sync",
-    d: "Tap in for live fan audio, then line it up to your screen. When your TV hits a moment, tap Now and the audio locks to your feed.",
-    icon: stepIcon(
-      <>
-        <circle cx="12" cy="12" r="9" />
-        <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
-      </>,
-    ),
+    t: "The tactics head",
+    d: "The xG and the press triggers, then forgets it all when we score a worldie.",
+    grad: "linear-gradient(135deg,#1f6f4a,#0c3a26)",
   },
   {
-    n: "03",
-    t: "Pull up a seat",
-    d: "Jump in and listen along. Signing up takes under a minute and lets you chat, vote, ask the commentator, or call in.",
-    icon: stepIcon(
-      <>
-        <line x1="6" y1="14" x2="6" y2="18" />
-        <line x1="10" y1="9" x2="10" y2="18" />
-        <line x1="14" y1="6" x2="14" y2="18" />
-        <line x1="18" y1="11" x2="18" y2="18" />
-      </>,
-    ),
-  },
-];
-
-const FEATURES = [
-  {
-    n: "01",
-    k: "A fan, not a pundit",
-    d: "A Gooner who lives and dies with every result, on your side, never neutral.",
-  },
-  {
-    n: "02",
-    k: "Synced to your screen",
-    d: "One tap lines the audio to your feed, with half-second nudges and a jump back to live.",
-  },
-  {
-    n: "03",
-    k: "A chat worth reading",
-    d: "Threaded replies, upvotes, and sort by New, Top or Controversial. Good takes rise, noise sinks.",
-  },
-  {
-    n: "04",
-    k: "The stats that matter",
-    d: "Possession, shots, xG, momentum, lineups and team news, live from kickoff.",
-  },
-  {
-    n: "05",
-    k: "Ask, vote, call in",
-    d: "Question the commentator, settle the half-time poll, rate the players, or request the mic.",
-  },
-  {
-    n: "06",
-    k: "Yours to keep",
-    d: "Every show is recorded into downloadable segments. The host owns it; we claim nothing.",
-  },
-];
-
-// The objections that block signup, answered where the decision is made (the
-// full set lives on /about). Compliance-safe: never implies we show the match.
-const HOME_FAQ = [
-  {
-    q: "Do I need to pay or sign up?",
-    a: "No. Anyone can listen and read the chat and stats with no account. You only sign up, in under a minute, to chat, vote, ask a question, or call in.",
-  },
-  {
-    q: "Do you show the match?",
-    a: "No, and we never will. You watch the game however you already do; we ride alongside it with fan audio, chat, and stats, lined up to your screen.",
-  },
-  {
-    q: "Is this official Arsenal?",
-    a: "No. FanCast is an unofficial, fan-made platform and is not affiliated with or endorsed by Arsenal, the Premier League, or any broadcaster.",
-  },
-  {
-    q: "Does it work on my iPhone?",
-    a: "Yes. It runs in the browser including iOS Safari, installs to your home screen, and keeps playing audio on the lock screen like a radio.",
+    t: "The call-in host",
+    d: "Runs the half-time poll and the call-in mic, so the whole room gets a say.",
+    grad: "linear-gradient(135deg,#2a4a8a,#12224a)",
   },
 ];
 
@@ -138,475 +50,529 @@ export default async function HomePage() {
   const { live, upcoming } = await loadFixtures();
   const featured = live[0] ?? upcoming[0] ?? null;
   const featuredLive = featured ? featured.card.state !== "scheduled" : false;
-  const comingUp = upcoming.slice(0, 3);
 
-  const featuredRoomHref = featured?.card.roomHref ?? null;
-  const featuredCtaHref = featuredRoomHref ?? "/matches";
-  const featuredCtaLabel = featuredLive
-    ? featured?.card.state === "live"
-      ? "Join live"
-      : "Join the waiting room"
-    : featuredRoomHref
-      ? "Join the waiting room"
-      : "See the schedule";
-
-  // Hero primary CTA stays honest about state: it never promises "live" when
-  // nothing is, and when a room is on it deep-links straight in (rooms are
-  // readable with no account, so this is the "listen free" wedge).
+  // hero CTA stays honest about state — deep-links into a live/next room when
+  // one exists (rooms read free, no account), else points at the schedule
   const heroPrimary =
     featured && featuredLive
       ? {
-          href: featuredRoomHref ?? "/matches",
+          href: featured.card.roomHref ?? "/matches",
           label:
-            featured.card.state === "live"
-              ? "Listen now, free"
-              : "Join the waiting room",
+            featured.card.state === "live" ? "Listen now, free" : "Join the waiting room",
         }
-      : featuredRoomHref
-        ? { href: featuredRoomHref, label: "Join the next room" }
+      : featured?.card.roomHref
+        ? { href: featured.card.roomHref, label: "Join the next room" }
         : { href: "/matches", label: "See the schedule" };
+
+  // schedule section: live room leads if one is on, else the soonest upcoming
+  const liveRoom = live[0] ?? null;
+  const scheduleFeatured = liveRoom ?? upcoming[0] ?? null;
+  const rows = (liveRoom ? upcoming.slice(0, 3) : upcoming.slice(1, 4)).filter(
+    Boolean,
+  );
 
   return (
     <>
-      {/* HERO */}
-      <section
-        className="relative overflow-hidden"
-        style={{
-          background:
-            "radial-gradient(120% 90% at 88% -15%, rgba(241,35,43,0.20), transparent 58%), radial-gradient(90% 70% at 8% 110%, rgba(241,35,43,0.08), transparent 60%), var(--bg-base)",
-        }}
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgb(var(--hair) / 0.04) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--hair) / 0.04) 1px, transparent 1px)",
-            backgroundSize: "54px 54px",
-            maskImage:
-              "radial-gradient(120% 100% at 70% 0%, black, transparent 75%)",
-            WebkitMaskImage:
-              "radial-gradient(120% 100% at 70% 0%, black, transparent 75%)",
-          }}
-        />
-        <div className="relative mx-auto grid max-w-[1180px] items-center gap-12 px-5 py-16 sm:px-10 lg:grid-cols-[1.04fr_.96fr] lg:py-[76px]">
-          <div>
-            <div className="mb-6 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-[7px] font-mono text-[11px] tracking-[0.14em] text-secondary uppercase">
-                <span
-                  aria-hidden="true"
-                  className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
-                  style={{ boxShadow: "0 0 10px #f1232b" }}
-                />
-                Live fan commentary · Arsenal
-              </span>
-              <span className="inline-flex items-center rounded-full border border-gold/40 px-3 py-[7px] font-mono text-[11px] tracking-[0.14em] text-gold uppercase">
-                Early access
-              </span>
-            </div>
-            <h1 className="display t-hero tracking-[0.005em] text-primary">
-              Turn the pundits off. Tune in to real{" "}
-              <span
-                className="text-red"
-                style={{ textShadow: "0 0 34px rgba(241,35,43,0.45)" }}
-              >
-                Arsenal
-              </span>{" "}
-              fans.
-            </h1>
-            <p className="mt-5 max-w-[468px] text-[18px] leading-[1.55] text-secondary">
-              Press play on live fan audio and listen while you watch the match
-              your own way. A real supporter in your ear, a chat worth reading,
-              and the stats that matter, all in sync with your screen. No
-              pundits. No fluff. Just football.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3.5">
-              <Link
-                href={heroPrimary.href}
-                className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
-                style={{ boxShadow: "0 12px 34px -8px rgba(241,35,43,0.6)" }}
-              >
-                {heroPrimary.label} <span aria-hidden="true">→</span>
-              </Link>
-              <Link
-                href="/how-it-works"
-                className="inline-flex items-center rounded-[11px] border border-gold/45 px-[22px] py-[15px] text-[15px] font-bold text-gold transition-colors hover:border-gold"
-              >
-                How it works
-              </Link>
-            </div>
-            <p className="mt-5 text-[13px] text-secondary">
-              Free to listen. No account needed to hear the room.
-            </p>
-            <div className="mt-5 flex flex-wrap items-center gap-4 font-mono text-[11px] tracking-[0.06em] text-secondary uppercase">
-              <span>Arsenal first</span>
-              <span aria-hidden="true" className="text-line">
-                /
-              </span>
-              <span>More clubs coming</span>
-              <span aria-hidden="true" className="text-line">
-                /
-              </span>
-              <span className="text-primary/85">Independent &amp; unaffiliated</span>
-            </div>
-          </div>
-          <OnAirCard />
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
-      <section id="how" className="border-t border-line">
-        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-                <span
-                  aria-hidden="true"
-                  className="h-1.5 w-1.5 rounded-full bg-gold-bright"
-                />
-                How it works
-              </p>
-              <h2 className="display t-h2">
-                Three taps to the room
-              </h2>
-            </div>
-            <p className="max-w-[200px] text-right font-mono text-[11px] tracking-[0.05em] text-secondary">
-              Jump in and listen along.
-              <br />
-              Signing up takes under a minute.
-            </p>
-          </div>
-          <div className="mt-9 grid gap-[18px] md:grid-cols-3">
-            {STEPS.map((s) => (
-              <div
-                key={s.n}
-                className="relative overflow-hidden rounded-2xl border border-line bg-surface px-6 pt-6 pb-7 shadow-card"
-              >
-                <span
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-4 right-4 text-gold opacity-55"
-                >
-                  {s.icon}
-                </span>
-                <span className="flex h-[34px] w-[34px] items-center justify-center rounded-[9px] bg-gold-bright font-mono text-sm font-bold text-[#141210]">
-                  {s.n}
-                </span>
-                <h3 className="mt-[54px] t-title font-extrabold tracking-[-0.01em]">
-                  {s.t}
-                </h3>
-                <p className="mt-2.5 text-sm leading-[1.55] text-secondary">
-                  {s.d}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-7 flex flex-wrap items-center gap-x-5 gap-y-2">
-            <Link
-              href="/how-it-works"
-              className="text-sm font-bold text-gold hover:underline"
-            >
-              Read the full guide →
-            </Link>
-            <Link
-              href="/host"
-              className="text-sm font-semibold text-secondary hover:text-primary"
-            >
-              Want to commentate? →
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* LIVE + COMING UP */}
-      <section className="mx-auto grid max-w-[1180px] items-stretch gap-[18px] px-5 pt-3.5 pb-16 sm:px-10 lg:grid-cols-[1.15fr_1fr]">
-        {/* featured */}
-        <div className="relative min-h-[300px] overflow-hidden rounded-[18px] border border-red/30 bg-inset">
+      {/* ===================== HERO ===================== */}
+      <section className="relative overflow-hidden px-5 pt-16 pb-10 sm:px-10">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
           <div
-            aria-hidden="true"
-            className="absolute inset-0 opacity-50"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgb(var(--hair) / 0.10) 1px, transparent 1.4px)",
-              backgroundSize: "9px 9px",
-            }}
-          />
-          <div
-            aria-hidden="true"
-            className="absolute inset-0"
+            className="animate-fc-glow absolute -top-44 left-1/2 h-[640px] w-[1000px] -translate-x-1/2"
             style={{
               background:
-                "radial-gradient(120% 120% at 100% 100%, rgba(241,35,43,0.32), transparent 55%)",
+                "radial-gradient(58% 58% at 50% 38%, rgba(239,1,7,.22), transparent 72%)",
             }}
           />
-          <div className="relative flex min-h-[300px] flex-col justify-between p-6">
-            <div className="flex items-center justify-between">
-              {featured && featuredLive ? (
-                <span className="inline-flex items-center gap-[7px] rounded-full bg-red px-[11px] py-1.5 font-mono text-[11px] tracking-[0.12em] text-white uppercase">
-                  <span
-                    aria-hidden="true"
-                    className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"
-                  />
-                  Live now
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-gold uppercase">
-                  <span
-                    aria-hidden="true"
-                    className="h-1.5 w-1.5 rounded-full bg-gold-bright"
-                  />
-                  {featured ? "Next up" : "The room's open"}
-                </span>
-              )}
-              {featured && (
-                <span className="font-mono text-[11px] text-secondary uppercase">
-                  {featured.card.competition}
-                </span>
-              )}
-            </div>
-            <div>
-              {featured ? (
-                <>
-                  <p className="mb-2 font-mono text-[11px] text-secondary">
-                    {featuredLive ? (
-                      featured.card.state === "waiting" ? (
-                        "Show starts soon"
-                      ) : (
-                        "Live now"
-                      )
-                    ) : (
-                      <KickoffTime iso={featured.card.kickoffUtc} />
-                    )}
-                    {featured.card.commentator
-                      ? ` · hosted by ${featured.card.commentator}`
-                      : ""}
-                  </p>
-                  <h3 className="display mb-5 text-[42px] leading-[0.96]">
-                    {featured.card.home} vs {featured.card.away}
-                  </h3>
-                  <Link
-                    href={featuredCtaHref}
-                    className="inline-flex items-center gap-2.5 rounded-[10px] bg-inverted px-5 py-3 text-sm font-bold text-inverted-fg transition-opacity hover:opacity-90"
-                  >
-                    {featuredCtaLabel} <span aria-hidden="true">→</span>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <h3 className="display mb-3 text-[34px] leading-[0.96]">
-                    No match live
-                    <br />
-                    right now
-                  </h3>
-                  <p className="mb-4 max-w-sm text-sm text-secondary">
-                    Get an email when the first Arsenal rooms open, and be there
-                    for the first whistle.
-                  </p>
-                  <NotifyForm source="home_empty" className="max-w-sm" />
-                  <Link
-                    href="/matches"
-                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-secondary hover:text-primary"
-                  >
-                    Or see the schedule <span aria-hidden="true">→</span>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgb(var(--hair) / 0.05) 1px, transparent 1px)",
+              backgroundSize: "30px 30px",
+              opacity: 0.5,
+              maskImage: "radial-gradient(70% 60% at 50% 40%, black, transparent)",
+              WebkitMaskImage:
+                "radial-gradient(70% 60% at 50% 40%, black, transparent)",
+            }}
+          />
         </div>
 
-        {/* coming up */}
-        <div className="flex flex-col rounded-[18px] border border-line bg-surface px-[22px] pt-[22px] pb-3.5">
-          <div className="mb-1.5 flex items-center justify-between">
-            <span className="display text-[22px] tracking-[0.03em]">
-              Coming up
-            </span>
-            <Link
-              href="/matches"
-              className="font-mono text-[10.5px] tracking-[0.06em] text-gold uppercase hover:underline"
+        <div className="relative z-[2] mx-auto max-w-[840px] text-center">
+          <span className="inline-flex animate-fc-rise items-center gap-2 rounded-full border border-line bg-surface/40 px-[15px] py-2 font-mono text-[12px] text-secondary">
+            <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red" />
+            The matchday room for Arsenal fans
+          </span>
+          <h1 className="display mt-6 t-hero text-primary">
+            Every match feels better
+            <br />
+            in a{" "}
+            <span
+              className="bg-clip-text text-transparent"
+              style={{
+                backgroundImage:
+                  "linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206)",
+              }}
             >
-              Full schedule →
-            </Link>
-          </div>
-          {comingUp.length === 0 ? (
-            <p className="py-6 text-sm text-secondary">
-              Nothing scheduled yet. Check back soon.
-            </p>
-          ) : (
-            comingUp.map((w) => (
-              <Link
-                key={w.card.id}
-                href={w.card.roomHref ?? "/matches"}
-                className="flex items-center gap-3.5 border-t border-line px-1 py-[15px] first:border-t-0 hover:opacity-80"
-              >
-                <span className="w-[62px] shrink-0 font-mono text-[10px] leading-[1.4] tracking-[0.05em] text-secondary uppercase">
-                  <KickoffTime iso={w.card.kickoffUtc} />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold tracking-[-0.01em]">
-                    {w.card.home} vs {w.card.away}
-                  </span>
-                  <span className="mt-0.5 block truncate font-mono text-[10px] text-secondary">
-                    {w.card.competition}
-                  </span>
-                </span>
-                <span aria-hidden="true" className="text-lg text-secondary">
-                  ›
-                </span>
-              </Link>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section
-        className="border-t border-line"
-        style={{
-          background:
-            "radial-gradient(100% 80% at 50% 0%, rgba(241,35,43,0.06), transparent 60%)",
-        }}
-      >
-        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
-          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-            Why you&apos;ll stay
-          </p>
-          <h2 className="display max-w-[700px] t-h2">
-            Built for the 90 minutes, and the bits around them
-          </h2>
-          <div className="mt-9 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 md:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div
-                key={f.n}
-                className="bg-canvas px-6 pt-[26px] pb-7 transition-colors hover:bg-surface"
-              >
-                <p className="mb-3.5 font-mono text-[11px] text-gold">{f.n}</p>
-                <h3 className="t-title font-extrabold tracking-[-0.01em]">
-                  {f.k}
-                </h3>
-                <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
-                  {f.d}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SECOND SCREEN / DIFFERENTIATION */}
-      <section className="border-t border-line">
-        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-10">
-          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-            Not just a group call
-          </p>
-          <h2 className="display max-w-[720px] t-h2">
-            One second screen. Everything in it.
-          </h2>
-          <p className="mt-4 max-w-[620px] text-[15px] leading-[1.6] text-secondary">
-            A Spaces call is just audio. A watchalong is one shared stream on
-            someone else&apos;s delay. The group chat scrolls past you.{" "}
-            {brand.name} is all of it in one place, lined up to your screen: the
-            audio, the chat, and the stats together.
-          </p>
-          <div className="mt-9 grid gap-px overflow-hidden rounded-2xl border border-line bg-line md:grid-cols-3">
-            {[
-              {
-                k: "Synced to you",
-                d: "Fan audio locks to your own stream's delay with one tap, then nudges half a second either way. A single shared stream can't line up to your screen.",
-              },
-              {
-                k: "Audio, chat and stats in one",
-                d: "Live commentary, a chat worth reading, polls, and real match stats share one screen. No juggling a call in one app and a feed in another.",
-              },
-              {
-                k: "Yours to keep",
-                d: "Every show is recorded into downloadable segments the host owns outright. A live call just disappears when it ends.",
-              },
-            ].map((c) => (
-              <div
-                key={c.k}
-                className="bg-canvas px-6 pt-[26px] pb-7 transition-colors hover:bg-surface"
-              >
-                <h3 className="t-title font-extrabold tracking-[-0.01em]">
-                  {c.k}
-                </h3>
-                <p className="mt-2 text-[13.5px] leading-[1.55] text-secondary">
-                  {c.d}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ — the objections that block signup, answered at the decision point */}
-      <section className="border-t border-line">
-        <div className="mx-auto max-w-[760px] px-5 py-16 sm:px-10">
-          <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-gold uppercase">
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-gold-bright" />
-            Good to know
-          </p>
-          <h2 className="display t-h2">
-            The quick questions
-          </h2>
-          <Faq items={HOME_FAQ} />
-          <p className="mt-5 text-sm text-secondary">
-            More in the{" "}
-            <Link href="/about" className="font-semibold text-gold hover:underline">
-              full FAQ
-            </Link>
+              full room
+            </span>
             .
+          </h1>
+          <p className="mx-auto mt-[22px] max-w-[568px] text-[18px] leading-[1.62] text-secondary">
+            Keep your own stream. {brand.name} adds a real Arsenal supporter in
+            your ear, a chat worth reading and live stats, locked to your screen
+            with a single tap.
           </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link
+              href={heroPrimary.href}
+              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
+            >
+              {heroPrimary.label} <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="btn-shine" />
+            </Link>
+            <Link
+              href="/how-it-works"
+              className="inline-flex items-center gap-2 rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary transition-colors hover:bg-raised"
+            >
+              How it works
+            </Link>
+          </div>
+          <p className="mt-[18px] font-mono text-[12px] text-tertiary">
+            Free to listen · no account needed · installs to your home screen
+          </p>
+        </div>
+
+        <HeroProductShot />
+      </section>
+
+      {/* ===================== STAT BAND ===================== */}
+      <section className="border-y border-line px-5 py-9 sm:px-10">
+        <div className="mx-auto grid max-w-[1010px] grid-cols-2 md:grid-cols-4">
+          {[
+            { n: "0", l: "pundits on the payroll", red: false },
+            { n: "100%", l: "of recordings owned by hosts", red: true },
+            { n: "<1min", l: "to sign up and join in", red: false },
+            { n: "£0", l: "to listen, no account", red: false },
+          ].map((s, i) => (
+            <div
+              key={s.l}
+              className={`px-5 py-2 text-center ${i > 0 ? "md:border-l md:border-line" : ""}`}
+            >
+              <div
+                className={`display text-[42px] ${s.red ? "text-red" : "text-primary"}`}
+              >
+                {s.n}
+              </div>
+              <div className="mt-1 text-[13px] text-secondary">{s.l}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section
-        className="relative overflow-hidden border-t border-line"
-        style={{
-          background:
-            "radial-gradient(90% 130% at 50% 120%, rgba(241,35,43,0.3), transparent 60%), var(--bg-base)",
-        }}
-      >
+      {/* ===================== SIGNATURE SYNC ===================== */}
+      <section className="relative overflow-hidden px-5 py-[70px] sm:px-10">
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute top-1/4 -right-24 h-[500px] w-[500px]"
           style={{
-            backgroundImage:
-              "linear-gradient(rgb(var(--hair) / 0.04) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--hair) / 0.04) 1px, transparent 1px)",
-            backgroundSize: "54px 54px",
-            maskImage:
-              "radial-gradient(80% 80% at 50% 100%, black, transparent 70%)",
-            WebkitMaskImage:
-              "radial-gradient(80% 80% at 50% 100%, black, transparent 70%)",
+            background:
+              "radial-gradient(circle, rgba(239,1,7,.1), transparent 66%)",
           }}
         />
-        <div className="relative mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-10">
-          <h2 className="display mx-auto t-hero">
-            The room&apos;s open.
-            <br />
-            Come in.
-          </h2>
-          <p className="mx-auto mt-[18px] max-w-[480px] text-[17px] text-secondary">
-            Get in the room and listen along. Signing up takes under a minute
-            when you want to join in.
-          </p>
-          <div className="mt-7 flex justify-center">
-            <Link
-              href="/matches"
-              className="inline-flex items-center gap-2.5 rounded-xl bg-red px-[30px] py-[17px] text-base font-bold text-white transition-colors hover:bg-red-hover"
-              style={{ boxShadow: "0 16px 40px -10px rgba(241,35,43,0.7)" }}
+        <div className="relative z-[2] mx-auto grid max-w-[1010px] items-center gap-12 lg:grid-cols-[.92fr_1.08fr]">
+          <div>
+            <div className="mb-4 flex items-center gap-2">
+              <span className="h-px w-[22px] bg-red" />
+              <span className={eyebrow}>THE BIT NOBODY ELSE DOES</span>
+            </div>
+            <h2 className="display t-h2">Your telly lags. We fix that in one tap.</h2>
+            <p className="mt-4 max-w-[420px] text-[16px] leading-[1.62] text-secondary">
+              Every stream runs on its own delay, so a shared watchalong is
+              always out of step with your screen. {brand.name} is different: tap{" "}
+              <b className="text-primary">Now</b> when your screen hits the moment
+              on the clock, and the commentary snaps to your exact feed, then
+              nudge it half a second either way, or jump back to live.
+            </p>
+            <div className="mt-6 flex flex-col gap-3">
+              {[
+                { n: "1", t: "Watch on whatever you already pay for", ok: false },
+                { n: "2", t: "Tap Now when the clock matches your screen", ok: false },
+                { n: "✓", t: "Locked — the room is in perfect sync with you", ok: true },
+              ].map((s) => (
+                <div key={s.t} className="flex items-center gap-3">
+                  <span
+                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] font-mono text-[13px] font-bold"
+                    style={{
+                      background: s.ok
+                        ? "rgba(52,209,122,.14)"
+                        : "rgba(239,1,7,.14)",
+                      color: s.ok ? "var(--green)" : "var(--red)",
+                    }}
+                  >
+                    {s.n}
+                  </span>
+                  <span className="text-[14px] text-secondary">{s.t}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <SyncDiagram />
+        </div>
+      </section>
+
+      {/* ===================== BENTO ===================== */}
+      <section className="mx-auto max-w-[1010px] px-5 pb-[66px] sm:px-10">
+        <div className="mb-8 text-center">
+          <div className={`${eyebrow} mb-3 justify-center`}>NOT JUST A GROUP CALL</div>
+          <h2 className="display t-h2">One second screen. Everything in it.</h2>
+        </div>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:[grid-auto-rows:158px]">
+          {/* chat — big */}
+          <div className="col-span-2 flex flex-col rounded-2xl border border-line bg-raised p-6 transition-transform hover:-translate-y-[3px] md:row-span-2">
+            <div className="t-title font-extrabold">A chat worth reading</div>
+            <p className="mt-2 max-w-[330px] text-[14px] leading-[1.55] text-secondary">
+              Threaded replies, up- and down-votes, sorted by New, Top or
+              Controversial. Good takes rise; noise sinks.
+            </p>
+            <div className="mt-auto flex flex-col gap-2">
+              {[
+                { i: "MK", g: "#2a4a8a", n: "Mikel_92", m: "Ødegaard, take a bow." },
+                { i: "TT", g: "#1f6f4a", n: "TheTacticsHead", m: "Press trigger on the turn. Textbook." },
+              ].map((c) => (
+                <div
+                  key={c.n}
+                  className="flex items-center gap-2.5 rounded-[11px] border border-line bg-canvas p-2.5"
+                >
+                  <span
+                    className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                    style={{ background: c.g }}
+                  >
+                    {c.i}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12px] font-bold text-primary">{c.n}</span>
+                    <span className="block truncate text-[12px] text-secondary">{c.m}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-red">▲</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* stats */}
+          <div className="col-span-2 flex items-center gap-5 rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+            <div className="flex-1">
+              <div className="t-title font-extrabold">The stats that matter</div>
+              <div className="mt-1 text-[13px] text-secondary">
+                Possession, shots, xG &amp; momentum, live.
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="display text-[30px] text-red tabular-nums">xG</div>
+              <div className="font-mono text-[10px] text-tertiary">live from kickoff</div>
+            </div>
+          </div>
+          {/* callin */}
+          <div className="flex flex-col justify-center rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+            <div className="t-title font-extrabold">Ask · vote · call in</div>
+            <div className="mt-1.5 text-[12px] leading-[1.5] text-secondary">
+              Request the mic and the host brings you on air.
+            </div>
+          </div>
+          {/* radio */}
+          <div className="flex flex-col justify-center gap-2.5 rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-canvas text-primary">
+              ▸
+            </span>
+            <div>
+              <div className="t-title font-extrabold">Radio mode</div>
+              <div className="text-[12px] text-secondary">Plays on your lock screen.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== STICKINESS ===================== */}
+      <section className="mx-auto max-w-[1010px] px-5 pb-10 sm:px-10">
+        <div className="mb-8 text-center">
+          <div className={`${eyebrow} mb-2.5 justify-center`}>WHY YOU&apos;LL COME BACK</div>
+          <h2 className="display t-h2">The habit, not just the match</h2>
+        </div>
+        <div className="flex flex-col gap-4">
+          {/* community */}
+          <div className="grid items-center gap-6 rounded-[18px] border border-line bg-raised p-8 md:grid-cols-2">
+            <div>
+              <div className="t-h3 display">The room becomes your people</div>
+              <p className="mt-2.5 text-[15px] leading-[1.6] text-secondary">
+                The same faces every week, good takes rising to the top, in-jokes
+                that carry from match to match. It stops being a broadcast and
+                starts being your corner of the ground.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {[
+                { i: "MK", g: "#2a4a8a", n: "Mikel_92", m: "Ødegaard, take a bow." },
+                { i: "TT", g: "#1f6f4a", n: "TheTacticsHead", m: "Press trigger on the turn. Textbook." },
+              ].map((c) => (
+                <div key={c.n} className="flex items-center gap-2.5 rounded-xl border border-line bg-canvas p-3">
+                  <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white" style={{ background: c.g }}>{c.i}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[13px] font-bold text-primary">{c.n}</span>
+                    <span className="block truncate text-[13px] text-secondary">{c.m}</span>
+                  </span>
+                  <span aria-hidden="true" className="text-red">▲</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* follow */}
+          <div className="grid items-center gap-6 rounded-[18px] border border-line bg-raised p-8 md:grid-cols-2">
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-4 shadow-glow">
+                <span className="h-[11px] w-[11px] shrink-0 animate-fcpulse rounded-full bg-red" />
+                <span className="flex-1">
+                  <span className="block text-[13px] font-bold text-primary">A room you follow is live</span>
+                  <span className="block text-[12px] text-secondary">tap to jump in</span>
+                </span>
+                <span className="font-mono text-[11px] text-tertiary">now</span>
+              </div>
+              <div className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-4">
+                <span className="h-[11px] w-[11px] shrink-0 rounded-full bg-tertiary" />
+                <span className="flex-1">
+                  <span className="block text-[13px] font-bold text-primary">A new room was scheduled</span>
+                  <span className="block text-[12px] text-secondary">for a match you care about</span>
+                </span>
+                <span className="font-mono text-[11px] text-tertiary">2h</span>
+              </div>
+            </div>
+            <div>
+              <div className="t-h3 display">Never miss the first whistle</div>
+              <p className="mt-2.5 text-[15px] leading-[1.6] text-secondary">
+                Follow the voices you like. We nudge you by push or email the
+                second they schedule a room or go live, and you choose exactly
+                which alerts reach you.
+              </p>
+              <Link
+                href="/signin"
+                className="btn-grad-red mt-4 inline-flex items-center rounded-[11px] px-[18px] py-[11px] text-[13px] font-semibold text-white"
+              >
+                Follow a commentator
+              </Link>
+            </div>
+          </div>
+          {/* recordings + fan score */}
+          <div className="grid gap-4 md:grid-cols-[1.25fr_1fr]">
+            <div className="rounded-[18px] border border-line bg-raised p-7">
+              <div className="t-h3 display">Miss it live? Keep every minute</div>
+              <p className="mt-2 mb-4 text-[14px] leading-[1.6] text-secondary">
+                Every broadcast is cut into downloadable clips, owned 100% by the
+                host, ready for any podcast feed.
+              </p>
+              <div className="flex flex-col gap-2">
+                {["Pre-match build-up", "First half"].map((seg) => (
+                  <div key={seg} className="flex items-center gap-3 rounded-[10px] border border-line bg-canvas px-3.5 py-2.5">
+                    <span className="flex-1 text-[13px] font-bold text-primary">{seg}</span>
+                    <span aria-hidden="true" className="font-bold text-red">↓</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div
+              className="flex flex-col rounded-[18px] border p-7"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(239,1,7,0.06), var(--bg-inset))",
+                borderColor: "rgba(239,1,7,.24)",
+              }}
             >
-              Find your next room <span aria-hidden="true">→</span>
+              <div className="mb-1.5 font-mono text-[11px] font-bold tracking-[0.08em] text-red">
+                YOUR FAN SCORE
+              </div>
+              <div className="t-h3 display">Show up, and it shows</div>
+              <p className="mt-2.5 text-[13px] leading-[1.55] text-secondary">
+                Comments and good votes build a fan score for every match you
+                turn up to — the start of badges and standing to come.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===================== VOICES ===================== */}
+      <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className={`${eyebrow} mb-2.5`}>THE VOICES</div>
+            <h2 className="display t-h2">Real supporters. Never pundits.</h2>
+          </div>
+          <Link href="/about" className="text-[14px] font-semibold text-secondary hover:text-primary">
+            Meet the voices →
+          </Link>
+        </div>
+        <div className="grid gap-3.5 md:grid-cols-3">
+          {VOICES.map((v) => (
+            <div key={v.t} className="rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+              <span className="mb-3.5 flex h-[50px] w-[50px] items-center justify-center rounded-full" style={{ background: v.grad }} />
+              <div className="t-title font-extrabold">{v.t}</div>
+              <p className="mt-[7px] mb-4 text-[13px] leading-[1.55] text-secondary">{v.d}</p>
+              <Link
+                href="/signin"
+                className="inline-flex items-center rounded-[9px] border border-line px-4 py-2 text-[12px] font-semibold text-primary transition-colors hover:bg-canvas"
+              >
+                Follow
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===================== SCHEDULE / RSVP ===================== */}
+      <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className={`${eyebrow} mb-2.5`}>SAVE YOUR SEAT</div>
+            <h2 className="display t-h2">Coming up</h2>
+          </div>
+          <Link href="/matches" className="rounded-[10px] border border-line px-[18px] py-[11px] text-[13px] font-semibold text-secondary hover:text-primary">
+            Full schedule →
+          </Link>
+        </div>
+
+        {scheduleFeatured ? (
+          <>
+            <div
+              className="relative mb-3 flex flex-wrap items-center gap-6 overflow-hidden rounded-[18px] border p-7"
+              style={{
+                background:
+                  "linear-gradient(110deg, rgba(239,1,7,.16), transparent 58%), var(--bg-surface)",
+                borderColor: "rgba(239,1,7,.3)",
+              }}
+            >
+              <div className="relative z-[2] min-w-[280px] flex-1">
+                <div className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] text-red">
+                  <span className="h-[7px] w-[7px] animate-fc-blink rounded-full bg-red" />
+                  {liveRoom ? "LIVE NOW" : "NEXT UP"}
+                </div>
+                <div className="display text-[34px]">
+                  {scheduleFeatured.card.home}{" "}
+                  <span className="text-secondary">v</span>{" "}
+                  {scheduleFeatured.card.away}
+                </div>
+                <div className="mt-1.5 text-[13px] text-secondary">
+                  {scheduleFeatured.card.competition}
+                  {scheduleFeatured.card.commentator
+                    ? ` · with ${scheduleFeatured.card.commentator}`
+                    : ""}
+                </div>
+              </div>
+              <div className="relative z-[2] flex min-w-[240px] flex-col gap-3">
+                {!liveRoom && (
+                  <div className="rounded-xl border border-line bg-canvas p-3.5 text-center">
+                    <div className="mb-1 font-mono text-[10px] tracking-[0.08em] text-tertiary">
+                      KICKS OFF IN
+                    </div>
+                    <div className="display text-[30px] text-primary">
+                      <Countdown iso={scheduleFeatured.card.kickoffUtc} />
+                    </div>
+                  </div>
+                )}
+                <Link
+                  href={scheduleFeatured.card.roomHref ?? "/matches"}
+                  className="btn-grad-red rounded-[11px] px-5 py-3.5 text-center text-[14px] font-semibold text-white"
+                >
+                  {liveRoom ? "Join live" : "Count me in"}
+                </Link>
+              </div>
+            </div>
+
+            {rows.length > 0 && (
+              <div className="flex flex-col gap-2.5">
+                {rows.map((w) => (
+                  <Link
+                    key={w.card.id}
+                    href={w.card.roomHref ?? "/matches"}
+                    className="flex items-center gap-4 rounded-xl border border-line bg-raised px-[18px] py-[15px] transition-colors hover:border-red/40"
+                  >
+                    <span className="w-[130px] shrink-0 font-mono text-[12px] text-secondary">
+                      <KickoffTime iso={w.card.kickoffUtc} />
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-primary">
+                      {w.card.home} vs {w.card.away}
+                    </span>
+                    <span className="hidden font-mono text-[12px] text-tertiary sm:block">
+                      {w.card.competition}
+                    </span>
+                    <span aria-hidden="true" className="text-lg text-secondary">›</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="rounded-[18px] border border-line bg-raised p-8">
+            <div className="t-title font-extrabold">No rooms scheduled yet</div>
+            <p className="mt-2 mb-4 max-w-md text-[14px] text-secondary">
+              Get an email the moment the first Arsenal rooms open, and be there
+              for the first whistle.
+            </p>
+            <NotifyForm source="home_empty" className="max-w-sm" />
+          </div>
+        )}
+      </section>
+
+      {/* ===================== HOST CTA ===================== */}
+      <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
+        <div className="flex flex-wrap items-center justify-between gap-5 rounded-[18px] border border-line bg-raised p-8">
+          <div>
+            <div className={`${eyebrow} mb-2.5`}>FOR COMMENTATORS</div>
+            <div className="display t-h3">Rather run the show?</div>
+            <p className="mt-2 max-w-[520px] text-[14px] text-secondary">
+              Become a commentator in about a minute. No platform fee, tips are
+              yours, and every recording is 100% yours to keep. One rule: audio
+              only, always.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            <Link href="/host" className="btn-grad-red rounded-[11px] px-6 py-3.5 text-center text-[14px] font-semibold text-white">
+              Start a room →
+            </Link>
+            <Link href="/host/guide" className="rounded-[11px] border border-line px-6 py-3.5 text-center text-[14px] font-semibold text-primary hover:bg-canvas">
+              Host handbook
             </Link>
           </div>
-          <p className="mt-6 font-mono text-[11px] tracking-[0.05em] text-secondary uppercase">
-            Arsenal first · More clubs to come ·{" "}
-            <Link href="/host" className="text-gold hover:underline">
-              Fancy hosting a room?
-            </Link>
+        </div>
+      </section>
+
+      {/* ===================== CLOSING CTA ===================== */}
+      <section className="relative overflow-hidden border-t border-line px-5 py-20 text-center sm:px-10">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/2"
+          style={{
+            background:
+              "radial-gradient(50% 60% at 50% 50%, rgba(239,1,7,.2), transparent 70%)",
+          }}
+        />
+        <div className="relative z-[2]">
+          <h2 className="display mx-auto t-hero">The room&apos;s open. Pull up a seat.</h2>
+          <p className="mx-auto mt-[18px] max-w-[500px] text-[17px] leading-[1.6] text-secondary">
+            Free to listen, no account needed. Sign up in under a minute when you
+            want to chat, vote or call in.
           </p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/matches"
+              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-[30px] py-4 text-[15px] font-semibold text-white"
+            >
+              Find your next room <span aria-hidden="true">→</span>
+              <span aria-hidden="true" className="btn-shine" />
+            </Link>
+            <Link
+              href="/signin"
+              className="inline-flex items-center rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary hover:bg-raised"
+            >
+              Get matchday alerts
+            </Link>
+          </div>
         </div>
       </section>
     </>

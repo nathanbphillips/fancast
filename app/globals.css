@@ -278,6 +278,106 @@ body {
   animation: fc-glow 7s ease-in-out infinite;
 }
 
+/* sync-timeline + product-shot motion (home + how-it-works differentiator) */
+@keyframes fc-scan {
+  0% {
+    left: 2%;
+  }
+  100% {
+    left: 98%;
+  }
+}
+@keyframes fc-grow {
+  0%,
+  100% {
+    transform: scaleX(0.86);
+  }
+  50% {
+    transform: scaleX(1);
+  }
+}
+@keyframes fc-snap {
+  0%,
+  18% {
+    left: 87%;
+  }
+  30%,
+  82% {
+    left: 33%;
+  }
+  94%,
+  100% {
+    left: 87%;
+  }
+}
+@keyframes fc-lockin {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  37%,
+  80% {
+    opacity: 1;
+  }
+  88%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes fc-lockout {
+  0%,
+  27% {
+    opacity: 1;
+  }
+  34%,
+  83% {
+    opacity: 0;
+  }
+  90%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes fc-ring {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@keyframes fc-marq {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+.animate-fc-scan {
+  animation: fc-scan 4s linear infinite;
+}
+.animate-fc-grow {
+  animation: fc-grow 4s ease-in-out infinite;
+}
+.animate-fc-snap {
+  animation: fc-snap 6s ease-in-out infinite;
+}
+.animate-fc-lockin {
+  animation: fc-lockin 6s ease-in-out infinite;
+}
+.animate-fc-lockout {
+  animation: fc-lockout 6s ease-in-out infinite;
+}
+.animate-fc-ring {
+  animation: fc-ring 2s ease-out infinite;
+}
+.animate-fc-marq {
+  animation: fc-marq 42s linear infinite;
+}
+
 /* ------- Existing Cloud Design set (still used by the room + reusable). ------- */
 @keyframes fcpulse {
   0%,
