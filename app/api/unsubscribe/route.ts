@@ -56,7 +56,7 @@ function htmlPage(title: string, body: string): Response {
   <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e8b54a;margin:0 0 16px">${brand.name}</p>
   <h1 style="font-size:24px;color:#fff;margin:0 0 12px">${title}</h1>
   <p style="font-size:15px;line-height:1.6;color:#c7c7c9;margin:0 0 28px">${body}</p>
-  <a href="${siteUrl()}/settings" style="display:inline-block;background:#f1232b;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px">Notification settings</a>
+  <a href="${siteUrl()}/settings" style="display:inline-block;background:#ef0107;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px">Notification settings</a>
 </div></body></html>`;
   return new Response(html, {
     status: 200,

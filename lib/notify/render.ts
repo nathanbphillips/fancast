@@ -126,7 +126,7 @@ export function emailHtml(r: Rendered, unsubscribeUrl: string): string {
   <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e8b54a;margin:0 0 16px">${brand.name}</p>
   <h1 style="font-size:22px;line-height:1.3;margin:0 0 12px;color:#fff">${escapeHtml(r.title)}</h1>
   <p style="font-size:15px;line-height:1.6;color:#c7c7c9;margin:0 0 24px">${escapeHtml(r.body)}</p>
-  <a href="${r.url}" style="display:inline-block;background:#f1232b;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px">Open ${brand.name}</a>
+  <a href="${r.url}" style="display:inline-block;background:#ef0107;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px">Open ${brand.name}</a>
   <p style="font-size:12px;color:#7a7a7e;margin:32px 0 0;line-height:1.6">
     You are getting this because of your ${brand.name} notification settings.
     <a href="${unsubscribeUrl}" style="color:#9a9a9e">Unsubscribe from these emails</a>.

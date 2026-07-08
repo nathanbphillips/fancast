@@ -476,7 +476,7 @@ export function ListenerBar({
                   <span
                     aria-hidden="true"
                     className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
-                    style={{ boxShadow: "0 0 8px #f1232b" }}
+                    style={{ boxShadow: "0 0 8px #ef0107" }}
                   />
                   LIVE
                 </span>

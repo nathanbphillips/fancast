@@ -61,8 +61,8 @@ export default async function RoomOgImage({
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "84px",
-          background: "#0f0f11",
-          color: "#f4f4f2",
+          background: "#08080a",
+          color: "#f2f2f4",
           fontFamily: "sans-serif",
         }}
       >
@@ -84,7 +84,7 @@ export default async function RoomOgImage({
               height="36"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0f0f11"
+              stroke="#08080a"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -102,13 +102,13 @@ export default async function RoomOgImage({
               alignItems: "center",
               gap: "10px",
               fontSize: "24px",
-              color: "#f1232b",
+              color: "#ef0107",
               fontWeight: 700,
               letterSpacing: "0.12em",
             }}
           >
             <div
-              style={{ width: "14px", height: "14px", borderRadius: "9999px", background: "#f1232b" }}
+              style={{ width: "14px", height: "14px", borderRadius: "9999px", background: "#ef0107" }}
             />
             MATCHDAY ROOM
           </div>
@@ -133,7 +133,7 @@ export default async function RoomOgImage({
               width: "120px",
               height: "8px",
               borderRadius: "4px",
-              background: "#e8b54a",
+              background: "#ef0107",
             }}
           />
         </div>

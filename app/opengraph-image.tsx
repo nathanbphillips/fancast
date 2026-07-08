@@ -22,8 +22,8 @@ export default function OpengraphImage() {
           flexDirection: "column",
           justifyContent: "center",
           padding: "96px",
-          background: "#0f0f11",
-          color: "#f4f4f2",
+          background: "#08080a",
+          color: "#f2f2f4",
           fontFamily: "sans-serif",
         }}
       >
@@ -44,7 +44,7 @@ export default function OpengraphImage() {
               height="46"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#0f0f11"
+              stroke="#08080a"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -75,7 +75,7 @@ export default function OpengraphImage() {
             width: "120px",
             height: "8px",
             borderRadius: "4px",
-            background: "#e8b54a",
+            background: "#ef0107",
           }}
         />
 
@@ -94,7 +94,7 @@ export default function OpengraphImage() {
               width: "16px",
               height: "16px",
               borderRadius: "9999px",
-              background: "#f1232b",
+              background: "#ef0107",
             }}
           />
           Watch your stream. Listen with us.

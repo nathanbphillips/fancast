@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<style id="fc-responsive">@media (max-width:1024px){[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}[style*="grid-auto-rows:150px"],[style*="grid-auto-rows:158px"]{grid-auto-rows:auto!important}[style*="1.05fr 1.3fr 1fr"],[style*="1.12fr .95fr"],[style*="1.15fr 1fr"]{grid-template-columns:1fr!important}}@media (max-width:700px){[style*="grid-template-columns"]{grid-template-columns:1fr!important}[style*="grid-column:span 2"]{grid-column:auto!important}[style*="grid-row:span 2"]{grid-row:auto!important}[style*="animation:fc-float"]{display:none!important}h1{font-size:38px!important;line-height:1.05!important;letter-spacing:-.02em!important}h2{font-size:26px!important;line-height:1.14!important}[style*="padding:20px 44px"],[style*="padding:22px 44px"]{flex-wrap:wrap!important;gap:10px!important;padding:12px 16px!important}[style*="70px 44px"],[style*="64px 44px"],[style*="66px 44px"],[style*="56px 44px"],[style*="80px 44px"],[style*="60px 44px"],[style*="52px 44px"],[style*="40px 44px"],[style*="36px 44px"]{padding-left:16px!important;padding-right:16px!important}[data-screen-label="Sign in"]{flex-direction:column!important;height:auto!important;min-height:100vh!important}[data-screen-label="Sign in"]>div:last-child{width:100%!important;border-left:none!important;border-top:1px solid rgba(255,255,255,.07)!important}[data-screen-label="Matchday room"]{height:auto!important;min-height:100vh!important;overflow:visible!important}[data-screen-label="Matchday room"]>div[style*="display:grid"]{display:block!important;padding:12px!important}[data-screen-label="Matchday room"]>div[style*="display:grid"]>div{height:64vh!important;margin-bottom:12px!important}[data-screen-label="Matchday room"] [style*="height:82px"]{height:auto!important;flex-wrap:wrap!important;justify-content:center!important;gap:10px!important;padding:12px 14px!important}[data-screen-label="Matchday room"] [style*="width:236px"]{width:auto!important}}</style><style id="fc-responsive2">@media (max-width:700px){[style*="gap:26px;font:500 14px 'Schibsted Grotesk'"]{display:none!important}[data-screen-label="Matchday room"] [style*="height:82px"]{position:sticky!important;bottom:0!important;z-index:20!important}}</style></head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0c0c0e;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  input{font-family:'Schibsted Grotesk',sans-serif}
+  input::placeholder{color:#6c6c76}
+  @keyframes fc-blink{0%,100%{opacity:1}50%{opacity:.28}}
+  @keyframes fc-glow{0%,100%{opacity:.45}50%{opacity:.85}}
+  @keyframes fc-pulse{0%{box-shadow:0 0 0 0 rgba(239,1,7,.5)}70%{box-shadow:0 0 0 10px rgba(239,1,7,0)}100%{box-shadow:0 0 0 0 rgba(239,1,7,0)}}
+  @keyframes fc-eq{0%,100%{transform:scaleY(.32)}50%{transform:scaleY(1)}}
+  @keyframes fc-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+</style>
+</helmet>
+
+<div style="height:100vh;display:flex;background:#08080a;color:#f2f2f4;overflow:hidden" data-screen-label="Sign in">
+
+  <!-- LEFT: brand / value -->
+  <div style="flex:1;min-width:0;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:40px 48px">
+    <div style="position:absolute;inset:0;pointer-events:none">
+      <div style="position:absolute;top:-160px;left:-80px;width:760px;height:620px;background:radial-gradient(52% 56% at 40% 40%,rgba(239,1,7,.2),transparent 72%);animation:fc-glow 7s ease-in-out infinite"></div>
+      <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:30px 30px;opacity:.5;mask-image:radial-gradient(60% 60% at 40% 40%,#000,transparent)"></div>
+    </div>
+    <a href="Matchday.dc.html" style="position:relative;z-index:2;display:inline-flex;align-items:center;gap:10px;font:800 22px 'Schibsted Grotesk';letter-spacing:-.02em"><span style="width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,#f5211f,#c50006);box-shadow:0 0 14px rgba(239,1,7,.6)"></span>FanCast</a>
+
+    <div style="position:relative;z-index:2;max-width:440px">
+      <h1 style="margin:0;font:800 46px/1.02 'Schibsted Grotesk';letter-spacing:-.03em;animation:fc-rise .6s .05s both">Welcome to <span style="background:linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206);-webkit-background-clip:text;background-clip:text;color:transparent">the room</span>.</h1>
+      <p style="margin:18px 0 26px;font:400 16px/1.6 'Schibsted Grotesk';color:#a2a2ab;animation:fc-rise .6s .12s both">Listening is always free, no account needed. Sign in when you want to join in.</p>
+      <div style="display:flex;flex-direction:column;gap:13px;animation:fc-rise .6s .2s both">
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:8px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 12px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Post in the room chat</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:8px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 12px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Vote in polls and rate the players</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:8px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 12px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Request the mic and call in</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:26px;height:26px;border-radius:8px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 12px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Follow commentators for go-live alerts</span></div>
+      </div>
+    </div>
+
+    <div style="position:relative;z-index:2;display:inline-flex;align-items:center;gap:12px;background:#141417;border:1px solid rgba(239,1,7,.28);border-radius:13px;padding:12px 15px;width:fit-content;animation:fc-rise .6s .28s both">
+      <span style="width:11px;height:11px;border-radius:50%;background:#EF0107;flex:none;animation:fc-pulse 2s infinite"></span>
+      <div><div style="font:700 13px 'Schibsted Grotesk'">The Gooner Room is live</div><div style="font:500 11px 'Schibsted Grotesk';color:#a2a2ab">Arsenal vs Coventry, 1,284 listening</div></div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:18px;margin-left:4px"><span style="width:3px;height:18px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .9s -.1s infinite"></span><span style="width:3px;height:18px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .9s -.45s infinite"></span><span style="width:3px;height:18px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .9s -.25s infinite"></span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: form -->
+  <div style="width:520px;flex:none;display:flex;align-items:center;justify-content:center;padding:40px;background:#0c0c0e;border-left:1px solid rgba(255,255,255,.07)">
+    <div style="width:100%;max-width:380px;animation:fc-rise .6s .1s both">
+      <h2 style="margin:0 0 6px;font:800 28px 'Schibsted Grotesk';letter-spacing:-.02em">Sign in</h2>
+      <p style="margin:0 0 26px;font:400 14px 'Schibsted Grotesk';color:#a2a2ab">New here? <a href="SignIn.dc.html" style="color:#EF0107;font-weight:600">Create an account</a></p>
+
+      <label style="display:block;font:600 12px 'Schibsted Grotesk';color:#a2a2ab;margin-bottom:7px">Email</label>
+      <input type="email" placeholder="you@email.com" style="width:100%;font:500 14px 'Schibsted Grotesk';color:#f2f2f4;background:#141417;border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:13px 15px;margin-bottom:16px;outline:none" style-focus="border-color:#EF0107" />
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px"><label style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab">Password</label><a href="SignIn.dc.html" style="font:600 12px 'Schibsted Grotesk';color:#6c6c76">Forgot?</a></div>
+      <input type="password" placeholder="••••••••" style="width:100%;font:500 14px 'Schibsted Grotesk';color:#f2f2f4;background:#141417;border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:13px 15px;margin-bottom:20px;outline:none" style-focus="border-color:#EF0107" />
+
+      <button style="width:100%;font:700 15px 'Schibsted Grotesk';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border:1px solid #ff4a47;border-radius:12px;padding:14px 0;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 12px 26px -12px rgba(239,1,7,.8)" style-hover="background:linear-gradient(180deg,#ff2a27,#e00507)">Sign in</button>
+
+      <div style="display:flex;align-items:center;gap:12px;margin:22px 0"><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span><span style="font:600 11px 'JetBrains Mono';color:#6c6c76;letter-spacing:.06em">OR</span><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span></div>
+
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font:600 14px 'Schibsted Grotesk';color:#f2f2f4;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px 0;cursor:pointer" style-hover="background:rgba(255,255,255,.1)"><span style="width:18px;height:18px;border-radius:5px;background:#f2f2f4;color:#0c0c0e;display:flex;align-items:center;justify-content:center;font:800 11px 'Schibsted Grotesk'"></span>Continue with Apple</button>
+        <button style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;font:600 14px 'Schibsted Grotesk';color:#f2f2f4;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px 0;cursor:pointer" style-hover="background:rgba(255,255,255,.1)"><span style="width:18px;height:18px;border-radius:50%;background:conic-gradient(#EA4335 0 25%,#FBBC05 0 50%,#34A853 0 75%,#4285F4 0)"></span>Continue with Google</button>
+      </div>
+
+      <p style="margin:24px 0 0;font:400 12px/1.55 'Schibsted Grotesk';color:#6c6c76;text-align:center">By continuing you agree to our Terms of Service and Privacy Policy.</p>
+      <div style="margin-top:18px;text-align:center"><a href="Matches.dc.html" style="font:600 13px 'Schibsted Grotesk';color:#a2a2ab">‹ Just listen, no account needed</a></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>

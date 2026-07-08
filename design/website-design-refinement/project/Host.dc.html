@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<style id="fc-responsive">@media (max-width:1024px){[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}[style*="grid-auto-rows:150px"],[style*="grid-auto-rows:158px"]{grid-auto-rows:auto!important}[style*="1.05fr 1.3fr 1fr"],[style*="1.12fr .95fr"],[style*="1.15fr 1fr"]{grid-template-columns:1fr!important}}@media (max-width:700px){[style*="grid-template-columns"]{grid-template-columns:1fr!important}[style*="grid-column:span 2"]{grid-column:auto!important}[style*="grid-row:span 2"]{grid-row:auto!important}[style*="animation:fc-float"]{display:none!important}h1{font-size:38px!important;line-height:1.05!important;letter-spacing:-.02em!important}h2{font-size:26px!important;line-height:1.14!important}[style*="padding:20px 44px"],[style*="padding:22px 44px"]{flex-wrap:wrap!important;gap:10px!important;padding:12px 16px!important}[style*="70px 44px"],[style*="64px 44px"],[style*="66px 44px"],[style*="56px 44px"],[style*="80px 44px"],[style*="60px 44px"],[style*="52px 44px"],[style*="40px 44px"],[style*="36px 44px"]{padding-left:16px!important;padding-right:16px!important}[data-screen-label="Sign in"]{flex-direction:column!important;height:auto!important;min-height:100vh!important}[data-screen-label="Sign in"]>div:last-child{width:100%!important;border-left:none!important;border-top:1px solid rgba(255,255,255,.07)!important}[data-screen-label="Matchday room"]{height:auto!important;min-height:100vh!important;overflow:visible!important}[data-screen-label="Matchday room"]>div[style*="display:grid"]{display:block!important;padding:12px!important}[data-screen-label="Matchday room"]>div[style*="display:grid"]>div{height:64vh!important;margin-bottom:12px!important}[data-screen-label="Matchday room"] [style*="height:82px"]{height:auto!important;flex-wrap:wrap!important;justify-content:center!important;gap:10px!important;padding:12px 14px!important}[data-screen-label="Matchday room"] [style*="width:236px"]{width:auto!important}}</style><style id="fc-responsive2">@media (max-width:700px){[style*="gap:26px;font:500 14px 'Schibsted Grotesk'"]{display:none!important}[data-screen-label="Matchday room"] [style*="height:82px"]{position:sticky!important;bottom:0!important;z-index:20!important}}</style></head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0c0c0e;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:inherit;text-decoration:none}
+  a:hover{color:inherit}
+  ::-webkit-scrollbar{width:11px;height:11px}
+  ::-webkit-scrollbar-thumb{background:#3a3a42;border-radius:6px;border:3px solid #0c0c0e}
+  @keyframes fc-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  @keyframes fc-marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes fc-blink{0%,100%{opacity:1}50%{opacity:.28}}
+  @keyframes fc-eq{0%,100%{transform:scaleY(.32)}50%{transform:scaleY(1)}}
+  @keyframes fc-glow{0%,100%{opacity:.45}50%{opacity:.85}}
+  @keyframes fc-pulse{0%{box-shadow:0 0 0 0 rgba(239,1,7,.5)}70%{box-shadow:0 0 0 11px rgba(239,1,7,0)}100%{box-shadow:0 0 0 0 rgba(239,1,7,0)}}
+  @keyframes fc-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @keyframes fc-scan{0%{left:2%}100%{left:98%}}
+  @keyframes fc-shine{0%{transform:translateX(-120%)}60%,100%{transform:translateX(320%)}}
+  @keyframes fc-ring{0%{transform:scale(.6);opacity:.7}100%{transform:scale(2.4);opacity:0}}
+</style>
+</helmet>
+
+<div style="background:#0c0c0e;color:#f2f2f4;min-height:100vh;overflow:hidden">
+
+  <!-- ANNOUNCEMENT BAR -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:9px 20px;background:linear-gradient(90deg,rgba(239,1,7,.14),rgba(239,1,7,.05),rgba(239,1,7,.14));border-bottom:1px solid rgba(255,255,255,.06);font:600 12px 'Schibsted Grotesk';color:#d8d8de">
+    <span style="display:inline-flex;align-items:center;gap:7px;font:700 10px 'JetBrains Mono';letter-spacing:.1em;color:#EF0107"><span style="width:6px;height:6px;border-radius:50%;background:#EF0107;animation:fc-blink 1.4s infinite"></span>FOR COMMENTATORS</span>
+    <span>Any account becomes a commentator in about a minute, <span style="color:#f2f2f4;font-weight:700">no application, no waiting</span></span>
+  </div>
+
+  <!-- NAV -->
+  <div style="position:relative;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:20px 44px;max-width:1200px;margin:0 auto">
+    <div style="display:flex;align-items:center;gap:38px">
+      <a href="Matchday.dc.html" style="display:flex;align-items:center;gap:10px;font:800 21px 'Schibsted Grotesk';letter-spacing:-.02em"><span style="width:13px;height:13px;border-radius:4px;background:linear-gradient(135deg,#f5211f,#c50006);box-shadow:0 0 14px rgba(239,1,7,.6)"></span>FanCast</a>
+      <div style="display:flex;gap:26px;font:500 14px 'Schibsted Grotesk';color:#a2a2ab">
+        <a href="Matchday.dc.html">Product</a><span>How it works</span><span>Matches</span><span>Voices</span><span style="color:#f2f2f4">Host</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:15px">
+      <a href="Matchday.dc.html" style="font:500 14px 'Schibsted Grotesk';color:#a2a2ab">Watch a match</a>
+      <a href="SignIn.dc.html" style="font:500 14px 'Schibsted Grotesk';color:#a2a2ab">Sign in</a>
+      <span style="position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:8px;font:600 14px 'Schibsted Grotesk';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border:1px solid #ff4a47;border-radius:11px;padding:10px 18px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 10px 24px -12px rgba(239,1,7,.8)">Start a room<span style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);transform:translateX(-120%);animation:fc-shine 4.5s 1.5s ease-in-out infinite"></span></span>
+    </div>
+  </div>
+
+  <!-- HERO -->
+  <div style="position:relative;padding:56px 44px 40px;overflow:hidden">
+    <div style="position:absolute;inset:0;pointer-events:none">
+      <div style="position:absolute;top:-180px;left:20%;width:900px;height:620px;background:radial-gradient(52% 56% at 40% 40%,rgba(239,1,7,.2),transparent 72%);animation:fc-glow 7s ease-in-out infinite"></div>
+      <div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.05) 1px,transparent 1px);background-size:30px 30px;opacity:.5;mask-image:radial-gradient(70% 60% at 40% 40%,#000,transparent)"></div>
+      <div style="position:absolute;inset:0;opacity:.05;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E');background-size:140px 140px"></div>
+    </div>
+    <div style="position:relative;z-index:2;max-width:1120px;margin:0 auto;display:grid;grid-template-columns:1fr 1.08fr;gap:48px;align-items:center">
+      <div>
+        <span style="display:inline-flex;align-items:center;gap:9px;font:600 12px 'JetBrains Mono';color:#d8d8de;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03);padding:8px 15px;border-radius:20px;animation:fc-rise .6s .02s both"><span style="width:7px;height:7px;border-radius:50%;background:#EF0107;animation:fc-pulse 2s infinite"></span>Host your own room · Arsenal first</span>
+        <h1 style="margin:22px 0 0;font:800 62px/1.0 'Schibsted Grotesk';letter-spacing:-.035em;animation:fc-rise .6s .1s both">Hold a mic.<br><span style="background:linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206);-webkit-background-clip:text;background-clip:text;color:transparent">Host the room.</span></h1>
+        <p style="margin:22px 0 0;max-width:472px;font:400 18px/1.62 'Schibsted Grotesk';color:#a2a2ab;animation:fc-rise .6s .2s both">Setting up takes about a minute. You keep <b style="color:#f2f2f4">100% of every recording</b>, tips are yours, and there's no platform fee. Bring your voice, we'll bring the room, the chat and the stats.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:30px;animation:fc-rise .6s .3s both">
+          <span style="position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;font:600 15px 'Schibsted Grotesk';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border:1px solid #ff4a47;border-radius:13px;padding:16px 28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 14px 30px -12px rgba(239,1,7,.85);transition:transform .2s,box-shadow .2s" style-hover="transform:translateY(-2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 20px 40px -12px rgba(239,1,7,.95)">Become a commentator →<span style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);transform:translateX(-120%);animation:fc-shine 5s 2s ease-in-out infinite"></span></span>
+          <span style="display:inline-flex;align-items:center;gap:9px;font:600 15px 'Schibsted Grotesk';color:#f2f2f4;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:13px;padding:16px 26px;transition:background .2s,border-color .2s" style-hover="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.24)">Read the host handbook</span>
+        </div>
+        <div style="margin-top:18px;font:500 13px 'Schibsted Grotesk';color:#6c6c76;animation:fc-rise .6s .38s both">Upgrade from settings · read the terms · you can host today</div>
+      </div>
+
+      <!-- HOST STUDIO PRODUCT SHOT -->
+      <div style="position:relative;perspective:2200px;animation:fc-rise .9s .4s both">
+        <div style="position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);width:78%;height:110px;background:radial-gradient(ellipse,rgba(239,1,7,.3),transparent 70%);filter:blur(30px);pointer-events:none"></div>
+        <!-- floating chips -->
+        <div style="position:absolute;top:14px;right:-22px;z-index:6;display:flex;align-items:center;gap:10px;background:rgba(27,27,32,.92);border:1px solid rgba(255,255,255,.14);border-radius:13px;padding:11px 14px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:fc-float 5.4s ease-in-out infinite">
+          <span style="width:28px;height:28px;border-radius:50%;background:rgba(52,209,122,.16);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800">✓</span><div style="text-align:left"><div style="font:700 12px 'Schibsted Grotesk'">Recording saved</div><div style="font:500 10px 'Schibsted Grotesk';color:#a2a2ab">First half · 47:22 · yours</div></div>
+        </div>
+        <div style="position:absolute;bottom:44px;left:-24px;z-index:6;display:flex;align-items:center;gap:9px;background:rgba(27,27,32,.92);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 14px;box-shadow:0 20px 44px -18px rgba(0,0,0,.85);animation:fc-float 6.2s ease-in-out infinite;animation-delay:-1.5s">
+          <span style="width:9px;height:9px;border-radius:50%;background:#EF0107;animation:fc-pulse 2s infinite"></span><div style="text-align:left"><div style="font:700 12px 'Schibsted Grotesk'"><span data-live="1284">1,284</span> listening</div><div style="font:500 10px 'Schibsted Grotesk';color:#a2a2ab">in your room now</div></div>
+        </div>
+
+        <div style="transform:rotateX(4deg) rotateY(8deg);transform-style:preserve-3d;transition:transform .7s cubic-bezier(.2,.7,.2,1)" style-hover="transform:rotateX(0deg) rotateY(0deg)">
+          <div style="background:#141417;border:1px solid rgba(255,255,255,.12);border-radius:18px;overflow:hidden;box-shadow:0 60px 130px -40px rgba(0,0,0,.95),0 0 0 1px rgba(255,255,255,.03) inset">
+            <div style="display:flex;align-items:center;gap:8px;padding:13px 18px;border-bottom:1px solid rgba(255,255,255,.07);background:#101013">
+              <span style="width:11px;height:11px;border-radius:50%;background:#3a3a42"></span><span style="width:11px;height:11px;border-radius:50%;background:#3a3a42"></span><span style="width:11px;height:11px;border-radius:50%;background:#3a3a42"></span>
+              <span style="margin-left:12px;font:500 11px 'JetBrains Mono';color:#6c6c76;background:#0c0c0e;padding:5px 12px;border-radius:7px">fancast.live/room/arsenal-v-coventry · host</span>
+              <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:700 10px 'JetBrains Mono';color:#EF0107"><span style="width:6px;height:6px;border-radius:50%;background:#EF0107;animation:fc-blink 1.3s infinite"></span>ON AIR</span>
+            </div>
+            <div style="padding:16px;display:grid;grid-template-columns:1.12fr .95fr;gap:13px;text-align:left">
+              <!-- broadcast controls -->
+              <div style="background:#0c0c0e;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font:700 10px 'JetBrains Mono';color:#6c6c76;letter-spacing:.06em">BROADCAST</span><span style="display:inline-flex;align-items:center;gap:6px;font:700 10px 'JetBrains Mono';color:#EF0107"><span style="width:6px;height:6px;border-radius:50%;background:#EF0107;animation:fc-blink 1.3s infinite"></span>REC</span></div>
+                <div style="text-align:center;background:#141417;border-radius:11px;padding:12px"><div style="font:800 30px 'JetBrains Mono';letter-spacing:.02em" data-clock="1394" data-half="1H">1H 23:14</div><div style="font:600 10px 'JetBrains Mono';color:#6c6c76;letter-spacing:.06em">MATCH CLOCK · YOUR REFERENCE</div></div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px">
+                  <span style="text-align:center;font:800 10px 'JetBrains Mono';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border-radius:7px;padding:9px 0">1H</span>
+                  <span style="text-align:center;font:700 10px 'JetBrains Mono';color:#a2a2ab;background:#141417;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:9px 0">HT</span>
+                  <span style="text-align:center;font:700 10px 'JetBrains Mono';color:#a2a2ab;background:#141417;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:9px 0">2H</span>
+                  <span style="text-align:center;font:700 10px 'JetBrains Mono';color:#a2a2ab;background:#141417;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:9px 0">FT</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;background:#141417;border-radius:10px;padding:10px 12px"><span style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#EF0107,#7a0a12);display:flex;align-items:center;justify-content:center;font:700 11px 'Schibsted Grotesk'">DG</span><div style="flex:1"><div style="font:700 11px 'Schibsted Grotesk'">Danny · mic live</div></div><div style="display:flex;align-items:flex-end;gap:2px;height:16px"><span style="width:3px;height:16px;background:#34d17a;border-radius:2px;transform-origin:bottom;animation:fc-eq .9s -.1s infinite"></span><span style="width:3px;height:16px;background:#34d17a;border-radius:2px;transform-origin:bottom;animation:fc-eq .9s -.45s infinite"></span><span style="width:3px;height:16px;background:#34d17a;border-radius:2px;transform-origin:bottom;animation:fc-eq .9s -.25s infinite"></span></div></div>
+                <div style="font:800 11px 'JetBrains Mono';text-align:center;color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border-radius:9px;padding:11px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">END BROADCAST</div>
+              </div>
+              <!-- room control -->
+              <div style="background:#0c0c0e;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:15px;display:flex;flex-direction:column;gap:11px">
+                <span style="font:700 10px 'JetBrains Mono';color:#6c6c76;letter-spacing:.06em">IN THE ROOM · <span style="color:#a2a2ab">312 talking</span></span>
+                <div style="background:#141417;border:1px solid rgba(239,1,7,.28);border-radius:11px;padding:11px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><span style="width:22px;height:22px;border-radius:50%;background:#7a0a12;flex:none;display:flex;align-items:center;justify-content:center;font:700 8px 'Schibsted Grotesk'">GN</span><div style="flex:1"><div style="font:700 11px 'Schibsted Grotesk'">GoonerNina wants in</div><div style="font:400 10px 'Schibsted Grotesk';color:#a2a2ab">“Is Ødegaard MOTM?”</div></div></div><div style="display:flex;gap:6px"><span style="flex:1;text-align:center;font:800 9px 'JetBrains Mono';color:#062;background:#34d17a;border-radius:6px;padding:7px 0">ACCEPT</span><span style="flex:1;text-align:center;font:700 9px 'JetBrains Mono';color:#a2a2ab;background:#0c0c0e;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:7px 0">DISMISS</span></div></div>
+                <div style="display:flex;gap:8px;align-items:flex-start"><span style="width:22px;height:22px;border-radius:50%;background:#2a4a8a;flex:none;display:flex;align-items:center;justify-content:center;font:700 8px 'Schibsted Grotesk'">MK</span><div style="flex:1"><div style="font:700 11px 'Schibsted Grotesk'">Mikel_92</div><div style="font:400 11px/1.35 'Schibsted Grotesk';color:#c8c8ce">Ødegaard, take a bow.</div></div><span style="font:700 11px 'Schibsted Grotesk';color:#6c6c76">✕</span></div>
+                <div style="margin-top:auto;font:800 9px 'JetBrains Mono';text-align:center;color:#f2f2f4;background:#141417;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 0">▤ PUSH xG TO EVERYONE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OWNERSHIP STAT BAND -->
+  <div style="padding:36px 44px;border-top:1px solid rgba(255,255,255,.07);border-bottom:1px solid rgba(255,255,255,.07)">
+    <div style="max-width:1010px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:0">
+      <div style="text-align:center;padding:0 20px"><div style="font:800 42px 'Schibsted Grotesk';letter-spacing:-.03em;color:#EF0107"><span data-count="100">100</span>%</div><div style="font:500 13px 'Schibsted Grotesk';color:#a2a2ab">of every recording is yours</div></div>
+      <div style="text-align:center;padding:0 20px;border-left:1px solid rgba(255,255,255,.08)"><div style="font:800 42px 'Schibsted Grotesk';letter-spacing:-.03em">£0</div><div style="font:500 13px 'Schibsted Grotesk';color:#a2a2ab">platform fee to host</div></div>
+      <div style="text-align:center;padding:0 20px;border-left:1px solid rgba(255,255,255,.08)"><div style="font:800 42px 'Schibsted Grotesk';letter-spacing:-.03em">2</div><div style="font:500 13px 'Schibsted Grotesk';color:#a2a2ab">equal co-hosts, both keep it</div></div>
+      <div style="text-align:center;padding:0 20px;border-left:1px solid rgba(255,255,255,.08)"><div style="font:800 42px 'Schibsted Grotesk';letter-spacing:-.03em">&lt;1<span style="font-size:22px">min</span></div><div style="font:500 13px 'Schibsted Grotesk';color:#a2a2ab">from account to on air</div></div>
+    </div>
+  </div>
+
+  <!-- THREE PILLARS -->
+  <div style="padding:64px 44px 40px;max-width:1010px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:34px"><div style="font:600 12px 'JetBrains Mono';color:#EF0107;letter-spacing:.06em;margin-bottom:12px">THE DEAL, IN PLAIN ENGLISH</div><h2 style="margin:0;font:800 40px/1.05 'Schibsted Grotesk';letter-spacing:-.025em">Your show. Your work. Your call.</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px;transition:transform .25s,border-color .25s" style-hover="transform:translateY(-3px);border-color:rgba(255,255,255,.18)"><div style="width:44px;height:44px;border-radius:12px;background:rgba(239,1,7,.14);color:#EF0107;display:flex;align-items:center;justify-content:center;font:800 18px 'Schibsted Grotesk';margin-bottom:16px">%</div><div style="font:700 20px 'Schibsted Grotesk'">You own 100%</div><p style="margin:9px 0 0;font:400 14px/1.6 'Schibsted Grotesk';color:#a2a2ab">Every recording is yours. We take no license, no cut and no exclusivity. Publish it anywhere you like.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px;transition:transform .25s,border-color .25s" style-hover="transform:translateY(-3px);border-color:rgba(255,255,255,.18)"><div style="width:44px;height:44px;border-radius:12px;background:rgba(239,1,7,.14);color:#EF0107;display:flex;align-items:center;justify-content:center;font:800 18px 'Schibsted Grotesk';margin-bottom:16px">£</div><div style="font:700 20px 'Schibsted Grotesk'">No platform fee</div><p style="margin:9px 0 0;font:400 14px/1.6 'Schibsted Grotesk';color:#a2a2ab">Hosting is free. Tips from your listeners go straight to you, minus only the payment processor's costs.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:26px;transition:transform .25s,border-color .25s" style-hover="transform:translateY(-3px);border-color:rgba(255,255,255,.18)"><div style="width:44px;height:44px;border-radius:12px;background:rgba(239,1,7,.14);color:#EF0107;display:flex;align-items:center;justify-content:center;font:800 16px 'Schibsted Grotesk';margin-bottom:16px">2×</div><div style="font:700 20px 'Schibsted Grotesk'">Equal co-hosts</div><p style="margin:9px 0 0;font:400 14px/1.6 'Schibsted Grotesk';color:#a2a2ab">Share a room with another supporter. No primary, either of you runs everything, and both keep the recordings.</p></div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT TO ON AIR -->
+  <div style="padding:24px 44px 60px;max-width:1010px;margin:0 auto">
+    <div style="margin-bottom:30px"><div style="font:600 12px 'JetBrains Mono';color:#EF0107;letter-spacing:.06em;margin-bottom:12px">FROM ACCOUNT TO ON AIR</div><h2 style="margin:0;font:800 40px/1.05 'Schibsted Grotesk';letter-spacing:-.025em">Six steps, about a minute of setup.</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)"><div style="font:800 34px 'Schibsted Grotesk';color:#EF0107;line-height:1">01</div><div style="font:700 18px 'Schibsted Grotesk';margin:12px 0 7px">Become a commentator</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Upgrade from settings: read the terms, tick the box, host today. No application, no waiting.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)"><div style="font:800 34px 'Schibsted Grotesk';color:#EF0107;line-height:1">02</div><div style="font:700 18px 'Schibsted Grotesk';margin:12px 0 7px">Create a room</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Pick a fixture, set your start time and a one-line blurb. Not listed? Spin one up for any game. Every room gets a clean, shareable link.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)"><div style="font:800 34px 'Schibsted Grotesk';color:#EF0107;line-height:1">03</div><div style="font:700 18px 'Schibsted Grotesk';margin:12px 0 7px">Host a whole season</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">One click schedules a room for every game your team plays. New fixtures get theirs automatically.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)"><div style="font:800 34px 'Schibsted Grotesk';color:#EF0107;line-height:1">04</div><div style="font:700 18px 'Schibsted Grotesk';margin:12px 0 7px">Bring a co-host</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Invite another supporter as an equal. Either of you runs everything; both of you keep the recordings.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)"><div style="font:800 34px 'Schibsted Grotesk';color:#EF0107;line-height:1">05</div><div style="font:700 18px 'Schibsted Grotesk';margin:12px 0 7px">Go on air</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Open the waiting room, start the broadcast, drive the clock, moderate the chat, take call-ins and push stats.</p></div>
+      <div style="background:linear-gradient(180deg,#1a1216,#121014);border:1px solid rgba(239,1,7,.24);border-radius:16px;padding:24px;transition:border-color .25s" style-hover="border-color:rgba(239,1,7,.5)"><div style="font:800 34px 'Schibsted Grotesk';color:#EF0107;line-height:1">06</div><div style="font:700 18px 'Schibsted Grotesk';margin:12px 0 7px">Keep your show</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Every broadcast is recorded and cut into downloadable segments. One hundred percent yours.</p></div>
+    </div>
+  </div>
+
+  <!-- SIGNATURE: AUDIO ONLY, ALWAYS -->
+  <div style="position:relative;padding:70px 44px;overflow:hidden;border-top:1px solid rgba(255,255,255,.07)">
+    <div style="position:absolute;inset:0;pointer-events:none"><div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);width:760px;height:420px;background:radial-gradient(circle,rgba(239,1,7,.12),transparent 66%)"></div></div>
+    <div style="position:relative;z-index:2;max-width:900px;margin:0 auto;text-align:center">
+      <div style="font:600 12px 'JetBrains Mono';color:#EF0107;letter-spacing:.06em;margin-bottom:14px">THE ONE RULE</div>
+      <h2 style="margin:0;font:800 48px/1.03 'Schibsted Grotesk';letter-spacing:-.03em">Audio only, always.</h2>
+      <p style="margin:18px auto 34px;max-width:560px;font:400 17px/1.62 'Schibsted Grotesk';color:#a2a2ab">Your listeners bring their own screens; you bring the commentary. Never play match video or broadcast audio through your show, even in the background. It's the one thing we can't bend, and it's what keeps the whole platform on the right side of the line.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left">
+        <div style="background:#141417;border:1px solid rgba(52,209,122,.3);border-radius:16px;padding:24px;display:flex;gap:15px;align-items:flex-start"><span style="width:38px;height:38px;border-radius:11px;background:rgba(52,209,122,.16);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px">✓</span><div><div style="font:700 18px 'Schibsted Grotesk';color:#34d17a">Your voice &amp; your guests</div><p style="margin:6px 0 0;font:400 14px/1.55 'Schibsted Grotesk';color:#a2a2ab">Live commentary, co-hosts and call-ins. The show is yours to record and own.</p></div></div>
+        <div style="background:#141417;border:1px solid rgba(239,1,7,.3);border-radius:16px;padding:24px;display:flex;gap:15px;align-items:flex-start"><span style="width:38px;height:38px;border-radius:11px;background:rgba(239,1,7,.14);color:#EF0107;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px">✕</span><div><div style="font:700 18px 'Schibsted Grotesk';color:#EF0107">Match video or broadcast audio</div><p style="margin:6px 0 0;font:400 14px/1.55 'Schibsted Grotesk';color:#a2a2ab;text-decoration:line-through;text-decoration-color:rgba(239,1,7,.5)">Never streamed or played through the room, not even in the background.</p></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KEEP YOUR SHOW -->
+  <div style="padding:66px 44px;max-width:1010px;margin:0 auto">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center">
+      <div>
+        <div style="font:600 12px 'JetBrains Mono';color:#EF0107;letter-spacing:.06em;margin-bottom:14px">AFTER THE FINAL WHISTLE</div>
+        <h2 style="margin:0 0 16px;font:800 40px/1.05 'Schibsted Grotesk';letter-spacing:-.025em">When the whistle goes, the show is yours.</h2>
+        <p style="margin:0 0 22px;font:400 16px/1.62 'Schibsted Grotesk';color:#a2a2ab;max-width:430px">End the broadcast and a Downloads panel appears: the full show plus per-segment clips, each cut at your clock events. They're MP3s, named and ready to publish anywhere, your podcast feed, YouTube, wherever. FanCast claims nothing.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:12px;align-items:center"><span style="width:30px;height:30px;border-radius:9px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Cut into clips automatically at your clock events</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><span style="width:30px;height:30px;border-radius:9px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Nudge any boundary and recut, up to two minutes</span></div>
+          <div style="display:flex;gap:12px;align-items:center"><span style="width:30px;height:30px;border-radius:9px;background:rgba(52,209,122,.14);color:#34d17a;flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'Schibsted Grotesk'">✓</span><span style="font:500 14px 'Schibsted Grotesk';color:#c8c8ce">Yours outright, no license, no exclusivity</span></div>
+        </div>
+      </div>
+      <!-- downloads panel -->
+      <div style="background:linear-gradient(180deg,#16161a,#0f0f12);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:22px;box-shadow:0 40px 80px -50px rgba(0,0,0,.9)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px"><span style="font:700 11px 'JetBrains Mono';color:#6c6c76;letter-spacing:.08em">DOWNLOADS · ARS 2–0 BUR</span><span style="font:700 10px 'JetBrains Mono';color:#34d17a">100% YOURS</span></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(239,1,7,.24);border-radius:11px;padding:13px 15px;margin-bottom:8px"><span style="width:34px;height:34px;border-radius:9px;background:rgba(239,1,7,.14);color:#EF0107;flex:none;display:flex;align-items:center;justify-content:center;font-weight:800">▸</span><div style="flex:1"><div style="font:700 13px 'Schibsted Grotesk'">Full show</div><div style="font:500 11px 'JetBrains Mono';color:#6c6c76">MP3 · 02:07:18</div></div><span style="font:700 11px 'Schibsted Grotesk';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);padding:8px 14px;border-radius:8px">Download</span></div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px"><span style="font:700 13px 'Schibsted Grotesk';flex:1">Pre-match build-up</span><span style="font:500 12px 'JetBrains Mono';color:#a2a2ab">18:04</span><span style="color:#EF0107;font-weight:800">↓</span></div>
+          <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px"><span style="font:700 13px 'Schibsted Grotesk';flex:1">First half</span><span style="font:500 12px 'JetBrains Mono';color:#a2a2ab">47:22</span><span style="color:#EF0107;font-weight:800">↓</span></div>
+          <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px"><span style="font:700 13px 'Schibsted Grotesk';flex:1">Half-time show</span><span style="font:500 12px 'JetBrains Mono';color:#a2a2ab">12:40</span><span style="color:#EF0107;font-weight:800">↓</span></div>
+          <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px"><span style="font:700 13px 'Schibsted Grotesk';flex:1">Second half</span><span style="font:500 12px 'JetBrains Mono';color:#a2a2ab">49:10</span><span style="color:#EF0107;font-weight:800">↓</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SEASON + CO-HOST -->
+  <div style="padding:8px 44px 60px;max-width:1010px;margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:16px">
+    <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:28px;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)">
+      <div style="font:700 22px 'Schibsted Grotesk';letter-spacing:-.01em">Do the whole season in one click</div>
+      <p style="margin:9px 0 18px;font:400 14px/1.6 'Schibsted Grotesk';color:#a2a2ab;max-width:420px">Schedule a room for every game your club plays this season. New fixtures get theirs automatically as they're announced, showing up on time is what builds an audience.</p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px;border-left:3px solid #EF0107"><span style="font:600 11px 'JetBrains Mono';color:#a2a2ab;width:110px">FRI 21 AUG</span><span style="font:700 13px 'Schibsted Grotesk';flex:1">Arsenal v Coventry</span><span style="font:700 10px 'JetBrains Mono';color:#34d17a">ROOM READY ✓</span></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px;border-left:3px solid #EF0107"><span style="font:600 11px 'JetBrains Mono';color:#a2a2ab;width:110px">SAT 29 AUG</span><span style="font:700 13px 'Schibsted Grotesk';flex:1">Arsenal v Liverpool</span><span style="font:700 10px 'JetBrains Mono';color:#34d17a">ROOM READY ✓</span></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px 14px;border-left:3px solid #2a2a31"><span style="font:600 11px 'JetBrains Mono';color:#a2a2ab;width:110px">SUN 14 SEP</span><span style="font:700 13px 'Schibsted Grotesk';flex:1">Arsenal v Man City</span><span style="font:700 10px 'JetBrains Mono';color:#6c6c76">AUTO-ADDED</span></div>
+      </div>
+    </div>
+    <div style="background:linear-gradient(160deg,#17171b,#101013);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:28px;display:flex;flex-direction:column;transition:border-color .25s" style-hover="border-color:rgba(255,255,255,.18)">
+      <div style="font:700 22px 'Schibsted Grotesk';letter-spacing:-.01em">Better with two</div>
+      <p style="margin:9px 0 20px;font:400 14px/1.6 'Schibsted Grotesk';color:#a2a2ab">Bring a co-host as a full equal. Both of you appear on the room, either can run it, and both keep every recording.</p>
+      <div style="margin-top:auto;display:flex;align-items:center;gap:10px"><div style="display:flex"><span style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#EF0107,#7a0a12);border:2px solid #101013;display:flex;align-items:center;justify-content:center;font:700 15px 'Schibsted Grotesk'">DG</span><span style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#1f6f4a,#0c3a26);border:2px solid #101013;margin-left:-12px;display:flex;align-items:center;justify-content:center;font:700 15px 'Schibsted Grotesk'">TH</span></div><div><div style="font:700 13px 'Schibsted Grotesk'">Danny + Theo</div><div style="font:500 11px 'Schibsted Grotesk';color:#a2a2ab">Equal co-hosts · both own it</div></div></div>
+    </div>
+  </div>
+
+  <!-- FAQ -->
+  <div style="padding:8px 44px 60px;max-width:1010px;margin:0 auto">
+    <div style="margin-bottom:26px"><div style="font:600 12px 'JetBrains Mono';color:#EF0107;letter-spacing:.06em;margin-bottom:12px">QUICK ANSWERS</div><h2 style="margin:0;font:800 34px/1.05 'Schibsted Grotesk';letter-spacing:-.025em">The bits hosts ask</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px"><div style="font:700 15px 'Schibsted Grotesk';margin-bottom:6px">What gear do I need?</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">A microphone and a browser. A quiet room and a decent headset beat expensive kit.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px"><div style="font:700 15px 'Schibsted Grotesk';margin-bottom:6px">Do my listeners pay?</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">No. Listening is free and needs no account; people sign up only to chat, vote or call in.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px"><div style="font:700 15px 'Schibsted Grotesk';margin-bottom:6px">What if my match has no stats?</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Chat, audio and recordings all work regardless. Uncovered games just show “coming soon” for stats while we add more leagues.</p></div>
+      <div style="background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px"><div style="font:700 15px 'Schibsted Grotesk';margin-bottom:6px">Something broke mid-show?</div><p style="margin:0;font:400 13px/1.55 'Schibsted Grotesk';color:#a2a2ab">Keep talking. Listeners reconnect automatically and the recording runs server-side, so a glitch on your end never loses the show.</p></div>
+    </div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div style="position:relative;overflow:hidden;padding:80px 44px;text-align:center;border-top:1px solid rgba(255,255,255,.07)">
+    <div style="position:absolute;inset:0;pointer-events:none"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:900px;height:500px;background:radial-gradient(50% 60% at 50% 50%,rgba(239,1,7,.2),transparent 70%)"></div><div style="position:absolute;inset:0;opacity:.05;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22%3E%3Cfilter id=%22m%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23m)%22/%3E%3C/svg%3E');background-size:140px 140px"></div></div>
+    <div style="position:relative;z-index:2">
+      <h2 style="margin:0;font:800 52px/1.02 'Schibsted Grotesk';letter-spacing:-.03em">There's a seat at the front. Take it.</h2>
+      <p style="margin:18px auto 0;max-width:500px;font:400 17px/1.6 'Schibsted Grotesk';color:#a2a2ab">Upgrade to a commentator in about a minute. No application, no waiting, and the whole show is yours to keep.</p>
+      <div style="display:flex;justify-content:center;gap:12px;margin-top:30px">
+        <span style="position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:9px;font:600 15px 'Schibsted Grotesk';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border:1px solid #ff4a47;border-radius:13px;padding:16px 30px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 14px 30px -12px rgba(239,1,7,.85)">Become a commentator →<span style="position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent);transform:translateX(-120%);animation:fc-shine 5s 2.5s ease-in-out infinite"></span></span>
+        <span style="font:600 15px 'Schibsted Grotesk';color:#f2f2f4;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);border-radius:13px;padding:16px 26px">Create your first room</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="border-top:1px solid rgba(255,255,255,.08);padding:44px;background:#08080a">
+    <div style="max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px">
+      <div style="max-width:330px"><div style="display:flex;align-items:center;gap:9px;font:800 20px 'Schibsted Grotesk';margin-bottom:12px"><span style="width:12px;height:12px;border-radius:4px;background:linear-gradient(135deg,#f5211f,#c50006)"></span>FanCast</div><p style="margin:0 0 14px;font:400 12px/1.6 'Schibsted Grotesk';color:#6c6c76">An unofficial, fan-made platform. Not affiliated with or endorsed by any club, league, or broadcaster.</p><div style="font:700 11px 'JetBrains Mono';color:#EF0107;letter-spacing:.04em">No pundits · No fluff · Just football</div></div>
+      <div style="display:flex;gap:56px"><div><div style="font:700 11px 'JetBrains Mono';color:#6c6c76;letter-spacing:.06em;margin-bottom:12px">PLATFORM</div><div style="display:flex;flex-direction:column;gap:9px;font:500 13px 'Schibsted Grotesk';color:#a2a2ab"><a href="Matchday.dc.html">Watch a match</a><span>How it works</span><span>Host a room</span><span>Sign in</span></div></div><div><div style="font:700 11px 'JetBrains Mono';color:#6c6c76;letter-spacing:.06em;margin-bottom:12px">LEGAL</div><div style="display:flex;flex-direction:column;gap:9px;font:500 13px 'Schibsted Grotesk';color:#a2a2ab"><span>Community Guidelines</span><span>Terms of Service</span><span>Privacy Policy</span></div></div></div>
+    </div>
+    <div style="max-width:1120px;margin:26px auto 0;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);font:600 11px 'JetBrains Mono';color:#6c6c76">© 2026 FanCast</div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount(){
+    const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+    document.querySelectorAll('[data-count]').forEach((el) => {
+      const target = parseFloat(el.getAttribute('data-count')) || 0;
+      const dur = 1500;
+      const start = performance.now();
+      const step = (now) => {
+        const p = Math.min(1, (now - start) / dur);
+        el.textContent = Math.round(target * easeOut(p)).toLocaleString('en-GB');
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+    this._clocks = [...document.querySelectorAll('[data-clock]')].map((el) => ({
+      el, s: parseInt(el.getAttribute('data-clock'), 10) || 0, half: el.getAttribute('data-half') || '1H'
+    }));
+    const fmt = (s) => {
+      const m = Math.floor(s / 60), ss = s % 60;
+      return String(m).padStart(2, '0') + ':' + String(ss).padStart(2, '0');
+    };
+    const paint = () => this._clocks.forEach((c) => { c.el.textContent = c.half + ' ' + fmt(c.s); });
+    paint();
+    this._t = setInterval(() => { this._clocks.forEach((c) => { c.s += 1; }); paint(); }, 1000);
+    this._live = [...document.querySelectorAll('[data-live]')].map((el) => ({ el, v: parseInt(el.getAttribute('data-live'), 10) || 0 }));
+    this._lt = setInterval(() => {
+      this._live.forEach((o) => {
+        o.v = Math.max(0, o.v + (Math.floor(Math.random() * 5) - 1));
+        o.el.textContent = o.v.toLocaleString('en-GB');
+      });
+    }, 2600);
+  }
+  componentWillUnmount(){ clearInterval(this._t); clearInterval(this._lt); }
+  renderVals(){ return {}; }
+}
+</script>
+</body>
+</html>

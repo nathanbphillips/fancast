@@ -3,17 +3,21 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens (Cloud Design "1a broadcast" system) — defined once, both
- * themes. DARK is the default: the pre-paint script in app/layout.tsx adds
- * `.dark` when there's no explicit device/account choice. `--fg`/`--hair` are
- * raw RGB channels consumed at variable opacity, e.g. rgb(var(--fg) / .6).
+ * Design tokens (Matchday redesign — Schibsted Grotesk / JetBrains Mono system).
+ * Defined once, both themes. DARK is the default: the pre-paint script in
+ * app/layout.tsx adds `.dark` when there's no explicit device/account choice.
+ * `--fg`/`--hair` are raw RGB channels consumed at variable opacity, e.g.
+ * rgb(var(--fg) / .6). Gold is retired to focus-rings only; brand accent is the
+ * true-Arsenal red #EF0107 with a gradient/shine for high-emphasis buttons.
  */
 :root {
   /* raw channels (light) */
   --fg: 34 30 26;
   --hair: 34 30 26;
-  /* derived text + hairline — resolve per-theme via --fg/--hair, defined once */
-  --text-secondary: rgb(var(--fg) / 0.6);
+  /* derived text + hairline — resolve per-theme; dark overrides secondary/tertiary
+     with fixed cool-grays to match the mock's hierarchy */
+  --text-secondary: rgb(var(--fg) / 0.62);
+  --text-tertiary: rgb(var(--fg) / 0.45);
   --line: rgb(var(--hair) / 0.12);
   /* surfaces (light) */
   --bg-base: #f7f5f0;
@@ -23,47 +27,54 @@
   --footer: #eeece4;
   --text-primary: #191510;
   /* accents */
-  --red: #f1232b;
-  --red-hover: #ff3a41;
-  --gold: #9a7714; /* text gold: darkened for AA on white (use for text-gold) */
-  --gold-bright: #e8b54a; /* vivid gold for decorative fills/dots/badges only */
+  --red: #ef0107;
+  --red-hover: #ff4a47;
+  --red-grad: linear-gradient(180deg, #f5211f, #d40206);
+  --red-grad-border: #ff4a47;
+  --gold: #9a7714; /* RETAINED for focus rings only (AA on white) */
+  --gold-bright: #e8b54a; /* legacy decorative — being retired, kept so untouched pages don't break */
   --navy: #023474;
   --green: #137a42;
-  /* inverted high-emphasis buttons (SYNC NOW, Sign in) */
+  /* inverted high-emphasis buttons (Sign in) */
   --inverted-bg: #191510;
   --inverted-fg: #f7f5f0;
   /* elevation + brand glow */
   --elev-card: 0 1px 2px rgba(16, 18, 29, 0.05), 0 1px 3px rgba(16, 18, 29, 0.07);
   --elev-raised: 0 24px 60px -28px rgba(0, 0, 0, 0.35),
-    0 0 40px -18px rgba(241, 35, 43, 0.16);
-  --shadow-glow: 0 12px 30px -10px rgba(241, 35, 43, 0.4);
+    0 0 40px -18px rgba(239, 1, 7, 0.16);
+  --shadow-glow: 0 12px 30px -10px rgba(239, 1, 7, 0.4);
 }
 
 .dark {
-  /* raw channels (dark) — --text-secondary/--line re-derive from these */
-  --fg: 244 244 242;
+  /* raw channels (dark) */
+  --fg: 242 242 244;
   --hair: 255 255 255;
-  --bg-base: #0f0f11;
-  --bg-surface: #18181c;
-  --bg-raised: #161619;
-  --bg2: #121215;
-  --footer: #0c0c0d;
-  --text-primary: #f4f4f2;
-  --red: #f1232b;
-  --red-hover: #ff3a41;
+  /* the mock's 4-tier dark text hierarchy: primary #f2f2f4, secondary #a2a2ab,
+     tertiary #6c6c76 (fixed cool-grays, not fg-at-opacity) */
+  --text-secondary: #a2a2ab;
+  --text-tertiary: #6c6c76;
+  /* surfaces (dark): page < inset < card < raised */
+  --bg-base: #08080a;
+  --bg-surface: #141417;
+  --bg-raised: #17171b;
+  --bg2: #0c0c0e;
+  --footer: #08080a;
+  --text-primary: #f2f2f4;
+  --red: #ef0107;
+  --red-hover: #ff4a47;
   --gold: #e8b54a;
   --gold-bright: #e8b54a;
   --navy: #6e9fe0;
-  --green: #27c46d;
-  --inverted-bg: #f4f4f2;
-  --inverted-fg: #0f0f11;
+  --green: #34d17a;
+  --inverted-bg: #f2f2f4;
+  --inverted-fg: #08080a;
   --elev-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.6);
   --elev-raised: 0 40px 90px -30px rgba(0, 0, 0, 0.9),
-    0 0 60px -20px rgba(241, 35, 43, 0.35);
-  --shadow-glow: 0 12px 30px -10px rgba(241, 35, 43, 0.6);
+    0 0 60px -20px rgba(239, 1, 7, 0.35);
+  --shadow-glow: 0 12px 30px -10px rgba(239, 1, 7, 0.55);
 }
 
-/* Tailwind reads the variables; components use bg-base, text-primary, etc. */
+/* Tailwind reads the variables; components use bg-canvas, text-primary, etc. */
 @theme inline {
   /* "canvas" not "base": text-base must stay the font-size utility */
   --color-canvas: var(--bg-base);
@@ -73,6 +84,7 @@
   --color-footer: var(--footer);
   --color-primary: var(--text-primary);
   --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
   --color-line: var(--line);
   --color-red: var(--red);
   --color-red-hover: var(--red-hover);
@@ -82,12 +94,12 @@
   --color-green: var(--green);
   --color-inverted: var(--inverted-bg);
   --color-inverted-fg: var(--inverted-fg);
-  /* Hanken Grotesk body; Anton display (all-caps — NEVER on tabular-nums);
-     Space Mono labels/meta via font-mono */
-  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, -apple-system,
+  /* Schibsted Grotesk = display AND body (heavy weights for headlines, regular
+     for text); JetBrains Mono = labels/meta + tabular numbers via font-mono */
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-anton), "Arial Narrow", Impact, sans-serif;
-  --font-mono: var(--font-space-mono), ui-monospace, "SFMono-Regular", Menlo,
+  --font-display: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo,
     monospace;
   /* card elevation + brand glow utilities (shadow-card/raised/glow) */
   --shadow-card: var(--elev-card);
@@ -107,54 +119,89 @@ body {
   color: var(--text-primary);
 }
 
-/* Anton display treatment — ALWAYS uppercase, weight 400 (Anton is single-weight
-   and the design transforms every headline/score/wordmark to caps). Use `display`
-   for headings/scores/logo; card titles use Hanken bold (font-sans font-extrabold),
-   NOT this. Letter-spacing is intentionally left to per-use `tracking-*` utilities
-   (this rule is unlayered and would otherwise beat them); Anton's natural 0 is the
-   default, matching the design where no tracking is specified. */
+/* Display treatment — Schibsted Grotesk, heavy (800), MIXED CASE (the redesign
+   dropped Anton's forced uppercase; the wordmark is "FanCast", headlines are
+   sentence case). Use `display` for headings/scores/wordmark; card titles use
+   `font-extrabold` on the body font. NEVER use `.display` on ticking/tabular
+   numbers — those use font-mono (JetBrains) so figures don't drift. Default
+   tight tracking; the type-scale classes tune it further per step. */
 .display {
-  /* Reference --font-anton directly: `@theme inline` inlines --font-display into
-     Tailwind's font-display utility and does NOT emit it as a :root variable, so
-     var(--font-display) here would resolve to nothing and fall back to body font. */
-  font-family: var(--font-anton), "Arial Narrow", Impact, sans-serif;
-  font-weight: 400;
-  text-transform: uppercase;
+  font-family: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.025em;
 }
 
-/* Modular type scale (front-end review item 18) — ONE source of truth for the
-   display + text steps, replacing the per-instance text-[NNpx] + sm: overrides
-   that made sizes drift page to page. Responsive via clamp (fluid from mobile to
-   desktop, no breakpoints). Unlayered like .display so these beat Tailwind's
-   text-size utilities; pair .t-hero/.t-h2/.t-h3 with .display (Anton), and
-   .t-title/.t-lead with the body font. Letter-spacing stays on per-use tracking-*.
-   --section-y is the shared vertical rhythm for stacked marketing sections. */
+/* Modular type scale — ONE source of truth for the display + text steps.
+   Responsive via clamp (fluid mobile→desktop). Unlayered like .display so these
+   beat Tailwind's text-size utilities; pair .t-hero/.t-h2/.t-h3 with .display,
+   and .t-title/.t-lead with the body font. Tracking is baked in per step to
+   match the mock (hero -.035em ... title -.01em); line-heights tuned for
+   Schibsted's mixed-case x-height. --section-y is the shared vertical rhythm. */
 :root {
   --section-y: clamp(3.25rem, 6vw, 4.5rem);
 }
 .t-hero {
-  font-size: clamp(2.625rem, 1.55rem + 4.6vw, 4.25rem); /* ~42 -> 68 */
-  line-height: 0.95;
+  font-size: clamp(2.625rem, 1.4rem + 5.1vw, 4.25rem); /* ~42 -> 68 */
+  line-height: 1;
+  letter-spacing: -0.035em;
 }
 .t-h2 {
   font-size: clamp(2.25rem, 1.75rem + 2.1vw, 3.25rem); /* ~36 -> 52 */
-  line-height: 0.98;
+  line-height: 1.04;
+  letter-spacing: -0.025em;
 }
 .t-h3 {
   font-size: clamp(1.625rem, 1.35rem + 1.2vw, 2rem); /* ~26 -> 32 */
-  line-height: 1.05;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
 }
 .t-title {
   font-size: 1.1875rem; /* 19 — card/list titles (use with font-extrabold) */
   line-height: 1.3;
+  letter-spacing: -0.01em;
 }
 .t-lead {
-  font-size: 1.125rem; /* 18 — hero subheads */
+  font-size: 1.125rem; /* 18 — hero subheads (body font) */
   line-height: 1.55;
 }
 .section-y {
   padding-top: var(--section-y);
   padding-bottom: var(--section-y);
+}
+
+/* High-emphasis gradient red button (the mock's primary CTA): vertical red
+   gradient + light border + inset top highlight + red glow, with a hover lift.
+   Pair with an inner `.btn-shine` span for the sweeping specular highlight. */
+.btn-grad-red {
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  background: var(--red-grad);
+  border: 1px solid var(--red-grad-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 14px 30px -12px rgba(239, 1, 7, 0.85);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-grad-red:hover {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 20px 40px -12px rgba(239, 1, 7, 0.95);
+}
+.btn-shine {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: translateX(-120%);
+  animation: fc-shine 4.5s 1.5s ease-in-out infinite;
 }
 
 /* Visible focus everywhere (WCAG); gold ring reads in both themes. */
@@ -177,8 +224,61 @@ body {
   animation: live-pulse 2s ease-in-out infinite;
 }
 
-/* Cloud Design animation set. The reduced-motion wildcard below neutralizes all
-   of these (durations/iterations collapsed), so they're accessibility-safe. */
+/* ------- Matchday marketing animation set. The reduced-motion wildcard below
+   neutralizes ALL of these (durations/iterations collapsed) → a11y-safe. ------- */
+
+/* section reveal (staggered via inline animation-delay) */
+@keyframes fc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* live dot blink */
+@keyframes fc-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.28;
+  }
+}
+/* breathing hero glow */
+@keyframes fc-glow {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+/* button specular sweep */
+@keyframes fc-shine {
+  0% {
+    transform: translateX(-120%);
+  }
+  60%,
+  100% {
+    transform: translateX(320%);
+  }
+}
+.animate-fc-rise {
+  animation: fc-rise 0.6s both;
+}
+.animate-fc-blink {
+  animation: fc-blink 1.4s infinite;
+}
+.animate-fc-glow {
+  animation: fc-glow 7s ease-in-out infinite;
+}
+
+/* ------- Existing Cloud Design set (still used by the room + reusable). ------- */
 @keyframes fcpulse {
   0%,
   100% {

@@ -1,27 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Anton, Hanken_Grotesk, Space_Mono } from "next/font/google";
+import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { THEME_COOKIE, themeInitScript, type ThemeChoice } from "@/lib/theme";
 import "./globals.css";
 
-// Cloud Design "1a" type system: Hanken Grotesk (body/UI), Anton (display —
-// all-caps, NEVER on tabular-nums/body), Space Mono (labels/eyebrows/meta).
-const hanken = Hanken_Grotesk({
+// Matchday redesign type system: Schibsted Grotesk (display + body/UI — heavy
+// weights 700-900 for headlines/scores/wordmark, 400-600 for text), JetBrains
+// Mono (labels/eyebrows/meta + ALL tabular numbers: clocks, scores, counts).
+// NEVER put Schibsted on tabular numbers — use font-mono there so figures don't
+// drift on every tick. Both are variable fonts (weight axis omitted = full range).
+const schibsted = Schibsted_Grotesk({
   subsets: ["latin"],
-  variable: "--font-hanken",
+  variable: "--font-schibsted",
   display: "swap",
 });
-const anton = Anton({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-anton",
-  display: "swap",
-});
-const spaceMono = Space_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-space-mono",
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -56,9 +52,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   // Single dark value: the app is dark by default regardless of OS scheme (see
   // the pre-paint theme script), so keying themeColor off prefers-color-scheme
-  // framed the dark page with a beige status bar on light-OS phones. This
-  // matches the manifest (also #0f0f11).
-  themeColor: "#0f0f11",
+  // framed the dark page with a beige status bar on light-OS phones. Matchday
+  // redesign dark base is #08080a (keep the manifest in sync).
+  themeColor: "#08080a",
 };
 
 export default async function RootLayout({
@@ -95,7 +91,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${hanken.variable} ${anton.variable} ${spaceMono.variable} font-sans antialiased`}
+        className={`${schibsted.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
       </body>

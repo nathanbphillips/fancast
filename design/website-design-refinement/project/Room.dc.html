@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+<style id="fc-responsive">@media (max-width:1024px){[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}[style*="grid-auto-rows:150px"],[style*="grid-auto-rows:158px"]{grid-auto-rows:auto!important}[style*="1.05fr 1.3fr 1fr"],[style*="1.12fr .95fr"],[style*="1.15fr 1fr"]{grid-template-columns:1fr!important}}@media (max-width:700px){[style*="grid-template-columns"]{grid-template-columns:1fr!important}[style*="grid-column:span 2"]{grid-column:auto!important}[style*="grid-row:span 2"]{grid-row:auto!important}[style*="animation:fc-float"]{display:none!important}h1{font-size:38px!important;line-height:1.05!important;letter-spacing:-.02em!important}h2{font-size:26px!important;line-height:1.14!important}[style*="padding:20px 44px"],[style*="padding:22px 44px"]{flex-wrap:wrap!important;gap:10px!important;padding:12px 16px!important}[style*="70px 44px"],[style*="64px 44px"],[style*="66px 44px"],[style*="56px 44px"],[style*="80px 44px"],[style*="60px 44px"],[style*="52px 44px"],[style*="40px 44px"],[style*="36px 44px"]{padding-left:16px!important;padding-right:16px!important}[data-screen-label="Sign in"]{flex-direction:column!important;height:auto!important;min-height:100vh!important}[data-screen-label="Sign in"]>div:last-child{width:100%!important;border-left:none!important;border-top:1px solid rgba(255,255,255,.07)!important}[data-screen-label="Matchday room"]{height:auto!important;min-height:100vh!important;overflow:visible!important}[data-screen-label="Matchday room"]>div[style*="display:grid"]{display:block!important;padding:12px!important}[data-screen-label="Matchday room"]>div[style*="display:grid"]>div{height:64vh!important;margin-bottom:12px!important}[data-screen-label="Matchday room"] [style*="height:82px"]{height:auto!important;flex-wrap:wrap!important;justify-content:center!important;gap:10px!important;padding:12px 14px!important}[data-screen-label="Matchday room"] [style*="width:236px"]{width:auto!important}}</style><style id="fc-responsive2">@media (max-width:700px){[style*="gap:26px;font:500 14px 'Schibsted Grotesk'"]{display:none!important}[data-screen-label="Matchday room"] [style*="height:82px"]{position:sticky!important;bottom:0!important;z-index:20!important}}</style></head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#08080a;font-family:'Schibsted Grotesk',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  a{color:inherit;text-decoration:none}
+  a:hover{color:inherit}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#2a2a31;border-radius:6px;border:2px solid #0c0c0e}
+  ::-webkit-scrollbar-track{background:transparent}
+  @keyframes fc-blink{0%,100%{opacity:1}50%{opacity:.28}}
+  @keyframes fc-eq{0%,100%{transform:scaleY(.32)}50%{transform:scaleY(1)}}
+  @keyframes fc-pulse{0%{box-shadow:0 0 0 0 rgba(239,1,7,.5)}70%{box-shadow:0 0 0 10px rgba(239,1,7,0)}100%{box-shadow:0 0 0 0 rgba(239,1,7,0)}}
+  @keyframes fc-scan{0%{left:1%}100%{left:99%}}
+  @keyframes fc-grow{0%,100%{transform:scaleX(.86)}50%{transform:scaleX(1)}}
+</style>
+</helmet>
+
+<div style="height:100vh;display:flex;flex-direction:column;background:#08080a;color:#f2f2f4;overflow:hidden" data-screen-label="Matchday room">
+
+  <!-- TOP APP BAR -->
+  <div style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 20px;height:58px;background:#0c0c0e;border-bottom:1px solid rgba(255,255,255,.08);z-index:10">
+    <div style="display:flex;align-items:center;gap:16px;min-width:0">
+      <a href="Matches.dc.html" style="display:inline-flex;align-items:center;gap:6px;font:600 13px 'Schibsted Grotesk';color:#a2a2ab;padding:8px 12px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)">‹ Leave</a>
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font:700 9px 'JetBrains Mono';letter-spacing:.08em;color:#EF0107;background:rgba(239,1,7,.12);padding:3px 7px;border-radius:5px">PREMIER LEAGUE</span><span style="display:inline-flex;align-items:center;gap:5px;font:700 9px 'JetBrains Mono';color:#EF0107"><span style="width:6px;height:6px;border-radius:50%;background:#EF0107;animation:fc-blink 1.3s infinite"></span>LIVE</span></div>
+        <div style="font:700 14px 'Schibsted Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Arsenal vs Burnley <span style="color:#6c6c76;font-weight:500">· nathan</span></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:6px 16px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="width:22px;height:22px;border-radius:6px;background:#EF0107;display:flex;align-items:center;justify-content:center;font:800 8px 'Schibsted Grotesk';color:#fff">ARS</span><span style="font:800 22px 'Schibsted Grotesk'">2</span></div>
+      <div style="font:700 13px 'JetBrains Mono';color:#EF0107" data-clock="1394" data-half="1H">1H 23:14</div>
+      <div style="display:flex;align-items:center;gap:8px"><span style="font:800 22px 'Schibsted Grotesk'">0</span><span style="width:22px;height:22px;border-radius:6px;background:#6a1a2c;display:flex;align-items:center;justify-content:center;font:800 8px 'Schibsted Grotesk';color:#fff">BUR</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="display:inline-flex;align-items:center;gap:6px;font:600 13px 'Schibsted Grotesk';color:#a2a2ab;padding:9px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.1)">Share</span>
+      <a href="Matchday.dc.html" style="font:600 13px 'Schibsted Grotesk';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border:1px solid #ff4a47;padding:9px 16px;border-radius:9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">Sign in</a>
+    </div>
+  </div>
+
+  <!-- MAIN: chat (left) + match data (right) -->
+  <div style="flex:1;min-height:0;display:grid;grid-template-columns:1fr 400px;gap:14px;padding:14px 20px">
+
+    <!-- LEFT: ROOM CHAT -->
+    <div style="min-height:0;background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;display:flex;flex-direction:column;overflow:hidden">
+      <div style="flex:none;padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.07)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+          <div style="display:flex;gap:4px"><span id="tabChat" onClick="{{ showChat }}" style="cursor:pointer;font:700 13px 'Schibsted Grotesk';color:#fff;background:rgba(255,255,255,.08);padding:8px 14px;border-radius:9px">Room chat</span><span id="tabPolls" onClick="{{ showPolls }}" style="cursor:pointer;font:600 13px 'Schibsted Grotesk';color:#a2a2ab;padding:8px 14px;border-radius:9px">Polls <span style="font:700 9px 'JetBrains Mono';color:#EF0107;background:rgba(239,1,7,.14);padding:2px 5px;border-radius:4px;margin-left:2px">1</span></span></div>
+          <span style="font:600 11px 'JetBrains Mono';color:#6c6c76;display:inline-flex;align-items:center;gap:6px"><span data-live="312" style="color:#a2a2ab;font-weight:700">312</span> talking</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span style="font:700 10px 'Schibsted Grotesk';color:#0c0c0e;background:#EF0107;padding:6px 12px;border-radius:20px">Top</span>
+          <span style="font:700 10px 'Schibsted Grotesk';color:#a2a2ab;background:#0c0c0e;border:1px solid rgba(255,255,255,.08);padding:6px 12px;border-radius:20px">New</span>
+          <span style="font:700 10px 'Schibsted Grotesk';color:#a2a2ab;background:#0c0c0e;border:1px solid rgba(255,255,255,.08);padding:6px 12px;border-radius:20px">Controversial</span>
+        </div>
+      </div>
+
+      <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:16px"><div id="roomChat" style="display:flex;flex-direction:column;gap:14px">
+        <!-- pinned host -->
+        <div style="background:linear-gradient(180deg,rgba(239,1,7,.08),rgba(239,1,7,.02));border:1px solid rgba(239,1,7,.25);border-radius:12px;padding:13px 15px;display:flex;gap:11px">
+          <span style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#EF0107,#7a0a12);flex:none;display:flex;align-items:center;justify-content:center;font:800 13px 'Schibsted Grotesk'">N</span>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="font:700 13px 'Schibsted Grotesk'">nathan</span><span style="font:700 8px 'JetBrains Mono';color:#EF0107;background:rgba(239,1,7,.16);padding:2px 6px;border-radius:5px">HOST</span><span style="font:500 11px 'JetBrains Mono';color:#6c6c76">· pinned</span></div><div style="font:400 14px/1.5 'Schibsted Grotesk';color:#e6e6ea;margin-top:3px">Half-time poll is up, who's your MOTM so far? And keep the call-in requests coming for the break. 🔴⚪</div></div>
+        </div>
+
+        <!-- message w/ thread -->
+        <div style="display:flex;gap:11px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;padding-top:2px"><span style="font-size:11px;color:#EF0107">▲</span><span style="font:700 12px 'Schibsted Grotesk';color:#f2f2f4">142</span><span style="font-size:11px;color:#4a4a52">▼</span></div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="width:28px;height:28px;border-radius:9px;background:#2a4a8a;flex:none;display:flex;align-items:center;justify-content:center;font:700 10px 'Schibsted Grotesk'">MK</span><span style="font:700 13px 'Schibsted Grotesk'">Mikel_92</span><span style="font:500 11px 'JetBrains Mono';color:#6c6c76">23'</span></div><div style="font:400 14px/1.5 'Schibsted Grotesk';color:#e6e6ea;margin:5px 0 0">Ødegaard running this half on his own. Take a bow, captain.</div><div style="display:flex;gap:16px;margin-top:6px;font:600 11px 'Schibsted Grotesk';color:#6c6c76"><span>Reply</span><span>Share</span></div>
+            <!-- reply -->
+            <div style="display:flex;gap:10px;margin-top:12px;padding-left:14px;border-left:2px solid rgba(255,255,255,.08)"><div style="display:flex;flex-direction:column;align-items:center;gap:1px;flex:none;padding-top:2px"><span style="font-size:10px;color:#EF0107">▲</span><span style="font:700 11px 'Schibsted Grotesk'">54</span></div><div><div style="display:flex;align-items:center;gap:6px"><span style="width:22px;height:22px;border-radius:7px;background:#7a0a12;flex:none;display:flex;align-items:center;justify-content:center;font:700 8px 'Schibsted Grotesk'">GN</span><span style="font:700 12px 'Schibsted Grotesk'">GoonerNina</span><span style="font:500 10px 'JetBrains Mono';color:#6c6c76">22'</span></div><div style="font:400 13px/1.45 'Schibsted Grotesk';color:#c8c8ce;margin-top:3px">Best he's looked all season honestly. Contract sorted, form's flying.</div></div></div>
+          </div>
+        </div>
+
+        <!-- tactics -->
+        <div style="display:flex;gap:11px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;padding-top:2px"><span style="font-size:11px;color:#EF0107">▲</span><span style="font:700 12px 'Schibsted Grotesk'">88</span><span style="font-size:11px;color:#4a4a52">▼</span></div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="width:28px;height:28px;border-radius:9px;background:#1f6f4a;flex:none;display:flex;align-items:center;justify-content:center;font:700 10px 'Schibsted Grotesk'">TT</span><span style="font:700 13px 'Schibsted Grotesk'">TheTacticsHead</span><span style="font:500 11px 'JetBrains Mono';color:#6c6c76">21'</span></div><div style="font:400 14px/1.5 'Schibsted Grotesk';color:#e6e6ea;margin:5px 0 0">Press trigger the second they turn, that's exactly why the second goal came. Burnley can't play out under this.</div><div style="display:flex;gap:16px;margin-top:6px;font:600 11px 'Schibsted Grotesk';color:#6c6c76"><span>Reply</span><span>Share</span></div></div>
+        </div>
+
+        <!-- link card -->
+        <div style="display:flex;gap:11px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;padding-top:2px"><span style="font-size:11px;color:#EF0107">▲</span><span style="font:700 12px 'Schibsted Grotesk'">31</span><span style="font-size:11px;color:#4a4a52">▼</span></div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="width:28px;height:28px;border-radius:9px;background:#5a3a8a;flex:none;display:flex;align-items:center;justify-content:center;font:700 10px 'Schibsted Grotesk'">JP</span><span style="font:700 13px 'Schibsted Grotesk'">JackpotPete</span><span style="font:500 11px 'JetBrains Mono';color:#6c6c76">19'</span></div><div style="font:400 14px/1.45 'Schibsted Grotesk';color:#e6e6ea;margin:5px 0 8px">xG map for the half, we should be 4 up</div><div style="display:flex;align-items:center;gap:12px;background:#0c0c0e;border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:11px 13px"><span style="width:38px;height:38px;border-radius:8px;background:linear-gradient(135deg,#1b2a4a,#0c1424);flex:none;display:flex;align-items:center;justify-content:center;font-size:14px">↗</span><div style="min-width:0"><div style="font:700 12px 'Schibsted Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Arsenal 2–0 Burnley, live xG &amp; shot map</div><div style="font:500 11px 'JetBrains Mono';color:#6c6c76">understat.com</div></div></div></div>
+        </div>
+
+        <!-- another -->
+        <div style="display:flex;gap:11px">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;padding-top:2px"><span style="font-size:11px;color:#4a4a52">▲</span><span style="font:700 12px 'Schibsted Grotesk'">17</span><span style="font-size:11px;color:#4a4a52">▼</span></div>
+          <div style="flex:1"><div style="display:flex;align-items:center;gap:7px"><span style="width:28px;height:28px;border-radius:9px;background:#8a5a1f;flex:none;display:flex;align-items:center;justify-content:center;font:700 10px 'Schibsted Grotesk'">RW</span><span style="font:700 13px 'Schibsted Grotesk'">RobWenger</span><span style="font:500 11px 'JetBrains Mono';color:#6c6c76">18'</span></div><div style="font:400 14px/1.5 'Schibsted Grotesk';color:#e6e6ea;margin:5px 0 0">Calling it now: Saka gets his hat-trick this half. 🎯</div><div style="display:flex;gap:16px;margin-top:6px;font:600 11px 'Schibsted Grotesk';color:#6c6c76"><span>Reply</span><span>Share</span></div></div>
+        </div>
+      </div>
+        <div id="roomPolls" style="display:none;flex-direction:column;gap:12px">
+          <div style="background:linear-gradient(180deg,rgba(239,1,7,.07),transparent);border:1px solid rgba(239,1,7,.24);border-radius:13px;padding:15px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><div style="font:700 14px 'Schibsted Grotesk'">MOTM so far?</div><span style="display:inline-flex;align-items:center;gap:6px;font:700 9px 'JetBrains Mono';color:#EF0107"><span style="width:6px;height:6px;border-radius:50%;background:#EF0107;animation:fc-blink 1.3s infinite"></span>LIVE</span></div>
+            <div style="display:flex;flex-direction:column;gap:8px"><div style="position:relative;background:#141417;border-radius:9px;overflow:hidden;height:36px"><div style="position:absolute;top:0;left:0;bottom:0;width:64%;background:rgba(239,1,7,.32)"></div><div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 13px;font:700 13px 'Schibsted Grotesk'"><span>Ødegaard</span><span>64%</span></div></div><div style="position:relative;background:#141417;border-radius:9px;overflow:hidden;height:36px"><div style="position:absolute;top:0;left:0;bottom:0;width:24%;background:rgba(255,255,255,.09)"></div><div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 13px;font:700 13px 'Schibsted Grotesk'"><span>Saka</span><span>24%</span></div></div><div style="position:relative;background:#141417;border-radius:9px;overflow:hidden;height:36px"><div style="position:absolute;top:0;left:0;bottom:0;width:12%;background:rgba(255,255,255,.09)"></div><div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 13px;font:700 13px 'Schibsted Grotesk'"><span>Gabriel</span><span>12%</span></div></div></div>
+            <div style="margin-top:10px;font:500 10px 'JetBrains Mono';color:#6c6c76">1,204 votes · closes at half-time</div>
+          </div>
+          <div style="background:#0c0c0e;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:15px">
+            <div style="font:700 14px 'Schibsted Grotesk';margin-bottom:12px">Clean sheet for the Gunners?</div>
+            <div style="display:flex;flex-direction:column;gap:8px"><div style="position:relative;background:#141417;border-radius:9px;overflow:hidden;height:36px"><div style="position:absolute;top:0;left:0;bottom:0;width:78%;background:rgba(239,1,7,.32)"></div><div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 13px;font:700 13px 'Schibsted Grotesk'"><span>Yes</span><span>78%</span></div></div><div style="position:relative;background:#141417;border-radius:9px;overflow:hidden;height:36px"><div style="position:absolute;top:0;left:0;bottom:0;width:22%;background:rgba(255,255,255,.09)"></div><div style="position:relative;display:flex;align-items:center;justify-content:space-between;height:36px;padding:0 13px;font:700 13px 'Schibsted Grotesk'"><span>No</span><span>22%</span></div></div></div>
+            <div style="margin-top:10px;font:500 10px 'JetBrains Mono';color:#6c6c76">889 votes</div>
+          </div>
+          <div style="background:#0c0c0e;border:1px solid rgba(255,255,255,.08);border-radius:13px;padding:15px;opacity:.75">
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font:700 14px 'Schibsted Grotesk'">Full-time score predictor</div><span style="font:700 9px 'JetBrains Mono';color:#6c6c76">CLOSED</span></div>
+            <div style="margin-top:8px;font:500 12px 'Schibsted Grotesk';color:#a2a2ab">Locked at kickoff. You picked Arsenal 3, 0.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;background:#141417;border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 13px"><span style="flex:1;font:500 12px 'Schibsted Grotesk';color:#6c6c76">Sign in to cast your vote.</span><a href="SignIn.dc.html" style="font:700 11px 'JetBrains Mono';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);padding:8px 13px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">SIGN IN</a></div></div>
+        </div>
+
+      <!-- composer -->
+      <div style="flex:none;padding:12px 16px;border-top:1px solid rgba(255,255,255,.07)">
+        <div style="display:flex;align-items:center;gap:10px;background:#0c0c0e;border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:11px 14px"><span style="flex:1;font:500 13px 'Schibsted Grotesk';color:#6c6c76">Sign in to chat, vote, or ask nathan a question…</span><a href="Matchday.dc.html" style="font:700 11px 'JetBrains Mono';color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);padding:8px 13px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)">SIGN IN</a></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: MATCH DATA -->
+    <div style="min-height:0;background:#141417;border:1px solid rgba(255,255,255,.08);border-radius:16px;display:flex;flex-direction:column;overflow:hidden">
+      <div style="flex:none;display:flex;gap:3px;padding:12px 12px;border-bottom:1px solid rgba(255,255,255,.07)">
+        <span style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab;padding:9px 13px;border-radius:9px">Info</span>
+        <span style="font:700 12px 'Schibsted Grotesk';color:#fff;background:rgba(255,255,255,.08);padding:9px 13px;border-radius:9px">Stats</span>
+        <span style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab;padding:9px 13px;border-radius:9px">Timeline</span>
+        <span style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab;padding:9px 13px;border-radius:9px">Line-ups</span>
+      </div>
+      <div style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px"><div style="display:flex;align-items:center;gap:9px"><span style="width:28px;height:28px;border-radius:8px;background:#EF0107;display:flex;align-items:center;justify-content:center;font:800 9px 'Schibsted Grotesk';color:#fff">ARS</span><span style="font:700 14px 'Schibsted Grotesk'">Arsenal</span></div><span style="font:600 11px 'JetBrains Mono';color:#6c6c76">vs</span><div style="display:flex;align-items:center;gap:9px"><span style="font:700 14px 'Schibsted Grotesk'">Burnley</span><span style="width:28px;height:28px;border-radius:8px;background:#6a1a2c;display:flex;align-items:center;justify-content:center;font:800 9px 'Schibsted Grotesk';color:#fff">BUR</span></div></div>
+        <div style="margin-bottom:20px"><div style="display:flex;justify-content:space-between;font:700 12px 'Schibsted Grotesk';margin-bottom:7px"><span style="color:#EF0107">58%</span><span style="color:#6c6c76">Possession</span><span>42%</span></div><div style="display:flex;height:9px;border-radius:5px;overflow:hidden;background:#2a2a31"><span style="width:58%;background:linear-gradient(90deg,#EF0107,#ff3b38);transform-origin:left;animation:fc-grow 4s ease-in-out infinite"></span></div></div>
+        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:20px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="font:800 15px 'Schibsted Grotesk';width:26px;text-align:right;color:#EF0107">14</span><div style="flex:1;display:flex;height:6px;border-radius:3px;overflow:hidden;background:#2a2a31"><span style="width:70%;background:#EF0107"></span><span style="flex:1"></span><span style="width:15%;background:#6a1a2c"></span></div><span style="font:800 15px 'Schibsted Grotesk';width:26px;color:#a2a2ab">3</span></div>
+          <div style="display:flex;justify-content:center;font:600 10px 'JetBrains Mono';color:#6c6c76;margin-top:-6px">SHOTS</div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font:800 15px 'Schibsted Grotesk';width:26px;text-align:right;color:#EF0107">6</span><div style="flex:1;display:flex;height:6px;border-radius:3px;overflow:hidden;background:#2a2a31"><span style="width:75%;background:#EF0107"></span><span style="flex:1"></span><span style="width:12%;background:#6a1a2c"></span></div><span style="font:800 15px 'Schibsted Grotesk';width:26px;color:#a2a2ab">1</span></div>
+          <div style="display:flex;justify-content:center;font:600 10px 'JetBrains Mono';color:#6c6c76;margin-top:-6px">ON TARGET</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:22px">
+          <div style="background:#0c0c0e;border:1px solid rgba(239,1,7,.22);border-radius:12px;padding:13px;text-align:center"><div style="font:800 24px 'Schibsted Grotesk';color:#EF0107">2.10</div><div style="font:500 11px 'Schibsted Grotesk';color:#6c6c76">xG · Arsenal</div></div>
+          <div style="background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:13px;text-align:center"><div style="font:800 24px 'Schibsted Grotesk'">0.30</div><div style="font:500 11px 'Schibsted Grotesk';color:#6c6c76">xG · Burnley</div></div>
+        </div>
+        <div style="font:700 12px 'Schibsted Grotesk';margin-bottom:10px">Momentum</div>
+        <div style="display:flex;align-items:flex-end;gap:3px;height:52px;margin-bottom:22px">
+          <span style="flex:1;height:40%;background:#2a2a31;border-radius:2px"></span><span style="flex:1;height:55%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:80%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:96%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:70%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:44%;background:#2a2a31;border-radius:2px"></span><span style="flex:1;height:30%;background:#2a2a31;border-radius:2px"></span><span style="flex:1;height:62%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:88%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:100%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:58%;background:#EF0107;border-radius:2px"></span><span style="flex:1;height:36%;background:#2a2a31;border-radius:2px"></span>
+        </div>
+        <div style="font:700 12px 'Schibsted Grotesk';margin-bottom:10px">Key events</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:11px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 13px"><span style="font:700 12px 'JetBrains Mono';color:#EF0107;width:30px">12'</span><span style="width:14px;height:14px;border-radius:50%;background:#f2f2f4;flex:none"></span><span style="font:600 12px 'Schibsted Grotesk';flex:1">Goal, Saka <span style="color:#6c6c76;font-weight:500">(Ødegaard)</span></span><span style="font:700 12px 'Schibsted Grotesk';color:#EF0107">1–0</span></div>
+          <div style="display:flex;align-items:center;gap:11px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 13px"><span style="font:700 12px 'JetBrains Mono';color:#EF0107;width:30px">34'</span><span style="width:14px;height:14px;border-radius:50%;background:#f2f2f4;flex:none"></span><span style="font:600 12px 'Schibsted Grotesk';flex:1">Goal, Ødegaard</span><span style="font:700 12px 'Schibsted Grotesk';color:#EF0107">2–0</span></div>
+          <div style="display:flex;align-items:center;gap:11px;background:#0c0c0e;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 13px"><span style="font:700 12px 'JetBrains Mono';color:#a2a2ab;width:30px">41'</span><span style="width:11px;height:14px;border-radius:2px;background:#e4b800;flex:none"></span><span style="font:600 12px 'Schibsted Grotesk';flex:1;color:#c8c8ce">Booking, Cullen</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVE AIR BAR (bottom) -->
+  <div style="flex:none;height:82px;background:linear-gradient(180deg,#151317,#0c0c0e);border-top:1px solid rgba(239,1,7,.22);box-shadow:0 -18px 40px -24px rgba(239,1,7,.5);display:flex;align-items:center;gap:20px;padding:0 22px;z-index:10">
+    <!-- host -->
+    <div style="display:flex;align-items:center;gap:12px;width:236px;flex:none">
+      <span style="position:relative;width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,#EF0107,#7a0a12);display:flex;align-items:center;justify-content:center;font:800 17px 'Schibsted Grotesk';flex:none"><span style="position:absolute;inset:0;border-radius:13px;animation:fc-pulse 2s infinite"></span>N</span>
+      <div style="min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;gap:5px;font:700 9px 'JetBrains Mono';color:#fff;background:#EF0107;padding:3px 7px;border-radius:5px"><span style="width:5px;height:5px;border-radius:50%;background:#fff;animation:fc-blink 1.3s infinite"></span>ON AIR</span></div><div style="display:flex;align-items:center;gap:6px;margin-top:4px"><span style="font:700 14px 'Schibsted Grotesk'">nathan</span><span style="font:500 11px 'Schibsted Grotesk';color:#34d17a">speaking</span></div></div>
+    </div>
+    <!-- eq -->
+    <div style="display:flex;align-items:flex-end;gap:2px;height:26px;flex:none">
+      <span style="width:3px;height:26px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .8s -.1s infinite"></span><span style="width:3px;height:26px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .8s -.45s infinite"></span><span style="width:3px;height:26px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .8s -.25s infinite"></span><span style="width:3px;height:26px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .8s -.65s infinite"></span><span style="width:3px;height:26px;background:#EF0107;border-radius:2px;transform-origin:bottom;animation:fc-eq .8s -.35s infinite"></span>
+    </div>
+    <!-- sync controls (center) -->
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:10px">
+      <span style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab;background:#0c0c0e;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 16px">−0.5s</span>
+      <span style="display:inline-flex;align-items:center;gap:8px;font:800 12px 'JetBrains Mono';letter-spacing:.06em;color:#fff;background:linear-gradient(180deg,#f5211f,#d40206);border:1px solid #ff4a47;border-radius:10px;padding:11px 22px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 20px -10px rgba(239,1,7,.8)">◎ SYNC NOW</span>
+      <span style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab;background:#0c0c0e;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:11px 16px">+0.5s</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;font:600 12px 'Schibsted Grotesk';color:#34d17a;margin-left:6px"><span style="width:7px;height:7px;border-radius:50%;background:#34d17a"></span>Locked · 0.0s</span>
+    </div>
+    <!-- right controls -->
+    <div style="display:flex;align-items:center;gap:12px;flex:none">
+      <span style="font:600 12px 'Schibsted Grotesk';color:#a2a2ab"><span data-live="1284" style="color:#f2f2f4;font-weight:700">1,284</span> listening</span>
+      <span style="display:inline-flex;align-items:center;gap:7px;font:600 12px 'Schibsted Grotesk';color:#a2a2ab;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px 14px"><span style="width:16px;height:16px;border-radius:5px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:8px">▸</span>Radio</span>
+      <a href="Matchday.dc.html" style="display:inline-flex;align-items:center;gap:7px;font:700 12px 'Schibsted Grotesk';color:#fff;background:rgba(239,1,7,.16);border:1px solid rgba(239,1,7,.4);border-radius:10px;padding:10px 16px">Call in</a>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  componentDidMount(){
+    this._clocks = [...document.querySelectorAll('[data-clock]')].map((el) => ({
+      el, s: parseInt(el.getAttribute('data-clock'), 10) || 0, half: el.getAttribute('data-half') || '1H'
+    }));
+    const fmt = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    const paint = () => this._clocks.forEach((c) => { c.el.textContent = c.half + ' ' + fmt(c.s); });
+    paint();
+    this._t = setInterval(() => { this._clocks.forEach((c) => { c.s += 1; }); paint(); }, 1000);
+    this._live = [...document.querySelectorAll('[data-live]')].map((el) => ({ el, v: parseInt(el.getAttribute('data-live'), 10) || 0 }));
+    this._lt = setInterval(() => {
+      this._live.forEach((o) => { o.v = Math.max(0, o.v + (Math.floor(Math.random() * 5) - 1)); o.el.textContent = o.v.toLocaleString('en-GB'); });
+    }, 2600);
+  }
+  componentWillUnmount(){ clearInterval(this._t); clearInterval(this._lt); }
+  renderVals(){
+    const disp = (id, d) => { const el = document.getElementById(id); if (el) el.style.display = d; };
+    const setTab = (onId, offId) => {
+      const on = document.getElementById(onId), off = document.getElementById(offId);
+      if (on) { on.style.color = '#fff'; on.style.background = 'rgba(255,255,255,.08)'; }
+      if (off) { off.style.color = '#a2a2ab'; off.style.background = 'transparent'; }
+    };
+    return {
+      showChat: () => { disp('roomChat', 'flex'); disp('roomPolls', 'none'); setTab('tabChat', 'tabPolls'); },
+      showPolls: () => { disp('roomChat', 'none'); disp('roomPolls', 'flex'); setTab('tabPolls', 'tabChat'); },
+    };
+  }
+}
+</script>
+</body>
+</html>

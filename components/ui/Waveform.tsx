@@ -29,7 +29,7 @@ export function Waveform({
             style={{
               height: `${Math.max(12, Math.min(100, h))}%`,
               background:
-                "linear-gradient(to top, rgba(241,35,43,0.95), rgba(241,35,43,0.18))",
+                "linear-gradient(to top, rgba(239,1,7,0.95), rgba(239,1,7,0.18))",
             }}
           />
         ))}
@@ -38,7 +38,7 @@ export function Waveform({
         className="animate-fcsweep pointer-events-none absolute top-0 h-full w-0.5"
         style={{
           background:
-            "linear-gradient(to bottom, transparent, #f1232b, transparent)",
+            "linear-gradient(to bottom, transparent, #ef0107, transparent)",
         }}
       />
     </div>
