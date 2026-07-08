@@ -80,7 +80,7 @@ function Marker({ p, x, y, home, href }: Placed & { home: boolean; href: string 
     >
       <span
         className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums shadow ${
-          home ? "bg-gold text-canvas" : "bg-red text-white"
+          home ? "bg-navy text-white" : "bg-red text-white"
         }`}
       >
         {p.jersey ?? ""}

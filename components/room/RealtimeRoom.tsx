@@ -1193,7 +1193,7 @@ export function RealtimeRoom(props: Props) {
                 aria-current={centerTab === t.id ? "page" : undefined}
                 className={`relative h-10 px-4 text-sm font-extrabold ${
                   centerTab === t.id
-                    ? "border-b-2 border-gold text-primary"
+                    ? "border-b-2 border-red text-primary"
                     : "text-secondary hover:text-primary"
                 }`}
               >
@@ -1307,7 +1307,7 @@ export function RealtimeRoom(props: Props) {
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
                         <span className="truncate">{h.username}</span>
-                        <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                        <span className="shrink-0 rounded-[3px] border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
                           Host
                         </span>
                       </p>
@@ -1993,12 +1993,12 @@ function LiveChat({
                 {/* header: name · host badge · time · (mod actions) */}
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-[13px] font-extrabold ${isCommentator ? "text-gold" : ""}`}
+                    className={`text-[13px] font-extrabold ${isCommentator ? "text-red" : ""}`}
                   >
                     {m.author?.username ?? "…"}
                   </span>
                   {isCommentator && (
-                    <span className="rounded-[3px] border border-gold/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-gold uppercase">
+                    <span className="rounded-[3px] border border-red/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-red uppercase">
                       Host
                     </span>
                   )}
@@ -2141,7 +2141,7 @@ function LiveChat({
             <button
               type="button"
               onClick={() => setFocusRoot(m.id)}
-              className="mt-1 ml-7 text-xs font-semibold text-gold hover:underline"
+              className="mt-1 ml-7 text-xs font-semibold text-red hover:underline"
             >
               Continue this thread ({kids.length}) →
             </button>
@@ -2170,7 +2170,7 @@ function LiveChat({
             onClick={onRefresh}
             aria-label="Refresh chat"
             title="Refresh chat"
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] text-secondary uppercase transition-colors hover:border-gold hover:text-primary"
+            className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] text-secondary uppercase transition-colors hover:border-red hover:text-primary"
           >
             <span aria-hidden="true">↻</span> Refresh
           </button>
@@ -2202,7 +2202,7 @@ function LiveChat({
         <button
           type="button"
           onClick={refreshSort}
-          className="block w-full border-b border-line bg-gold/15 py-1 text-center text-xs font-semibold text-gold tabular-nums"
+          className="block w-full border-b border-line bg-red/15 py-1 text-center text-xs font-semibold text-red tabular-nums"
         >
           {pendingCount} new — tap to refresh
         </button>
@@ -2243,7 +2243,7 @@ function LiveChat({
         <button
           type="button"
           onClick={scrollChatToBottom}
-          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-gold px-3 py-1 text-xs font-semibold text-canvas shadow tabular-nums"
+          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-red px-3 py-1 text-xs font-semibold text-white shadow tabular-nums"
         >
           {unread} new {unread === 1 ? "message" : "messages"} ↓
         </button>
@@ -2312,7 +2312,7 @@ function LiveChat({
                   You follow{" "}
                   <a
                     href={`/${room.commentatorUsername}`}
-                    className="font-semibold text-gold hover:underline"
+                    className="font-semibold text-red hover:underline"
                   >
                     {room.commentatorUsername}
                   </a>
@@ -2324,7 +2324,7 @@ function LiveChat({
                     Enjoyed it? Follow{" "}
                     <a
                       href={`/${room.commentatorUsername}`}
-                      className="font-semibold text-gold hover:underline"
+                      className="font-semibold text-red hover:underline"
                     >
                       {room.commentatorUsername}
                     </a>{" "}
@@ -2374,7 +2374,7 @@ function LiveChat({
                 type="button"
                 onClick={() => onReact(e)}
                 aria-label={`Send ${e} reaction`}
-                className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-line bg-raised text-base transition-colors hover:border-gold/60"
+                className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-line bg-raised text-base transition-colors hover:border-red/60"
               >
                 {e}
               </button>
@@ -2383,7 +2383,7 @@ function LiveChat({
               <button
                 type="button"
                 onClick={() => setAskSignal((s) => s + 1)}
-                className="ml-auto shrink-0 rounded-full border border-line px-3 py-1.5 font-mono text-[10px] tracking-[0.04em] text-secondary transition-colors hover:border-gold hover:text-primary"
+                className="ml-auto shrink-0 rounded-full border border-line px-3 py-1.5 font-mono text-[10px] tracking-[0.04em] text-secondary transition-colors hover:border-red hover:text-primary"
               >
                 Ask the host
               </button>

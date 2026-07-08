@@ -144,7 +144,7 @@ export function MatchInfoPanel({
           <p className="text-[15px] font-semibold">{cap(w.description)}</p>
           {weatherSub && <p className="text-xs text-secondary">{weatherSub}</p>}
           {w.note && (
-            <p className="mt-0.5 text-xs font-semibold text-gold">{w.note}</p>
+            <p className="mt-0.5 text-xs font-semibold text-red">{w.note}</p>
           )}
         </div>
       )}

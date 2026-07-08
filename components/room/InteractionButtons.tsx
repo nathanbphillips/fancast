@@ -143,7 +143,7 @@ export function InteractionButtons({
           aria-expanded={open === "question"}
           className={`h-11 flex-1 rounded-lg border text-sm ${
             open === "question"
-              ? "border-gold font-semibold"
+              ? "border-line font-semibold"
               : "border-line bg-surface hover:bg-raised"
           }`}
         >
@@ -165,7 +165,7 @@ export function InteractionButtons({
           title={talkPending ? "Tap to leave the queue" : undefined}
           className={`h-11 flex-1 rounded-lg border text-sm disabled:opacity-60 ${
             open === "talk"
-              ? "border-gold font-semibold"
+              ? "border-line font-semibold"
               : talkPending
                 ? "border-red/40 font-semibold text-red hover:bg-red/10"
                 : "border-line bg-surface hover:bg-raised"
@@ -235,7 +235,7 @@ export function InteractionButtons({
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
                 required
-                className="mt-0.5 h-4 w-4 shrink-0 accent-(--gold)"
+                className="mt-0.5 h-4 w-4 shrink-0 accent-(--red)"
               />
               <span>
                 {CONSENT_COPY}

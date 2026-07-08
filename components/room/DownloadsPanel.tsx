@@ -147,7 +147,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
 
       {rec.status === "processing" && (
         <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
-          <span className="h-3 w-3 animate-live-pulse rounded-full bg-gold" aria-hidden="true" />
+          <span className="h-3 w-3 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
           <span className="flex-1 text-sm">Processing…</span>
           {/* a crashed/timed-out run is reclaimable after a stale window;
               this lets the commentator nudge it without a DB edit */}
@@ -177,7 +177,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
               <li
                 key={f.filename}
                 className={`flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-surface p-3 ${
-                  i === 0 ? "border-l-4 border-l-gold" : ""
+                  i === 0 ? "border-l-4 border-l-red" : ""
                 }`}
               >
                 <div className="min-w-0 flex-1">
@@ -244,7 +244,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                 type="button"
                 disabled={recutting || Object.keys(pending).length === 0}
                 onClick={recut}
-                className="mt-3 h-11 w-full rounded-lg border border-gold text-sm font-semibold text-gold hover:bg-raised disabled:opacity-50"
+                className="mt-3 h-11 w-full rounded-lg border border-line text-sm font-semibold text-red hover:bg-raised disabled:opacity-50"
               >
                 {recutting ? "Recutting…" : "Apply changes & recut"}
               </button>

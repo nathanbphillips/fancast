@@ -70,7 +70,7 @@ function NewsListEditor({
       </div>
       <button
         type="button"
-        className="mt-1 text-xs font-semibold text-gold"
+        className="mt-1 text-xs font-semibold text-red"
         onClick={() => onChange([...rows, { name: "", reason: "" }])}
       >
         + Add absence
@@ -179,7 +179,7 @@ function SideBlock({
           />
         ))}
       </div>
-      <button type="button" className="mt-1 text-xs font-semibold text-gold" onClick={onAdd}>
+      <button type="button" className="mt-1 text-xs font-semibold text-red" onClick={onAdd}>
         + Add player
       </button>
     </div>
@@ -200,7 +200,7 @@ function EditorActions({
       <button type="button" className={`${btnCls} border border-line text-secondary`} onClick={onClose} disabled={saving}>
         Cancel
       </button>
-      <button type="button" className={`${btnCls} bg-gold text-canvas`} onClick={onSave} disabled={saving}>
+      <button type="button" className={`${btnCls} bg-red text-white`} onClick={onSave} disabled={saving}>
         {saving ? "Saving…" : "Save & push live"}
       </button>
     </div>
@@ -459,7 +459,7 @@ export function StatsEditor({
 }) {
   const common = { data, overrides, onSave, onClose, saving };
   return (
-    <div className="mb-3 rounded-xl border border-gold/40 bg-surface p-3">
+    <div className="mb-3 rounded-xl border border-line bg-surface p-3">
       <p className="mb-2 text-sm font-bold">Edit {section === "info" ? "match info" : "line-ups"}</p>
       {section === "info" ? (
         <InfoEditor {...common} />

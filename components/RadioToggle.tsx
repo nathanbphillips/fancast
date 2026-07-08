@@ -26,13 +26,13 @@ export function RadioToggle({
       }
       className={`flex h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold disabled:opacity-50 ${
         active
-          ? "border-gold text-gold"
+          ? "border-red text-red"
           : "border-line bg-surface text-secondary hover:bg-raised"
       }`}
     >
       <span
         aria-hidden="true"
-        className={`h-2 w-2 rounded-full ${active ? "animate-live-pulse bg-gold" : "bg-line"}`}
+        className={`h-2 w-2 rounded-full ${active ? "animate-live-pulse bg-red" : "bg-line"}`}
       />
       Radio
     </button>

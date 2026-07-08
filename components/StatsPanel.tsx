@@ -177,7 +177,7 @@ export function StatsPanel({
       <div className="flex justify-end">
         <button
           type="button"
-          className="text-xs font-semibold text-gold hover:underline"
+          className="text-xs font-semibold text-red hover:underline"
           onClick={() => setEditing(section)}
         >
           Edit {section === "info" ? "info" : "line-ups"}
@@ -236,7 +236,7 @@ export function StatsPanel({
             <button
               type="button"
               onClick={pushCurrent}
-              className="rounded-full bg-gold px-2.5 py-0.5 text-xs font-semibold text-canvas"
+              className="rounded-full bg-red px-2.5 py-0.5 text-xs font-semibold text-white"
             >
               Push
             </button>

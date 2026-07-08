@@ -78,7 +78,7 @@ export function PollWidget({
                 onClick={() => vote(i)}
                 aria-pressed={isMine}
                 className={`relative block w-full overflow-hidden rounded-lg border px-3 py-1.5 text-left text-xs ${
-                  isMine ? "border-gold" : "border-line"
+                  isMine ? "border-red" : "border-line"
                 } ${tappable ? "hover:bg-raised" : "cursor-default"}`}
               >
                 <span
@@ -87,7 +87,7 @@ export function PollWidget({
                   style={{ width: `${pct}%` }}
                 />
                 <span className="relative flex justify-between">
-                  <span className={`truncate ${isMine ? "font-semibold text-gold" : ""}`}>{opt}</span>
+                  <span className={`truncate ${isMine ? "font-semibold text-red" : ""}`}>{opt}</span>
                   <span className="ml-2 shrink-0 tabular-nums text-secondary">{pct}%</span>
                 </span>
               </button>

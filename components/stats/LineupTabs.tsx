@@ -66,7 +66,7 @@ export function LineupTabs({
               onClick={() => setSide(key)}
               className={`flex-1 truncate border-b-2 pb-1.5 font-semibold ${big ? "text-base" : "text-sm"} ${
                 isActive
-                  ? "border-gold text-primary"
+                  ? "border-red text-primary"
                   : "border-transparent text-secondary hover:text-primary"
               }`}
             >

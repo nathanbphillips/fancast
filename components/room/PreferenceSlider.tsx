@@ -27,7 +27,7 @@ export function AggregateMeter({ agg }: { agg: SliderAggregate }) {
         className="relative mt-1 h-1.5 rounded-full bg-raised"
       >
         <span
-          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-canvas bg-gold transition-[left] duration-200"
+          className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-canvas bg-red transition-[left] duration-200"
           style={{ left: `${agg.count === 0 ? 50 : agg.avg}%` }}
         />
       </div>
@@ -89,7 +89,7 @@ export function PreferenceSlider({
           onPointerUp={commit}
           onKeyUp={commit}
           onBlur={commit}
-          className="mt-1 h-2 w-full accent-(--gold) disabled:opacity-60"
+          className="mt-1 h-2 w-full accent-(--red) disabled:opacity-60"
         />
       </div>
       <AggregateMeter agg={agg} />

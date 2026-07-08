@@ -18,7 +18,13 @@ const KIND_LABEL: Record<EventKind, string> = {
 
 function KindIcon({ kind }: { kind: EventKind }) {
   if (kind === "yellowcard")
-    return <span aria-hidden className="inline-block h-4 w-2.5 rounded-[2px] bg-gold" />;
+    return (
+      <span
+        aria-hidden
+        className="inline-block h-4 w-2.5 rounded-[2px]"
+        style={{ background: "#e4b800" }}
+      />
+    );
   if (kind === "redcard")
     return <span aria-hidden className="inline-block h-4 w-2.5 rounded-[2px] bg-red" />;
   if (kind === "substitution")

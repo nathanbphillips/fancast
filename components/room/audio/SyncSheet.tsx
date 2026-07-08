@@ -176,7 +176,7 @@ export function SyncSheet({
               +{requested.toFixed(1)}s
             </p>
             {buffering && (
-              <p className="text-[11px] text-gold tabular-nums">
+              <p className="text-[11px] text-red tabular-nums">
                 at +{effective.toFixed(1)}s — filling toward your setting
               </p>
             )}

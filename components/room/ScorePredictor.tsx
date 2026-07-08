@@ -123,12 +123,12 @@ export function ScorePredictor({
             const isMine = mineLabel === t.label;
             return (
               <li key={t.label} className="flex items-center gap-2 text-xs">
-                <span className={`w-10 shrink-0 tabular-nums ${isMine ? "font-bold text-gold" : ""}`}>
+                <span className={`w-10 shrink-0 tabular-nums ${isMine ? "font-bold text-green" : ""}`}>
                   {t.label}
                 </span>
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-raised">
                   <span
-                    className={`block h-full rounded-full ${isMine ? "bg-gold" : "bg-red"}`}
+                    className={`block h-full rounded-full ${isMine ? "bg-green" : "bg-red"}`}
                     style={{ width: `${(t.count / max) * 100}%` }}
                   />
                 </span>

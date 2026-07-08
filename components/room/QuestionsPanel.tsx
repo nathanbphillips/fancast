@@ -29,7 +29,7 @@ export function QuestionsPanel({
         <li
           key={q.id}
           className={`rounded-xl border-[0.75px] border-line bg-surface p-3 ${
-            q.status === "acknowledged" ? "opacity-60" : "border-l-4 border-l-gold"
+            q.status === "acknowledged" ? "opacity-60" : "border-l-4 border-l-red"
           }`}
         >
           <p className="text-xs font-semibold text-secondary">

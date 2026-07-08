@@ -165,7 +165,7 @@ export function CommentatorBar({
           Status
         </p>
         <p className="flex items-center gap-2 text-sm font-semibold">
-          <span className="font-display text-gold uppercase">Commentator</span>
+          <span className="font-display text-red uppercase">Commentator</span>
           <span className="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-green uppercase">
             <span className="h-1.5 w-1.5 rounded-full bg-green" />
             Connected
@@ -195,7 +195,7 @@ export function CommentatorBar({
                 type="button"
                 disabled={!startDraft}
                 onClick={() => saveBroadcastStart(startDraft)}
-                className="h-8 rounded-md bg-gold px-2.5 font-bold text-canvas disabled:opacity-60"
+                className="h-8 rounded-md bg-red px-2.5 font-bold text-white disabled:opacity-60"
               >
                 Set
               </button>

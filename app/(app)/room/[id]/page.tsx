@@ -125,7 +125,7 @@ export default async function RoomPage({
           <p className="mt-4">
             <NextLink
               href="/matches"
-              className="text-sm font-semibold text-gold hover:underline"
+              className="text-sm font-semibold text-red hover:underline"
             >
               See the schedule →
             </NextLink>

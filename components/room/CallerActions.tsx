@@ -58,7 +58,7 @@ export function CallerActions({
           setConfirmBlock(false);
           setDone(null);
         }}
-        className="px-1.5 text-xs text-secondary hover:text-gold"
+        className="px-1.5 text-xs text-secondary hover:text-red"
       >
         ⚑
       </button>
@@ -83,7 +83,7 @@ export function CallerActions({
                   type="button"
                   disabled={busy}
                   onClick={() => act("flag")}
-                  className="h-9 flex-1 rounded-md bg-gold text-xs font-bold text-canvas disabled:opacity-60"
+                  className="h-9 flex-1 rounded-md bg-red text-xs font-bold text-white disabled:opacity-60"
                 >
                   Flag caller
                 </button>

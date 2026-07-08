@@ -137,7 +137,7 @@ function SyncControls({
         type="button"
         onClick={() => onSyncAdjust(-0.5)}
         aria-label="Half a second less delay"
-        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-gold hover:text-primary"
+        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
       >
         −0.5s
       </button>
@@ -146,21 +146,21 @@ function SyncControls({
         onClick={onOpenSync}
         aria-label="Sync to my TV"
         title="Sync to my TV"
-        className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-inverted px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-inverted-fg transition-opacity hover:opacity-90"
+        className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg btn-grad-red px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-white"
       >
         SYNC NOW
         {syncRequested > 0 && (
           <span className="tabular-nums opacity-80">+{syncRequested.toFixed(1)}s</span>
         )}
         {listenStatus === "live" && syncRequested > syncEffective + 0.5 && (
-          <span className="text-gold tabular-nums">⏳{syncEffective.toFixed(0)}s</span>
+          <span className="text-red tabular-nums">⏳{syncEffective.toFixed(0)}s</span>
         )}
       </button>
       <button
         type="button"
         onClick={() => onSyncAdjust(0.5)}
         aria-label="Half a second more delay"
-        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-gold hover:text-primary"
+        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
       >
         +0.5s
       </button>
@@ -353,7 +353,7 @@ export function ListenerBar({
       type="button"
       aria-label="Stop radio"
       onClick={() => onRadioToggle(false)}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gold text-canvas"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red text-white"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
         <rect x="3" y="3" width="4" height="10" rx="1" />
@@ -370,7 +370,7 @@ export function ListenerBar({
         type="button"
         onClick={onGoOnAir}
         disabled={micStatus === "starting"}
-        className="h-11 shrink-0 rounded-lg bg-gold px-4 text-sm font-bold text-canvas disabled:opacity-60"
+        className="h-11 shrink-0 rounded-lg btn-grad-red px-4 text-sm font-bold text-white disabled:opacity-60"
       >
         {micStatus === "starting" ? "Mic…" : "Go on air"}
       </button>
@@ -420,7 +420,7 @@ export function ListenerBar({
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[12.5px] font-extrabold">
                 <span className="truncate">{commentator}</span>
-                <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                <span className="shrink-0 rounded-[3px] border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
                   Host
                 </span>
               </p>
@@ -540,7 +540,7 @@ export function ListenerBar({
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
                     <span className="truncate">{commentator}</span>
-                    <span className="shrink-0 rounded-[3px] border border-gold/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-gold uppercase">
+                    <span className="shrink-0 rounded-[3px] border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
                       Host
                     </span>
                   </p>
@@ -698,7 +698,7 @@ export function MicControls({
           type="button"
           onClick={onStart}
           disabled={micStatus === "starting"}
-          className="h-11 rounded-lg border border-gold px-4 text-sm font-bold text-gold hover:bg-raised disabled:opacity-60"
+          className="h-11 rounded-lg border border-line px-4 text-sm font-bold text-primary hover:bg-raised disabled:opacity-60"
         >
           {micStatus === "starting" ? "Starting…" : "Start mic"}
         </button>
@@ -741,7 +741,7 @@ export function SpeakerChips({
       {guests.map((s) => (
         <span
           key={s.identity}
-          className="flex items-center gap-1 rounded-full border border-gold bg-raised px-2.5 py-1 text-xs font-semibold"
+          className="flex items-center gap-1 rounded-full border border-red/40 bg-raised px-2.5 py-1 text-xs font-semibold"
         >
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
           {s.name}

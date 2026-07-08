@@ -34,7 +34,7 @@ export function ClockControls({
       type="button"
       disabled={busy}
       onClick={() => send(action)}
-      className="h-9 rounded-md bg-gold px-3 text-xs font-bold text-canvas disabled:opacity-60"
+      className="h-9 rounded-md bg-red px-3 text-xs font-bold text-white disabled:opacity-60"
     >
       {label}
     </button>
