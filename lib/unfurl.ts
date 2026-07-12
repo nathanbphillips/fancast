@@ -229,7 +229,7 @@ function rawRequest(
         }
       },
       headers: {
-        "User-Agent": `Mozilla/5.0 (compatible; ${brand.name}Bot/1.0; link preview)`,
+        "User-Agent": `Mozilla/5.0 (compatible; ${brand.shortName}Bot/1.0; link preview)`,
         Accept: "text/html",
         // node http does not auto-decompress; ask for identity so we read text
         "Accept-Encoding": "identity",

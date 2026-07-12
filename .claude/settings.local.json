@@ -133,7 +133,21 @@
       "Bash(sed -n '/export type Fixture = {/,/};/p' lib/db/types.ts)",
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
-      "Bash(git reset *)"
+      "Bash(git reset *)",
+      "mcp__scheduled-tasks__list_scheduled_tasks",
+      "Bash(curl -sS -L --max-time 30 -D - -o /dev/null -w '\\\\nFINAL_STATUS: %{http_code}\\\\nFINAL_URL: %{url_effective}\\\\n' \"https://chaordal.framer.website/\")",
+      "Bash(curl -sS -L --max-time 30 \"https://chaordal.framer.website/\")",
+      "WebFetch(domain:chaordal.framer.website)",
+      "Read(//c/dev/chaordal-site/**)",
+      "Bash(npx --yes @framer/agent@latest session new \"p60ATHl7goOxSMfIfxQh\")",
+      "Bash(cp \"C:/dev/chaordal-site/assets/smoke-primary.jpg\" \"C:/Users/natha/AppData/Local/Temp/framer/smoke-primary.jpg\" && ls -la \"C:/Users/natha/AppData/Local/Temp/framer/smoke-primary.jpg\" && echo \"copied OK\")",
+      "Bash(npx --yes @framer/agent@latest exec -s 1 -f \"C:/Users/natha/AppData/Local/Temp/framer/p60-00-bootstrap.js\")",
+      "Bash(npx --yes @framer/agent@latest exec -s 1 -f \"C:/Users/natha/AppData/Local/Temp/framer/p60-01-fonts-image.js\")",
+      "Bash(npx --yes @framer/agent@latest exec -s 2 -f \"C:/Users/natha/AppData/Local/Temp/claude/C--Users-natha-OneDrive-Documents-Claude-Projects-FanCast-build-starter/79783e74-43d5-459d-83cc-18a0667199e9/scratchpad/p60-01-fonts-image.js\")",
+      "Bash(npx --yes @framer/agent@latest exec -s 2 -f \"C:/Users/natha/AppData/Local/Temp/claude/C--Users-natha-OneDrive-Documents-Claude-Projects-FanCast-build-starter/79783e74-43d5-459d-83cc-18a0667199e9/scratchpad/p60-02-hero.js\")",
+      "Bash(npx --yes @framer/agent@latest exec -s 2 -f \"C:/Users/natha/AppData/Local/Temp/claude/C--Users-natha-OneDrive-Documents-Claude-Projects-FanCast-build-starter/79783e74-43d5-459d-83cc-18a0667199e9/scratchpad/p60-03-review-shot.js\")",
+      "Bash(curl -sSL https://framerusercontent.com/screenshots/on-demand/4ff1bee4-85cf-4101-b810-b9d20558c701.jpg -o C:/Users/natha/AppData/Local/Temp/claude/C--Users-natha-OneDrive-Documents-Claude-Projects-FanCast-build-starter/79783e74-43d5-459d-83cc-18a0667199e9/scratchpad/hero-preview.jpg)",
+      "Bash(npx --yes @framer/agent@latest exec -s 2 -f \"C:/Users/natha/AppData/Local/Temp/claude/C--Users-natha-OneDrive-Documents-Claude-Projects-FanCast-build-starter/79783e74-43d5-459d-83cc-18a0667199e9/scratchpad/p60-04-hero-fix.js\")"
     ]
   }
 }

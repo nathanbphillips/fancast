@@ -113,10 +113,18 @@ const RESERVED = [
   "official",
   "staff",
   "team",
+  // brand handles (the platform's own name; `brand.name` has a space so it
+  // can't cover a real handle — reserve the usable forms explicitly). Keeps
+  // the prior "fancast" reserved through the rename.
+  "redub",
+  "redubradio",
+  "redub-radio",
+  "radio",
+  "fancast",
 ] as const;
 
 // the platform's own name is always reserved (from config, golden rule 7:
-// the product will be renamed)
+// the product may be renamed); harmless when it contains a space
 export const RESERVED_USERNAMES: ReadonlySet<string> = new Set([
   ...RESERVED,
   brand.name.toLowerCase(),

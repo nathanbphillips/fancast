@@ -51,7 +51,7 @@ export async function resolveFotmobPlayer(
   let json: { squadMemberSuggest?: { options?: SuggestOption[] }[] };
   try {
     const res = await fetch(`${SUGGEST}?term=${encodeURIComponent(term)}&lang=en`, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; FanCast/1.0)" },
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RedubRadio/1.0)" },
       cache: "no-store",
       signal: AbortSignal.timeout(8000),
     });

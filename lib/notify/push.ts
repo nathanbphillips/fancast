@@ -27,7 +27,7 @@ function ensureVapid(): boolean {
     // set lazily; the require is cheap and only hit when keys exist
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const webpush = require("web-push") as typeof import("web-push");
-    const subject = process.env.VAPID_SUBJECT ?? "mailto:hello@fancast.app";
+    const subject = process.env.VAPID_SUBJECT ?? "mailto:hello@redubradio.com";
     webpush.setVapidDetails(subject, pub, priv);
     configured = true;
   }

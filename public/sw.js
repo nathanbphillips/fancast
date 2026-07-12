@@ -1,6 +1,6 @@
-/* FanCast service worker (FR-5.2): offline shell for home, built
+/* Redub Radio service worker (FR-5.2): offline shell for home, built
  * push-ready for v1.1 web push. Audio streams are never cached. */
-const CACHE = "fc-shell-v1";
+const CACHE = "redub-shell-v1";
 const SHELL = ["/", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -54,7 +54,7 @@ self.addEventListener("push", (event) => {
     payload = { title: event.data.text() };
   }
   event.waitUntil(
-    self.registration.showNotification(payload.title || "FanCast", {
+    self.registration.showNotification(payload.title || "Redub Radio", {
       body: payload.body || "",
       icon: "/icons/icon-192.png",
       badge: "/icons/icon-192.png",

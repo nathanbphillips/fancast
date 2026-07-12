@@ -16,7 +16,7 @@ export function Logo({
     <span className={`flex items-center gap-2.5 ${className}`}>
       <LiveDot size={9} />
       {withWordmark && (
-        <span className="display text-[21px] tracking-[0.04em]">{brand.name}</span>
+        <span className="display text-[21px] tracking-[0.04em]">{brand.wordmark}</span>
       )}
     </span>
   );

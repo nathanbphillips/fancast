@@ -12,7 +12,7 @@ export default function AppError({ reset }: { error: Error & { digest?: string }
     <div className="mx-auto max-w-md px-4 py-16 text-center">
       <h1 className="text-xl font-bold">Something went wrong</h1>
       <p className="mt-2 text-sm text-secondary">
-        {brand.name} hit a snag loading this page — it&apos;s usually temporary.
+        {brand.shortName} hit a snag loading this page — it&apos;s usually temporary.
       </p>
       <button
         type="button"
