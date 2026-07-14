@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import NextLink from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { looksLikeUuid } from "@/lib/slug";
+import { roomTitle, statsFixtureId } from "@/lib/rooms";
 import { brand } from "@/lib/brand";
 import { Logo } from "@/components/Logo";
 import {
@@ -37,7 +38,7 @@ import { isRoomHost } from "@/lib/roomHosts";
 import type { StatOverrides } from "@/lib/statOverrides";
 
 type RoomWithJoins = Room & {
-  fixture: Fixture;
+  fixture: Fixture | null;
   commentator: { username: string };
 };
 
@@ -64,7 +65,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const room = await loadRoom((await params).id);
   if (!room) return { title: "Room" };
-  const title = `${room.fixture.home_team} vs ${room.fixture.away_team}`;
+  const title = roomTitle(room);
   const host = room.commentator?.username;
   // Compliance: describe the LISTENING room, never a broadcast of the match
   // ("your own stream", "listen alongside"). Rich preview for shared room links.
@@ -116,7 +117,7 @@ export default async function RoomPage({
         </header>
         <div className="mx-auto max-w-md px-4 py-10 text-center">
           <h1 className="text-xl font-bold">
-            {room.fixture.home_team} vs {room.fixture.away_team}
+            {roomTitle(room)}
           </h1>
           <p className="mt-2 text-sm text-secondary">
             This room was canceled. Check the schedule for other rooms on this
@@ -152,7 +153,7 @@ export default async function RoomPage({
         </header>
         <div className="mx-auto max-w-md px-4 py-10 text-center">
           <h1 className="text-xl font-bold">
-            {room.fixture.home_team} vs {room.fixture.away_team}
+            {roomTitle(room)}
           </h1>
           {viewerIsHost ? (
             <>
@@ -160,9 +161,11 @@ export default async function RoomPage({
                 You&apos;re hosting this room. Open the waiting room whenever
                 you&apos;re ready and your listeners can start arriving.
               </p>
-              <div className="mt-5 flex justify-center">
-                <OpenWaitingButton fixtureId={room.fixture_id} />
-              </div>
+              {room.fixture_id != null && (
+                <div className="mt-5 flex justify-center">
+                  <OpenWaitingButton fixtureId={room.fixture_id} />
+                </div>
+              )}
               <div className="mt-6">
                 <Countdown
                   targetIso={room.broadcast_start ?? room.scheduled_kickoff}
@@ -411,21 +414,25 @@ export default async function RoomPage({
     id: room.id,
     state: room.state,
     scheduledKickoff: room.scheduled_kickoff,
-    home: room.fixture.home_team,
-    away: room.fixture.away_team,
-    homeScore: room.fixture.home_score ?? 0,
-    awayScore: room.fixture.away_score ?? 0,
+    // fixture-derived fields are null-safe for discussion rooms (no fixture);
+    // Part C hides the scoreboard/stats for them. statsFixtureId points the
+    // stats panel at the room's own fixture (match) or its linked fixture
+    // (discussion); 0 = "no stats" (useFixtureStats skips fixtureId <= 0).
+    home: room.fixture?.home_team ?? "",
+    away: room.fixture?.away_team ?? "",
+    homeScore: room.fixture?.home_score ?? 0,
+    awayScore: room.fixture?.away_score ?? 0,
     commentatorUsername: room.commentator.username,
     hosts:
       hosts.length > 0
         ? hosts
         : [{ username: room.commentator.username, avatarUrl: null }],
     commentatorId: room.commentator_id,
-    competition: room.fixture.competition ?? "",
-    fixtureId: room.fixture_id,
+    competition: room.fixture?.competition ?? "",
+    fixtureId: statsFixtureId(room) ?? 0,
     // an admin game with no Sportmonks match yet (or in an uncovered comp) has
     // no upstream data — the stats/info/history panels show "coming soon"
-    comingSoon: room.fixture.sportmonks_fixture_id == null,
+    comingSoon: room.fixture ? room.fixture.sportmonks_fixture_id == null : false,
   };
 
   return (

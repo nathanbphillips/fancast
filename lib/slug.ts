@@ -26,7 +26,7 @@ export function londonMatchday(kickoffUtc: string | Date): string {
   return `${get("day")}-${get("month")}-${get("year")}`.toLowerCase();
 }
 
-/** Base room slug (before any collision suffix). */
+/** Base room slug (before any collision suffix) — match rooms. */
 export function roomSlugBase(
   home: string,
   away: string,
@@ -36,6 +36,16 @@ export function roomSlugBase(
   return slugify(
     `${home} vs ${away} ${londonMatchday(kickoffUtc)} ${creatorUsername}`,
   );
+}
+
+/** Base room slug for a discussion room: {title}-{dd-mmm-yyyy}-{creator}
+ *  (migration 0038). Same slugify/date shape, so routing stays format-agnostic. */
+export function roomSlugBaseDiscussion(
+  title: string,
+  startUtc: string | Date,
+  creatorUsername: string,
+): string {
+  return slugify(`${title} ${londonMatchday(startUtc)} ${creatorUsername}`);
 }
 
 /** True when the room-page param is a UUID (old /room/{id} link) rather than

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { roomSlugBase } from "@/lib/slug";
-import type { Room, RoomState } from "@/lib/db/types";
+import { roomSlugBase, roomSlugBaseDiscussion } from "@/lib/slug";
+import type { Room, RoomKind, RoomState } from "@/lib/db/types";
 
 /**
  * The one way a room row comes into existence (FR-19.3/19.4): every path
@@ -11,12 +11,8 @@ import type { Room, RoomState } from "@/lib/db/types";
 
 export async function generateUniqueSlug(
   service: SupabaseClient,
-  home: string,
-  away: string,
-  kickoffUtc: string | Date,
-  creatorUsername: string,
+  base: string,
 ): Promise<string> {
-  const base = roomSlugBase(home, away, kickoffUtc, creatorUsername);
   let slug = base;
   for (let n = 2; n < 50; n++) {
     const { data } = await service
@@ -34,11 +30,19 @@ export async function generateUniqueSlug(
 export async function insertRoomWithHost(
   service: SupabaseClient,
   args: {
-    fixtureId: number;
+    /** 'match' (default) links a fixture; 'discussion' is a free-topic room */
+    kind?: RoomKind;
+    /** the room's own fixture (match rooms); null/omitted for discussion */
+    fixtureId?: number | null;
+    /** OPTIONAL stats-only fixture a discussion room is watching */
+    linkedFixtureId?: number | null;
+    /** discussion room's free-text name (drives its slug + display) */
+    title?: string | null;
     creatorId: string;
     creatorUsername: string;
-    homeTeam: string;
-    awayTeam: string;
+    /** match rooms only — used to build the {home}-vs-{away} slug */
+    homeTeam?: string | null;
+    awayTeam?: string | null;
     kickoffUtc: string;
     state: RoomState;
     broadcastStart?: string | null;
@@ -48,18 +52,29 @@ export async function insertRoomWithHost(
     subscriptionId?: string | null;
   },
 ): Promise<{ room: Room | null; error: string | null }> {
-  const slug = await generateUniqueSlug(
-    service,
-    args.homeTeam,
-    args.awayTeam,
-    args.kickoffUtc,
-    args.creatorUsername,
-  );
+  const kind: RoomKind = args.kind ?? "match";
+  const base =
+    kind === "discussion"
+      ? roomSlugBaseDiscussion(
+          args.title ?? "room",
+          args.kickoffUtc,
+          args.creatorUsername,
+        )
+      : roomSlugBase(
+          args.homeTeam ?? "",
+          args.awayTeam ?? "",
+          args.kickoffUtc,
+          args.creatorUsername,
+        );
+  const slug = await generateUniqueSlug(service, base);
 
   const { data: room, error } = await service
     .from("rooms")
     .insert({
-      fixture_id: args.fixtureId,
+      fixture_id: args.fixtureId ?? null,
+      kind,
+      title: args.title ?? null,
+      linked_fixture_id: args.linkedFixtureId ?? null,
       commentator_id: args.creatorId,
       state: args.state,
       scheduled_kickoff: args.kickoffUtc,

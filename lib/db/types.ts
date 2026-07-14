@@ -184,12 +184,25 @@ export type RatingPlayer = {
   starter: boolean;
 };
 
+/** Anytime rooms (migration 0038): a room is either a football fixture
+ *  ("match") or a free-topic discussion ("discussion"). */
+export type RoomKind = "match" | "discussion";
+
 export type Room = {
   id: string;
-  fixture_id: number;
+  /** the fixture this room IS (match rooms); null for discussion rooms */
+  fixture_id: number | null;
   commentator_id: string;
   state: RoomState;
   scheduled_kickoff: string;
+  // Anytime/discussion rooms (migration 0038)
+  /** 'match' (default) or 'discussion' */
+  kind: RoomKind;
+  /** discussion room's own free-text name; null for match rooms */
+  title: string | null;
+  /** OPTIONAL stats-only fixture a discussion room is "watching"; null otherwise.
+   *  Kept separate from fixture_id so the linked game never drives the room. */
+  linked_fixture_id: number | null;
   /** commentator-set planned start; waiting-room countdown targets this */
   broadcast_start: string | null;
   /** early access during waiting (founder decision 2026-06-11) */
