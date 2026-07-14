@@ -1,4 +1,4 @@
-/* Redub Radio sync ring buffer (FR-6): holds up to 90s of the incoming room
+/* Arseradio sync ring buffer (FR-6): holds up to 90s of the incoming room
  * mix; playback reads at a configurable offset behind the live edge.
  * Mono float buffer: 48000 * 90 * 4 bytes ≈ 17MB (ARCHITECTURE estimate).
  *

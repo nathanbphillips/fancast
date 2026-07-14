@@ -52,8 +52,17 @@ export default function OpengraphImage() {
               <path d="M3 12h3.5l2 6 4-15 2.5 9H21" />
             </svg>
           </div>
-          <div style={{ fontSize: "64px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-            {brand.name}
+          <div
+            style={{
+              display: "flex",
+              fontSize: "64px",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              textTransform: "uppercase",
+            }}
+          >
+            <span style={{ color: "#ef0107" }}>{brand.logoParts.accent}</span>
+            <span style={{ color: "#f2f2f4" }}>{brand.logoParts.base}</span>
           </div>
         </div>
 

@@ -113,13 +113,13 @@ const RESERVED = [
   "official",
   "staff",
   "team",
-  // brand handles (the platform's own name; `brand.name` has a space so it
-  // can't cover a real handle — reserve the usable forms explicitly). Keeps
-  // the prior "fancast" reserved through the rename.
+  // brand handles (the platform's own name; reserve the usable forms so no one
+  // can squat them). Prior names kept reserved through the renames.
+  "arseradio",
+  "arse",
+  "radio",
   "redub",
   "redubradio",
-  "redub-radio",
-  "radio",
   "fancast",
 ] as const;
 

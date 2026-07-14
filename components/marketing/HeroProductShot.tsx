@@ -57,7 +57,7 @@ export function HeroProductShot() {
             <span className="h-[11px] w-[11px] rounded-full" style={{ background: "#3a3a42" }} />
             <span className="h-[11px] w-[11px] rounded-full" style={{ background: "#3a3a42" }} />
             <span className="ml-3 rounded-[7px] bg-inset px-3.5 py-[5px] font-mono text-[11px] text-tertiary">
-              redubradio.com/room/arsenal-v-coventry
+              arseradio.com/room/arsenal-v-coventry
             </span>
             <span className="ml-auto rounded-[6px] border border-line px-2 py-1 font-mono text-[10px] font-bold tracking-[0.08em] text-tertiary">
               PREVIEW

@@ -120,7 +120,7 @@ body {
 }
 
 /* Display treatment — Schibsted Grotesk, heavy (800), MIXED CASE (the redesign
-   dropped Anton's forced uppercase; the wordmark is "Redub Radio", headlines are
+   dropped Anton's forced uppercase; the wordmark is "Arseradio" (ARSE red / RADIO fg), headlines are
    sentence case). Use `display` for headings/scores/wordmark; card titles use
    `font-extrabold` on the body font. NEVER use `.display` on ticking/tabular
    numbers — those use font-mono (JetBrains) so figures don't drift. Default
