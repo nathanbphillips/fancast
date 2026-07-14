@@ -21,6 +21,9 @@ export function MatchHeader({
   competition,
   leaveHref = "/matches",
   showOnMobile = false,
+  discussion = false,
+  title,
+  live = false,
   themeToggle,
   userMenu,
   share,
@@ -37,6 +40,11 @@ export function MatchHeader({
   /** show at all widths — the commentator has no listener transport carrying
    *  score/clock on mobile, so their match bar must stay (audit 2026-07-02) */
   showOnMobile?: boolean;
+  /** discussion (non-match) room: show `title`, no scoreboard/match clock */
+  discussion?: boolean;
+  title?: string;
+  /** discussion rooms broadcast in pregame — use this for the LIVE pill */
+  live?: boolean;
   themeToggle?: React.ReactNode;
   userMenu?: React.ReactNode;
   share?: React.ReactNode;
@@ -70,13 +78,13 @@ export function MatchHeader({
           </span>
         )}
         <span className="min-w-0 truncate text-sm font-bold tracking-[-0.01em]">
-          {home} vs {away}
+          {discussion ? title : `${home} vs ${away}`}
         </span>
       </div>
 
-      {/* center: live · clock · score */}
+      {/* center: discussion → LIVE pill only; match → live · clock · score */}
       <div className="flex shrink-0 items-center gap-3">
-        {isLive && (
+        {(discussion ? live : isLive) && (
           <span className="hidden items-center gap-1.5 rounded-md bg-red px-2 py-1 font-mono text-[11px] tracking-[0.1em] text-white sm:flex">
             <span
               aria-hidden="true"
@@ -85,21 +93,29 @@ export function MatchHeader({
             LIVE
           </span>
         )}
-        <ClockState
-          state={state}
-          clock={clock}
-          className="hidden shrink-0 font-mono text-[13px] text-secondary tabular-nums sm:block"
-        />
-        <span aria-hidden="true" className="hidden h-5 w-px bg-line sm:block" />
-        <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-          <span className="display text-lg tracking-[0.04em]">{abbr(home)}</span>
-          <span className="text-lg font-bold tabular-nums">{homeScore}</span>
-          <span aria-hidden="true" className="text-secondary">
-            –
-          </span>
-          <span className="text-lg font-bold tabular-nums">{awayScore}</span>
-          <span className="display text-lg tracking-[0.04em]">{abbr(away)}</span>
-        </span>
+        {!discussion && (
+          <>
+            <ClockState
+              state={state}
+              clock={clock}
+              className="hidden shrink-0 font-mono text-[13px] text-secondary tabular-nums sm:block"
+            />
+            <span aria-hidden="true" className="hidden h-5 w-px bg-line sm:block" />
+            <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
+              <span className="display text-lg tracking-[0.04em]">
+                {abbr(home)}
+              </span>
+              <span className="text-lg font-bold tabular-nums">{homeScore}</span>
+              <span aria-hidden="true" className="text-secondary">
+                –
+              </span>
+              <span className="text-lg font-bold tabular-nums">{awayScore}</span>
+              <span className="display text-lg tracking-[0.04em]">
+                {abbr(away)}
+              </span>
+            </span>
+          </>
+        )}
       </div>
 
       {/* right: presence · theme · share · menu */}

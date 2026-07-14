@@ -18,6 +18,7 @@ import type {
   Question,
   RatingPlayer,
   RatingsAggregate,
+  RoomKind,
   RoomState,
   SliderAggregate,
   TalkRequest,
@@ -75,6 +76,10 @@ export type RoomInfo = {
   id: string;
   state: RoomState;
   scheduledKickoff: string;
+  /** 'match' or 'discussion' (anytime rooms, migration 0038) */
+  kind: RoomKind;
+  /** display name: a discussion room's own title, else "Home vs Away" */
+  title: string;
   home: string;
   away: string;
   homeScore: number;
@@ -161,11 +166,16 @@ type ReactionFloat = {
 
 export function RealtimeRoom(props: Props) {
   const { room, viewer } = props;
+  // Anytime rooms (migration 0038): a discussion room with no linked fixture
+  // hides the stats panel and gives the chat full width; a linked discussion
+  // room shows the linked game's stats (RoomInfo.fixtureId is the linked id).
+  const isDiscussion = room.kind === "discussion";
+  const showStats = !isDiscussion || room.fixtureId > 0;
   const [roomState, setRoomState] = useState<RoomState>(room.state);
-  // Phase 11: desktop is a fixed two-column split — stats LEFT 50 / merged
-  // chat+links stream RIGHT 50. The old 25/50/25 expand/swap/companion model is
-  // retired (founder decision 2026-06-24). On mobile `tab` switches Stream/Stats
-  // (and Questions for the commentator); links live inside the stream now.
+  // Desktop is a two-column split — chat LEFT (2fr) / stats RIGHT (1fr) via
+  // lg:grid-cols-[2fr_1fr] with order-1/order-2. When showStats is false the
+  // stats column drops and chat fills the full width. On mobile `tab` switches
+  // Chat / Stats (only when showStats) / Call in; links live inside the stream.
   const [tab, setTab] = useState<"chat" | "stats" | "questions" | "callin">("chat");
   // desktop chat-column tabs: Room chat | Polls (+ Questions for the
   // commentator). Polls hosts the interactive widgets so they stop consuming
@@ -827,18 +837,22 @@ export function RealtimeRoom(props: Props) {
           },
         ]
       : []),
-    {
-      id: "stats",
-      label: "Stats",
-      badge: 0,
-      icon: tabIcon(
-        <>
-          <line x1="6" y1="20" x2="6" y2="14" />
-          <line x1="12" y1="20" x2="12" y2="8" />
-          <line x1="18" y1="20" x2="18" y2="4" />
-        </>,
-      ),
-    },
+    ...(showStats
+      ? [
+          {
+            id: "stats" as const,
+            label: "Stats",
+            badge: 0,
+            icon: tabIcon(
+              <>
+                <line x1="6" y1="20" x2="6" y2="14" />
+                <line x1="12" y1="20" x2="12" y2="8" />
+                <line x1="18" y1="20" x2="18" y2="4" />
+              </>,
+            ),
+          },
+        ]
+      : []),
     ...(!isRoomCommentator
       ? [
           {
@@ -889,7 +903,7 @@ export function RealtimeRoom(props: Props) {
       linksOpen={linksOpen}
       startDisabled={audio.micStatus !== "live"}
       clockControls={
-        roomState === "wrapped" ? null : (
+        roomState === "wrapped" || isDiscussion ? null : (
           <ClockControls roomId={room.id} state={roomState} />
         )
       }
@@ -1106,6 +1120,9 @@ export function RealtimeRoom(props: Props) {
         listeners={watching ?? undefined}
         competition={room.competition || undefined}
         showOnMobile={isRoomCommentator}
+        discussion={isDiscussion}
+        title={room.title}
+        live={audioLive}
         themeToggle={<ThemeToggle />}
         share={<ShareButton />}
         userMenu={
@@ -1138,8 +1155,9 @@ export function RealtimeRoom(props: Props) {
       <div
         onTouchStart={onPanelTouchStart}
         onTouchEnd={onPanelTouchEnd}
-        className="flex min-h-0 flex-1 flex-col lg:grid lg:w-full lg:grid-cols-[2fr_1fr]"
+        className={`flex min-h-0 flex-1 flex-col ${showStats ? "lg:grid lg:w-full lg:grid-cols-[2fr_1fr]" : ""}`}
       >
+        {showStats && (
         <aside
           aria-label="Stats"
           className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:order-2 lg:block`}
@@ -1167,10 +1185,11 @@ export function RealtimeRoom(props: Props) {
               desktop copy renders in the chat column's Polls tab */}
           {ratingsWidget && <div className="px-3 pb-3 lg:hidden">{ratingsWidget}</div>}
         </aside>
+        )}
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex lg:border-r lg:border-line`}
+          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex ${showStats ? "lg:border-r lg:border-line" : ""}`}
         >
           <div className="hidden border-b border-line bg-surface lg:flex">
             {[

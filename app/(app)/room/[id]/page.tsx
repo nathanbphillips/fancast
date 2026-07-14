@@ -414,6 +414,8 @@ export default async function RoomPage({
     id: room.id,
     state: room.state,
     scheduledKickoff: room.scheduled_kickoff,
+    kind: room.kind,
+    title: roomTitle(room),
     // fixture-derived fields are null-safe for discussion rooms (no fixture);
     // Part C hides the scoreboard/stats for them. statsFixtureId points the
     // stats panel at the room's own fixture (match) or its linked fixture
