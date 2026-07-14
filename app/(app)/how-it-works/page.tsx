@@ -175,9 +175,9 @@ export default function HowItWorksPage() {
                     <span className="flex-1 rounded-[9px] border border-line bg-canvas py-[9px] text-center font-mono text-[11px] text-secondary">+0.5s</span>
                   </div>
                   <div className="flex items-center gap-2.5 rounded-[11px] border border-line bg-canvas px-3.5 py-3">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: "#2a4a8a" }}>MK</span>
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white" style={{ background: "#2a4a8a" }}>N</span>
                     <span className="min-w-0">
-                      <span className="text-[11px] font-bold">Mikel_92</span>{" "}
+                      <span className="text-[11px] font-bold">Nathan</span>{" "}
                       <span className="text-[11px] text-secondary">Ødegaard, take a bow.</span>
                     </span>
                   </div>
@@ -260,6 +260,62 @@ export default function HowItWorksPage() {
               </p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* NOT JUST MATCHDAY */}
+      <section className="mx-auto max-w-[1120px] px-5 pb-14 sm:px-10">
+        <div
+          className="grid items-center gap-8 overflow-hidden rounded-[18px] border border-line p-8 md:grid-cols-[1.1fr_1fr]"
+          style={{ background: "var(--bg-raised)" }}
+        >
+          <div>
+            <div className={`${eyebrow} mb-3`}>ANY TIME, NOT JUST MATCHDAY</div>
+            <h2 className="display t-h3">Rooms open around the clock.</h2>
+            <p className="mt-3 max-w-[460px] text-[15px] leading-[1.6] text-secondary">
+              Matchdays are the heart of it, but a room is just a live audio
+              space. Any host can spin one up any time to talk transfers, react
+              to the news, or run a regular show. No game on? It&apos;s pure chat
+              and audio. Talking about another match? The host links it and its
+              stats ride alongside.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/matches"
+                className="btn-grad-red inline-flex items-center rounded-[11px] px-5 py-3 text-[13px] font-semibold text-white"
+              >
+                See what&apos;s on now →
+              </Link>
+              <Link
+                href="/host"
+                className="inline-flex items-center rounded-[11px] border border-line px-5 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-canvas"
+              >
+                Open a discussion room →
+              </Link>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {[
+              { t: "Transfer deadline phone-in", m: "live now", live: true },
+              { t: "Sunday night: the week in review", m: "8:00 PM", live: false },
+              { t: "Post-match reaction", m: "at full time", live: false },
+            ].map((r) => (
+              <div
+                key={r.t}
+                className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-3.5"
+              >
+                <span
+                  className={`h-[11px] w-[11px] shrink-0 rounded-full ${r.live ? "animate-fcpulse bg-red" : "bg-tertiary"}`}
+                />
+                <span className="min-w-0 flex-1 truncate text-[13px] font-bold">
+                  {r.t}
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-tertiary">
+                  {r.m}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

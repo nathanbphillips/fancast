@@ -93,6 +93,10 @@ const FAQ = [
     a: "No. Anyone can listen and read the chat and stats without an account. You only sign up, in under a minute, to chat, vote, ask a question or call in.",
   },
   {
+    q: "Is it only during matches?",
+    a: `No. Matchdays are the heart of it, but any host can open a room any time to talk transfers, react to the news, or just hang out. When there's no game it's chat and audio; when a host is talking about another match, its stats ride alongside. The goal is a place Arsenal fans can find a conversation any time of day.`,
+  },
+  {
     q: "How does the sync work?",
     a: "A reference match-clock ticks on screen. When your feed shows that exact moment, tap Now and the commentary lines up. Half-second steppers fine-tune it; jump back to live whenever.",
   },

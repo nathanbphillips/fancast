@@ -660,6 +660,26 @@ export default function DevDocsPage() {
               (&quot;Count me in&quot;), add friends (double opt-in, blockable), and get batched
               email/push notifications with one-click unsubscribe.
             </p>
+            <H3>Anytime (discussion) rooms + /creators (2026-07-14)</H3>
+            <p>
+              Rooms are no longer match-only (migration <C>0038</C>). A room has a{" "}
+              <C>kind</C> (<C>match</C> | <C>discussion</C>): a discussion room owns a free-text{" "}
+              <C>title</C>, has a nullable <C>fixture_id</C>, and an optional stats-only{" "}
+              <C>linked_fixture_id</C> (a game it is &quot;watching&quot; - kept separate from
+              identity so the linked match&apos;s schedule never drives the room). Helpers{" "}
+              <C>roomTitle()</C> / <C>statsFixtureId()</C> in <C>lib/rooms.ts</C> are the seam every
+              fixture-name / stats-source read goes through. Create via <C>CustomRoomForm</C>&apos;s
+              Match/Discussion toggle (POST <C>create_discussion</C>; never mints a synthetic
+              fixture). The room UI gates on <C>kind</C>: no linked game -&gt; title header,
+              full-width chat, no scoreboard/stats (desktop + mobile); linked -&gt; the linked
+              game&apos;s stats in the normal panel. Discussion rooms broadcast in <C>pregame</C>
+              (already in the audio/call-in open-states); ClockControls hidden. Discovery: a
+              &quot;Rooms right now&quot; strip on <C>/matches</C> (<C>loadDiscussionRooms</C> +{" "}
+              <C>DiscussionStrip</C>). New marketing page <C>/creators</C> (podcasters).{" "}
+              <b className="text-primary">Gotcha</b> (migration <C>0039</C>): <C>linked_fixture_id</C>{" "}
+              must NOT be a real FK - a 2nd rooms-&gt;fixtures relationship makes every{" "}
+              <C>fixture:fixtures(...)</C> embed ambiguous (PGRST201) and 500s the app.
+            </p>
             <H3>Admin</H3>
             <p>
               <C>/admin</C> (admin-gated): create a room for any game from team names + kickoff; &quot;Run
