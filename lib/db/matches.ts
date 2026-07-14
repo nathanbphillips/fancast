@@ -299,3 +299,89 @@ export async function loadLiveRoomPreview(
 
   return { listeners, stats };
 }
+
+export type DiscussionRoom = {
+  id: string;
+  slug: string;
+  title: string;
+  state: RoomState;
+  live: boolean;
+  blurb: string | null;
+  hostUsername: string;
+  scheduledKickoff: string;
+  rsvpCount: number;
+  viewerRsvped: boolean;
+};
+
+type DiscussionRow = {
+  id: string;
+  slug: string | null;
+  title: string | null;
+  state: RoomState;
+  blurb: string | null;
+  scheduled_kickoff: string;
+  rsvp_count: number;
+  commentator: { username: string } | null;
+};
+
+/**
+ * Anytime discussion rooms for the /matches "Rooms right now" strip (founder
+ * 2026-07-14). Discussion rooms have no kickoff/day, so they can't slot into
+ * the fixture schedule board — this returns them separately, live first, then
+ * upcoming. Honest: real rooms only, no fabricated counts. A DB failure throws
+ * to the (app) error boundary.
+ */
+export async function loadDiscussionRooms(): Promise<DiscussionRoom[]> {
+  const supabase = await createSupabaseServerClient();
+  const OPEN: RoomState[] = [
+    "waiting",
+    "pregame",
+    "live_1h",
+    "halftime",
+    "live_2h",
+    "extra_time",
+    "postgame",
+  ];
+  const { data, error } = await supabase
+    .from("rooms")
+    .select(
+      "id, slug, title, state, blurb, scheduled_kickoff, rsvp_count, commentator:profiles!rooms_commentator_id_fkey(username)",
+    )
+    .eq("kind", "discussion")
+    .not("slug", "is", null)
+    .in("state", [...OPEN, "scheduled"])
+    .order("scheduled_kickoff", { ascending: true })
+    .returns<DiscussionRow[]>();
+  if (error) throw error;
+
+  const rows = data ?? [];
+  const { user } = await getCurrentUserAndProfile();
+  const rsvped = new Set<string>();
+  if (user && rows.length > 0) {
+    const { data: myRsvps } = await supabase
+      .from("room_rsvps")
+      .select("room_id")
+      .eq("user_id", user.id)
+      .in(
+        "room_id",
+        rows.map((r) => r.id),
+      );
+    for (const r of myRsvps ?? []) rsvped.add(r.room_id as string);
+  }
+
+  return rows
+    .map((r) => ({
+      id: r.id,
+      slug: r.slug as string,
+      title: r.title ?? "Discussion",
+      state: r.state,
+      live: r.state !== "scheduled",
+      blurb: r.blurb,
+      hostUsername: r.commentator?.username ?? "unknown",
+      scheduledKickoff: r.scheduled_kickoff,
+      rsvpCount: r.rsvp_count ?? 0,
+      viewerRsvped: rsvped.has(r.id),
+    }))
+    // live rooms first, then the soonest upcoming (query already time-orders)
+    .sort((a, b) => Number(b.live) - Number(a.live));
+}

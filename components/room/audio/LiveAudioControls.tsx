@@ -235,6 +235,7 @@ export function ListenerBar({
   clock,
   syncedClock,
   speakers = [],
+  discussion = false,
 }: {
   commentator: string;
   /** team names for the transport's score readout (mobile) */
@@ -271,6 +272,8 @@ export function ListenerBar({
   /** the commentator's clock minus THIS listener's sync delay — the game time
    *  they're hearing; matches their telly once synced (founder 2026-07-02) */
   syncedClock?: string;
+  /** discussion (non-match) room: hide the scoreboard + sync-to-TV bits */
+  discussion?: boolean;
 }) {
   const onAir = canPublish && micStatus === "live";
   // other people currently on air (guests/co-hosts) — shown so listeners can
@@ -309,18 +312,22 @@ export function ListenerBar({
     // still needs the scoreline they're talking about (audit 2026-07-02).
     return (
       <div>
-        <div className="flex items-center justify-center gap-2.5 border-b border-line bg-inset px-3 py-1.5 lg:hidden">
-          <span className="display text-[14px] tracking-[0.03em]">{abbr3(home)}</span>
-          <span className="text-[14px] font-bold tabular-nums">
-            {homeScore ?? 0}
-            <span className="font-normal text-secondary">–</span>
-            {awayScore ?? 0}
-          </span>
-          <span className="display text-[14px] tracking-[0.03em]">{abbr3(away)}</span>
-          {clock && (
-            <span className="font-mono text-[11px] text-secondary tabular-nums">{clock}</span>
-          )}
-        </div>
+        {!discussion && (
+          <div className="flex items-center justify-center gap-2.5 border-b border-line bg-inset px-3 py-1.5 lg:hidden">
+            <span className="display text-[14px] tracking-[0.03em]">{abbr3(home)}</span>
+            <span className="text-[14px] font-bold tabular-nums">
+              {homeScore ?? 0}
+              <span className="font-normal text-secondary">–</span>
+              {awayScore ?? 0}
+            </span>
+            <span className="display text-[14px] tracking-[0.03em]">{abbr3(away)}</span>
+            {clock && (
+              <span className="font-mono text-[11px] text-secondary tabular-nums">
+                {clock}
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-3 rounded-lg border-2 border-red px-4 py-2 shadow-[0_0_12px_rgba(239,1,7,0.35)]">
         <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
@@ -497,6 +504,7 @@ export function ListenerBar({
                 should read the same as their telly once synced (founder
                 2026-07-02). Team codes on the display face; every ticking
                 digit stays body-font tabular-nums. */}
+            {!discussion && (
             <div className="mb-3 grid grid-cols-2 items-center">
               <div className="flex items-center justify-center gap-2.5 border-r border-line/60">
                 <span className="display text-[17px] tracking-[0.03em]">{abbr3(home)}</span>
@@ -527,6 +535,7 @@ export function ListenerBar({
                 </span>
               </div>
             </div>
+            )}
 
             {/* play + host card (tech difficulties swaps in) */}
             {techDifficulties && !radioActive ? (
@@ -552,8 +561,8 @@ export function ListenerBar({
 
             {goOnAir && <div className="mb-3 flex">{goOnAir}</div>}
 
-            {/* sync transport */}
-            {!radioActive && syncSupported && (
+            {/* sync transport (a discussion room has no match to sync to) */}
+            {!radioActive && syncSupported && !discussion && (
               <SyncControls
                 syncRequested={syncRequested}
                 syncEffective={syncEffective}
@@ -583,8 +592,9 @@ export function ListenerBar({
               aria-label="Collapse audio controls"
               className="mt-2.5 w-full py-1 text-center font-mono text-[9.5px] tracking-[0.03em] text-secondary transition-colors hover:text-primary"
             >
-              Tap SYNC NOW when your telly matches the game time. Click here to
-              collapse.
+              {discussion
+                ? "Tap here to collapse the controls."
+                : "Tap SYNC NOW when your telly matches the game time. Click here to collapse."}
             </button>
           </div>
         ) : (
@@ -611,15 +621,21 @@ export function ListenerBar({
                   className="h-1.5 w-1.5 shrink-0 animate-fcpulse rounded-full bg-red"
                 />
               )}
-              <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
-                <span className="display text-[15px] tracking-[0.03em]">{abbr3(home)}</span>
-                <span className="text-[15px] font-bold tabular-nums">
-                  {homeScore ?? 0}
-                  <span className="font-normal text-secondary">–</span>
-                  {awayScore ?? 0}
+              {!discussion && (
+                <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
+                  <span className="display text-[15px] tracking-[0.03em]">
+                    {abbr3(home)}
+                  </span>
+                  <span className="text-[15px] font-bold tabular-nums">
+                    {homeScore ?? 0}
+                    <span className="font-normal text-secondary">–</span>
+                    {awayScore ?? 0}
+                  </span>
+                  <span className="display text-[15px] tracking-[0.03em]">
+                    {abbr3(away)}
+                  </span>
                 </span>
-                <span className="display text-[15px] tracking-[0.03em]">{abbr3(away)}</span>
-              </span>
+              )}
               {(listenStatus === "live" || radioActive) && !techDifficulties && (
                 <EqTicks h={11} />
               )}

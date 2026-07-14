@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   loadMatchesSchedule,
   loadLiveRoomPreview,
+  loadDiscussionRooms,
   type ScheduleFixture,
   type ScheduleRoom,
 } from "@/lib/db/matches";
@@ -11,6 +12,7 @@ import { goingLine } from "@/lib/strings/attendance";
 import { Avatar } from "@/components/Avatar";
 import { Waveform } from "@/components/ui/Waveform";
 import { FeaturedRoom } from "@/components/matches/FeaturedRoom";
+import { DiscussionStrip } from "@/components/matches/DiscussionStrip";
 import { ScheduleBoard } from "@/components/matches/ScheduleBoard";
 import { RsvpButton } from "@/components/matches/RsvpButton";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
@@ -32,9 +34,10 @@ const hostsOf = (r: ScheduleRoom) =>
   r.hostUsernames.length > 0 ? r.hostUsernames : [r.hostUsername];
 
 export default async function MatchesPage() {
-  const [groups, { user }] = await Promise.all([
+  const [groups, { user }, discussionRooms] = await Promise.all([
     loadMatchesSchedule(),
     getCurrentUserAndProfile(),
+    loadDiscussionRooms(),
   ]);
   const signedIn = !!user;
 
@@ -222,6 +225,9 @@ export default async function MatchesPage() {
             </div>
           </div>
         )}
+
+        {/* ROOMS RIGHT NOW — anytime discussion rooms (secondary to matches) */}
+        <DiscussionStrip rooms={discussionRooms} signedIn={signedIn} />
 
         {/* FULL SCHEDULE (filter pills + flat rows) */}
         <div id="schedule" className="scroll-mt-20">

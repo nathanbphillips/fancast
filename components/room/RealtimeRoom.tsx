@@ -935,6 +935,7 @@ export function RealtimeRoom(props: Props) {
       commentator={room.hosts.map((h) => h.username).join(" & ")}
       home={room.home}
       away={room.away}
+      discussion={isDiscussion}
       live={audioLive}
       listenStatus={audio.listenStatus}
       onStart={() => void audio.startListening()}
