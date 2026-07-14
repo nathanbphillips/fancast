@@ -57,6 +57,16 @@ const bodySchema = z.discriminatedUnion("action", [
     blurb: z.string().trim().max(140).optional(),
     sportmonksFixtureId: z.number().int().positive().optional(),
   }),
+  // founder 2026-07-14: a free-topic discussion room (not a match). Free-text
+  // title; the OPTIONAL linked fixture drives STATS ONLY, kept separate from the
+  // room's identity (which has no fixture). Never mints a synthetic fixture.
+  z.object({
+    action: z.literal("create_discussion"),
+    title: z.string().trim().min(3).max(90),
+    startIso: z.iso.datetime(),
+    blurb: z.string().trim().max(140).optional(),
+    linkedSportmonksFixtureId: z.number().int().positive().optional(),
+  }),
   z.object({ action: z.literal("open_waiting"), fixtureId: z.number().int() }),
   z.object({ action: z.literal("start"), roomId: z.uuid() }),
   z.object({ action: z.literal("end"), roomId: z.uuid() }),
@@ -518,6 +528,150 @@ export async function POST(request: NextRequest) {
       );
     }
     notifyCustom(room);
+    return NextResponse.json({ room }, { status: 201 });
+  }
+
+  if (body.action === "create_discussion") {
+    // free-topic room (founder 2026-07-14). Same gate + flood control as
+    // create_custom, but no fixture identity: the room owns a free-text title
+    // and fixture_id stays null; an OPTIONAL linked fixture drives stats only.
+    if (
+      caller.profile.role !== "commentator" &&
+      !isAdmin(caller.userId, caller.profile)
+    ) {
+      return NextResponse.json(
+        { error: "Only commentators can create rooms." },
+        { status: 403 },
+      );
+    }
+    if (!rateLimit(`customroom:${caller.userId}`, 10, 60 * 60 * 1000)) {
+      return NextResponse.json(
+        { error: "That's a lot of rooms at once. Give it a minute and try again." },
+        { status: 429 },
+      );
+    }
+    {
+      const { count: activeRooms } = await service
+        .from("rooms")
+        .select("id", { count: "exact", head: true })
+        .eq("commentator_id", caller.userId)
+        .in("state", ["scheduled", "waiting"]);
+      if ((activeRooms ?? 0) >= 100) {
+        return NextResponse.json(
+          {
+            error:
+              "You have a lot of upcoming rooms already. Open, host, or cancel some before adding more.",
+          },
+          { status: 429 },
+        );
+      }
+    }
+
+    const startMs = new Date(body.startIso).getTime();
+    if (startMs < Date.now() - 60_000) {
+      return NextResponse.json(
+        { error: "That start time is in the past. Pick now or a future time." },
+        { status: 400 },
+      );
+    }
+    if (startMs > Date.now() + 180 * 86_400_000) {
+      return NextResponse.json(
+        { error: "Pick a start within the next six months." },
+        { status: 400 },
+      );
+    }
+    const immediate = startMs <= Date.now() + 10 * 60_000;
+    const nowIso = new Date().toISOString();
+
+    // OPTIONAL stats-only link: fetch server-side (never trust client), reject
+    // finished games, insert-if-absent (never overwrite). This id goes to
+    // linked_fixture_id — it is NOT the room's identity, so the room's own start
+    // time and slug are unaffected by the linked game's schedule.
+    let linkedFixtureId: number | null = null;
+    if (body.linkedSportmonksFixtureId != null) {
+      let row: Awaited<ReturnType<typeof fetchSportmonksFixtureRow>> = null;
+      try {
+        row = await fetchSportmonksFixtureRow(body.linkedSportmonksFixtureId);
+      } catch {
+        row = null;
+      }
+      if (!row) {
+        return NextResponse.json(
+          {
+            error:
+              "We couldn't load that match from the data feed. Try again, or create the room without linking it.",
+          },
+          { status: 404 },
+        );
+      }
+      if (new Date(row.kickoff_utc).getTime() < Date.now() - 3 * 3_600_000) {
+        return NextResponse.json(
+          { error: "That match has already finished." },
+          { status: 400 },
+        );
+      }
+      linkedFixtureId = row.id;
+      const { data: existingFx } = await service
+        .from("fixtures")
+        .select("id")
+        .eq("id", linkedFixtureId)
+        .maybeSingle();
+      if (!existingFx) {
+        const { error: insErr } = await service.from("fixtures").insert(row);
+        if (insErr) {
+          return NextResponse.json({ error: insErr.message }, { status: 500 });
+        }
+      }
+    }
+
+    // no unique(fixture_id, commentator_id) revive here — discussion rooms have
+    // a null fixture_id (Postgres NULLs are distinct), so a host may open many.
+    const { room, error } = await insertRoomWithHost(service, {
+      kind: "discussion",
+      title: body.title,
+      linkedFixtureId,
+      fixtureId: null,
+      creatorId: caller.userId,
+      creatorUsername: caller.profile.username,
+      kickoffUtc: body.startIso,
+      state: immediate ? "waiting" : "scheduled",
+      broadcastStart: body.startIso,
+      blurb: body.blurb || null,
+      openedAt: immediate ? nowIso : null,
+    });
+    if (error || !room) {
+      return NextResponse.json(
+        { error: error ?? "Couldn't create the room." },
+        { status: 500 },
+      );
+    }
+
+    // notifications use the room's own title as the label (no matchup)
+    const payload = {
+      matchLabel: body.title,
+      roomSlug: room.slug,
+      hostName: caller.profile.username,
+    };
+    after(async () => {
+      const svc = createServiceClient();
+      if (immediate) {
+        const ids = await enqueueGoLive(svc, { roomId: room.id, payload });
+        await flushRows(svc, ids);
+      } else {
+        const ids = await enqueueRoomScheduled(svc, {
+          roomId: room.id,
+          hostUserId: caller.userId,
+          payload,
+        });
+        await flushRows(svc, ids);
+        await enqueuePreStartReminders(svc, {
+          roomId: room.id,
+          hostUserId: caller.userId,
+          broadcastStart: body.startIso,
+          payload,
+        });
+      }
+    });
     return NextResponse.json({ room }, { status: 201 });
   }
 
