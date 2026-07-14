@@ -16,6 +16,7 @@ const NAV = [
   { href: "/matches", label: "Matches" },
   { href: "/about", label: "Voices" },
   { href: "/host", label: "Host" },
+  { href: "/creators", label: "Creators" },
 ];
 
 const ANNOUNCE_KEY = "fc_announce_dismissed";

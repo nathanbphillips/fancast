@@ -52,6 +52,9 @@ export function SiteFooter() {
               <Link href="/host" className={link}>
                 Host a room
               </Link>
+              <Link href="/creators" className={link}>
+                For creators
+              </Link>
               <Link href="/about" className={link}>
                 Voices
               </Link>
