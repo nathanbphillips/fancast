@@ -686,6 +686,15 @@ export default function DevDocsPage() {
               match check&quot; to resolve it to Sportmonks immediately; a built-in user guide. See{" "}
               <C>components/admin/</C>.
             </p>
+            <p className="mt-2">
+              <b className="text-primary">Send test email</b> (<C>/api/admin/test-email</C>): fires one
+              email through <C>sendEmail()</C> and returns Resend&apos;s raw verdict (sent / skipped /
+              rejected) plus a redacted config snapshot (<C>hasApiKey</C> boolean + the <C>EMAIL_FROM</C>{" "}
+              header - never the key value). Use it to verify the Resend domain/key end-to-end after a
+              config change without triggering a real RSVP/cancel. Blank recipient = the admin&apos;s own
+              account email. Failed outbox rows also record the reason in{" "}
+              <C>notifications_outbox.last_error</C>.
+            </p>
           </Section>
 
           <Section id="status" title="Build status (what's real vs deferred)">
