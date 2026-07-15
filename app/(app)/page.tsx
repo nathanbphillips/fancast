@@ -117,10 +117,11 @@ export default async function HomePage() {
             </span>
             .
           </h1>
-          <p className="mx-auto mt-[22px] max-w-[568px] text-[18px] leading-[1.62] text-secondary">
+          <p className="mx-auto mt-[22px] max-w-[588px] text-[18px] leading-[1.62] text-secondary">
             Keep your own stream. {brand.name} adds a real Arsenal supporter in
             your ear, a chat worth reading and live stats, locked to your screen
-            with a single tap.
+            with a single tap. And when there&apos;s no game on, the room&apos;s
+            still open to talk Arsenal any time.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
@@ -236,7 +237,7 @@ export default async function HomePage() {
             </p>
             <div className="mt-auto flex flex-col gap-2">
               {[
-                { i: "MK", g: "#2a4a8a", n: "Mikel_92", m: "Ødegaard, take a bow." },
+                { i: "N", g: "#2a4a8a", n: "Nathan", m: "Ødegaard, take a bow." },
                 { i: "TT", g: "#1f6f4a", n: "TheTacticsHead", m: "Press trigger on the turn. Textbook." },
               ].map((c) => (
                 <div
@@ -304,13 +305,15 @@ export default async function HomePage() {
               <div className="t-h3 display">The room becomes your people</div>
               <p className="mt-2.5 text-[15px] leading-[1.6] text-secondary">
                 The same faces every week, good takes rising to the top, in-jokes
-                that carry from match to match. It stops being a broadcast and
-                starts being your corner of the ground.
+                that carry from match to match. And it doesn&apos;t close at full
+                time, pop in to talk transfers, react to the news, or just hang
+                out. It stops being a broadcast and starts being your corner of
+                the ground.
               </p>
             </div>
             <div className="flex flex-col gap-2.5">
               {[
-                { i: "MK", g: "#2a4a8a", n: "Mikel_92", m: "Ødegaard, take a bow." },
+                { i: "N", g: "#2a4a8a", n: "Nathan", m: "Ødegaard, take a bow." },
                 { i: "TT", g: "#1f6f4a", n: "TheTacticsHead", m: "Press trigger on the turn. Textbook." },
               ].map((c) => (
                 <div key={c.n} className="flex items-center gap-2.5 rounded-xl border border-line bg-canvas p-3">
@@ -555,8 +558,9 @@ export default async function HomePage() {
         <div className="relative z-[2]">
           <h2 className="display mx-auto t-hero">The room&apos;s open. Pull up a seat.</h2>
           <p className="mx-auto mt-[18px] max-w-[500px] text-[17px] leading-[1.6] text-secondary">
-            Free to listen, no account needed. Sign up in under a minute when you
-            want to chat, vote or call in.
+            Live on matchday, open the rest of the week. Free to listen, no
+            account needed. Sign up in under a minute when you want to chat, vote
+            or call in.
           </p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link

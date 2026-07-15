@@ -121,7 +121,7 @@ export function HeroProductShot() {
               <div className="flex gap-2">
                 <span className="h-[26px] w-[26px] shrink-0 rounded-full" style={{ background: "#2a4a8a" }} />
                 <span>
-                  <span className="block text-[12px] font-bold text-primary">Mikel_92 <span className="font-normal text-tertiary">· 23&apos;</span></span>
+                  <span className="block text-[12px] font-bold text-primary">Nathan <span className="font-normal text-tertiary">· 23&apos;</span></span>
                   <span className="block text-[12px] leading-snug text-secondary">Ødegaard running this half on his own. Take a bow.</span>
                 </span>
               </div>
