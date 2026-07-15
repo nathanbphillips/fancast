@@ -14,7 +14,7 @@
 import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
 
-const BASE = (process.argv[2] || process.env.PROD_URL || "https://fancast-26.vercel.app").replace(/\/$/, "");
+const BASE = (process.argv[2] || process.env.PROD_URL || "https://arseradio.com").replace(/\/$/, "");
 const SUPA_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const SUPA_REF = new URL(SUPA_URL).hostname.split(".")[0];

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 const base =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-  "https://fancast-26.vercel.app";
+  "https://arseradio.com";
 
 /**
  * Crawl rules (front-end review item 23). Marketing + profiles + rooms are

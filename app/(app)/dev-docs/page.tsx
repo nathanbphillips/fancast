@@ -112,7 +112,7 @@ export default function DevDocsPage() {
           places - gaps are called out).
         </p>
         <p className="mt-2 text-sm text-secondary">
-          Production: <C>https://fancast-26.vercel.app</C> · Repo: <C>nathanbphillips/fancast</C> ·
+          Production: <C>https://arseradio.com</C> · Repo: <C>nathanbphillips/fancast</C> ·
           Stack: Next.js 15 (App Router) + React 19 + TypeScript strict + Tailwind v4.
         </p>
       </header>
@@ -819,7 +819,7 @@ export default function DevDocsPage() {
             </UL>
             <H3>Deployment</H3>
             <UL>
-              <li>Vercel, auto-deploy on push to <C>main</C> (production: fancast-26.vercel.app).</li>
+              <li>Vercel, auto-deploy on push to <C>main</C> (production: arseradio.com).</li>
               <li>
                 <b className="text-primary">Migrations run BEFORE the code that needs them</b> - DB is kept
                 ahead of code and back-compatible. <C>npm run migrate</C> (via the session pooler; the direct

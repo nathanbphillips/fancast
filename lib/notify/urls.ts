@@ -4,7 +4,7 @@ export function siteUrl(): string {
   if (explicit) return explicit.replace(/\/$/, "");
   const vercel = process.env.VERCEL_URL;
   if (vercel) return `https://${vercel}`;
-  return "https://fancast-26.vercel.app";
+  return "https://arseradio.com";
 }
 
 export function roomUrl(slug: string): string {

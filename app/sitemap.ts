@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/db/server";
 
 const base =
   process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-  "https://fancast-26.vercel.app";
+  "https://arseradio.com";
 
 /**
  * Sitemap (front-end review item 23): the static marketing routes plus every
