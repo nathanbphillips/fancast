@@ -17,6 +17,9 @@ export function AdminTools() {
   const [err, setErr] = useState<string | null>(null);
   const [matchMsg, setMatchMsg] = useState<string | null>(null);
   const [matching, setMatching] = useState(false);
+  const [testTo, setTestTo] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function createRoom(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +57,33 @@ export function AdminTools() {
         ? `Checked ${body.checked ?? 0}, matched ${body.matched ?? 0}.`
         : (body.error ?? "Match check failed."),
     );
+  }
+
+  async function sendTest() {
+    if (testing) return;
+    setTesting(true);
+    setTestMsg(null);
+    const res = await fetch("/api/admin/test-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(testTo.trim() ? { to: testTo.trim() } : {}),
+    }).catch(() => null);
+    setTesting(false);
+    const body = res ? await res.json().catch(() => ({})) : {};
+    if (!res || !res.ok) {
+      setTestMsg({ ok: false, text: body.error ?? "Request failed." });
+      return;
+    }
+    const fromNote = body.config?.from
+      ? ` (from ${body.config.from})`
+      : " (EMAIL_FROM not set)";
+    if (body.status === "sent") {
+      setTestMsg({ ok: true, text: `Resend accepted the send to ${body.to}${fromNote}. Check the inbox.` });
+    } else if (body.status === "skipped") {
+      setTestMsg({ ok: false, text: `Skipped — ${body.detail}` });
+    } else {
+      setTestMsg({ ok: false, text: `Resend rejected it${fromNote}: ${body.error}` });
+    }
   }
 
   const inputClass =
@@ -140,6 +170,40 @@ export function AdminTools() {
           {matching ? "Checking…" : "Run match check"}
         </button>
         {matchMsg && <p className="mt-2 text-xs text-secondary">{matchMsg}</p>}
+      </div>
+
+      <div className="rounded-xl border-[0.75px] border-line bg-surface p-4">
+        <h2 className="text-sm font-bold">Send test email</h2>
+        <p className="mt-1 text-xs text-secondary">
+          Fires one email through Resend and reports the raw result — use it to
+          verify the domain/key after any config change. Leave blank to send to
+          your own account email.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="email"
+            value={testTo}
+            onChange={(e) => setTestTo(e.target.value)}
+            placeholder="you@example.com (optional)"
+            className={inputClass}
+          />
+          <button
+            type="button"
+            onClick={sendTest}
+            disabled={testing}
+            className="h-11 shrink-0 rounded-lg border border-line px-4 text-sm font-semibold hover:bg-raised disabled:opacity-60"
+          >
+            {testing ? "Sending…" : "Send test"}
+          </button>
+        </div>
+        {testMsg && (
+          <p
+            role="status"
+            className={`mt-2 text-xs ${testMsg.ok ? "text-green" : "text-red"}`}
+          >
+            {testMsg.text}
+          </p>
+        )}
       </div>
     </div>
   );
