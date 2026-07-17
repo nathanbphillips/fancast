@@ -147,7 +147,7 @@ export function AppHeader({
         <div className="mx-auto flex h-[61px] max-w-[1180px] items-center justify-between px-5 sm:px-10">
           <div className="flex items-center gap-8">
             <Link href="/" aria-label={brand.name} className="flex items-center">
-              <Logo />
+              <Logo priority />
             </Link>
             <nav
               className="hidden items-center gap-6 md:flex"
