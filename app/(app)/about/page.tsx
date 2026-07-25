@@ -10,8 +10,8 @@ import { brand } from "@/lib/brand";
  */
 
 export const metadata: Metadata = {
-  title: "Voices",
-  description: `What ${brand.name} is, how a matchday works, and why it's fans in your ear instead of pundits.`,
+  title: "About",
+  description: `What ${brand.name} is setting out to build, how a matchday works, and why it's fans in your ear instead of pundits.`,
 };
 
 const eyebrow =
@@ -27,8 +27,8 @@ const STORY = [
     p: "Keep your own stream. Add a live fan host, a chat worth reading, and the stats on tap, all synced to your screen with one tap. We don't show the game; we sit beside it.",
   },
   {
-    h: "THE PROMISE",
-    p: "Hosts keep and own every recording. Independent, unofficial, and built for supporters, never for rights-holders.",
+    h: "WHAT WE'RE BUILDING",
+    p: "A place that stays independent and unofficial, where hosts keep and own every recording. Built for supporters, never for rights-holders.",
   },
 ];
 
@@ -144,9 +144,10 @@ export default function AboutPage() {
           </h1>
           <p className="mx-auto mt-[22px] max-w-[600px] text-[18px] leading-[1.62] text-secondary">
             Match coverage got polished into something that forgot who it was
-            for. {brand.name} is the opposite: a real supporter in your ear, the
-            chat you&apos;d have at the pub, and the numbers that actually matter,
-            riding alongside whatever stream you already watch.
+            for. We&apos;re setting out to build the opposite: a real supporter in
+            your ear, the chat you&apos;d have at the pub, and the numbers that
+            actually matter, riding alongside whatever stream you already watch.
+            It&apos;s early, and we&apos;re building it in the open.
           </p>
         </div>
       </section>
@@ -309,6 +310,49 @@ export default function AboutPage() {
               <p className="text-[13px] leading-[1.55] text-secondary">{f.a}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* GET ON THE MIC — host + creators CTAs */}
+      <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
+        <div className={`${eyebrow} mb-3`}>WANT TO HOST?</div>
+        <h2 className="display t-h2">Two ways to get on the mic.</h2>
+        <p className="mt-3 max-w-[560px] text-[15px] text-secondary">
+          We&apos;re looking for the fans and creators who want to build this
+          with us. If that&apos;s you, there&apos;s a seat at the front.
+        </p>
+        <div className="mt-6 grid gap-3.5 md:grid-cols-2">
+          <div className="flex flex-col rounded-2xl border border-line bg-surface p-7">
+            <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+              Host a matchday room
+            </h3>
+            <p className="mt-2 flex-1 text-[14px] leading-[1.6] text-secondary">
+              Know the club and can hold a mic? Open a room for a game, bring the
+              chat and the call-ins, and keep every recording.
+            </p>
+            <Link
+              href="/host"
+              className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-red transition-opacity hover:opacity-80"
+            >
+              For hosts →
+            </Link>
+          </div>
+          <div className="flex flex-col rounded-2xl border border-line bg-surface p-7">
+            <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
+              Bring your podcast
+            </h3>
+            <p className="mt-2 flex-1 text-[14px] leading-[1.6] text-secondary">
+              Run a live call-in show, then walk away with the whole episode cut
+              and ready to download. Your show, your guests, one hundred percent
+              yours.
+            </p>
+            <Link
+              href="/creators"
+              className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-red transition-opacity hover:opacity-80"
+            >
+              For creators →
+            </Link>
+          </div>
         </div>
       </section>
 

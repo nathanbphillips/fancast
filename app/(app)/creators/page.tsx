@@ -106,7 +106,7 @@ export default function CreatorsPage() {
             FOR PODCASTERS &amp; CREATORS
           </div>
           <h1 className="display mt-4 t-hero text-primary">
-            Your show, live. Then downloadable.
+            Your show, live. Then <span className="text-red">downloadable.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-[600px] text-[18px] leading-[1.6] text-secondary">
             Bring your listeners into the room with live call-ins, then walk away

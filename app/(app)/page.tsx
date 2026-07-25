@@ -97,53 +97,57 @@ export default async function HomePage() {
           />
         </div>
 
-        <div className="relative z-[2] mx-auto max-w-[840px] text-center">
-          <span className="inline-flex animate-fc-rise items-center gap-2 rounded-full border border-line bg-surface/40 px-[15px] py-2 font-mono text-[12px] text-secondary">
-            <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red" />
-            The matchday room for Arsenal fans
-          </span>
-          <h1 className="display mt-6 t-hero text-primary">
-            Every match feels better
-            <br />
-            in a{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  "linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206)",
-              }}
-            >
-              full room
+        <div className="relative z-[2] mx-auto grid max-w-[1180px] items-center gap-10 lg:grid-cols-[1fr_2fr] lg:gap-12">
+          {/* LEFT — copy (1/3) */}
+          <div className="text-center lg:text-left">
+            <span className="inline-flex animate-fc-rise items-center gap-2 rounded-full border border-line bg-surface/40 px-[15px] py-2 font-mono text-[12px] text-secondary">
+              <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red" />
+              The matchday room for Arsenal fans
             </span>
-            .
-          </h1>
-          <p className="mx-auto mt-[22px] max-w-[588px] text-[18px] leading-[1.62] text-secondary">
-            Keep your own stream. {brand.name} adds a real Arsenal supporter in
-            your ear, a chat worth reading and live stats, locked to your screen
-            with a single tap. And when there&apos;s no game on, the room&apos;s
-            still open to talk Arsenal any time.
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link
-              href={heroPrimary.href}
-              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
-            >
-              {heroPrimary.label} <span aria-hidden="true">→</span>
-              <span aria-hidden="true" className="btn-shine" />
-            </Link>
-            <Link
-              href="/how-it-works"
-              className="inline-flex items-center gap-2 rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary transition-colors hover:bg-raised"
-            >
-              How it works
-            </Link>
+            <h1 className="display mt-6 t-hero text-primary">
+              Every match feels better in a{" "}
+              <span
+                className="bg-clip-text text-transparent"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206)",
+                }}
+              >
+                full room
+              </span>
+              .
+            </h1>
+            <p className="mx-auto mt-[22px] max-w-[520px] text-[18px] leading-[1.62] text-secondary lg:mx-0">
+              Keep your own stream. {brand.name} adds a real Arsenal supporter in
+              your ear, a chat worth reading and live stats, locked to your
+              screen with a single tap. And when there&apos;s no game on, the
+              room&apos;s still open to talk Arsenal any time.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
+              <Link
+                href={heroPrimary.href}
+                className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
+              >
+                {heroPrimary.label} <span aria-hidden="true">→</span>
+                <span aria-hidden="true" className="btn-shine" />
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="inline-flex items-center gap-2 rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary transition-colors hover:bg-raised"
+              >
+                How it works
+              </Link>
+            </div>
+            <p className="mt-[18px] font-mono text-[12px] text-tertiary">
+              Free to listen · no account needed · installs to your home screen
+            </p>
           </div>
-          <p className="mt-[18px] font-mono text-[12px] text-tertiary">
-            Free to listen · no account needed · installs to your home screen
-          </p>
-        </div>
 
-        <HeroProductShot />
+          {/* RIGHT — product shot (2/3) */}
+          <div className="min-w-0">
+            <HeroProductShot />
+          </div>
+        </div>
       </section>
 
       {/* ===================== STAT BAND ===================== */}

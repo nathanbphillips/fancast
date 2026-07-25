@@ -11,7 +11,7 @@ export function HeroProductShot() {
   return (
     <div
       aria-hidden="true"
-      className="relative mx-auto mt-14 max-w-[1010px]"
+      className="relative mx-auto w-full max-w-[760px] lg:mt-0 lg:max-w-none"
       style={{ perspective: "2200px" }}
     >
       {/* floor glow */}
@@ -48,7 +48,7 @@ export function HeroProductShot() {
       {/* window */}
       <div
         className="rounded-[18px]"
-        style={{ transform: "rotateX(4deg) rotateY(-9deg)", transformStyle: "preserve-3d" }}
+        style={{ transform: "rotateX(3deg) rotateY(-6deg)", transformStyle: "preserve-3d" }}
       >
         <div className="overflow-hidden rounded-[18px] border border-line bg-surface shadow-raised">
           {/* chrome */}

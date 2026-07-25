@@ -113,7 +113,7 @@ export function HostLanding({
         <div className="relative z-[2] mx-auto max-w-[760px] text-center">
           <div className={`${eyebrow} justify-center`}>FOR COMMENTATORS</div>
           <h1 className="display mt-4 t-hero text-primary">
-            Hold a mic. Host the room.
+            Hold a mic. <span className="text-red">Host the room.</span>
           </h1>
           <p className="mx-auto mt-5 max-w-[580px] text-[18px] leading-[1.6] text-secondary">
             If you know the club and you can hold a mic, there is a seat for you
