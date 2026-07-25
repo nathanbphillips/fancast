@@ -14,3 +14,19 @@ export const config = {
   /** Days a username is locked after a change (FR-2.1) */
   usernameChangeLockDays: 30,
 } as const;
+
+/**
+ * Public read-only DEMO rooms, matched by immutable slug. In a demo room the
+ * chat text entry is disabled (guests can read but not post), the sign-in wall
+ * and "show starts soon" waiting banner are dropped so nothing obscures the
+ * view, and polls open to guests (local-only voting). Set up directly in the DB
+ * (not via a seed), so identified here by slug.
+ */
+export const DEMO_ROOM_SLUGS: string[] = [
+  "arsenal-vs-burnley-test-01-jul-2026-nathan",
+];
+
+/** Whether a room (by slug) is a public read-only demo. */
+export function isDemoRoomSlug(slug: string | null | undefined): boolean {
+  return slug != null && DEMO_ROOM_SLUGS.includes(slug);
+}

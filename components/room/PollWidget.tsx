@@ -15,21 +15,42 @@ export function PollWidget({
   myVote,
   canVote,
   isCommentator,
+  demo = false,
 }: {
   poll: NonNullable<PollState>;
   myVote: MyPollVote;
   canVote: boolean;
   isCommentator: boolean;
+  /** demo room: guests vote locally (no server round-trip, no sign-in wall) */
+  demo?: boolean;
 }) {
   const initialMine = myVote?.pollId === poll.id ? myVote.optionIdx : null;
   const [mine, setMine] = useState<number | null>(initialMine);
+  // demo rooms tally locally so a guest gets the full interaction without a
+  // round-trip; real rooms use poll.results reconciled over the control channel.
+  const [demoResults, setDemoResults] = useState<number[] | null>(null);
   const [busy, setBusy] = useState(false);
   const open = poll.status === "open";
-  const total = poll.total;
+  const votable = canVote || demo;
+  const results = demoResults ?? poll.results;
+  const total = demoResults
+    ? demoResults.reduce((a, b) => a + b, 0)
+    : poll.total;
   const toast = useToast();
 
   async function vote(idx: number) {
-    if (!open || !canVote || busy) return;
+    if (!open || !votable || busy) return;
+    if (demo) {
+      // local-only optimistic vote; move a prior pick if re-voting
+      setDemoResults((prev) => {
+        const base = [...(prev ?? poll.results)];
+        if (mine !== null && base[mine] > 0) base[mine] -= 1;
+        base[idx] = (base[idx] ?? 0) + 1;
+        return base;
+      });
+      setMine(idx);
+      return;
+    }
     setBusy(true);
     setMine(idx); // optimistic; the control event reconciles everyone's results
     const res = await fetch("/api/polls", {
@@ -66,10 +87,10 @@ export function PollWidget({
       </div>
       <ul className="mt-2 space-y-1.5">
         {poll.options.map((opt, i) => {
-          const count = poll.results[i] ?? 0;
+          const count = results[i] ?? 0;
           const pct = total ? Math.round((count / total) * 100) : 0;
           const isMine = mine === i;
-          const tappable = open && canVote;
+          const tappable = open && votable;
           return (
             <li key={i}>
               <button
@@ -105,7 +126,7 @@ export function PollWidget({
           Close poll
         </button>
       )}
-      {open && !canVote && !isCommentator && (
+      {open && !votable && !isCommentator && (
         <p className="mt-1 text-[11px] text-secondary">Sign in to vote.</p>
       )}
     </div>

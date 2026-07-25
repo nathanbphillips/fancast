@@ -91,6 +91,9 @@ export type RoomInfo = {
   competition: string; // league/competition name for the match-bar chip
   fixtureId: number; // the room's fixture id (PK; negative for dev seeds, epoch-ms for admin games)
   comingSoon: boolean; // admin game with no Sportmonks data yet → "Information coming soon"
+  /** public read-only demo room: chat disabled, no sign-in wall / waiting
+   *  banner, polls open to guests (config.DEMO_ROOM_SLUGS) */
+  demo: boolean;
 };
 
 type Props = {
@@ -1081,6 +1084,7 @@ export function RealtimeRoom(props: Props) {
               poll={activePoll}
               myVote={props.myPollVote}
               canVote={!!viewer && !isRoomCommentator}
+              demo={room.demo}
               isCommentator={isRoomCommentator}
             />
           )}
@@ -2114,7 +2118,7 @@ function LiveChat({
           </div>
         )}
 
-        {replyTo === m.id && canType && (
+        {replyTo === m.id && canType && !room.demo && (
           <form onSubmit={(e) => sendReply(e, m.id)} className="mt-1 ml-7 flex gap-2">
             <input
               type="text"
@@ -2228,7 +2232,9 @@ function LiveChat({
         </button>
       )}
 
-      {roomState === "waiting" && <Countdown targetIso={broadcastStart} />}
+      {roomState === "waiting" && !room.demo && (
+        <Countdown targetIso={broadcastStart} />
+      )}
 
       <ul
         ref={listRef}
@@ -2292,6 +2298,7 @@ function LiveChat({
               poll={activePoll}
               myVote={myPollVote}
               canVote={!!viewer && !isRoomCommentator}
+              demo={room.demo}
               isCommentator={isRoomCommentator}
             />
           )}
@@ -2302,7 +2309,20 @@ function LiveChat({
       {/* player ratings moved out of chat (founder 2026-07-02): desktop →
           Polls tab, mobile → under STATS */}
 
-      {!viewer ? (
+      {room.demo ? (
+        // demo room: chat is read-only for everyone. Replaces the sign-in wall
+        // AND the waiting banner so the message list runs full-height with just
+        // a disabled composer noting it's a demo.
+        <div className="border-t border-line p-2">
+          <input
+            type="text"
+            disabled
+            placeholder="Chat disabled for the demo room."
+            aria-label="Chat disabled for the demo room"
+            className="h-11 w-full cursor-not-allowed rounded-[10px] border border-line bg-inset px-3.5 text-sm opacity-70 placeholder:text-secondary"
+          />
+        </div>
+      ) : !viewer ? (
         <div className="border-t border-line p-3">
           <div className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center">
             <p className="text-sm text-secondary">

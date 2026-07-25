@@ -3,6 +3,7 @@ import NextLink from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { looksLikeUuid } from "@/lib/slug";
 import { roomTitle, statsFixtureId } from "@/lib/rooms";
+import { isDemoRoomSlug } from "@/lib/config";
 import { brand } from "@/lib/brand";
 import { Logo } from "@/components/Logo";
 import {
@@ -435,6 +436,7 @@ export default async function RoomPage({
     // an admin game with no Sportmonks match yet (or in an uncovered comp) has
     // no upstream data — the stats/info/history panels show "coming soon"
     comingSoon: room.fixture ? room.fixture.sportmonks_fixture_id == null : false,
+    demo: isDemoRoomSlug(room.slug),
   };
 
   return (
