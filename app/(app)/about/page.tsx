@@ -20,7 +20,7 @@ const eyebrow =
 const STORY = [
   {
     h: "THE PROBLEM",
-    p: "Pundits hedge. Streams lag. The group chat moves too fast to read. Watching with other fans got harder, not easier, and nobody's on your side for the full ninety.",
+    p: "Pundits hedge. Streams lag. The group chat moves too fast to read. Watching with other fans got harder, not easier, and nobody's on your side for the whole game.",
   },
   {
     h: "THE IDEA",
@@ -69,7 +69,7 @@ const VOICES = [
     i: "TH",
     grad: "linear-gradient(135deg,#1f6f4a,#0c3a26)",
     t: "The tactics head",
-    d: "Will talk you through the xG and the press triggers, then happily ignore all of it the second we score a worldie.",
+    d: "Will talk you through the xG and the press triggers, then happily ignore all of it the second we score a wonder goal.",
   },
   {
     i: "CH",

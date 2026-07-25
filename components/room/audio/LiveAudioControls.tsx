@@ -493,9 +493,14 @@ export function ListenerBar({
                 onClick={() => setExpanded(false)}
                 aria-expanded={true}
                 aria-label="Collapse audio controls"
-                className="flex h-[30px] w-[30px] items-center justify-center rounded-lg border border-line text-xs text-secondary"
+                className="flex h-[30px] items-center gap-1.5 rounded-lg border border-line px-2.5 text-secondary"
               >
-                ▲
+                <span className="animate-fcpulse font-mono text-[10px] font-bold tracking-[0.04em] text-gold-bright uppercase">
+                  Shrink
+                </span>
+                <span aria-hidden="true" className="text-xs leading-none">
+                  ▲
+                </span>
               </button>
             </div>
 
@@ -594,7 +599,7 @@ export function ListenerBar({
             >
               {discussion
                 ? "Tap here to collapse the controls."
-                : "Tap SYNC NOW when your telly matches the game time. Click here to collapse."}
+                : "Tap SYNC NOW when your screen matches the game time. Click here to collapse."}
             </button>
           </div>
         ) : (

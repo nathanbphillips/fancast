@@ -200,7 +200,7 @@ export function StatsPanel({
     <div className="p-3">
       <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface shadow-card">
         <div
-          className="flex flex-wrap items-center gap-1 border-b border-line px-2.5 py-2 font-mono text-[10px] tracking-[0.04em]"
+          className="flex flex-wrap items-center gap-1 border-b border-line bg-inset px-2.5 py-2 font-mono text-[10px] tracking-[0.04em] lg:bg-transparent"
           role="tablist"
           aria-label="Match info"
         >
@@ -218,7 +218,7 @@ export function StatsPanel({
                 className={`rounded-md px-2.5 py-1.5 uppercase transition-colors ${
                   active
                     ? "bg-inverted font-bold text-inverted-fg"
-                    : "text-secondary hover:text-primary"
+                    : "text-primary lg:text-secondary hover:text-primary"
                 }`}
               >
                 {t.label}

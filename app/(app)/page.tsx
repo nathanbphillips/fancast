@@ -36,7 +36,7 @@ const VOICES = [
   },
   {
     t: "The tactics head",
-    d: "The xG and the press triggers, then forgets it all when we score a worldie.",
+    d: "The xG and the press triggers, then forgets it all when we score a wonder goal.",
     grad: "linear-gradient(135deg,#1f6f4a,#0c3a26)",
   },
   {
@@ -190,7 +190,7 @@ export default async function HomePage() {
               <span className="h-px w-[22px] bg-red" />
               <span className={eyebrow}>THE BIT NOBODY ELSE DOES</span>
             </div>
-            <h2 className="display t-h2">Your telly lags. We fix that in one tap.</h2>
+            <h2 className="display t-h2">Your stream lags. We fix that in one tap.</h2>
             <p className="mt-4 max-w-[420px] text-[16px] leading-[1.62] text-secondary">
               Every stream runs on its own delay, so a shared watchalong is
               always out of step with your screen. {brand.name} is different: tap{" "}

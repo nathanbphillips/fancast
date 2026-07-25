@@ -225,7 +225,7 @@ export function AdminGuide() {
         <Section title="After the match">
           <p>
             Once you End Broadcast the room wraps and a <B>Downloads</B> panel
-            appears (for you, in the centre): the full recording plus per-segment
+            appears (for you, in the center): the full recording plus per-segment
             clips — pre-game, each half, etc. — with a ±2-minute adjust + recut if
             a boundary is off. The recordings are yours; the platform claims no
             rights to them.

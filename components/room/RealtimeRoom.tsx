@@ -1370,7 +1370,7 @@ export function RealtimeRoom(props: Props) {
             onClick={() => setTab(t.id)}
             aria-current={tab === t.id ? "page" : undefined}
             className={`relative flex flex-1 flex-col items-center gap-1 py-1 transition-colors ${
-              tab === t.id ? "text-primary" : "text-secondary"
+              tab === t.id ? "text-gold-bright" : "text-red"
             }`}
           >
             {t.icon}
@@ -1972,7 +1972,7 @@ function LiveChat({
     return (
       <li
         key={m.id}
-        className={depth === 0 ? "border-t border-line/60 py-2.5 first:border-t-0" : ""}
+        className={depth === 0 ? "border-t border-line/60 py-1.5 first:border-t-0 lg:py-2.5" : ""}
       >
         {m.hidden_by ? (
           <div className="rounded-lg px-3 py-2 text-xs text-secondary italic">
@@ -1980,7 +1980,7 @@ function LiveChat({
           </div>
         ) : (
           <div
-            className={`group rounded-lg px-2 py-1.5 ${
+            className={`group rounded-lg px-2 py-1 lg:py-1.5 ${
               isCommentator
                 ? "border-l-2 border-red bg-inset"
                 : isOwn
@@ -2054,7 +2054,7 @@ function LiveChat({
                   </span>
                 </div>
                 {/* body */}
-                <p className="mt-0.5 text-[13px] leading-relaxed">{displayBody}</p>
+                <p className="mt-0.5 text-[13px] leading-snug lg:leading-relaxed">{displayBody}</p>
                 {/* inline link card */}
                 {m.link_url && (
                   <a

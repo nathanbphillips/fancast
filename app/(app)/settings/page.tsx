@@ -83,7 +83,7 @@ export default async function SettingsPage() {
       <p className="mt-3 text-secondary">
         Set the name and photo the room sees.
         {isCommentator
-          ? " As a host, this is how listeners recognise you on air."
+          ? " As a host, this is how listeners recognize you on air."
           : ""}
       </p>
 
