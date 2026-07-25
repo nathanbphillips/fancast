@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { loadFixtures } from "@/lib/db/fixtures";
+import { DEMO_ROOM_HREF } from "@/lib/config";
 import { KickoffTime } from "@/components/KickoffTime";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
 import { HeroProductShot } from "@/components/marketing/HeroProductShot";
@@ -51,8 +52,9 @@ export default async function HomePage() {
   const featured = live[0] ?? upcoming[0] ?? null;
   const featuredLive = featured ? featured.card.state !== "scheduled" : false;
 
-  // hero CTA stays honest about state — deep-links into a live/next room when
-  // one exists (rooms read free, no account), else points at the schedule
+  // hero CTA stays honest about state — deep-links into a live room when one is
+  // on (rooms read free, no account); otherwise points at the interactive demo
+  // room so a first-time visitor always has something to explore right now.
   const heroPrimary =
     featured && featuredLive
       ? {
@@ -60,9 +62,7 @@ export default async function HomePage() {
           label:
             featured.card.state === "live" ? "Listen now, free" : "Join the waiting room",
         }
-      : featured?.card.roomHref
-        ? { href: featured.card.roomHref, label: "Join the next room" }
-        : { href: "/matches", label: "See the schedule" };
+      : { href: DEMO_ROOM_HREF, label: "See the demo room" };
 
   // schedule section: live room leads if one is on, else the soonest upcoming
   const liveRoom = live[0] ?? null;
@@ -104,7 +104,7 @@ export default async function HomePage() {
               <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red" />
               The matchday room for Arsenal fans
             </span>
-            <h1 className="display mt-6 t-hero text-primary">
+            <h1 className="display mt-6 t-h2 text-primary">
               Every match feels better in a{" "}
               <span
                 className="bg-clip-text text-transparent"
@@ -117,11 +117,10 @@ export default async function HomePage() {
               </span>
               .
             </h1>
-            <p className="mx-auto mt-[22px] max-w-[520px] text-[18px] leading-[1.62] text-secondary lg:mx-0">
-              Keep your own stream. {brand.name} adds a real Arsenal supporter in
-              your ear, a chat worth reading and live stats, locked to your
-              screen with a single tap. And when there&apos;s no game on, the
-              room&apos;s still open to talk Arsenal any time.
+            <p className="mx-auto mt-5 max-w-[440px] text-[17px] leading-[1.6] text-secondary lg:mx-0">
+              Keep your own stream. {brand.name} adds a real supporter in your
+              ear, a chat worth reading, and live stats, synced to your screen
+              with one tap. No game on? The room stays open.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
               <Link

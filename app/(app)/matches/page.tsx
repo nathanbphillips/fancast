@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/matches";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { goingLine } from "@/lib/strings/attendance";
+import { DEMO_ROOM_HREF } from "@/lib/config";
 import { Avatar } from "@/components/Avatar";
 import { Waveform } from "@/components/ui/Waveform";
 import { FeaturedRoom } from "@/components/matches/FeaturedRoom";
@@ -148,12 +149,12 @@ export default async function MatchesPage() {
                     >
                       Get matchday alerts →
                     </Link>
-                    <a
-                      href="#schedule"
+                    <Link
+                      href={DEMO_ROOM_HREF}
                       className="inline-flex items-center rounded-[11px] border border-line bg-surface/40 px-5 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-raised"
                     >
-                      See the schedule
-                    </a>
+                      See the demo room →
+                    </Link>
                   </div>
                 </div>
                 <div className="hidden rounded-2xl border border-line bg-canvas p-4 lg:block">

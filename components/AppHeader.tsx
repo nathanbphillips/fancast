@@ -245,10 +245,12 @@ export function AppHeader({
 
       <header className="sticky top-0 z-40 border-b border-line bg-canvas/80 backdrop-blur-md">
         <div className="mx-auto flex h-[61px] max-w-[1180px] items-center justify-between px-5 sm:px-10">
-          <div className="flex items-center gap-8">
+          <div className="flex items-center">
             <Link href="/" aria-label={brand.name} className="flex items-center">
               <Logo priority />
             </Link>
+          </div>
+          <div className="flex items-center gap-4 sm:gap-5">
             <nav
               className="hidden items-center gap-6 md:flex"
               aria-label="Primary"
@@ -277,8 +279,6 @@ export function AppHeader({
                 ),
               )}
             </nav>
-          </div>
-          <div className="flex items-center gap-3">
             {liveCount > 0 && (
               <Link
                 href="/matches"

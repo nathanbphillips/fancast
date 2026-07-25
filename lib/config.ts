@@ -26,6 +26,9 @@ export const DEMO_ROOM_SLUGS: string[] = [
   "arsenal-vs-burnley-test-01-jul-2026-nathan",
 ];
 
+/** Canonical path to the primary public demo room, for hero/marketing CTAs. */
+export const DEMO_ROOM_HREF = `/room/${DEMO_ROOM_SLUGS[0]}`;
+
 /** Whether a room (by slug) is a public read-only demo. */
 export function isDemoRoomSlug(slug: string | null | undefined): boolean {
   return slug != null && DEMO_ROOM_SLUGS.includes(slug);
