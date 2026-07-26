@@ -27,7 +27,7 @@ export function StatBars({
               : (s.home / total) * 100;
         const fmt = (v: number) => (s.unit === "pct" ? `${v}%` : `${v}`);
         return (
-          <div key={s.code}>
+          <div key={s.code} data-stat-code={s.code}>
             <div
               className={`flex justify-between ${big ? "text-base" : "text-xs"}`}
             >

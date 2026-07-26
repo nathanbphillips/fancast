@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StatBars } from "./StatBars";
 import type { DeepStats, MomentumBucket, StatBar } from "@/lib/stats";
 
@@ -30,14 +30,20 @@ function Section({
   defaultOpen = false,
   big,
   children,
+  openSignal,
 }: {
   title: string;
   badge?: number | string;
   defaultOpen?: boolean;
   big: boolean;
   children: React.ReactNode;
+  /** bump to force the section open (stat search reveal) */
+  openSignal?: number;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (openSignal !== undefined) setOpen(true);
+  }, [openSignal]);
   return (
     <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
       <button
@@ -143,12 +149,15 @@ export function DeeperStats({
   homeName,
   awayName,
   size = "compact",
+  openSignal,
 }: {
   deep: DeepStats | null;
   extended: StatBar[];
   homeName: string;
   awayName: string;
   size?: Size;
+  /** bump to force the searchable "Extended team stats" section open */
+  openSignal?: number;
 }) {
   const big = size === "radio";
   if (!deep) {
@@ -251,7 +260,7 @@ export function DeeperStats({
       )}
 
       {extended.length > 0 && (
-        <Section title="Extended team stats" badge={extended.length} big>
+        <Section title="Extended team stats" badge={extended.length} big openSignal={openSignal}>
           {exGroups.map((g, i) => (
             <div key={g.name} className={i === 0 ? "" : "mt-3"}>
               <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>{g.name}</p>

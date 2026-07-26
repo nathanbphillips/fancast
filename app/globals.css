@@ -390,6 +390,25 @@ body {
     transform: scale(0.78);
   }
 }
+/* stat-search "ping": a light-gold flash on the stat you jumped to. The
+   padding + negative margin give the highlight breathing room without shifting
+   surrounding rows; JS removes the class after ~1.7s. Under reduced motion the
+   animation is neutralized and the base tint simply shows until removal. */
+.stat-ping {
+  border-radius: 8px;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  background-color: rgba(232, 181, 74, 0.28);
+  animation: fc-statping 1.7s ease-out forwards;
+}
+@keyframes fc-statping {
+  from {
+    background-color: rgba(232, 181, 74, 0.3);
+  }
+  to {
+    background-color: rgba(232, 181, 74, 0);
+  }
+}
 @keyframes fceq {
   0%,
   100% {

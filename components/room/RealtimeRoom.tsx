@@ -1185,6 +1185,7 @@ export function RealtimeRoom(props: Props) {
             comingSoon={room.comingSoon}
             fotmob={fotmobLinks}
             defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
+            demo={room.demo}
           />
           {/* mobile: RATE THE PLAYERS lives under STATS (Cloud Design); the
               desktop copy renders in the chat column's Polls tab */}
