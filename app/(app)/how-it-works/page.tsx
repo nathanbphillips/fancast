@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { brand } from "@/lib/brand";
 import { SyncDiagram } from "@/components/marketing/SyncDiagram";
+import { DEMO_ROOM_HREF } from "@/lib/config";
 
 /**
  * How it works (Matchday design): 2-col hero + compact room preview → four taps
@@ -360,6 +361,35 @@ export default function HowItWorksPage() {
       </section>
 
       {/* HOST CTA */}
+      {/* SEE IT LIVE — demo room CTA */}
+      <section className="mx-auto max-w-[1120px] px-5 pb-14 sm:px-10">
+        <div className="relative overflow-hidden rounded-[18px] border border-line bg-surface p-8 text-center">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-16 left-1/2 h-[240px] w-[520px] -translate-x-1/2"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(239,1,7,.12), transparent 68%)",
+            }}
+          />
+          <div className="relative z-[2]">
+            <div className={`${eyebrow} mb-2.5`}>SEE IT FOR YOURSELF</div>
+            <h2 className="display t-h3">Take a walk through a live room.</h2>
+            <p className="mx-auto mt-2.5 max-w-[480px] text-[14px] leading-[1.55] text-secondary">
+              Our demo room is open to everyone, no account needed. Click around
+              the chat, stats and polls to feel a matchday before you join a real
+              one.
+            </p>
+            <Link
+              href={DEMO_ROOM_HREF}
+              className="btn-grad-red mt-5 inline-flex items-center rounded-[11px] px-6 py-3.5 text-[14px] font-semibold text-white"
+            >
+              See the demo room →
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-[1120px] px-5 pb-16 sm:px-10">
         <div className="flex flex-wrap items-center justify-between gap-5 rounded-[18px] border border-line bg-raised p-8">
           <div>

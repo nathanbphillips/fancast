@@ -9,6 +9,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { Pill } from "@/components/ui/Pill";
 import { Button } from "@/components/ui/Button";
+import { DEMO_ROOM_HREF } from "@/lib/config";
 
 type NavItem = { href: string; label: string };
 type NavEntry = NavItem | { label: string; children: NavItem[] };
@@ -19,6 +20,7 @@ const NAV: NavEntry[] = [
   {
     label: "Learn More",
     children: [
+      { href: DEMO_ROOM_HREF, label: "Demo" },
       { href: "/about", label: "About" },
       { href: "/host", label: "Host" },
       { href: "/creators", label: "Creators" },
