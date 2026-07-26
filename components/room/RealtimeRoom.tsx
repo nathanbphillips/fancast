@@ -1184,7 +1184,13 @@ export function RealtimeRoom(props: Props) {
             historyLoading={historyLoading}
             comingSoon={room.comingSoon}
             fotmob={fotmobLinks}
-            defaultTab={roomState === "waiting" || roomState === "pregame" ? "info" : "stats"}
+            defaultTab={
+              room.demo
+                ? "stats"
+                : roomState === "waiting" || roomState === "pregame"
+                  ? "info"
+                  : "stats"
+            }
             demo={room.demo}
           />
           {/* mobile: RATE THE PLAYERS lives under STATS (Cloud Design); the

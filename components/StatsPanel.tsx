@@ -330,7 +330,7 @@ export function StatsPanel({
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("stat-ping");
       lastPingRef.current = el;
-      window.setTimeout(() => el.classList.remove("stat-ping"), 1700);
+      window.setTimeout(() => el.classList.remove("stat-ping"), 3000);
     }, 90);
     return () => clearTimeout(t);
   }, [reveal]);

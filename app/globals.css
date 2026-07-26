@@ -399,13 +399,25 @@ body {
   padding: 4px 6px;
   margin: -4px -6px;
   background-color: rgba(232, 181, 74, 0.28);
-  animation: fc-statping 1.7s ease-out forwards;
+  animation: fc-statping 3s ease-in-out;
 }
 @keyframes fc-statping {
-  from {
-    background-color: rgba(232, 181, 74, 0.3);
+  0% {
+    background-color: rgba(232, 181, 74, 0.4);
   }
-  to {
+  20% {
+    background-color: rgba(232, 181, 74, 0.06);
+  }
+  40% {
+    background-color: rgba(232, 181, 74, 0.4);
+  }
+  60% {
+    background-color: rgba(232, 181, 74, 0.06);
+  }
+  80% {
+    background-color: rgba(232, 181, 74, 0.4);
+  }
+  100% {
     background-color: rgba(232, 181, 74, 0);
   }
 }
