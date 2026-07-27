@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import type { ScheduleFixture, ScheduleRoom, LivePreview } from "@/lib/db/matches";
 import type { RoomState } from "@/lib/db/types";
@@ -59,6 +60,32 @@ function TeamBadge({ team, away = false }: { team: string; away?: boolean }) {
   );
 }
 
+/** The featured card is a full-card link when the room is enterable (live, or
+ *  the waiting room is joinable); otherwise a plain container, so the CTA (an
+ *  RSVP action) isn't an illegal nested link. */
+function CardShell({ href, children }: { href: string | null; children: ReactNode }) {
+  const base = "relative block overflow-hidden rounded-[20px] border p-7";
+  const style = {
+    background:
+      "linear-gradient(120deg, rgba(239,1,7,.18), transparent 55%), var(--bg-surface)",
+    borderColor: "rgba(239,1,7,.32)",
+    boxShadow: "0 30px 60px -40px rgba(239,1,7,.5)",
+  };
+  return href ? (
+    <Link
+      href={href}
+      className={`${base} transition-transform hover:-translate-y-[3px]`}
+      style={style}
+    >
+      {children}
+    </Link>
+  ) : (
+    <div className={base} style={style}>
+      {children}
+    </div>
+  );
+}
+
 export function FeaturedRoom({
   fixture,
   room,
@@ -79,6 +106,14 @@ export function FeaturedRoom({
     ? `${fixture.competition ?? "Premier League"} · ${fixture.round}`
     : (fixture.competition ?? "Premier League");
   const listeners = preview?.listeners ?? 0;
+
+  // A scheduled room's CTA flips from "RSVP for notifications" to "Join the
+  // waiting room" 30 min before the show's start (broadcastStart). Live rooms
+  // are always joinable. Before that window, we send people to RSVP/sign-in
+  // rather than a dead countdown screen.
+  const joinable =
+    live ||
+    Date.now() >= new Date(room.broadcastStart).getTime() - 30 * 60 * 1000;
 
   // real live stat tiles — only figures that actually exist are shown
   const tiles: { v: string; l: string; red?: boolean }[] = [];
@@ -106,16 +141,7 @@ export function FeaturedRoom({
         </span>
       </div>
 
-      <Link
-        href={`/room/${room.slug}`}
-        className="relative block overflow-hidden rounded-[20px] border p-7 transition-transform hover:-translate-y-[3px]"
-        style={{
-          background:
-            "linear-gradient(120deg, rgba(239,1,7,.18), transparent 55%), var(--bg-surface)",
-          borderColor: "rgba(239,1,7,.32)",
-          boxShadow: "0 30px 60px -40px rgba(239,1,7,.5)",
-        }}
-      >
+      <CardShell href={joinable ? `/room/${room.slug}` : null}>
         <div className="relative z-[2] grid items-center gap-7 lg:grid-cols-[1.05fr_1fr]">
           {/* LEFT */}
           <div>
@@ -183,12 +209,27 @@ export function FeaturedRoom({
                   </span>
                 )}
               </div>
-            ) : (
+            ) : joinable ? (
               <div className="flex flex-wrap items-center gap-4">
                 <span className="btn-grad-red inline-flex items-center gap-2 rounded-[11px] px-[22px] py-3 text-[14px] font-semibold text-white">
                   Join the waiting room →
                 </span>
                 <span className="font-mono text-[12px] text-tertiary tabular-nums">
+                  <Countdown iso={fixture.kickoffUtc} /> to kickoff
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start gap-2">
+                <RsvpButton
+                  roomId={room.id}
+                  slug={room.slug}
+                  initialRsvped={room.viewerRsvped}
+                  signedIn={signedIn}
+                  variant="primary"
+                  label="RSVP for notifications"
+                />
+                <span className="font-mono text-[12px] text-tertiary tabular-nums">
+                  We&apos;ll notify you when the room opens ·{" "}
                   <Countdown iso={fixture.kickoffUtc} /> to kickoff
                 </span>
               </div>
@@ -257,18 +298,22 @@ export function FeaturedRoom({
             )}
           </div>
         </div>
-      </Link>
+      </CardShell>
 
-      {/* real RSVP count under a scheduled hero (live rooms show listeners) */}
+      {/* real RSVP count under a scheduled hero (live rooms show listeners). The
+          RSVP toggle shows here only when the room is already joinable — before
+          that, RSVP is the card's primary CTA, so we avoid a duplicate. */}
       {!live && goingLine(room.rsvpCount) && (
         <div className="mt-3 flex items-center gap-3">
-          <RsvpButton
-            roomId={room.id}
-            slug={room.slug}
-            initialRsvped={room.viewerRsvped}
-            signedIn={signedIn}
-            size="sm"
-          />
+          {joinable && (
+            <RsvpButton
+              roomId={room.id}
+              slug={room.slug}
+              initialRsvped={room.viewerRsvped}
+              signedIn={signedIn}
+              size="sm"
+            />
+          )}
           <span className="font-mono text-[12px] text-tertiary tabular-nums">
             {goingLine(room.rsvpCount)}
           </span>

@@ -38,6 +38,7 @@ const room: ScheduleRoom = {
   rsvpCount: 0,
   viewerRsvped: false,
   postponed: false,
+  broadcastStart: "2026-08-21T17:45:00.000Z",
   friendNames: [],
 };
 

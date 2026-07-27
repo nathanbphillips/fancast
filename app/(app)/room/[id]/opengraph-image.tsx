@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { brand } from "@/lib/brand";
 import { createServiceClient } from "@/lib/db/server";
 import { looksLikeUuid } from "@/lib/slug";
+import { BRAND_LOGO_DATA_URI } from "@/lib/og/brandLogo";
 
 /**
  * Per-room social-share card (1200x630). Vector + text only (no crest/photo:
@@ -68,33 +69,14 @@ export default async function RoomOgImage({
       >
         {/* top: wordmark + live dot */}
         <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "60px",
-              height: "60px",
-              borderRadius: "14px",
-              background: "#f4f4f2",
-            }}
-          >
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#08080a"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 12h3.5l2 6 4-15 2.5 9H21" />
-            </svg>
-          </div>
-          <div style={{ fontSize: "40px", fontWeight: 700, letterSpacing: "-0.02em" }}>
-            {brand.name}
-          </div>
+          {/* full Arseradio wordmark (neon) — eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={BRAND_LOGO_DATA_URI}
+            width={316}
+            height={60}
+            alt={brand.name}
+            style={{ objectFit: "contain" }}
+          />
           <div
             style={{
               marginLeft: "10px",

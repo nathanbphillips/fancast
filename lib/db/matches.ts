@@ -26,6 +26,9 @@ export type ScheduleRoom = {
   rsvpCount: number;
   viewerRsvped: boolean;
   postponed: boolean;
+  /** the show's scheduled start (host-set broadcast start, else kickoff copy).
+   *  The waiting room is treated as joinable from 30 min before this. */
+  broadcastStart: string;
   /** the viewer's accepted friends among this room's RSVPs (FR-22.3 chips) */
   friendNames: string[];
 };
@@ -69,6 +72,8 @@ type FixtureRow = {
     blurb: string | null;
     postponed: boolean;
     rsvp_count: number;
+    broadcast_start: string | null;
+    scheduled_kickoff: string;
     commentator: { username: string } | null;
   }[];
 };
@@ -113,7 +118,7 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
   const { data: fixtures, error } = await supabase
     .from("fixtures")
     .select(
-      "id, sportmonks_fixture_id, home_team, away_team, competition, round, kickoff_utc, status, home_score, away_score, rooms(id, slug, state, blurb, postponed, rsvp_count, commentator:profiles!rooms_commentator_id_fkey(username))",
+      "id, sportmonks_fixture_id, home_team, away_team, competition, round, kickoff_utc, status, home_score, away_score, rooms(id, slug, state, blurb, postponed, rsvp_count, broadcast_start, scheduled_kickoff, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
     .lte("kickoff_utc", windowEnd)
@@ -207,6 +212,7 @@ export async function loadMatchesSchedule(): Promise<ScheduleGroup[]> {
         rsvpCount: r.rsvp_count ?? 0,
         viewerRsvped: rsvpedRoomIds.has(r.id),
         postponed: r.postponed,
+        broadcastStart: r.broadcast_start ?? r.scheduled_kickoff,
         friendNames: friendRsvpNames.get(r.id) ?? [],
       }))
       // live-ish rooms first, then scheduled

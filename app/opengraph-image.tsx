@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { brand } from "@/lib/brand";
+import { BRAND_LOGO_DATA_URI } from "@/lib/og/brandLogo";
 
 /**
  * Default social-share card for every route (1200×630). Vector + text only — the
@@ -27,44 +28,14 @@ export default function OpengraphImage() {
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "22px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: "76px",
-              height: "76px",
-              borderRadius: "18px",
-              background: "#f4f4f2",
-            }}
-          >
-            <svg
-              width="46"
-              height="46"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#08080a"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 12h3.5l2 6 4-15 2.5 9H21" />
-            </svg>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              fontSize: "64px",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              textTransform: "uppercase",
-            }}
-          >
-            <span style={{ color: "#ef0107" }}>{brand.logoParts.accent}</span>
-            <span style={{ color: "#f2f2f4" }}>{brand.logoParts.base}</span>
-          </div>
-        </div>
+        {/* full Arseradio wordmark (neon) — eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={BRAND_LOGO_DATA_URI}
+          width={452}
+          height={86}
+          alt={brand.name}
+          style={{ objectFit: "contain" }}
+        />
 
         <div
           style={{

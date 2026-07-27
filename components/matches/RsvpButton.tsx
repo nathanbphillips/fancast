@@ -17,6 +17,8 @@ export function RsvpButton({
   signedIn,
   size = "md",
   className = "",
+  label = "Count me in",
+  variant = "outline",
 }: {
   roomId: string;
   slug: string;
@@ -24,20 +26,29 @@ export function RsvpButton({
   signedIn: boolean;
   size?: "sm" | "md";
   className?: string;
+  /** label for the not-yet-RSVP'd state (e.g. "RSVP for notifications") */
+  label?: string;
+  /** "primary" = red-gradient CTA; "outline" = subtle pill (default) */
+  variant?: "outline" | "primary";
 }) {
   const toast = useToast();
   const [rsvped, setRsvped] = useState(initialRsvped);
   const [busy, setBusy] = useState(false);
 
-  const pad = size === "sm" ? "px-3.5 py-2 text-[12px]" : "px-4 py-2.5 text-[13px]";
+  const pad =
+    size === "sm" ? "px-3.5 py-2 text-[12px]" : "px-4 py-2.5 text-[13px]";
+  const idle =
+    variant === "primary"
+      ? "btn-grad-red text-white"
+      : "border border-line text-primary hover:bg-raised";
 
   if (!signedIn) {
     return (
       <Link
         href={`/signin?next=${encodeURIComponent(`/room/${slug}`)}`}
-        className={`shrink-0 rounded-[9px] border border-line font-semibold text-primary transition-colors hover:bg-raised ${pad} ${className}`}
+        className={`inline-flex shrink-0 items-center justify-center rounded-[9px] font-semibold transition-colors ${idle} ${pad} ${className}`}
       >
-        Count me in
+        {label}
       </Link>
     );
   }
@@ -62,13 +73,11 @@ export function RsvpButton({
       onClick={() => void toggle()}
       disabled={busy}
       aria-pressed={rsvped}
-      className={`shrink-0 rounded-[9px] border font-semibold transition-colors disabled:opacity-60 ${pad} ${
-        rsvped
-          ? "border-green/40 bg-green/10 text-green"
-          : "border-line text-primary hover:bg-raised"
+      className={`inline-flex shrink-0 items-center justify-center rounded-[9px] font-semibold transition-colors disabled:opacity-60 ${pad} ${
+        rsvped ? "border border-green/40 bg-green/10 text-green" : idle
       } ${className}`}
     >
-      {rsvped ? "You're in ✓" : "Count me in"}
+      {rsvped ? "You're in ✓" : label}
     </button>
   );
 }
