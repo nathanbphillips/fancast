@@ -51,7 +51,11 @@ export async function GET(request: NextRequest) {
       .eq("user_id", user.id)
       .maybeSingle();
     if (!profile) {
-      return NextResponse.redirect(new URL("/welcome", url.origin));
+      // carry the post-signin destination through onboarding so intents (e.g.
+      // ?rsvp=1) survive for brand-new users, who are the common case here.
+      const welcome = new URL("/welcome", url.origin);
+      if (next && next !== "/") welcome.searchParams.set("next", next);
+      return NextResponse.redirect(welcome);
     }
     themePref = (profile.theme_pref as ThemeChoice | null) ?? null;
   }

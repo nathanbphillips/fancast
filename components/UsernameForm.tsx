@@ -10,9 +10,12 @@ import { useRouter } from "next/navigation";
 export function UsernameForm({
   mode,
   currentUsername,
+  next = "/",
 }: {
   mode: "create" | "change";
   currentUsername?: string;
+  /** where to land after first-login username creation (carries signin intent) */
+  next?: string;
 }) {
   const router = useRouter();
   const [username, setUsername] = useState(currentUsername ?? "");
@@ -35,7 +38,7 @@ export function UsernameForm({
       return;
     }
     if (mode === "create") {
-      router.push("/");
+      router.push(next);
     }
     router.refresh();
   }

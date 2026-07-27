@@ -45,7 +45,7 @@ export function RsvpButton({
   if (!signedIn) {
     return (
       <Link
-        href={`/signin?next=${encodeURIComponent(`/room/${slug}`)}`}
+        href={`/signin?next=${encodeURIComponent(`/room/${slug}?rsvp=1`)}`}
         className={`inline-flex shrink-0 items-center justify-center rounded-[9px] font-semibold transition-colors ${idle} ${pad} ${className}`}
       >
         {label}
