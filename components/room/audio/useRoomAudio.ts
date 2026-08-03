@@ -61,6 +61,12 @@ export function useRoomAudio(opts: {
   // sync ring buffer (FR-6): requested vs effective offset + buffered depth
   const [syncRequested, setSyncRequested] = useState(0);
   const syncRequestedRef = useRef(0);
+  // Call-in sync snap (founder 2026-08-03): while a listener-caller is on air,
+  // their playback snaps to the live edge (delay 0) so the conversation with the
+  // host is real time, not behind by their sync offset. Worklet-only override —
+  // never persisted, so the saved offset (syncRequested/sessionStorage) is what
+  // we restore to when the call ends.
+  const liveSnapRef = useRef(false);
   const [syncEffective, setSyncEffective] = useState(0);
   const [syncAvailable, setSyncAvailable] = useState(0);
   const [syncSupported, setSyncSupported] = useState(true);
@@ -282,10 +288,14 @@ export function useRoomAudio(opts: {
       const clamped = Math.max(0, Math.min(90, Math.round(seconds * 10) / 10));
       setSyncRequested(clamped);
       syncRequestedRef.current = clamped;
-      workletRef.current?.port.postMessage({
-        type: "setDelay",
-        seconds: clamped,
-      });
+      // while snapped to live for an on-air call, keep playback at the live edge;
+      // the new value just becomes what we restore to when the call ends.
+      if (!liveSnapRef.current) {
+        workletRef.current?.port.postMessage({
+          type: "setDelay",
+          seconds: clamped,
+        });
+      }
       try {
         sessionStorage.setItem(`fc_sync_${opts.roomId}`, String(clamped));
       } catch {}
@@ -298,6 +308,22 @@ export function useRoomAudio(opts: {
     (delta: number) => setSyncOffset(syncRequestedRef.current + delta),
     [setSyncOffset],
   );
+
+  /** Snap playback to the live edge for an on-air call (ref-only; no persist). */
+  function snapPlaybackToLive() {
+    liveSnapRef.current = true;
+    workletRef.current?.port.postMessage({ type: "setDelay", seconds: 0 });
+  }
+  /** Restore the caller's pre-call sync offset when the call ends. The ring
+   *  buffer has been filling the whole time, so the offset returns instantly. */
+  function restorePlaybackSync() {
+    if (!liveSnapRef.current) return;
+    liveSnapRef.current = false;
+    workletRef.current?.port.postMessage({
+      type: "setDelay",
+      seconds: syncRequestedRef.current,
+    });
+  }
 
   /* -------------------------------------------------------- connection */
 
@@ -526,6 +552,9 @@ export function useRoomAudio(opts: {
   /* --------------------------------------------------------- publisher */
 
   async function stopMicInternal() {
+    // caller leaving air (self-leave / host-removed / disconnect): restore their
+    // pre-call sync offset so their audio realigns with their own video feed
+    restorePlaybackSync();
     if (publishedTrackRef.current && roomRef.current) {
       await roomRef.current.localParticipant
         .unpublishTrack(publishedTrackRef.current)
@@ -578,6 +607,10 @@ export function useRoomAudio(opts: {
       });
       publishedTrackRef.current = track;
       setMicStatus("live");
+      // a listener-caller going on air: snap their playback to the live edge so
+      // the call with the host is real time (restored when the call ends). The
+      // commentator/co-hosts broadcast live already, so they never snap.
+      if (!opts.isRoomCommentator) snapPlaybackToLive();
       refreshSpeakers(room);
     } catch (err) {
       console.error("mic start failed:", err);
