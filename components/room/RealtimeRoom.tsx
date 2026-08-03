@@ -25,6 +25,7 @@ import type {
 } from "@/lib/db/types";
 import { MatchHeader } from "@/components/MatchHeader";
 import { StatsPanel } from "@/components/StatsPanel";
+import { BugReporter } from "@/components/room/BugReporter";
 import {
   deriveClock,
   formatClock,
@@ -1115,6 +1116,8 @@ export function RealtimeRoom(props: Props) {
     <div className="flex h-dvh flex-col">
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
+      {/* short-term in-room bug reporter (testing/pre-launch) */}
+      <BugReporter roomId={room.id} roomState={roomState} />
       <MatchHeader
         home={room.home}
         away={room.away}
