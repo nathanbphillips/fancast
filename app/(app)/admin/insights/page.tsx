@@ -63,6 +63,16 @@ export default async function AdminInsightsPage() {
         <Kpi value={formatDuration(kpis.listeningSecondsRegistered)} label="By registered users" sub="of the above" />
         <Kpi value={kpis.totalMatchesAttended} label="Matches attended" sub="15+ min sessions" />
         <Kpi value={kpis.totalComments} label="Chat messages" sub="all time" />
+        <Kpi
+          value={kpis.alertSignups}
+          label="Matchday-alert signups"
+          sub={`+${kpis.alertSignups7d} in 7d`}
+        />
+        <Kpi
+          value={kpis.rsvpsTotal}
+          label="Room RSVPs"
+          sub={`${kpis.rsvpUsers} people · +${kpis.rsvps7d} in 7d`}
+        />
       </section>
 
       {/* Funnel & retention */}

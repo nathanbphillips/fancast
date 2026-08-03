@@ -51,6 +51,11 @@ export type AdminInsights = {
     listeningSecondsRegistered: number;
     totalMatchesAttended: number;
     totalComments: number;
+    alertSignups: number;
+    alertSignups7d: number;
+    rsvpsTotal: number;
+    rsvpUsers: number;
+    rsvps7d: number;
   };
   funnel: {
     authAccounts: number;
@@ -112,6 +117,8 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
     { data: hostRows },
     { data: segs },
     { data: speakerRows },
+    { data: waitRows },
+    { data: rsvpRows },
     eventStats,
     authRes,
   ] = await Promise.all([
@@ -128,6 +135,8 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
       .select("user_id, room_id, started_at, last_seen_at, ended_at")
       .limit(SEG_LIMIT),
     service.from("speaker_events").select("room_id, action").eq("action", "elevated"),
+    service.from("waitlist").select("created_at"),
+    service.from("room_rsvps").select("user_id, created_at"),
     loadEventStats(service),
     service.auth.admin.listUsers({ page: 1, perPage: 1000 }),
   ]);
@@ -212,6 +221,16 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
     ),
     totalMatchesAttended: users.reduce((a, u) => a + u.matchesAttended, 0),
     totalComments: users.reduce((a, u) => a + u.comments, 0),
+    // acquisition: matchday-alert (waitlist) signups + room RSVPs
+    alertSignups: waitRows?.length ?? 0,
+    alertSignups7d: (waitRows ?? []).filter(
+      (w) => now - Date.parse(w.created_at as string) < 7 * DAY,
+    ).length,
+    rsvpsTotal: rsvpRows?.length ?? 0,
+    rsvpUsers: new Set((rsvpRows ?? []).map((r) => r.user_id as string)).size,
+    rsvps7d: (rsvpRows ?? []).filter(
+      (r) => now - Date.parse(r.created_at as string) < 7 * DAY,
+    ).length,
   };
 
   // Funnel: auth account created (started) -> profile/username picked (completed)
