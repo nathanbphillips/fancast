@@ -26,6 +26,7 @@ import type {
 import { MatchHeader } from "@/components/MatchHeader";
 import { StatsPanel } from "@/components/StatsPanel";
 import { BugReporter } from "@/components/room/BugReporter";
+import { track } from "@/lib/track";
 import {
   deriveClock,
   formatClock,
@@ -291,6 +292,26 @@ export function RealtimeRoom(props: Props) {
     viewerId: viewer?.userId ?? null,
     isRoomCommentator,
   });
+
+  // product telemetry (admin insights): fire-once per mount / first transition
+  const tracked = useRef({ view: false, listen: false, callin: false });
+  useEffect(() => {
+    if (tracked.current.view) return;
+    tracked.current.view = true;
+    track("room_view", { roomId: room.id });
+  }, [room.id]);
+  useEffect(() => {
+    if (audio.listenStatus === "live" && !tracked.current.listen) {
+      tracked.current.listen = true;
+      track("listen_started", { roomId: room.id });
+    }
+  }, [audio.listenStatus, room.id]);
+  useEffect(() => {
+    if (audio.micStatus === "live" && !isRoomCommentator && !tracked.current.callin) {
+      tracked.current.callin = true;
+      track("call_in_started", { roomId: room.id });
+    }
+  }, [audio.micStatus, isRoomCommentator, room.id]);
 
   // tick locally; derivation resyncs whenever an event arrives (FR-7.3).
   // syncedClockText = the commentator's clock MINUS this listener's sync delay:

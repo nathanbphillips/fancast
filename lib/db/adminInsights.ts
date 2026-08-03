@@ -1,11 +1,11 @@
 import { createServiceClient } from "@/lib/db/server";
 
 /**
- * Admin insights: a snapshot of registrations, engagement, and growth, merged
- * from profiles + profile_stats + auth.users (email/last-login) + the raw
- * listener_segments + rooms/room_hosts. Admin-only (service role); the page
- * that renders it gates on isAdmin. Sized for the pre-launch/early scale — it
- * fetches and aggregates in memory rather than via SQL rollups.
+ * Admin insights: a snapshot of registrations, engagement, retention, per-room
+ * activity, and growth, merged from profiles + profile_stats + auth.users +
+ * listener_segments + rooms/room_hosts + speaker_events (+ the events table for
+ * product telemetry). Admin-only (service role). Sized for pre-launch/early
+ * scale — fetch + aggregate in memory rather than via SQL rollups.
  */
 
 export type UserInsight = {
@@ -23,7 +23,21 @@ export type UserInsight = {
   comments: number;
 };
 
+export type RoomInsight = {
+  roomId: string;
+  name: string;
+  whenIso: string;
+  state: string;
+  uniqueListeners: number;
+  anonSessions: number;
+  peakConcurrent: number;
+  avgSessionSecs: number;
+  callIns: number;
+};
+
 export type GrowthPoint = { date: string; signups: number; cumulative: number };
+
+export type EventStat = { event: string; total: number; last7d: number };
 
 export type AdminInsights = {
   kpis: {
@@ -38,13 +52,55 @@ export type AdminInsights = {
     totalMatchesAttended: number;
     totalComments: number;
   };
+  funnel: {
+    authAccounts: number;
+    completedProfiles: number;
+    onboardingDropoff: number;
+    conversionPct: number;
+  };
+  retention: {
+    returnedCount: number;
+    returnedRate: number;
+    week1Count: number;
+    week1Rate: number;
+    activeRate: number;
+  };
   growth: GrowthPoint[];
   users: UserInsight[];
+  rooms: RoomInsight[];
+  events: EventStat[] | null;
   notes: { moreUsers: boolean; truncatedSegments: boolean };
 };
 
 const DAY = 24 * 60 * 60 * 1000;
 const SEG_LIMIT = 50000;
+
+type Seg = {
+  user_id: string | null;
+  room_id: string;
+  started_at: string;
+  last_seen_at: string;
+  ended_at: string | null;
+};
+
+/** Max simultaneous listeners across a room's sessions (interval sweep). */
+function peakConcurrent(segs: Seg[]): number {
+  const events: [number, number][] = [];
+  for (const s of segs) {
+    const start = Date.parse(s.started_at);
+    const end = Date.parse(s.ended_at ?? s.last_seen_at);
+    events.push([start, 1], [Math.max(end, start), -1]);
+  }
+  // at an equal timestamp, process ends (-1) before starts (+1)
+  events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  let cur = 0;
+  let peak = 0;
+  for (const [, d] of events) {
+    cur += d;
+    if (cur > peak) peak = cur;
+  }
+  return peak;
+}
 
 export async function loadAdminInsights(): Promise<AdminInsights> {
   const service = createServiceClient();
@@ -55,16 +111,24 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
     { data: rooms },
     { data: hostRows },
     { data: segs },
+    { data: speakerRows },
+    eventStats,
     authRes,
   ] = await Promise.all([
     service.from("profiles").select("user_id, username, role, standing, created_at"),
     service.from("profile_stats").select("user_id, fan_score, matches_attended, comments_count"),
-    service.from("rooms").select("id, commentator_id"),
+    service
+      .from("rooms")
+      .select(
+        "id, commentator_id, state, title, scheduled_kickoff, created_at, fixture:fixtures(home_team, away_team)",
+      ),
     service.from("room_hosts").select("room_id, user_id").eq("status", "accepted"),
     service
       .from("listener_segments")
-      .select("user_id, started_at, last_seen_at, ended_at")
+      .select("user_id, room_id, started_at, last_seen_at, ended_at")
       .limit(SEG_LIMIT),
+    service.from("speaker_events").select("room_id, action").eq("action", "elevated"),
+    loadEventStats(service),
     service.auth.admin.listUsers({ page: 1, perPage: 1000 }),
   ]);
 
@@ -77,19 +141,25 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
   const authById = new Map(authUsers.map((u) => [u.id, u]));
   const moreUsers = authUsers.length >= 1000;
 
-  // listening seconds: total (incl. anon) + per registered user, from raw
-  // intervals (open segments count up to their last heartbeat, not "now")
+  // listening seconds: total (incl. anon) + per registered user; and each
+  // registered user's activity days (for week-1 retention)
+  const segList = (segs ?? []) as Seg[];
   let listeningSecondsAll = 0;
   const secsByUser = new Map<string, number>();
-  for (const s of segs ?? []) {
-    const start = Date.parse(s.started_at as string);
-    const end = Date.parse((s.ended_at as string) ?? (s.last_seen_at as string));
+  const activityDaysByUser = new Map<string, Set<string>>();
+  for (const s of segList) {
+    const start = Date.parse(s.started_at);
+    const end = Date.parse(s.ended_at ?? s.last_seen_at);
     const secs = Math.max(0, (end - start) / 1000);
     listeningSecondsAll += secs;
-    const uid = s.user_id as string | null;
-    if (uid) secsByUser.set(uid, (secsByUser.get(uid) ?? 0) + secs);
+    if (s.user_id) {
+      secsByUser.set(s.user_id, (secsByUser.get(s.user_id) ?? 0) + secs);
+      const days = activityDaysByUser.get(s.user_id) ?? new Set<string>();
+      days.add(s.started_at.slice(0, 10));
+      activityDaysByUser.set(s.user_id, days);
+    }
   }
-  const truncatedSegments = (segs?.length ?? 0) >= SEG_LIMIT;
+  const truncatedSegments = segList.length >= SEG_LIMIT;
 
   // hosted rooms per user (created as commentator, or accepted co-host)
   const hostedByUser = new Map<string, Set<string>>();
@@ -124,15 +194,16 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
     })
     .sort((a, b) => b.joinedAt.localeCompare(a.joinedAt));
 
-  // KPIs
   const now = Date.now();
+  const active7d = users.filter(
+    (u) => u.lastSignInAt && now - Date.parse(u.lastSignInAt) < 7 * DAY,
+  ).length;
+
   const kpis = {
     totalUsers: users.length,
     new7d: users.filter((u) => now - Date.parse(u.joinedAt) < 7 * DAY).length,
     new30d: users.filter((u) => now - Date.parse(u.joinedAt) < 30 * DAY).length,
-    active7d: users.filter(
-      (u) => u.lastSignInAt && now - Date.parse(u.lastSignInAt) < 7 * DAY,
-    ).length,
+    active7d,
     totalHosts: users.filter((u) => u.hostedRooms > 0).length,
     totalRooms: rooms?.length ?? 0,
     listeningSecondsAll: Math.round(listeningSecondsAll),
@@ -142,6 +213,90 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
     totalMatchesAttended: users.reduce((a, u) => a + u.matchesAttended, 0),
     totalComments: users.reduce((a, u) => a + u.comments, 0),
   };
+
+  // Funnel: auth account created (started) -> profile/username picked (completed)
+  const funnel = {
+    authAccounts: authUsers.length,
+    completedProfiles: users.length,
+    onboardingDropoff: Math.max(0, authUsers.length - users.length),
+    conversionPct: authUsers.length
+      ? Math.round((users.length / authUsers.length) * 100)
+      : 0,
+  };
+
+  // Retention: returned = last login on a later day than signup; week1 = a
+  // listening session on a day after signup within 7 days
+  let returnedCount = 0;
+  let week1Count = 0;
+  for (const u of users) {
+    const joinDay = u.joinedAt.slice(0, 10);
+    if (u.lastSignInAt && u.lastSignInAt.slice(0, 10) > joinDay) returnedCount++;
+    const joinMs = Date.parse(joinDay);
+    const days = activityDaysByUser.get(u.userId);
+    if (
+      days &&
+      [...days].some((d) => {
+        const dm = Date.parse(d);
+        return dm > joinMs && dm <= joinMs + 7 * DAY;
+      })
+    )
+      week1Count++;
+  }
+  const retention = {
+    returnedCount,
+    returnedRate: users.length ? Math.round((returnedCount / users.length) * 100) : 0,
+    week1Count,
+    week1Rate: users.length ? Math.round((week1Count / users.length) * 100) : 0,
+    activeRate: users.length ? Math.round((active7d / users.length) * 100) : 0,
+  };
+
+  // Per-room analytics
+  const segsByRoom = new Map<string, Seg[]>();
+  for (const s of segList) {
+    const arr = segsByRoom.get(s.room_id) ?? [];
+    arr.push(s);
+    segsByRoom.set(s.room_id, arr);
+  }
+  const callInsByRoom = new Map<string, number>();
+  for (const e of speakerRows ?? [])
+    callInsByRoom.set(
+      e.room_id as string,
+      (callInsByRoom.get(e.room_id as string) ?? 0) + 1,
+    );
+
+  const roomInsights: RoomInsight[] = (rooms ?? [])
+    .map((r) => {
+      const rs = segsByRoom.get(r.id as string) ?? [];
+      const durations = rs.map((s) =>
+        Math.max(0, (Date.parse(s.ended_at ?? s.last_seen_at) - Date.parse(s.started_at)) / 1000),
+      );
+      const avg = durations.length
+        ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+        : 0;
+      // PostgREST types the embed as an array; a to-one FK returns an object at
+      // runtime — handle both.
+      const fxRaw = r.fixture as unknown;
+      const fx = (Array.isArray(fxRaw) ? fxRaw[0] : fxRaw) as
+        | { home_team: string; away_team: string }
+        | null
+        | undefined;
+      const name = fx
+        ? `${fx.home_team} v ${fx.away_team}`
+        : ((r.title as string | null) ?? "Room");
+      return {
+        roomId: r.id as string,
+        name,
+        whenIso: (r.scheduled_kickoff as string) ?? (r.created_at as string),
+        state: r.state as string,
+        uniqueListeners: new Set(rs.map((s) => s.user_id).filter(Boolean)).size,
+        anonSessions: rs.filter((s) => !s.user_id).length,
+        peakConcurrent: peakConcurrent(rs),
+        avgSessionSecs: avg,
+        callIns: callInsByRoom.get(r.id as string) ?? 0,
+      };
+    })
+    .sort((a, b) => b.whenIso.localeCompare(a.whenIso))
+    .slice(0, 50);
 
   // growth: signups per UTC day over the last 30 days + running cumulative
   const signupsByDay = new Map<string, number>();
@@ -162,8 +317,37 @@ export async function loadAdminInsights(): Promise<AdminInsights> {
 
   return {
     kpis,
+    funnel,
+    retention,
     growth,
     users,
+    rooms: roomInsights,
+    events: eventStats,
     notes: { moreUsers, truncatedSegments },
   };
+}
+
+/** Product-telemetry event counts (migration 0041). Returns null if the table
+ *  isn't present yet, so the dashboard degrades gracefully. */
+async function loadEventStats(
+  service: ReturnType<typeof createServiceClient>,
+): Promise<EventStat[] | null> {
+  const { data, error } = await service
+    .from("events")
+    .select("event, created_at")
+    .gte("created_at", new Date(Date.now() - 30 * DAY).toISOString())
+    .limit(100000);
+  if (error) return null;
+  const now = Date.now();
+  const byEvent = new Map<string, { total: number; last7d: number }>();
+  for (const e of data ?? []) {
+    const k = e.event as string;
+    const cur = byEvent.get(k) ?? { total: 0, last7d: 0 };
+    cur.total++;
+    if (now - Date.parse(e.created_at as string) < 7 * DAY) cur.last7d++;
+    byEvent.set(k, cur);
+  }
+  return [...byEvent.entries()]
+    .map(([event, v]) => ({ event, ...v }))
+    .sort((a, b) => b.total - a.total);
 }

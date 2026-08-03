@@ -31,7 +31,8 @@ export default async function AdminInsightsPage() {
   const { user, profile } = await getCurrentUserAndProfile();
   if (!isAdmin(user?.id, profile)) redirect("/");
 
-  const { kpis, growth, users, notes } = await loadAdminInsights();
+  const { kpis, funnel, retention, growth, users, rooms, events, notes } =
+    await loadAdminInsights();
   const maxSignups = Math.max(1, ...growth.map((g) => g.signups));
 
   return (
@@ -62,6 +63,37 @@ export default async function AdminInsightsPage() {
         <Kpi value={formatDuration(kpis.listeningSecondsRegistered)} label="By registered users" sub="of the above" />
         <Kpi value={kpis.totalMatchesAttended} label="Matches attended" sub="15+ min sessions" />
         <Kpi value={kpis.totalComments} label="Chat messages" sub="all time" />
+      </section>
+
+      {/* Funnel & retention */}
+      <section className="mt-6">
+        <h2 className="mb-3 text-sm font-bold">Funnel &amp; retention</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Kpi
+            value={`${funnel.conversionPct}%`}
+            label="Onboarding completion"
+            sub={`${funnel.completedProfiles}/${funnel.authAccounts} finished signup`}
+          />
+          <Kpi
+            value={funnel.onboardingDropoff}
+            label="Stuck in onboarding"
+            sub="signed in, no username"
+          />
+          <Kpi
+            value={`${retention.returnedRate}%`}
+            label="Returned"
+            sub={`${retention.returnedCount} came back a later day`}
+          />
+          <Kpi
+            value={`${retention.week1Rate}%`}
+            label="Week-1 return"
+            sub="listened again within 7d"
+          />
+        </div>
+        <p className="mt-2 text-[11px] text-tertiary">
+          Returned = signed in on a later day than signup. Fuller cohort curves
+          fill in as the events log accumulates.
+        </p>
       </section>
 
       {/* Growth */}
@@ -113,6 +145,97 @@ export default async function AdminInsightsPage() {
           </p>
         )}
       </section>
+
+      {/* Rooms */}
+      <section className="mt-8">
+        <h2 className="mb-3 text-sm font-bold">Rooms · recent {rooms.length}</h2>
+        <div className="overflow-x-auto rounded-xl border border-line">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-line bg-raised/50 font-mono text-[11px] tracking-[0.04em] text-secondary uppercase">
+                <th className="px-3 py-2">Room</th>
+                <th className="px-3 py-2">When</th>
+                <th className="px-3 py-2 text-right">Listeners</th>
+                <th className="px-3 py-2 text-right">Peak</th>
+                <th className="px-3 py-2 text-right">Avg session</th>
+                <th className="px-3 py-2 text-right">Call-ins</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rooms.map((r) => (
+                <tr key={r.roomId} className="border-b border-line/60 last:border-b-0">
+                  <td className="px-3 py-2">
+                    <span className="font-semibold text-primary">{r.name}</span>
+                    <span className="ml-2 rounded-full bg-raised px-1.5 py-0.5 font-mono text-[9px] tracking-[0.04em] text-secondary uppercase">
+                      {r.state}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-secondary tabular-nums">
+                    {r.whenIso.slice(0, 10)}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {r.uniqueListeners}
+                    {r.anonSessions > 0 && (
+                      <span className="text-tertiary"> +{r.anonSessions}a</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">
+                    {r.peakConcurrent}
+                  </td>
+                  <td className="px-3 py-2 text-right whitespace-nowrap tabular-nums">
+                    {formatDuration(r.avgSessionSecs)}
+                  </td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.callIns}</td>
+                </tr>
+              ))}
+              {rooms.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-3 py-6 text-center text-secondary">
+                    No rooms yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[11px] text-tertiary">
+          Listeners = distinct signed-in accounts (+ Na anonymous sessions);
+          peak = max simultaneous; call-ins = times a listener went on air.
+        </p>
+      </section>
+
+      {/* Events (product telemetry) */}
+      {events !== null && (
+        <section className="mt-8">
+          <h2 className="mb-3 text-sm font-bold">Events · last 30 days</h2>
+          {events.length === 0 ? (
+            <p className="text-sm text-secondary">
+              No events logged yet — telemetry starts recording from now.
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-line">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line bg-raised/50 font-mono text-[11px] tracking-[0.04em] text-secondary uppercase">
+                    <th className="px-3 py-2">Event</th>
+                    <th className="px-3 py-2 text-right">Last 7d</th>
+                    <th className="px-3 py-2 text-right">30d total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((e) => (
+                    <tr key={e.event} className="border-b border-line/60 last:border-b-0">
+                      <td className="px-3 py-2 font-mono text-[12px]">{e.event}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{e.last7d}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">{e.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 }

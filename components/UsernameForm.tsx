@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/track";
 
 /**
  * First-login username pick (POST) and later renames (PATCH, 30-day lock —
@@ -38,6 +39,7 @@ export function UsernameForm({
       return;
     }
     if (mode === "create") {
+      track("signup_completed");
       router.push(next);
     }
     router.refresh();

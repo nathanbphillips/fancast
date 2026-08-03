@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useToast } from "@/components/Toast";
+import { track } from "@/lib/track";
 
 /**
  * "Count me in" RSVP toggle (FR-22.1), shared by the /matches hero, the up-next
@@ -64,6 +65,8 @@ export function RsvpButton({
     if (!res?.ok) {
       setRsvped(!next);
       toast("Couldn't update your RSVP. Try again.");
+    } else if (next) {
+      track("rsvp_created", { roomId });
     }
   }
 
