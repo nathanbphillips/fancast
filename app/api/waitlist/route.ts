@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/db/server";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
+import { sendWaitlistConfirmation } from "@/lib/notify/transactional";
 
 /**
  * Public pre-launch email capture (front-end review item 7). Open + anonymous,
@@ -36,18 +37,27 @@ export async function POST(request: NextRequest) {
   }
 
   const service = createServiceClient();
-  const { error } = await service.from("waitlist").upsert(
-    {
-      email: parsed.data.email.toLowerCase(),
-      source: parsed.data.source ?? null,
-    },
-    { onConflict: "email", ignoreDuplicates: true },
-  );
+  const email = parsed.data.email.toLowerCase();
+  const { data: inserted, error } = await service
+    .from("waitlist")
+    .upsert(
+      { email, source: parsed.data.source ?? null },
+      { onConflict: "email", ignoreDuplicates: true },
+    )
+    .select("id");
   if (error) {
     return NextResponse.json(
       { error: "Couldn't save that. Try again." },
       { status: 500 },
     );
+  }
+
+  // confirmation only on a genuinely new signup (ignoreDuplicates returns no
+  // rows for an email that's already on the list)
+  if ((inserted?.length ?? 0) > 0) {
+    after(async () => {
+      await sendWaitlistConfirmation(email).catch(() => {});
+    });
   }
 
   return NextResponse.json({ ok: true });

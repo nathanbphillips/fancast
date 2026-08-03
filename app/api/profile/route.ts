@@ -1,6 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, after, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
+import { sendWelcomeEmail } from "@/lib/notify/transactional";
 import { config } from "@/lib/config";
 import { isReservedUsername } from "@/lib/reserved-usernames";
 import {
@@ -135,6 +136,16 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // welcome email on first signup (transactional; no-ops until Resend is set)
+  if (user.email) {
+    const email = user.email;
+    const username = parsed.data.username;
+    after(async () => {
+      await sendWelcomeEmail(email, username).catch(() => {});
+    });
+  }
+
   return NextResponse.json({ profile: data }, { status: 201 });
 }
 

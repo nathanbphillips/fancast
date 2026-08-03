@@ -54,3 +54,29 @@ export function verifyUnsubscribeToken(
   if (!isNotificationType(type)) return null;
   return { userId, type };
 }
+
+/** Signed one-click unsubscribe for the matchday-alert waitlist (keyed by
+ *  email, scope "wl"), so the confirmation email can carry a no-login opt-out. */
+export function waitlistUnsubToken(email: string): string {
+  const payload = `wl.${email.toLowerCase()}`;
+  return `${Buffer.from(payload).toString("base64url")}.${sign(payload)}`;
+}
+
+export function verifyWaitlistUnsubToken(token: string): string | null {
+  const dot = token.lastIndexOf(".");
+  if (dot < 0) return null;
+  const encoded = token.slice(0, dot);
+  const sig = token.slice(dot + 1);
+  let payload: string;
+  try {
+    payload = Buffer.from(encoded, "base64url").toString("utf8");
+  } catch {
+    return null;
+  }
+  const expected = sign(payload);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
+  if (!payload.startsWith("wl.")) return null;
+  return payload.slice(3);
+}
