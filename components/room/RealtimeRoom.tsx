@@ -833,6 +833,9 @@ export function RealtimeRoom(props: Props) {
     (audio.listenStatus === "idle" || audio.listenStatus === "error");
   // "How this works" listener walkthrough (desktop header button / mobile FAQ)
   const [helpOpen, setHelpOpen] = useState(false);
+  // typing in chat on mobile: hide the tab bar so the composer sits directly on
+  // the keyboard and the message list keeps the rest (founder 2026-08-05)
+  const [composerFocused, setComposerFocused] = useState(false);
   const autoTriedRef = useRef(false);
   // any successful listen (first manual tap OR a later autostart) records the
   // per-browser opt-in
@@ -1006,22 +1009,7 @@ export function RealtimeRoom(props: Props) {
           },
         ]
       : []),
-    ...(showStats
-      ? [
-          {
-            id: "stats" as const,
-            label: "Stats",
-            badge: 0,
-            icon: tabIcon(
-              <>
-                <line x1="6" y1="20" x2="6" y2="14" />
-                <line x1="12" y1="20" x2="12" y2="8" />
-                <line x1="18" y1="20" x2="18" y2="4" />
-              </>,
-            ),
-          },
-        ]
-      : []),
+    // Call In sits before Stats (founder 2026-08-05: swapped)
     ...(!isRoomCommentator
       ? [
           {
@@ -1033,6 +1021,22 @@ export function RealtimeRoom(props: Props) {
                 <rect x="9" y="3" width="6" height="11" rx="3" />
                 <path d="M5 11a7 7 0 0014 0" />
                 <line x1="12" y1="18" x2="12" y2="21" />
+              </>,
+            ),
+          },
+        ]
+      : []),
+    ...(showStats
+      ? [
+          {
+            id: "stats" as const,
+            label: "Stats",
+            badge: 0,
+            icon: tabIcon(
+              <>
+                <line x1="6" y1="20" x2="6" y2="14" />
+                <line x1="12" y1="20" x2="12" y2="8" />
+                <line x1="18" y1="20" x2="18" y2="4" />
               </>,
             ),
           },
@@ -1204,6 +1208,7 @@ export function RealtimeRoom(props: Props) {
       chatOpen={chatOpen}
       floats={floats}
       onReact={sendReaction}
+      onComposerFocus={setComposerFocused}
     />
   );
 
@@ -1668,7 +1673,7 @@ export function RealtimeRoom(props: Props) {
       {/* mobile: bottom segmented bar (Cloud Design) — CHAT / STATS / CALL IN */}
       <nav
         aria-label="Room sections"
-        className="flex flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden"
+        className={`${composerFocused ? "hidden" : "flex"} flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden`}
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {!isRoomCommentator && (
@@ -1868,6 +1873,7 @@ function LiveChat({
   chatOpen,
   floats,
   onReact,
+  onComposerFocus,
 }: {
   room: RoomInfo;
   roomState: RoomState;
@@ -1897,6 +1903,9 @@ function LiveChat({
   chatOpen: boolean;
   floats: ReactionFloat[];
   onReact: (emoji: string) => void;
+  /** the chat input gained/lost focus — the room hides the mobile tab bar while
+   *  typing so only the composer sits above the keyboard (founder 2026-08-05) */
+  onComposerFocus?: (focused: boolean) => void;
 }) {
   const pathname = usePathname();
   const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
@@ -2705,7 +2714,10 @@ function LiveChat({
               </span>
             ))}
           </div>
-          <div className="flex items-center gap-1.5">
+          {/* reactions + "Ask the host" are DESKTOP-ONLY (founder 2026-08-05):
+              on mobile they ate the chat's real estate, and asking now lives on
+              the Call In tab with Request to Talk */}
+          <div className="hidden items-center gap-1.5 lg:flex">
             {REACTION_EMOJI.map((e) => (
               <button
                 key={e}
@@ -2746,6 +2758,10 @@ function LiveChat({
                   : "Say something to the room…"
               }
               aria-label="Chat message"
+              onFocus={() => onComposerFocus?.(true)}
+              // delayed so a tap on Send (which blurs first) still lands before
+              // the tab bar comes back and shifts the layout
+              onBlur={() => setTimeout(() => onComposerFocus?.(false), 150)}
               className="h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
             />
             <button
@@ -2772,22 +2788,10 @@ function LiveChat({
                   askSignal={askSignal}
                 />
               </div>
-              {/* mobile: just the ask form (opened by the "Ask the host" pill).
-                  Calling in has its own Call In tab, so the two big buttons are
-                  dropped from the mobile chat footer to declutter it. The
-                  commentary/discussion slider moved to the Polls tab entirely
-                  (founder 2026-08-05). */}
-              <div className="lg:hidden">
-                <InteractionButtons
-                  roomId={room.id}
-                  consentGiven={talkConsentGiven}
-                  hasPendingTalk={hasPendingTalk}
-                  resolvedSignal={talkResolvedSignal}
-                  queuePosition={queuePosition}
-                  askSignal={askSignal}
-                  askOnly
-                />
-              </div>
+              {/* mobile carries NOTHING here: Ask Question + Request to Talk
+                  both live on the Call In tab, and the commentary/discussion
+                  slider lives on Polls — so the mobile chat footer is just the
+                  composer, sitting directly above the tab bar (2026-08-05) */}
             </>
           )}
           {inputsOpen && isRoomCommentator && (
