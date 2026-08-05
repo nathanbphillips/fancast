@@ -48,22 +48,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
   }
 
-  const { data: accepted } = await service
+  const { data: acceptedRows } = await service
     .from("talk_requests")
     .select("id")
     .eq("room_id", roomId)
     .eq("user_id", targetUserId)
     .eq("status", "accepted")
-    .maybeSingle();
-  if (!accepted) {
-    return NextResponse.json({ error: "Not on air." }, { status: 404 });
-  }
+    .limit(1);
+  const accepted = (acceptedRows ?? [])[0];
 
+  // UNCONDITIONAL KILL SWITCH (founder 2026-08-05). This used to 404 when there
+  // was no 'accepted' row, skipping the revoke entirely — so the host's ✕ did
+  // nothing whenever state had drifted (e.g. the row was completed when the
+  // caller re-requested). Revoking publish and announcing the departure must
+  // happen regardless; the row update is best-effort on top.
   await setPublishPermission(roomId, targetUserId, false);
-  await service
-    .from("talk_requests")
-    .update({ status: "completed" })
-    .eq("id", accepted.id);
+  if (accepted) {
+    await service
+      .from("talk_requests")
+      .update({ status: "completed" })
+      .eq("id", accepted.id);
+  }
   await service.from("speaker_events").insert({
     room_id: roomId,
     user_id: targetUserId,
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
   // (FR-4.2). speaker_left above legitimately carries the id (on-air speakers
   // are already public via LiveKit); a resolution must not be.
   await publish(channels.userPrivate(roomId, targetUserId), "talk_resolved", {
-    requestId: accepted.id,
+    requestId: accepted?.id ?? null,
   });
   return NextResponse.json({ ok: true });
 }

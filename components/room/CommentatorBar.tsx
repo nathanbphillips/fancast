@@ -188,8 +188,12 @@ export function CommentatorBar({
         {error && <p className="text-xs text-red">{error}</p>}
       </div>
 
-      {/* center zone: waiting-room setup, then pending talk requests */}
+      {/* center zone: on-air guests, waiting-room setup, then pending talk
+          requests. The live guest pill sits HERE — the same place their request
+          card was, next to the host's own status — rather than out on the right
+          past the clock and mic controls (founder 2026-08-05). */}
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+        {speakerChips}
         {state === "waiting" && (
           <>
             <div className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5 text-xs">
@@ -315,7 +319,6 @@ export function CommentatorBar({
       </div>
 
       {clockControls}
-      {speakerChips}
       {micControls}
       {roster}
 

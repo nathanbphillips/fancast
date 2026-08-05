@@ -453,11 +453,17 @@ export function RealtimeRoom(props: Props) {
   }
 
   async function removeSpeaker(identity: string) {
-    await fetch("/api/talk/leave", {
+    // the response was ignored, so a failed end-call looked identical to a
+    // successful one — the ✕ appeared to do nothing (founder 2026-08-05)
+    const res = await fetch("/api/talk/leave", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: room.id, userId: identity }),
-    });
+    }).catch(() => null);
+    if (!res || !res.ok) {
+      const body = res ? await res.json().catch(() => ({})) : {};
+      roomToast(body.error ?? "Couldn't end that call. Try again.");
+    }
   }
 
   useEffect(() => {
@@ -872,6 +878,7 @@ export function RealtimeRoom(props: Props) {
     (audio.listenStatus === "idle" || audio.listenStatus === "error");
   // "How this works" listener walkthrough (desktop header button / mobile FAQ)
   const [helpOpen, setHelpOpen] = useState(false);
+  const roomToast = useToast();
   // typing in chat on mobile: hide the tab bar so the composer sits directly on
   // the keyboard and the message list keeps the rest (founder 2026-08-05)
   const [composerFocused, setComposerFocused] = useState(false);
