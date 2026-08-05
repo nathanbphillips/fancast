@@ -27,6 +27,7 @@ export function MatchHeader({
   themeToggle,
   userMenu,
   share,
+  help,
 }: {
   home: string;
   away: string;
@@ -48,6 +49,8 @@ export function MatchHeader({
   themeToggle?: React.ReactNode;
   userMenu?: React.ReactNode;
   share?: React.ReactNode;
+  /** "How This Works" listener help button, between theme + share (2026-08-05) */
+  help?: React.ReactNode;
 }) {
   const isLive =
     state === "live_1h" || state === "live_2h" || state === "extra_time";
@@ -141,6 +144,7 @@ export function MatchHeader({
           </span>
         )}
         {themeToggle}
+        {help}
         {share}
         {userMenu}
       </div>

@@ -57,6 +57,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { Avatar } from "@/components/Avatar";
 import { ProfilePopover } from "@/components/ProfilePopover";
 import { ShareButton } from "@/components/room/ShareButton";
+import { HowThisWorks } from "./HowThisWorks";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -762,6 +763,8 @@ export function RealtimeRoom(props: Props) {
   // manual Play tap each visit. Browsers that forbid gesture-less audio (iOS
   // Safari) come back "blocked" and get a one-tap overlay instead.
   const [autoplayDismissed, setAutoplayDismissed] = useState(false);
+  // "How this works" listener walkthrough (desktop header button / mobile FAQ)
+  const [helpOpen, setHelpOpen] = useState(false);
   const autoTriedRef = useRef(false);
   // any successful listen (first manual tap OR a later autostart) records the
   // per-browser opt-in
@@ -1267,6 +1270,7 @@ export function RealtimeRoom(props: Props) {
         )}
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
+      <HowThisWorks open={helpOpen} onClose={() => setHelpOpen(false)} />
       {/* short-term in-room bug reporter (testing/pre-launch) */}
       <BugReporter roomId={room.id} roomState={roomState} />
       <MatchHeader
@@ -1284,6 +1288,31 @@ export function RealtimeRoom(props: Props) {
         live={audioLive}
         themeToggle={<ThemeToggle />}
         share={<ShareButton />}
+        help={
+          isRoomCommentator ? undefined : (
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-red px-3 text-xs font-bold text-white transition-[filter] hover:brightness-110"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.5 9.3a2.5 2.5 0 115 .4c0 1.6-2.5 2-2.5 3.5" />
+                <line x1="12" y1="16.5" x2="12" y2="16.55" />
+              </svg>
+              How This Works
+            </button>
+          )
+        }
         userMenu={
           viewer ? (
             <UserMenu
@@ -1537,6 +1566,25 @@ export function RealtimeRoom(props: Props) {
         className="flex flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden"
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
+        {!isRoomCommentator && (
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            aria-label="How this works"
+            className="relative flex flex-1 flex-col items-center gap-1 py-1 text-red transition-colors"
+          >
+            {tabIcon(
+              <>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.5 9.3a2.5 2.5 0 115 .4c0 1.6-2.5 2-2.5 3.5" />
+                <line x1="12" y1="16.5" x2="12" y2="16.55" />
+              </>,
+            )}
+            <span className="font-mono text-[9px] tracking-[0.06em] uppercase">
+              FAQ
+            </span>
+          </button>
+        )}
         {mobileTabs.map((t) => (
           <button
             key={t.id}
