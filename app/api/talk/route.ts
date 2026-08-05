@@ -100,15 +100,27 @@ export async function POST(request: NextRequest) {
     .eq("user_id", caller.userId)
     .in("status", ["pending", "accepted"])
     .limit(2);
-  const existing = (existingRows ?? [])[0];
-  if (existing) {
+  const rows = existingRows ?? [];
+  // SELF-HEAL a stale 'accepted' row. If an earlier accept never got the caller
+  // on air (their mic start hung on a permission prompt), that row would lock
+  // them out forever: this route would answer "you're already on air" while the
+  // only control that clears it — Leave Air — never appears, because it needs a
+  // LIVE mic. Complete it and let them ask again. Deliberately does NOT revoke
+  // publish: a genuinely live caller never sees this form (they get the ON AIR
+  // bar), and cutting someone off mid-sentence is the worse failure.
+  const staleAccepted = rows.filter((r) => r.status === "accepted");
+  if (staleAccepted.length > 0) {
+    await service
+      .from("talk_requests")
+      .update({ status: "completed" })
+      .in(
+        "id",
+        staleAccepted.map((r) => r.id),
+      );
+  }
+  if (rows.some((r) => r.status === "pending")) {
     return NextResponse.json(
-      {
-        error:
-          existing.status === "accepted"
-            ? "You're already on air."
-            : "Your request is already in.",
-      },
+      { error: "Your request is already in." },
       { status: 409 },
     );
   }
