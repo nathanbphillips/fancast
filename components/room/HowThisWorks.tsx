@@ -167,7 +167,7 @@ export function HowThisWorks({
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5"
           style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
         >
-          <ol className="space-y-5">
+          <ol className="list-none space-y-5 pl-0">
             {SECTIONS.map((s, i) => (
               <li key={s.title} className="flex gap-3.5">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red font-mono text-xs font-bold text-white tabular-nums">

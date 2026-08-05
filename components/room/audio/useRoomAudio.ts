@@ -538,7 +538,11 @@ export function useRoomAudio(opts: {
     workletRef.current?.port.postMessage({ type: "reset" });
     setSyncAvailable(0);
     setSyncEffective(0);
-    await playbackCtxRef.current?.suspend().catch(() => {});
+    // full teardown (not just suspend) so a later replay builds a FRESH context
+    // inside its gesture (same path as the first play). iOS Safari won't reliably
+    // resume a suspended context + MediaStream element, which left "tap play to
+    // restart" doing nothing after a pause (founder 2026-08-05).
+    teardownPlaybackGraph();
     setListenStatus("idle");
     setAutoplayBlocked(false);
     clearTech();

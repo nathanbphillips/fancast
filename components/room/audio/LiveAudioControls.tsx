@@ -285,9 +285,10 @@ export function ListenerBar({
     .filter((s) => !s.isCommentator && s.name !== "you")
     .map((s) => s.name)
     .join(", ");
-  // mobile sync transport (Cloud Design): expanded by default — "tap SYNC once,
-  // then collapse it". Session-local UI state only.
-  const [expanded, setExpanded] = useState(true);
+  // mobile audio transport: collapsed by default (founder 2026-08-05: start
+  // minimal, just play + a small score; tap to expand for sync). Auto-expands
+  // when the listener is elevated to call in (effect below). Session-local.
+  const [expanded, setExpanded] = useState(false);
   // radio (HLS) plays only where the browser can decode HLS in a plain <audio>
   // element (Safari/iOS). On Chrome/Firefox/Android it would be silent, so the
   // toggle only appears where it actually works (live-test review 2026-08-05).
