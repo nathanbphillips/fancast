@@ -58,6 +58,7 @@ import { Avatar } from "@/components/Avatar";
 import { ProfilePopover } from "@/components/ProfilePopover";
 import { ShareButton } from "@/components/room/ShareButton";
 import NextLink from "next/link";
+import { usePathname } from "next/navigation";
 
 /**
  * Live room: chat + links + lifecycle over Ably, DB as source of truth.
@@ -182,6 +183,10 @@ export function RealtimeRoom(props: Props) {
   // lg:grid-cols-[2fr_1fr] with order-1/order-2. When showStats is false the
   // stats column drops and chat fills the full width. On mobile `tab` switches
   // Chat / Stats (only when showStats) / Call in; links live inside the stream.
+  const pathname = usePathname();
+  // carry the room path through sign-in so users land back in the room, not on
+  // the home page (live-test review 2026-08-05)
+  const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
   const [tab, setTab] = useState<
     "chat" | "stats" | "questions" | "callin" | "polls"
   >("chat");
@@ -1035,6 +1040,7 @@ export function RealtimeRoom(props: Props) {
       techSince={audio.techSince}
       canPublish={viewer !== null && audio.canPublish}
       micStatus={audio.micStatus}
+      micError={audio.micError}
       micMuted={audio.micMuted}
       onGoOnAir={() => void audio.startMic()}
       onLeaveAir={() => void leaveAir()}
@@ -1287,7 +1293,7 @@ export function RealtimeRoom(props: Props) {
             />
           ) : (
             <NextLink
-              href="/signin"
+              href={signinHref}
               className="flex h-11 items-center rounded-lg px-3 text-sm font-semibold hover:bg-raised"
             >
               Sign in
@@ -1445,7 +1451,7 @@ export function RealtimeRoom(props: Props) {
                     Sign in to request the mic and join the show.
                   </p>
                   <a
-                    href="/signin"
+                    href={signinHref}
                     className="mt-3 inline-flex h-11 items-center rounded-lg bg-red px-5 text-sm font-semibold text-white"
                   >
                     Sign in
@@ -1630,14 +1636,16 @@ function timeAgo(iso: string): string {
 }
 
 /** Small square thumbnail for an inline chat-message link preview; hides itself
- *  if the image 404s. */
+ *  if the image 404s. Loads through our first-party /api/link-image proxy so a
+ *  posted link's image host can't harvest every listener's IP (live-test review
+ *  2026-08-05). */
 function LinkThumb({ src }: { src: string }) {
   const [broken, setBroken] = useState(false);
   if (broken) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
+      src={`/api/link-image?url=${encodeURIComponent(src)}`}
       alt=""
       loading="lazy"
       onError={() => setBroken(true)}
@@ -1737,6 +1745,8 @@ function LiveChat({
   floats: ReactionFloat[];
   onReact: (emoji: string) => void;
 }) {
+  const pathname = usePathname();
+  const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   // "Ask the host" pill on the reactions row → opens the question form inside
@@ -2465,7 +2475,7 @@ function LiveChat({
               questions, and request to talk.
             </p>
             <a
-              href="/signin"
+              href={signinHref}
               className="mt-3 inline-flex h-11 items-center rounded-lg bg-red px-5 text-sm font-semibold text-white"
             >
               Sign in to join
@@ -2722,9 +2732,10 @@ function LinkCard({
             className="relative block h-20 w-20 shrink-0 self-start"
             aria-label={`Open ${link.og_title ?? link.url}`}
           >
+            {/* proxied so the image host can't harvest listener IPs (2026-08-05) */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={link.og_image!}
+              src={`/api/link-image?url=${encodeURIComponent(link.og_image!)}`}
               alt=""
               loading="lazy"
               onError={() => setImgBroken(true)}

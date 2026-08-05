@@ -80,8 +80,9 @@ const bodySchema = z.object({
   parentId: z.uuid().optional(),
 });
 
-/** Send a chat message. Rate limit (FR-8.5): 1 msg / 2s, burst 3 —
- *  approximated as max 3 messages in any rolling 6s window. */
+/** Send a chat message. Rate limit (FR-8.5): burst 5 in any rolling 6s window
+ *  (loosened from 3 after the first live test so excited fans aren't paced down
+ *  at goals — live-test review 2026-08-05). */
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
     .eq("room_id", roomId)
     .eq("user_id", caller.userId)
     .gte("created_at", windowStart);
-  if ((recent ?? 0) >= 3) {
+  if ((recent ?? 0) >= 5) {
     return NextResponse.json(
       { error: "Easy — you're sending too fast." },
       { status: 429 },

@@ -30,7 +30,10 @@ export type Speaker = {
   isCommentator: boolean;
 };
 
-const SILENCE_SECONDS = 10;
+// 25s so a natural commentary lull (pregame setup, a goal-kick, a sip of water)
+// doesn't trip a false "technical difficulties" for the whole room (live-test
+// review 2026-08-05); a genuine host disconnect is caught separately + instantly.
+const SILENCE_SECONDS = 25;
 const SILENCE_RMS = 0.0035;
 
 export function useRoomAudio(opts: {
@@ -47,6 +50,10 @@ export function useRoomAudio(opts: {
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [micStatus, setMicStatus] = useState<MicStatus>("off");
   const [micMuted, setMicMuted] = useState(false);
+  // set when starting the mic fails (esp. a denied mic permission) so a caller
+  // gets a clear reason instead of the "Go on air" button silently reverting
+  // (live-test review 2026-08-05)
+  const [micError, setMicError] = useState<string | null>(null);
   const [canPublish, setCanPublish] = useState(false);
   const [selfDelay, setSelfDelayState] = useState(0);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
@@ -617,6 +624,7 @@ export function useRoomAudio(opts: {
     const room = roomRef.current ?? (await connect());
     if (!room) return;
     setMicStatus("starting");
+    setMicError(null);
     try {
       const raw = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -654,6 +662,14 @@ export function useRoomAudio(opts: {
       refreshSpeakers(room);
     } catch (err) {
       console.error("mic start failed:", err);
+      const name = err instanceof DOMException ? err.name : "";
+      setMicError(
+        name === "NotAllowedError" || name === "SecurityError"
+          ? "Allow microphone access to go on air — check your browser's site settings."
+          : name === "NotFoundError"
+            ? "No microphone found — plug one in or check your device."
+            : "Couldn't start your mic. Close anything else using it, then try again.",
+      );
       await stopMicInternal();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -723,6 +739,7 @@ export function useRoomAudio(opts: {
     setSyncOffset,
     adjustSyncOffset,
     micStatus,
+    micError,
     micMuted,
     startMic,
     stopMic,

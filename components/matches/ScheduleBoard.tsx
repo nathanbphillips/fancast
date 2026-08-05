@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import type { ScheduleGroup, ScheduleFixture } from "@/lib/db/matches";
 import { RsvpButton } from "@/components/matches/RsvpButton";
+import { LocalTime } from "@/components/KickoffTime";
 
 /**
  * The full schedule (Matchday design): client-side filter pills (All fixtures /
@@ -22,15 +23,6 @@ type FilterId = (typeof FILTERS)[number]["id"];
 
 const isArsenal = (f: ScheduleFixture) =>
   f.home === "Arsenal" || f.away === "Arsenal";
-
-function timeOf(iso: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Europe/London",
-  }).format(new Date(iso));
-}
 
 export function ScheduleBoard({
   groups,
@@ -117,7 +109,7 @@ export function ScheduleBoard({
                       />
                     )}
                     <span className="w-[46px] shrink-0 font-mono text-[12px] text-secondary tabular-nums">
-                      {timeOf(f.kickoffUtc)}
+                      <LocalTime iso={f.kickoffUtc} />
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[15px]">
                       <span className="font-bold">{f.home}</span>{" "}

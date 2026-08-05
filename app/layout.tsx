@@ -3,6 +3,7 @@ import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
 import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { THEME_COOKIE, themeInitScript, type ThemeChoice } from "@/lib/theme";
+import { ClientErrorReporter } from "@/components/ClientErrorReporter";
 import "./globals.css";
 
 // Matchday redesign type system: Schibsted Grotesk (display + body/UI — heavy
@@ -59,6 +60,10 @@ export const viewport: Viewport = {
   // tab bar's env(safe-area-inset-bottom) padding actually engages on notched
   // iPhones (founder 2026-08-05)
   viewportFit: "cover",
+  // the on-screen keyboard resizes the layout viewport instead of overlaying it,
+  // so h-dvh flex layouts (the room) reflow and the chat composer stays above
+  // the keyboard on mobile (live-test review 2026-08-05)
+  interactiveWidget: "resizes-content",
 };
 
 export default async function RootLayout({
@@ -98,6 +103,7 @@ export default async function RootLayout({
         className={`${schibsted.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         {children}
+        <ClientErrorReporter />
       </body>
     </html>
   );

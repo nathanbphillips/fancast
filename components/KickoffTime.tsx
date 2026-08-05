@@ -37,3 +37,42 @@ export function KickoffTime({ iso }: { iso: string }) {
     </time>
   );
 }
+
+/**
+ * Just the kickoff TIME (24h), localized to the viewer's timezone — for places
+ * that show the date separately (e.g. a date-grouped schedule). Server renders
+ * UK time; the effect swaps to the viewer's local zone after hydration, so an
+ * international viewer sees when the room starts in THEIR time, not London's
+ * (live-test review 2026-08-05). Pass `weekday` to prefix the local weekday.
+ */
+export function LocalTime({
+  iso,
+  weekday = false,
+  className = "tabular-nums",
+}: {
+  iso: string;
+  weekday?: boolean;
+  className?: string;
+}) {
+  const opts: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    ...(weekday ? { weekday: "short" } : {}),
+  };
+  const [label, setLabel] = useState(() =>
+    new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: "Europe/London" }).format(
+      new Date(iso),
+    ),
+  );
+  useEffect(() => {
+    setLabel(new Intl.DateTimeFormat(undefined, opts).format(new Date(iso)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iso, weekday]);
+
+  return (
+    <time dateTime={iso} suppressHydrationWarning className={className}>
+      {label}
+    </time>
+  );
+}

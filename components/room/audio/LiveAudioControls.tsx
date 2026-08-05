@@ -217,6 +217,7 @@ export function ListenerBar({
   canPublish,
   micStatus,
   micMuted,
+  micError,
   onGoOnAir,
   onLeaveAir,
   onToggleMute,
@@ -253,6 +254,8 @@ export function ListenerBar({
   canPublish: boolean;
   micStatus: MicStatus;
   micMuted: boolean;
+  /** why the mic couldn't start (e.g. denied permission), shown by the caller CTA */
+  micError?: string | null;
   onGoOnAir: () => void;
   onLeaveAir: () => void;
   onToggleMute: () => void;
@@ -285,6 +288,15 @@ export function ListenerBar({
   // mobile sync transport (Cloud Design): expanded by default — "tap SYNC once,
   // then collapse it". Session-local UI state only.
   const [expanded, setExpanded] = useState(true);
+  // radio (HLS) plays only where the browser can decode HLS in a plain <audio>
+  // element (Safari/iOS). On Chrome/Firefox/Android it would be silent, so the
+  // toggle only appears where it actually works (live-test review 2026-08-05).
+  const [hlsSupported, setHlsSupported] = useState(false);
+  useEffect(() => {
+    try {
+      setHlsSupported(!!new Audio().canPlayType("application/vnd.apple.mpegurl"));
+    } catch {}
+  }, []);
 
   const statusLine = radioActive
     ? "Radio mode · a few seconds behind live"
@@ -373,14 +385,21 @@ export function ListenerBar({
 
   const goOnAir =
     canPublish && micStatus !== "live" ? (
-      <button
-        type="button"
-        onClick={onGoOnAir}
-        disabled={micStatus === "starting"}
-        className="h-11 shrink-0 rounded-lg btn-grad-red px-4 text-sm font-bold text-white disabled:opacity-60"
-      >
-        {micStatus === "starting" ? "Mic…" : "Go on air"}
-      </button>
+      <div className="flex shrink-0 flex-col gap-1">
+        <button
+          type="button"
+          onClick={onGoOnAir}
+          disabled={micStatus === "starting"}
+          className="h-11 shrink-0 rounded-lg btn-grad-red px-4 text-sm font-bold text-white disabled:opacity-60"
+        >
+          {micStatus === "starting" ? "Mic…" : "Go on air"}
+        </button>
+        {micError && (
+          <p className="max-w-[240px] text-[11px] leading-snug text-red">
+            {micError}
+          </p>
+        )}
+      </div>
     ) : null;
 
   const liveBadge =
@@ -448,7 +467,7 @@ export function ListenerBar({
         <div className="min-w-0 flex-1 xl:hidden" />
         {goOnAir}
         {liveBadge}
-        {radioToggle}
+        {hlsSupported && radioToggle}
         {sync}
         <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-28 shrink-0" />
       </div>
@@ -582,7 +601,7 @@ export function ListenerBar({
 
             {/* radio + volume (kept from the old drawer — nothing lost) */}
             <div className="mt-3 flex items-center gap-3">
-              {radioUrl !== null && live && radioToggle}
+              {radioUrl !== null && live && hlsSupported && radioToggle}
               <VolumeSlider
                 volume={volume}
                 onChange={onVolumeChange}

@@ -17,6 +17,7 @@ import { DiscussionStrip } from "@/components/matches/DiscussionStrip";
 import { ScheduleBoard } from "@/components/matches/ScheduleBoard";
 import { RsvpButton } from "@/components/matches/RsvpButton";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
+import { LocalTime } from "@/components/KickoffTime";
 
 /**
  * Matches (Matches.dc.html): header + filter pills, a featured hero (the live
@@ -192,7 +193,7 @@ export default async function MatchesPage() {
                   style={{ borderLeft: "3px solid #ef0107" }}
                 >
                   <div className="mb-3 font-mono text-[10px] tracking-[0.06em] text-secondary uppercase">
-                    {dateLabel} · {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/London" }).format(new Date(f.kickoffUtc))}
+                    {dateLabel} · <LocalTime iso={f.kickoffUtc} />
                   </div>
                   <div className="display text-[22px]">
                     {f.home} <span className="text-secondary">v</span> {f.away}

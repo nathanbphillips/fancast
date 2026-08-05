@@ -3,6 +3,7 @@ import type { DiscussionRoom } from "@/lib/db/matches";
 import { goingLine } from "@/lib/strings/attendance";
 import { Avatar } from "@/components/Avatar";
 import { RsvpButton } from "@/components/matches/RsvpButton";
+import { LocalTime } from "@/components/KickoffTime";
 
 /**
  * "Rooms right now" — the anytime (discussion) rooms strip on /matches (founder
@@ -11,16 +12,6 @@ import { RsvpButton } from "@/components/matches/RsvpButton";
  * get an RSVP + real "going" count. Honest: real rooms only, no fabricated
  * numbers. Renders nothing when the list is empty.
  */
-
-function timeOf(iso: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Europe/London",
-  }).format(new Date(iso));
-}
 
 export function DiscussionStrip({
   rooms,
@@ -57,7 +48,7 @@ export function DiscussionStrip({
                 </span>
               ) : (
                 <span className="font-mono text-[10px] tracking-[0.06em] text-secondary uppercase">
-                  {timeOf(r.scheduledKickoff)}
+                  <LocalTime iso={r.scheduledKickoff} weekday />
                 </span>
               )}
             </div>
