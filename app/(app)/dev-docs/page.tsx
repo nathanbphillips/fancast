@@ -163,7 +163,7 @@ export default function DevDocsPage() {
                 stream (<C>events</C> table + <C>lib/track.ts</C> + <C>/api/events</C>) feeds an{" "}
                 <C>/admin/insights</C> dashboard (signup funnel, retention, per-room), an in-room bug
                 reporter (<C>bug_reports</C>), and client-side error capture (uncaught errors +
-                rejections → <C>/admin</C> &quot;Client errors&quot;), on top of{" "}
+                rejections → <C>/admin/diagnostics</C>), on top of{" "}
                 <C>listener_segments</C> (audio sessions). Still missing: APM/traces, a hosted error
                 service (Sentry), and web-vitals. See the{" "}
                 <a className="text-gold hover:underline" href="#telemetry">Telemetry section</a>.
@@ -372,7 +372,7 @@ export default function DevDocsPage() {
                 ["profile_reports", "Listener reports on profiles (PRD-01/09 moderation), admin backstop tools alongside suspend/clear-avatar/clear-profile-text."],
                 ["waitlist", "Pre-launch email capture (migration 0036): RLS on with NO anon policy (no address harvesting); the public POST /api/waitlist writes via service role, IP rate-limited, idempotent. Doubles as the launch list."],
                 ["league_requests", "Free-text league/competition requests from the custom-room create page (migration 0037): service-role only, rate-limited, triaged by hand."],
-                ["bug_reports / events", "Telemetry (migrations 0040/0041), both RLS service-role-only. bug_reports = the in-room bug reporter (triaged in /admin). events = an append-only product-event stream (room_view / listen_started / call_in_started / signup_completed / rsvp_created / client_error) powering /admin/insights (funnel, retention, per-room) + the /admin Client errors feed. Written fire-and-forget via lib/track.ts."],
+                ["bug_reports / events", "Telemetry (migrations 0040/0041), both RLS service-role-only. bug_reports = the in-room bug reporter (triaged in /admin). events = an append-only product-event stream (room_view / listen_started / call_in_started / signup_completed / rsvp_created / client_error) powering /admin/insights (funnel, retention, per-room) + the /admin/diagnostics bug + client-error feed. Written fire-and-forget via lib/track.ts."],
                 ["blocklist_domains / bans", "Moderation: link-domain blocklist + user/device bans."],
               ]}
             />
@@ -692,9 +692,9 @@ export default function DevDocsPage() {
               match check&quot; to resolve it to Sportmonks immediately; the{" "}
               <b className="text-primary">Insights dashboard</b> (<C>/admin/insights</C> - registrations,
               activity, listening time, hosts, signup funnel, retention, per-room analytics, 30-day
-              growth); <b className="text-primary">Bug reports</b> triage; a{" "}
-              <b className="text-primary">Client errors</b> feed (browser errors + device, live-test
-              debugging); and a built-in user guide. See <C>components/admin/</C>.
+              growth); <b className="text-primary">Diagnostics</b> (<C>/admin/diagnostics</C> - bug
+              reports + client errors with full device/environment info); and a built-in user guide.
+              See <C>components/admin/</C>.
             </p>
             <p className="mt-2">
               <b className="text-primary">Send test email</b> (<C>/api/admin/test-email</C>): fires one
@@ -752,16 +752,18 @@ export default function DevDocsPage() {
               <li>
                 <b className="text-primary">Client-side error capture (2026-08-05):</b>{" "}
                 <C>ClientErrorReporter</C> (mounted app-wide in <C>app/layout.tsx</C>) beacons uncaught{" "}
-                <C>error</C> + <C>unhandledrejection</C> events - message, stack, path, and the{" "}
-                <C>user-agent</C> - to <C>/api/events</C> as event <C>client_error</C> (deduped + capped
-                per session). Read them in <C>/admin</C> → &quot;Client errors&quot; (device + message
-                per occurrence). A live-test debugging surface, NOT a hosted error service (no
-                source-mapped stacks, no alerting).
+                <C>error</C> + <C>unhandledrejection</C> events - message, stack, path, the{" "}
+                <C>user-agent</C>, and a device/environment snapshot (viewport vs screen, pixel ratio,
+                network, memory, cores, language, platform) - to <C>/api/events</C> as event{" "}
+                <C>client_error</C> (deduped + capped per session). Read them on the{" "}
+                <C>/admin/diagnostics</C> page (parsed device + full context per occurrence). A
+                live-test debugging surface, NOT a hosted error service (no source-mapped stacks, no
+                alerting).
               </li>
               <li>
                 <b className="text-primary">In-app bug reporter (migration 0040):</b> a room widget
                 (<C>BugReporter</C>) → <C>bug_reports</C> (RLS service-role-only), triaged open/closed
-                in <C>/admin</C>. Short-term testing tool.
+                on <C>/admin/diagnostics</C>. Short-term testing tool.
               </li>
               <li>
                 <b className="text-primary">Everything else is implicit in the DB:</b> chats, votes,

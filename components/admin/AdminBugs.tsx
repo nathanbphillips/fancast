@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { parseUserAgent } from "@/lib/ua";
 
 export type BugRow = {
   id: string;
@@ -64,6 +65,11 @@ export function AdminBugs({ initial }: { initial: BugRow[] }) {
                 <span>{b.username ? `@${b.username}` : "guest"}</span>
                 <span>· {b.created_at.slice(0, 16).replace("T", " ")}</span>
                 {b.room_state && <span>· {b.room_state}</span>}
+                {b.user_agent && (
+                  <span className="rounded-full border border-line px-2 py-0.5 font-semibold text-primary">
+                    {parseUserAgent(b.user_agent).label}
+                  </span>
+                )}
               </div>
               <button
                 type="button"
@@ -79,14 +85,26 @@ export function AdminBugs({ initial }: { initial: BugRow[] }) {
             <p className="mt-2 text-sm whitespace-pre-wrap">{b.description}</p>
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-tertiary">
               {b.path && <span>{b.path}</span>}
-              {b.viewport && <span>{b.viewport}</span>}
-              {b.room_id && <span>room {b.room_id.slice(0, 8)}</span>}
-              {b.user_agent && (
-                <span className="max-w-[280px] truncate" title={b.user_agent}>
-                  {b.user_agent}
+              {b.viewport && (
+                <span>
+                  <span className="text-tertiary">viewport</span>{" "}
+                  <span className="font-semibold text-secondary">
+                    {b.viewport}
+                  </span>
                 </span>
               )}
+              {b.room_id && <span>room {b.room_id.slice(0, 8)}</span>}
             </div>
+            {b.user_agent && (
+              <details className="mt-1">
+                <summary className="cursor-pointer font-mono text-[10px] text-tertiary hover:text-secondary">
+                  raw user-agent
+                </summary>
+                <p className="mt-1 font-mono text-[10px] break-all text-secondary">
+                  {b.user_agent}
+                </p>
+              </details>
+            )}
           </li>
         ))}
       </ul>

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { track } from "@/lib/track";
+import { collectDeviceContext } from "@/lib/deviceContext";
 
 /**
  * Client-side error telemetry for the live test (2026-08-05). Captures uncaught
@@ -17,6 +18,9 @@ export function ClientErrorReporter() {
     const seen = new Set<string>();
     let sent = 0;
     const CAP = 20;
+    // one device/environment snapshot per session, attached to every report so
+    // the admin diagnostics page has the fullest picture of where it happened
+    const ctx = collectDeviceContext();
 
     const report = (
       kind: string,
@@ -35,8 +39,9 @@ export function ClientErrorReporter() {
             message: message.slice(0, 300),
             ua:
               typeof navigator !== "undefined"
-                ? navigator.userAgent.slice(0, 200)
+                ? navigator.userAgent.slice(0, 400)
                 : undefined,
+            ...ctx,
             ...extra,
           },
         });
