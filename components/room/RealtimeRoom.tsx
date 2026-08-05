@@ -357,12 +357,19 @@ export function RealtimeRoom(props: Props) {
         ],
       });
       navigator.mediaSession.playbackState = "playing";
-      navigator.mediaSession.setActionHandler("pause", () => {
-        void audio.stopListening();
-      });
-      navigator.mediaSession.setActionHandler("play", () => {
-        void audio.startListening();
-      });
+      // Listeners only. For a HOST these handlers are a foot-gun: stopListening()
+      // runs the full disconnect, which unpublishes their mic — so a laptop media
+      // key, a headset button, the iOS lock screen or a car stereo would silently
+      // END THE BROADCAST. Hosts stop the mic from their own controls.
+      // (pre-live review 2026-08-05)
+      if (!isRoomCommentator) {
+        navigator.mediaSession.setActionHandler("pause", () => {
+          void audio.stopListening();
+        });
+        navigator.mediaSession.setActionHandler("play", () => {
+          void audio.startListening();
+        });
+      }
     } else {
       navigator.mediaSession.playbackState =
         audio.listenStatus === "idle" ? "paused" : "none";
@@ -375,7 +382,13 @@ export function RealtimeRoom(props: Props) {
       navigator.mediaSession.metadata = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audio.listenStatus, room.home, room.away, room.commentatorUsername]);
+  }, [
+    audio.listenStatus,
+    room.home,
+    room.away,
+    room.commentatorUsername,
+    isRoomCommentator,
+  ]);
 
   // listener metrics (FR-9.4): one durable segment per listening session, with
   // a heartbeat so the stale sweep can close sessions a tab-close beacon missed.
@@ -805,7 +818,7 @@ export function RealtimeRoom(props: Props) {
     if (acceptedNonce === 0) return;
     audio.markAccepted(); // publish-capable even if they'd dropped off LiveKit
     setAutoOnAir(true);
-    void audio.startMic().finally(() => setAutoOnAir(false));
+    void audio.startMic(false).finally(() => setAutoOnAir(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptedNonce]);
 
@@ -816,8 +829,20 @@ export function RealtimeRoom(props: Props) {
   const [gateOverridden, setGateOverridden] = useState(false);
   const [gateFails, setGateFails] = useState(0);
   const [autoInFlight, setAutoInFlight] = useState(false);
+  const prevListenStatusRef = useRef(audio.listenStatus);
   useEffect(() => {
-    if (audio.listenStatus === "error") setGateFails((n) => n + 1);
+    const prev = prevListenStatusRef.current;
+    prevListenStatusRef.current = audio.listenStatus;
+    // A failed connect ("error") AND an involuntary drop ("live" -> "idle", what
+    // RoomEvent.Disconnected produces) both count. Without the drop case a
+    // listener whose connection blips mid-match got the un-dismissable gate with
+    // the escape link permanently out of reach (pre-live review 2026-08-05).
+    if (
+      audio.listenStatus === "error" ||
+      (prev === "live" && audio.listenStatus === "idle")
+    ) {
+      setGateFails((n) => n + 1);
+    }
   }, [audio.listenStatus]);
   // Gate whenever the show is live and this listener isn't hearing it — unless
   // they deliberately stopped. No browser detection and no "already listened"
@@ -1094,6 +1119,7 @@ export function RealtimeRoom(props: Props) {
           <MicControls
             micStatus={audio.micStatus}
             micMuted={audio.micMuted}
+            micError={audio.micError}
             selfDelay={audio.selfDelay}
             onStart={() => void audio.startMic()}
             onStop={() => void audio.stopMic()}
@@ -1122,7 +1148,16 @@ export function RealtimeRoom(props: Props) {
       listenStatus={audio.listenStatus}
       onStart={() => void audio.startListening()}
       onStop={() => void audio.stopListening()}
-      techDifficulties={audio.techDifficulties && audioLive}
+      // Suppressed during pregame + half-time (founder 2026-08-05): the host is
+      // legitimately quiet then, so the silence detector would tell the whole
+      // room the broadcast is broken when nothing is wrong. A genuine host
+      // disconnect is caught separately and instantly (ParticipantDisconnected).
+      techDifficulties={
+        audio.techDifficulties &&
+        audioLive &&
+        roomState !== "pregame" &&
+        roomState !== "halftime"
+      }
       techSince={audio.techSince}
       canPublish={viewer !== null && audio.canPublish}
       micStatus={audio.micStatus}
@@ -1340,15 +1375,20 @@ export function RealtimeRoom(props: Props) {
                 <path d="M4 2.5v11l9-5.5-9-5.5z" />
               </svg>
             </span>
+            {/* No "is on air" claim: the gate also shows in pregame, where the
+                host may not have started talking yet — listeners tapped, heard
+                silence and assumed it was broken (review 2026-08-05). */}
             <p className="display text-[26px] leading-tight">
+              Listen to{" "}
               {room.hosts.map((h) => h.username).join(" & ") ||
-                room.commentatorUsername}{" "}
-              is on air
+                room.commentatorUsername}
             </p>
             <p className="mt-2 text-sm leading-relaxed text-secondary">
               {audio.listenStatus === "error"
                 ? "That didn't connect. Tap to try again."
-                : "Your browser needs one tap before it can play audio. Tap below to hear the live commentary."}
+                : roomState === "pregame"
+                  ? "Your browser needs one tap before it can play audio. Tap below and you'll hear the show the moment it starts."
+                  : "Your browser needs one tap before it can play audio. Tap below to hear the live commentary."}
             </p>
             <button
               type="button"
@@ -1364,9 +1404,9 @@ export function RealtimeRoom(props: Props) {
                   ? "Try again"
                   : "Tap to listen"}
             </button>
-            {/* only after audio has genuinely failed twice: never strand someone
+            {/* after a single genuine failure or drop: never strand someone
                 whose network can't do WebRTC without chat/stats/radio */}
-            {gateFails >= 2 && (
+            {gateFails >= 1 && (
               <button
                 type="button"
                 onClick={() => setGateOverridden(true)}

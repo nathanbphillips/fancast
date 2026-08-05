@@ -86,17 +86,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // one open request per room per user
+  // One open request per room per user. 'accepted' counts too (pre-live review
+  // 2026-08-05): a caller already holding a slot could otherwise queue again and
+  // occupy TWO of the on-air slots at once, and if their mic never started
+  // nobody could clear either.
   const { data: existing } = await service
     .from("talk_requests")
-    .select("id")
+    .select("id, status")
     .eq("room_id", room.id)
     .eq("user_id", caller.userId)
-    .eq("status", "pending")
+    .in("status", ["pending", "accepted"])
     .maybeSingle();
   if (existing) {
     return NextResponse.json(
-      { error: "Your request is already in." },
+      {
+        error:
+          existing.status === "accepted"
+            ? "You're already on air."
+            : "Your request is already in.",
+      },
       { status: 409 },
     );
   }
@@ -268,9 +276,10 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // FR-4.1: max on-air = commentator + 2 guests. The accept path enforces the
-  // cap atomically (M-3/M-6): the RPC re-checks status + count under row locks,
-  // so two concurrent accepts of different requests can't both pass.
+  // Max on-air = host(s) + 3 guests (founder 2026-08-05, raised from 2;
+  // migration 0042 holds the threshold). The accept path enforces the cap
+  // atomically (M-3/M-6): the RPC re-checks status + count under row locks, so
+  // two concurrent accepts of different requests can't both pass.
   if (parsed.data.status === "accepted") {
     // Reconcile the on-air cap against LiveKit before the cap check. A caller
     // accepted earlier who dropped without Leave Air (closed the tab, or never
@@ -307,7 +316,7 @@ export async function PATCH(request: NextRequest) {
     }
     if (outcome === "cap_full") {
       return NextResponse.json(
-        { error: "Two guests are already on air." },
+        { error: "Three guests are already on air." },
         { status: 409 },
       );
     }

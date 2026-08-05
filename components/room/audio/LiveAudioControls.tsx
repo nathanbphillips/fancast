@@ -404,7 +404,7 @@ export function ListenerBar({
             onClick={onGoOnAir}
             className="btn-grad-red h-11 shrink-0 rounded-lg px-4 text-sm font-bold text-white"
           >
-            Retry mic
+            Tap to go on air
           </button>
           <p className="max-w-[240px] text-[11px] leading-snug text-red">
             {micError}
@@ -723,6 +723,7 @@ export function ListenerBar({
 export function MicControls({
   micStatus,
   micMuted,
+  micError,
   selfDelay,
   onStart,
   onStop,
@@ -731,6 +732,10 @@ export function MicControls({
 }: {
   micStatus: MicStatus;
   micMuted: boolean;
+  /** why the mic didn't start. Without this the host's button just flips back to
+   *  "Start mic" and Start Broadcast stays disabled with no stated reason — the
+   *  one person whose failure blocks the show flying blind (review 2026-08-05) */
+  micError?: string | null;
   selfDelay: number;
   onStart: () => void;
   onStop: () => void;
@@ -761,14 +766,27 @@ export function MicControls({
           </button>
         </>
       ) : (
-        <button
-          type="button"
-          onClick={onStart}
-          disabled={micStatus === "starting"}
-          className="h-11 rounded-lg border border-line px-4 text-sm font-bold text-primary hover:bg-raised disabled:opacity-60"
-        >
-          {micStatus === "starting" ? "Starting…" : "Start mic"}
-        </button>
+        <span className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={onStart}
+            disabled={micStatus === "starting"}
+            className={`h-11 rounded-lg border px-4 text-sm font-bold text-primary hover:bg-raised disabled:opacity-60 ${
+              micError ? "border-red" : "border-line"
+            }`}
+          >
+            {micStatus === "starting"
+              ? "Starting…"
+              : micError
+                ? "Retry mic"
+                : "Start mic"}
+          </button>
+          {micError && (
+            <p role="alert" className="max-w-[260px] text-[11px] leading-snug text-red">
+              {micError}
+            </p>
+          )}
+        </span>
       )}
       <label className="flex items-center gap-1 text-xs text-secondary">
         Delay

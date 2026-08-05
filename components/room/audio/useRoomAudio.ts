@@ -632,7 +632,10 @@ export function useRoomAudio(opts: {
     setMicMuted(false);
   }
 
-  const startMic = useCallback(async () => {
+  // `gestured` is false for the automatic start when a host accepts a call-in:
+  // that runs from an Ably callback with no user activation, which iOS Safari
+  // rejects — the error copy has to send them to the button, not to Settings.
+  const startMic = useCallback(async (gestured = true) => {
     // RE-ENTRANCY GUARD: two concurrent starts each open their own getUserMedia
     // stream + published track and overwrite the refs, orphaning the first — it
     // then keeps capturing after Leave Air (mic indicator stays lit). Mirrors
@@ -689,9 +692,14 @@ export function useRoomAudio(opts: {
     } catch (err) {
       console.error("mic start failed:", err);
       const name = err instanceof DOMException ? err.name : "";
+      const denied = name === "NotAllowedError" || name === "SecurityError";
       setMicError(
-        name === "NotAllowedError" || name === "SecurityError"
-          ? "Allow microphone access to go on air. Check your browser's site settings."
+        denied
+          ? gestured
+            ? "Allow microphone access to go on air. Check your browser's site settings."
+            : // no user gesture (auto-start on accept): the fix is one tap on the
+              // button, NOT a trip into browser settings
+              "Your browser needs one tap before it can use your mic."
           : name === "NotFoundError"
             ? "No microphone found. Plug one in or check your device."
             : "Couldn't start your mic. Close anything else using it, then try again.",

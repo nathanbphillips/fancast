@@ -298,7 +298,7 @@ export default function HostGuidePage() {
             </p>
             <p>
               <B>Call-ins:</B> when a listener requests the mic, a card appears
-              with their topic. <B>Accept</B> puts them on air (two guests max);{" "}
+              with their topic. <B>Accept</B> puts them on air (three guests max);{" "}
               <B>Dismiss</B> declines quietly. Ending a call is neutral, it does
               nothing to their account. For problem callers, the flag leaves a
               private note other hosts can see, and a block (reversible) bars
