@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { track } from "@/lib/track";
 import {
   ConnectionState,
   LocalAudioTrack,
@@ -652,7 +653,15 @@ export function useRoomAudio(opts: {
     // then keeps capturing after Leave Air (mic indicator stays lit). Mirrors
     // connect()'s connectPromiseRef dedupe. Also covers a StrictMode double
     // effect and a double-tap. (adversarial review 2026-08-05)
-    if (micStartingRef.current || publishedTrackRef.current) return;
+    if (publishedTrackRef.current) return; // already publishing
+    // A USER TAP ALWAYS PREEMPTS. The old guard returned early whenever an
+    // attempt was in flight, so once one hung on a permission prompt the lock
+    // stuck and every tap became a no-op that merely cleared the error label —
+    // which looked like "the button just shows another button" (founder
+    // 2026-08-05). Only the AUTOMATIC start defers to an attempt already
+    // running; the generation token below still stops a stale attempt from
+    // publishing behind this one's back.
+    if (!gestured && micStartingRef.current) return;
     micStartingRef.current = true;
     // Generation token: getUserMedia can stay PENDING FOREVER while a permission
     // prompt sits unanswered (exactly what hangs an auto-start on accept). The
@@ -715,6 +724,12 @@ export function useRoomAudio(opts: {
     } catch (err) {
       console.error("mic start failed:", err);
       const name = err instanceof DOMException ? err.name : "";
+      // surface it in /admin/diagnostics — a call-in that fails on someone
+      // else's device is otherwise invisible to us
+      track("callin_mic_failed", {
+        roomId: opts.roomId,
+        props: { name, gestured, message: String((err as Error)?.message ?? "") },
+      });
       const denied = name === "NotAllowedError" || name === "SecurityError";
       setMicError(
         denied
