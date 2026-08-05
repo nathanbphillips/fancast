@@ -2693,52 +2693,12 @@ function LiveChat({
         </div>
       ) : (
         <div className="relative space-y-2 border-t border-line p-2">
-          {/* floating reactions rise over the composer (Phase 5a); the fcfloat
-              keyframe is neutralised under prefers-reduced-motion */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-3 bottom-full h-44 overflow-hidden"
-          >
-            {floats.map((f) => (
-              <span
-                key={f.id}
-                className="animate-fcfloat absolute bottom-0"
-                style={{ left: `${f.left}%`, animationDuration: `${f.dur}s` }}
-              >
-                <span
-                  className="inline-block text-[22px]"
-                  style={{ transform: `rotate(${f.rot}deg)` }}
-                >
-                  {f.emoji}
-                </span>
-              </span>
-            ))}
-          </div>
-          {/* reactions + "Ask the host" are DESKTOP-ONLY (founder 2026-08-05):
-              on mobile they ate the chat's real estate, and asking now lives on
-              the Call In tab with Request to Talk */}
-          <div className="hidden items-center gap-1.5 lg:flex">
-            {REACTION_EMOJI.map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => onReact(e)}
-                aria-label={`Send ${e} reaction`}
-                className="flex h-8 w-8 items-center justify-center rounded-[9px] border border-line bg-raised text-base transition-colors hover:border-red/60"
-              >
-                {e}
-              </button>
-            ))}
-            {inputsOpen && !isRoomCommentator && (
-              <button
-                type="button"
-                onClick={() => setAskSignal((s) => s + 1)}
-                className="ml-auto shrink-0 rounded-full border border-line px-3 py-1.5 font-mono text-[10px] tracking-[0.04em] text-secondary transition-colors hover:border-red hover:text-primary"
-              >
-                Ask the host
-              </button>
-            )}
-          </div>
+          {/* The floating-emoji reaction row (and the "Ask the host" pill that
+              rode with it) was removed on BOTH platforms (founder 2026-08-05):
+              the floats didn't read well and the row cost too much room. Asking
+              the host lives on the Call In tab (mobile) and in the Ask Question
+              button below (desktop). The reaction transport is left in place but
+              dormant — nothing can send one now. */}
           {notice && (
             <p role="alert" className="rounded-lg border border-line bg-raised px-3 py-1 text-xs text-secondary">
               {notice}
