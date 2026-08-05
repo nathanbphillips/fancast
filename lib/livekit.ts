@@ -74,3 +74,18 @@ export async function setPublishPermission(
     console.warn(`updateParticipant(${identity}) skipped:`, (err as Error).message);
   }
 }
+
+/** Identities currently connected to the room's LiveKit room. Used to reconcile
+ *  the call-in cap: a caller accepted earlier who dropped without Leave Air
+ *  leaves a stale 'accepted' talk_request that would permanently consume a cap
+ *  slot; before accepting we complete rows whose caller isn't a live participant
+ *  so the 2-guest cap reflects who's actually on air (call-in audit 2026-08-05).
+ *  Best-effort: returns an empty set on any error. */
+export async function connectedIdentities(roomId: string): Promise<Set<string>> {
+  try {
+    const ps = await roomService().listParticipants(livekitRoomName(roomId));
+    return new Set(ps.map((p) => p.identity));
+  } catch {
+    return new Set();
+  }
+}

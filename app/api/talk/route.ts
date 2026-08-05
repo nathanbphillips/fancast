@@ -8,7 +8,7 @@ import {
   queuePositionFor,
 } from "@/lib/callers";
 import { createServiceClient } from "@/lib/db/server";
-import { setPublishPermission } from "@/lib/livekit";
+import { connectedIdentities, setPublishPermission } from "@/lib/livekit";
 import type { RoomState, TalkRequest } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 import { isRoomHost } from "@/lib/roomHosts";
@@ -269,6 +269,32 @@ export async function PATCH(request: NextRequest) {
   // cap atomically (M-3/M-6): the RPC re-checks status + count under row locks,
   // so two concurrent accepts of different requests can't both pass.
   if (parsed.data.status === "accepted") {
+    // Reconcile the on-air cap against LiveKit before the cap check. A caller
+    // accepted earlier who dropped without Leave Air (closed the tab, or never
+    // actually came on air) leaves a stale 'accepted' row that permanently
+    // consumes one of the 2 cap slots, so every later accept returns cap_full.
+    // Complete accepted rows whose caller isn't a live participant, so the cap
+    // reflects who's actually on air (call-in audit 2026-08-05).
+    try {
+      const live = await connectedIdentities(talkRequest.room_id);
+      const { data: accepted } = await service
+        .from("talk_requests")
+        .select("id, user_id")
+        .eq("room_id", talkRequest.room_id)
+        .eq("status", "accepted");
+      const stale = (accepted ?? []).filter((a) => !live.has(a.user_id as string));
+      if (stale.length > 0) {
+        await service
+          .from("talk_requests")
+          .update({ status: "completed" })
+          .in(
+            "id",
+            stale.map((s) => s.id),
+          );
+      }
+    } catch {
+      /* reconcile is best-effort; the RPC cap still guards correctness */
+    }
     const { data: outcome, error: rpcErr } = await service.rpc(
       "accept_talk_request",
       { p_request_id: talkRequest.id },
@@ -321,7 +347,15 @@ export async function PATCH(request: NextRequest) {
   await publish(
     channels.userPrivate(talkRequest.room_id, talkRequest.user_id),
     "talk_resolved",
-    { requestId: talkRequest.id },
+    {
+      requestId: talkRequest.id,
+      // accept ONLY carries a status, so the caller's client can flip itself
+      // publish-capable ("Go on air") even if it had dropped off LiveKit;
+      // dismiss/withdraw stay statusless so a dismissal is silent (FR-4.2).
+      ...(parsed.data.status === "accepted"
+        ? { status: "accepted" as const }
+        : {}),
+    },
   );
 
   // the queue shifted — push each still-waiting caller their fresh #N on their

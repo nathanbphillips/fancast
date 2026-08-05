@@ -724,6 +724,10 @@ export function useRoomAudio(opts: {
   // fire a gesture-less autostart (used by the room when the listener has
   // opted in on a prior visit); comes back "blocked" on iOS → one-tap prompt
   const tryAutostart = useCallback(() => connect(false), [connect]);
+  // the host accepted this listener's call-in — surface "Go on air" even if they
+  // had dropped off LiveKit; their tap reconnects with a publish-capable token
+  // (call-in audit 2026-08-05)
+  const markAccepted = useCallback(() => setCanPublish(true), []);
 
   return {
     listenStatus,
@@ -749,6 +753,7 @@ export function useRoomAudio(opts: {
     stopMic,
     toggleMute,
     canPublish,
+    markAccepted,
     selfDelay,
     setSelfDelay,
     speakers,

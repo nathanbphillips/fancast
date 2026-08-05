@@ -24,6 +24,7 @@ export function InteractionButtons({
   resolvedSignal,
   queuePosition = null,
   askSignal = 0,
+  askOnly = false,
 }: {
   roomId: string;
   consentGiven: boolean;
@@ -36,6 +37,10 @@ export function InteractionButtons({
   /** bumps when the "Ask the host" pill (reactions row) is tapped — opens the
    *  question form here so there's one implementation (founder 2026-07-02) */
   askSignal?: number;
+  /** mobile chat footer: render ONLY the ask-a-question form (opened by the
+   *  "Ask the host" pill) — no buttons, no talk form, since calling in lives in
+   *  the Call In tab there (founder 2026-08-05) */
+  askOnly?: boolean;
 }) {
   const [open, setOpen] = useState<"none" | "question" | "talk">("none");
   const [question, setQuestion] = useState("");
@@ -133,6 +138,7 @@ export function InteractionButtons({
 
   return (
     <div className="mt-2">
+      {!askOnly && (
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -178,6 +184,7 @@ export function InteractionButtons({
             : "Request to Talk"}
         </button>
       </div>
+      )}
 
       {note && (
         <p role="alert" className="mt-2 rounded-lg border border-line bg-raised px-3 py-2 text-xs text-secondary">

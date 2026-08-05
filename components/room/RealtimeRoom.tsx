@@ -58,6 +58,7 @@ import { Avatar } from "@/components/Avatar";
 import { ProfilePopover } from "@/components/ProfilePopover";
 import { ShareButton } from "@/components/room/ShareButton";
 import { HowThisWorks } from "./HowThisWorks";
+import { parseUserAgent } from "@/lib/ua";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -681,6 +682,12 @@ export function RealtimeRoom(props: Props) {
         // (concurrent accept+withdraw, or rewind replay) can't flip the UI
         // back to "In line #N" (audit 2026-07-02)
         lastTalkResolvedTsRef.current = msg.timestamp ?? Date.now();
+        // accept carries status:"accepted" — flip publish-capable so "Go on air"
+        // appears even if this caller had dropped off LiveKit; their tap
+        // reconnects with a publish token (call-in audit 2026-08-05)
+        if ((msg.data as { status?: string } | null)?.status === "accepted") {
+          audio.markAccepted();
+        }
       });
       mine.subscribe("queue_position", (msg) => {
         if ((msg.timestamp ?? 0) < lastTalkResolvedTsRef.current) return; // stale
@@ -763,6 +770,33 @@ export function RealtimeRoom(props: Props) {
   // manual Play tap each visit. Browsers that forbid gesture-less audio (iOS
   // Safari) come back "blocked" and get a one-tap overlay instead.
   const [autoplayDismissed, setAutoplayDismissed] = useState(false);
+  // Safari can't start audio without a gesture and listening is the whole point,
+  // so on Safari we ALWAYS block the room with a tap-to-listen gate (no dismiss)
+  // until they listen (founder 2026-08-05). Detected client-side to avoid an
+  // SSR/hydration flash.
+  const [isSafari, setIsSafari] = useState(false);
+  useEffect(() => {
+    try {
+      setIsSafari(
+        parseUserAgent(navigator.userAgent).browser.startsWith("Safari"),
+      );
+    } catch {}
+  }, []);
+  const notListening =
+    audio.listenStatus === "idle" || audio.listenStatus === "error";
+  // mandatory on Safari (no way out but to listen or close the tab); on other
+  // browsers it's the one-tap fallback after a blocked silent autostart. Only
+  // while the show is live and they aren't already listening (or on radio).
+  const mustListen =
+    isSafari && !isRoomCommentator && audioLive && !audio.radioActive && notListening;
+  const showAudioGate =
+    mustListen ||
+    (!isRoomCommentator &&
+      audio.autoplayBlocked &&
+      audioLive &&
+      !audio.radioActive &&
+      audio.listenStatus === "idle" &&
+      !autoplayDismissed);
   // "How this works" listener walkthrough (desktop header button / mobile FAQ)
   const [helpOpen, setHelpOpen] = useState(false);
   const autoTriedRef = useRef(false);
@@ -1231,33 +1265,32 @@ export function RealtimeRoom(props: Props) {
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden">
-      {/* one-tap autoplay fallback: shown to a listener whose browser blocked a
-          gesture-less autostart (iOS Safari) — tapping unlocks audio and records
-          the opt-in so later visits start on their own (founder 2026-08-05) */}
-      {!isRoomCommentator &&
-        audio.autoplayBlocked &&
-        audioLive &&
-        audio.listenStatus === "idle" &&
-        !audio.radioActive &&
-        !autoplayDismissed && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-canvas/70 p-6 backdrop-blur-sm">
-            <div className="w-full max-w-xs rounded-2xl border border-line bg-surface p-6 text-center shadow-[var(--shadow-raised)]">
-              <p className="display text-[22px] leading-tight">
-                {room.hosts.map((h) => h.username).join(" & ") ||
-                  room.commentatorUsername}{" "}
-                is live
-              </p>
-              <p className="mt-1 text-sm text-secondary">
-                Tap to start the commentary.
-              </p>
-              <button
-                type="button"
-                autoFocus
-                onClick={() => void audio.startListening()}
-                className="btn-grad-red mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-bold text-white"
-              >
-                <span aria-hidden="true">▶</span> Tap to listen
-              </button>
+      {/* Audio gate. On Safari it's MANDATORY (listening is required to use the
+          platform, and Safari needs a gesture to start audio) — no dismiss, the
+          only way out is to listen or close the tab. On other browsers it's the
+          one-tap fallback after a blocked silent autostart. (founder 2026-08-05) */}
+      {showAudioGate && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-canvas/85 p-6 backdrop-blur-md">
+          <div className="w-full max-w-xs rounded-2xl border border-line bg-surface p-6 text-center shadow-[var(--shadow-raised)]">
+            <p className="display text-[22px] leading-tight">
+              {room.hosts.map((h) => h.username).join(" & ") ||
+                room.commentatorUsername}{" "}
+              is live
+            </p>
+            <p className="mt-1 text-sm text-secondary">
+              {mustListen
+                ? "Tap to hear the live commentary — it won't play until you do."
+                : "Tap to start the commentary."}
+            </p>
+            <button
+              type="button"
+              autoFocus
+              onClick={() => void audio.startListening()}
+              className="btn-grad-red mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-bold text-white"
+            >
+              <span aria-hidden="true">▶</span> Tap to listen
+            </button>
+            {!mustListen && (
               <button
                 type="button"
                 onClick={() => setAutoplayDismissed(true)}
@@ -1265,9 +1298,10 @@ export function RealtimeRoom(props: Props) {
               >
                 Not now
               </button>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
       <HowThisWorks open={helpOpen} onClose={() => setHelpOpen(false)} />
@@ -2656,20 +2690,38 @@ function LiveChat({
           </form>
           {inputsOpen && !isRoomCommentator && (
             <>
-              <InteractionButtons
-                roomId={room.id}
-                consentGiven={talkConsentGiven}
-                hasPendingTalk={hasPendingTalk}
-                resolvedSignal={talkResolvedSignal}
-                queuePosition={queuePosition}
-                askSignal={askSignal}
-              />
-              <PreferenceSlider
-                roomId={room.id}
-                myValue={mySliderValue}
-                agg={sliderAgg}
-                enabled
-              />
+              {/* desktop: full Ask + Request-to-talk + sentiment slider inline */}
+              <div className="hidden lg:block">
+                <InteractionButtons
+                  roomId={room.id}
+                  consentGiven={talkConsentGiven}
+                  hasPendingTalk={hasPendingTalk}
+                  resolvedSignal={talkResolvedSignal}
+                  queuePosition={queuePosition}
+                  askSignal={askSignal}
+                />
+                <PreferenceSlider
+                  roomId={room.id}
+                  myValue={mySliderValue}
+                  agg={sliderAgg}
+                  enabled
+                />
+              </div>
+              {/* mobile: just the ask form (opened by the "Ask the host" pill).
+                  Calling in has its own Call In tab, so the two big buttons + the
+                  sentiment slider are dropped from the mobile chat footer to
+                  declutter it (founder 2026-08-05). */}
+              <div className="lg:hidden">
+                <InteractionButtons
+                  roomId={room.id}
+                  consentGiven={talkConsentGiven}
+                  hasPendingTalk={hasPendingTalk}
+                  resolvedSignal={talkResolvedSignal}
+                  queuePosition={queuePosition}
+                  askSignal={askSignal}
+                  askOnly
+                />
+              </div>
             </>
           )}
           {inputsOpen && isRoomCommentator && (

@@ -73,6 +73,7 @@ export function CommentatorBar({
   const [busy, setBusy] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busyReqId, setBusyReqId] = useState<string | null>(null);
   const [startDraft, setStartDraft] = useState(() =>
     toLocalInputValue(broadcastStart),
   );
@@ -151,12 +152,21 @@ export function CommentatorBar({
   }
 
   async function handleRequest(id: string, status: "accepted" | "dismissed") {
-    onRequestHandled(id, status); // optimistic
-    await fetch("/api/talk", {
+    setBusyReqId(id);
+    setError(null);
+    const res = await fetch("/api/talk", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ requestId: id, status }),
-    });
+    }).catch(() => null);
+    setBusyReqId(null);
+    if (res && res.ok) {
+      // the server's talk_update event also clears the card; drop it now too
+      onRequestHandled(id, status);
+    } else {
+      const body = res ? await res.json().catch(() => ({})) : {};
+      setError(body.error ?? "Couldn't handle that request. Try again.");
+    }
   }
 
   const live = LIVE_STATES.includes(state);
@@ -280,16 +290,18 @@ export function CommentatorBar({
               </div>
               <button
                 type="button"
+                disabled={busyReqId === r.id}
                 onClick={() => handleRequest(r.id, "accepted")}
-                className="h-9 rounded-md bg-green px-2.5 text-xs font-bold text-white"
+                className="h-9 rounded-md bg-green px-2.5 text-xs font-bold text-white disabled:opacity-60"
               >
                 Accept
               </button>
               <button
                 type="button"
+                disabled={busyReqId === r.id}
                 onClick={() => handleRequest(r.id, "dismissed")}
                 aria-label={`Dismiss request from ${r.author?.username}`}
-                className="h-9 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary"
+                className="h-9 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
               >
                 Dismiss
               </button>
