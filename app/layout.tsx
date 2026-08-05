@@ -55,6 +55,10 @@ export const viewport: Viewport = {
   // framed the dark page with a beige status bar on light-OS phones. Matchday
   // redesign dark base is #08080a (keep the manifest in sync).
   themeColor: "#08080a",
+  // let the page paint under the notch / home-indicator so the room's bottom
+  // tab bar's env(safe-area-inset-bottom) padding actually engages on notched
+  // iPhones (founder 2026-08-05)
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({

@@ -41,6 +41,10 @@ export function useRoomAudio(opts: {
   isRoomCommentator: boolean;
 }) {
   const [listenStatus, setListenStatus] = useState<ListenStatus>("idle");
+  // set when a gesture-less autostart is blocked by the browser (iOS Safari, or
+  // a browser with no media engagement) so the UI can show a "Tap to listen"
+  // prompt instead of failing silently (founder 2026-08-05)
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [micStatus, setMicStatus] = useState<MicStatus>("off");
   const [micMuted, setMicMuted] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
@@ -201,7 +205,10 @@ export function useRoomAudio(opts: {
     }
   }
 
-  async function ensurePlaybackGraph(): Promise<boolean> {
+  async function ensurePlaybackGraph(): Promise<{
+    blocked: boolean;
+    worklet: boolean;
+  }> {
     if (playbackCtxRef.current) {
       await playbackCtxRef.current.resume().catch(() => {});
       // iOS can pause the element across interruptions/backgrounding —
@@ -214,14 +221,29 @@ export function useRoomAudio(opts: {
         console.warn("sync playback element blocked on resume — falling back");
         teardownPlaybackGraph();
         setSyncSupported(false);
-        return false;
+        return { blocked: true, worklet: false };
       }
-      return workletRef.current !== null;
+      return { blocked: false, worklet: workletRef.current !== null };
     }
     let ctx: AudioContext | null = null;
     try {
       ctx = new AudioContext();
-      await ctx.resume();
+    } catch {
+      setSyncSupported(false);
+      return { blocked: false, worklet: false };
+    }
+    await ctx.resume().catch(() => {});
+    // Autoplay gate: outside a user gesture (iOS Safari, or a browser with no
+    // media engagement) resume() RESOLVES but leaves the context "suspended"
+    // and el.play() below would reject. A "running" context is the single
+    // reliable proof the gate is open — treat anything else as blocked (the
+    // caller shows a one-tap prompt) rather than tearing the sync path down as
+    // "unsupported". Inside a real gesture, resume() reaches "running".
+    if (ctx.state !== "running") {
+      await ctx.close().catch(() => {});
+      return { blocked: true, worklet: false };
+    }
+    try {
       await ctx.audioWorklet.addModule("/ring-delay-worklet.js");
       const node = new AudioWorkletNode(ctx, "ring-delay", {
         numberOfInputs: 1,
@@ -268,10 +290,12 @@ export function useRoomAudio(opts: {
           }
         }
       } catch {}
-      return true;
+      return { blocked: false, worklet: true };
     } catch (err) {
+      // context is running but the worklet is unavailable (old browser) — a
+      // capability fallback to element playback, NOT an autoplay block
       console.warn("sync buffer unavailable, falling back to live-edge:", err);
-      ctx?.close().catch(() => {});
+      ctx.close().catch(() => {});
       if (playbackElRef.current) {
         playbackElRef.current.pause();
         playbackElRef.current.srcObject = null;
@@ -279,7 +303,7 @@ export function useRoomAudio(opts: {
       setSyncSupported(false);
       playbackCtxRef.current = null;
       workletRef.current = null;
-      return false;
+      return { blocked: false, worklet: false };
     }
   }
 
@@ -348,26 +372,41 @@ export function useRoomAudio(opts: {
 
   const connectPromiseRef = useRef<Promise<Room | null> | null>(null);
 
-  const connect = useCallback(async (): Promise<Room | null> => {
-    if (roomRef.current) return roomRef.current;
-    // overlapping calls (play button, lock-screen play, go-on-air) must
-    // share one attempt — a second Room here would be unstoppable
-    if (connectPromiseRef.current) return connectPromiseRef.current;
-    const attempt = doConnect().finally(() => {
-      connectPromiseRef.current = null;
-    });
-    connectPromiseRef.current = attempt;
-    return attempt;
+  const connect = useCallback(
+    async (gestured = true): Promise<Room | null> => {
+      if (roomRef.current) return roomRef.current;
+      // overlapping calls (play button, lock-screen play, go-on-air) must
+      // share one attempt — a second Room here would be unstoppable
+      if (connectPromiseRef.current) return connectPromiseRef.current;
+      const attempt = doConnect(gestured).finally(() => {
+        connectPromiseRef.current = null;
+      });
+      connectPromiseRef.current = attempt;
+      return attempt;
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.roomId, opts.commentatorId, opts.isRoomCommentator]);
+    [opts.roomId, opts.commentatorId, opts.isRoomCommentator],
+  );
 
-  async function doConnect(): Promise<Room | null> {
-    setListenStatus("connecting");
+  async function doConnect(gestured: boolean): Promise<Room | null> {
+    // a gestured start (Play tap / lock-screen / go-on-air) shows "Connecting…"
+    // immediately; a silent autostart stays idle until we know it isn't blocked
+    if (gestured) setListenStatus("connecting");
     let room: Room | null = null;
     try {
       // build the sync graph inside the user gesture, before any track
       // subscription can fire
-      await ensurePlaybackGraph();
+      const graph = await ensurePlaybackGraph();
+      // a gesture-less autostart the browser blocked (iOS Safari, no media
+      // engagement): surface the one-tap prompt and DO NOT open a LiveKit room
+      // — no silent half-connect, no wasted participant slot
+      if (!gestured && graph.blocked) {
+        setAutoplayBlocked(true);
+        setListenStatus("idle");
+        return null;
+      }
+      setAutoplayBlocked(false);
+      setListenStatus("connecting");
       const res = await fetch(`/api/livekit/token?room=${opts.roomId}`);
       if (!res.ok) throw new Error("token request failed");
       const { token, url, canPublish: granted } = await res.json();
@@ -494,6 +533,7 @@ export function useRoomAudio(opts: {
     setSyncEffective(0);
     await playbackCtxRef.current?.suspend().catch(() => {});
     setListenStatus("idle");
+    setAutoplayBlocked(false);
     clearTech();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -661,8 +701,14 @@ export function useRoomAudio(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.roomId]);
 
+  // fire a gesture-less autostart (used by the room when the listener has
+  // opted in on a prior visit); comes back "blocked" on iOS → one-tap prompt
+  const tryAutostart = useCallback(() => connect(false), [connect]);
+
   return {
     listenStatus,
+    autoplayBlocked,
+    tryAutostart,
     startListening: connect,
     stopListening: disconnect,
     radioActive,

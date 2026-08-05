@@ -50,6 +50,7 @@ export function CommentatorBar({
   micControls,
   speakerChips,
   clockControls,
+  roster,
   startDisabled = false,
 }: {
   roomId: string;
@@ -64,6 +65,8 @@ export function CommentatorBar({
   speakerChips?: React.ReactNode;
   /** Phase 6 clock controls slot */
   clockControls?: React.ReactNode;
+  /** host-only "who's here" roster popover (founder 2026-08-05) */
+  roster?: React.ReactNode;
   /** FR-3.3: Start Broadcast requires a live mic */
   startDisabled?: boolean;
 }) {
@@ -302,6 +305,7 @@ export function CommentatorBar({
       {clockControls}
       {speakerChips}
       {micControls}
+      {roster}
 
       <div className="shrink-0">
         {state === "waiting" && (

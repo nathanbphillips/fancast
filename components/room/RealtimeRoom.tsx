@@ -47,6 +47,7 @@ import { InteractionButtons } from "./InteractionButtons";
 import { AggregateMeter, PreferenceSlider } from "./PreferenceSlider";
 import { ScorePredictor } from "./ScorePredictor";
 import { PollComposer, PollWidget } from "./PollWidget";
+import { RosterPanel } from "./RosterPanel";
 import { PlayerRatings } from "./PlayerRatings";
 import { QuestionsPanel } from "./QuestionsPanel";
 import { FollowButton } from "@/components/FollowButton";
@@ -181,7 +182,9 @@ export function RealtimeRoom(props: Props) {
   // lg:grid-cols-[2fr_1fr] with order-1/order-2. When showStats is false the
   // stats column drops and chat fills the full width. On mobile `tab` switches
   // Chat / Stats (only when showStats) / Call in; links live inside the stream.
-  const [tab, setTab] = useState<"chat" | "stats" | "questions" | "callin">("chat");
+  const [tab, setTab] = useState<
+    "chat" | "stats" | "questions" | "callin" | "polls"
+  >("chat");
   // desktop chat-column tabs: Room chat | Polls (+ Questions for the
   // commentator). Polls hosts the interactive widgets so they stop consuming
   // permanent chat-column height (founder 2026-07-02, Cloud Design).
@@ -749,6 +752,46 @@ export function RealtimeRoom(props: Props) {
   const audioLive = INPUTS_OPEN.includes(roomState);
   const newQuestionCount = questions.filter((q) => q.status === "new").length;
 
+  // Audio autoplay (founder 2026-08-05): once a listener has listened on this
+  // browser, start the commentary automatically whenever the host is live — no
+  // manual Play tap each visit. Browsers that forbid gesture-less audio (iOS
+  // Safari) come back "blocked" and get a one-tap overlay instead.
+  const [autoplayDismissed, setAutoplayDismissed] = useState(false);
+  const autoTriedRef = useRef(false);
+  // any successful listen (first manual tap OR a later autostart) records the
+  // per-browser opt-in
+  useEffect(() => {
+    if (audio.listenStatus === "live") {
+      try {
+        localStorage.setItem("fc_autoplay_ok", "1");
+      } catch {}
+    }
+  }, [audio.listenStatus]);
+  // attempt the silent autostart while the host is broadcasting (listeners only)
+  useEffect(() => {
+    if (!audioLive) {
+      autoTriedRef.current = false; // re-arm for a host stop → restart
+      return;
+    }
+    if (isRoomCommentator) return; // commentators publish, never auto-listen
+    if (audio.radioActive) return; // radio is a separate explicit choice
+    if (audio.listenStatus !== "idle") return; // already live/connecting
+    if (autoTriedRef.current) return; // one attempt; respect a manual stop
+    let optedIn = false;
+    try {
+      optedIn = localStorage.getItem("fc_autoplay_ok") === "1";
+    } catch {}
+    if (!optedIn) return; // first-ever visit uses the normal Play button
+    autoTriedRef.current = true;
+    void audio.tryAutostart();
+  }, [
+    audioLive,
+    isRoomCommentator,
+    audio.radioActive,
+    audio.listenStatus,
+    audio.tryAutostart,
+  ]);
+
   // Phase 7: poll live match detail (faster cadence while live); push a tab
   const { stats: matchStats, error: statsError } = useFixtureStats({
     fixtureId: room.fixtureId,
@@ -819,7 +862,7 @@ export function RealtimeRoom(props: Props) {
     setTalkRequests((prev) => prev.filter((r) => r.id !== id));
   }
 
-  type TabId = "chat" | "stats" | "questions" | "callin";
+  type TabId = "chat" | "stats" | "questions" | "callin" | "polls";
   // Mobile room sections (Cloud Design): CHAT / STATS / CALL IN in a bottom
   // segmented bar, swipeable. The commentator swaps CALL IN (they're already
   // on air) for their QUESTIONS inbox.
@@ -837,6 +880,11 @@ export function RealtimeRoom(props: Props) {
       {paths}
     </svg>
   );
+  // mobile Polls badge — a poll is active or the pregame predictor is open.
+  // Excludes player ratings (they live under STATS on mobile), so it won't
+  // light up over an otherwise-empty panel.
+  const mobilePollsBadge =
+    (activePoll ? 1 : 0) + (roomState === "pregame" ? 1 : 0);
   const mobileTabs: { id: TabId; label: string; badge: number; icon: React.ReactNode }[] = [
     {
       id: "chat",
@@ -844,6 +892,18 @@ export function RealtimeRoom(props: Props) {
       badge: 0,
       icon: tabIcon(
         <path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.6-.8L3 21l1.8-5.1A8.5 8.5 0 1121 11.5z" />,
+      ),
+    },
+    {
+      id: "polls" as const,
+      label: "Polls",
+      badge: mobilePollsBadge,
+      icon: tabIcon(
+        <>
+          <line x1="4" y1="6" x2="15" y2="6" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="18" x2="10" y2="18" />
+        </>,
       ),
     },
     ...(isRoomCommentator
@@ -920,6 +980,7 @@ export function RealtimeRoom(props: Props) {
   const bar = isRoomCommentator ? (
     <CommentatorBar
       roomId={room.id}
+      roster={<RosterPanel roomId={room.id} />}
       state={roomState}
       requests={talkRequests}
       onRequestHandled={handleRequestHandled}
@@ -1097,32 +1158,38 @@ export function RealtimeRoom(props: Props) {
     />
   ) : null;
 
-  const pollsPanel = (
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-      {pollRelevant && (
-        <div>
-          {activePoll && (
-            <PollWidget
-              poll={activePoll}
-              myVote={props.myPollVote}
-              canVote={!!viewer && !isRoomCommentator}
-              demo={room.demo}
-              isCommentator={isRoomCommentator}
-            />
-          )}
-          {audioLive && isRoomCommentator && <PollComposer roomId={room.id} />}
-        </div>
-      )}
-      {predictorRelevant && (
-        <ScorePredictor
-          roomId={room.id}
-          myValue={props.myPrediction}
-          agg={predictionAgg}
-          open={roomState === "pregame" && !!viewer && !isRoomCommentator}
-          homeName={room.home}
-          awayName={room.away}
+  // poll + predictor factored out so the desktop Polls tab and the mobile Polls
+  // tab share exactly the same widgets (founder 2026-08-05: polls moved out of
+  // the mobile chat stream into their own bottom-bar tab)
+  const pollBlock = pollRelevant ? (
+    <div>
+      {activePoll && (
+        <PollWidget
+          poll={activePoll}
+          myVote={props.myPollVote}
+          canVote={!!viewer && !isRoomCommentator}
+          demo={room.demo}
+          isCommentator={isRoomCommentator}
         />
       )}
+      {audioLive && isRoomCommentator && <PollComposer roomId={room.id} />}
+    </div>
+  ) : null;
+  const predictorBlock = predictorRelevant ? (
+    <ScorePredictor
+      roomId={room.id}
+      myValue={props.myPrediction}
+      agg={predictionAgg}
+      open={roomState === "pregame" && !!viewer && !isRoomCommentator}
+      homeName={room.home}
+      awayName={room.away}
+    />
+  ) : null;
+  // desktop Polls tab: poll + predictor + player ratings (unchanged)
+  const pollsPanel = (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
+      {pollBlock}
+      {predictorBlock}
       {ratingsWidget}
       {!pollRelevant && !predictorRelevant && !ratingsRelevant && (
         <p className="px-1 py-6 text-center text-sm text-secondary">
@@ -1132,9 +1199,60 @@ export function RealtimeRoom(props: Props) {
       )}
     </div>
   );
+  // mobile Polls tab: poll + predictor only — player ratings stay under STATS on
+  // mobile (founder 2026-07-02), so they're intentionally excluded here
+  const mobilePollsPanel = (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
+      {pollBlock}
+      {predictorBlock}
+      {!pollRelevant && !predictorRelevant && (
+        <p className="px-1 py-6 text-center text-sm text-secondary">
+          Nothing to vote on right now. Polls and predictions appear here when
+          the host opens them.
+        </p>
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="relative flex h-dvh flex-col overflow-hidden">
+      {/* one-tap autoplay fallback: shown to a listener whose browser blocked a
+          gesture-less autostart (iOS Safari) — tapping unlocks audio and records
+          the opt-in so later visits start on their own (founder 2026-08-05) */}
+      {!isRoomCommentator &&
+        audio.autoplayBlocked &&
+        audioLive &&
+        audio.listenStatus === "idle" &&
+        !audio.radioActive &&
+        !autoplayDismissed && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-canvas/70 p-6 backdrop-blur-sm">
+            <div className="w-full max-w-xs rounded-2xl border border-line bg-surface p-6 text-center shadow-[var(--shadow-raised)]">
+              <p className="display text-[22px] leading-tight">
+                {room.hosts.map((h) => h.username).join(" & ") ||
+                  room.commentatorUsername}{" "}
+                is live
+              </p>
+              <p className="mt-1 text-sm text-secondary">
+                Tap to start the commentary.
+              </p>
+              <button
+                type="button"
+                autoFocus
+                onClick={() => void audio.startListening()}
+                className="btn-grad-red mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-bold text-white"
+              >
+                <span aria-hidden="true">▶</span> Tap to listen
+              </button>
+              <button
+                type="button"
+                onClick={() => setAutoplayDismissed(true)}
+                className="mt-2 font-mono text-xs tracking-wide text-secondary hover:text-primary"
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        )}
       {/* detached LiveKit audio elements live here */}
       <div ref={audio.setAudioContainer} className="hidden" aria-hidden="true" />
       {/* short-term in-room bug reporter (testing/pre-launch) */}
@@ -1176,7 +1294,7 @@ export function RealtimeRoom(props: Props) {
           is lg-only). The listener transport paints its own surface; the
           commentator bar keeps the plain strip. */}
       <div
-        className={`lg:hidden ${isRoomCommentator ? "border-b border-line bg-surface" : ""}`}
+        className={`lg:hidden shrink-0 ${isRoomCommentator ? "border-b border-line bg-surface" : ""}`}
       >
         {bar}
       </div>
@@ -1189,7 +1307,7 @@ export function RealtimeRoom(props: Props) {
         {showStats && (
         <aside
           aria-label="Stats"
-          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto lg:order-2 lg:block`}
+          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto overscroll-contain lg:order-2 lg:block`}
         >
           <StatsPanel
             data={displayStats}
@@ -1274,12 +1392,22 @@ export function RealtimeRoom(props: Props) {
           </div>
         </section>
 
+        {/* POLLS (mobile only): poll + score predictor, moved out of the chat
+            stream (founder 2026-08-05). Desktop shows these in the chat column's
+            Polls tab; player ratings stay under STATS on mobile. */}
+        <section
+          aria-label="Polls"
+          className={`${tab === "polls" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:hidden`}
+        >
+          {mobilePollsPanel}
+        </section>
+
         {/* CALL IN (mobile listeners only — the commentator is already on air;
             desktop keeps request-to-talk inline in chat) */}
         {!isRoomCommentator && (
           <section
             aria-label="Call in"
-            className={`${tab === "callin" ? "block" : "hidden"} min-h-0 flex-1 overflow-y-auto lg:hidden`}
+            className={`${tab === "callin" ? "block" : "hidden"} min-h-0 flex-1 overflow-y-auto overscroll-contain lg:hidden`}
           >
             <div className="mx-auto max-w-md px-5 py-8">
               <div className="mb-6 text-center">
@@ -2270,7 +2398,7 @@ function LiveChat({
       <ul
         ref={listRef}
         onScroll={onChatScroll}
-        className="flex-1 overflow-y-auto px-1.5"
+        className="flex-1 overflow-y-auto overscroll-contain px-1.5"
       >
         {displayItems.map((item) =>
           item.kind === "link" ? (
@@ -2306,39 +2434,10 @@ function LiveChat({
         </button>
       )}
 
-      {/* score predictor: distribution visible to everyone; the form opens for
-          signed-in listeners during pregame (FR-12.1) */}
-      {inputsOpen && (roomState === "pregame" || predictionAgg.total > 0) && (
-        <div className="border-t border-line px-3 pt-3 lg:hidden">
-          <ScorePredictor
-            roomId={room.id}
-            myValue={myPrediction}
-            agg={predictionAgg}
-            open={roomState === "pregame" && !!viewer && !isRoomCommentator}
-            homeName={room.home}
-            awayName={room.away}
-          />
-        </div>
-      )}
-
-      {/* half-time poll: live poll visible to all; composer is commentator-only */}
-      {(activePoll || (inputsOpen && isRoomCommentator)) && (
-        <div className="border-t border-line px-3 pt-3 lg:hidden">
-          {activePoll && (
-            <PollWidget
-              poll={activePoll}
-              myVote={myPollVote}
-              canVote={!!viewer && !isRoomCommentator}
-              demo={room.demo}
-              isCommentator={isRoomCommentator}
-            />
-          )}
-          {inputsOpen && isRoomCommentator && <PollComposer roomId={room.id} />}
-        </div>
-      )}
-
-      {/* player ratings moved out of chat (founder 2026-07-02): desktop →
-          Polls tab, mobile → under STATS */}
+      {/* score predictor + half-time poll moved OUT of the mobile chat stream
+          into the Polls bottom-bar tab (founder 2026-08-05); desktop shows them
+          in the chat column's Polls tab. Player ratings: desktop → Polls tab,
+          mobile → under STATS (founder 2026-07-02). */}
 
       {room.demo ? (
         // demo room: chat is read-only for everyone. Replaces the sign-in wall

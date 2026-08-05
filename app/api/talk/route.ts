@@ -22,9 +22,6 @@ const OPEN_STATES: RoomState[] = [
   "postgame",
 ];
 
-const MIN_ACCOUNT_AGE_MS = 48 * 60 * 60 * 1000;
-const MIN_PRIOR_MESSAGES = 5;
-
 const submitSchema = z.object({
   roomId: z.uuid(),
   topic: z.string().trim().min(1).max(120),
@@ -69,8 +66,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // eligibility gates (FR-4.4, amended 2026-06-11): the explicit,
-  // reversible block list replaces the old "ever removed from air" rule
+  // eligibility gate: the explicit, reversible block list (FR-4.4, amended
+  // 2026-06-11). The old 48h-account-age + 5-prior-messages gates were dropped
+  // after the first live test (founder 2026-08-05) — they kept real new
+  // listeners from ever calling in; the block list + first-use consent are the
+  // only barriers now.
   const { data: blocked } = await service
     .from("call_in_blocks")
     .select("user_id")
@@ -79,24 +79,6 @@ export async function POST(request: NextRequest) {
   if (blocked) {
     return NextResponse.json(
       { error: "Call-ins aren't available on this account." },
-      { status: 403 },
-    );
-  }
-  const accountAge =
-    Date.now() - new Date(caller.profile.created_at).getTime();
-  if (accountAge < MIN_ACCOUNT_AGE_MS) {
-    return NextResponse.json(
-      { error: "Accounts need to be at least 48 hours old to call in." },
-      { status: 403 },
-    );
-  }
-  const { count: priorMessages } = await service
-    .from("chat_messages")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", caller.userId);
-  if ((priorMessages ?? 0) < MIN_PRIOR_MESSAGES) {
-    return NextResponse.json(
-      { error: "Join the chat a bit first — call-ins need 5 prior messages." },
       { status: 403 },
     );
   }

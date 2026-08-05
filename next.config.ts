@@ -112,6 +112,16 @@ const nextConfig: NextConfig = {
       "./node_modules/@img/sharp-linux-x64/**/*",
       "./node_modules/@img/sharp-libvips-linux-x64/**/*",
     ],
+    // ffmpeg-static ships its binary at node_modules/ffmpeg-static/ffmpeg and is
+    // spawned by execFile() with a runtime path string (lib/recording.ts), so
+    // @vercel/nft never traces the binary into the function bundle -> "spawn
+    // .../ffmpeg-static/ffmpeg ENOENT" on Vercel's Linux runtime (works locally
+    // where the binary is present). Recording processing runs via after() INSIDE
+    // these two routes, so both function bundles need the binary force-included
+    // (same class of fix as sharp above). Surfaced by the first live test's
+    // recording download, 2026-08-05.
+    "/api/recordings": ["./node_modules/ffmpeg-static/**/*"],
+    "/api/rooms": ["./node_modules/ffmpeg-static/**/*"],
   },
   images: {
     remotePatterns: avatarRemotePatterns,
