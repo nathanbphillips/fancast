@@ -163,10 +163,10 @@ export function HowThisWorks({
           </button>
         </header>
 
-        <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5"
-          style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
-        >
+        {/* extra bottom padding on mobile so the last of the content (and the
+            red button) clears the room's tab bar, which now floats over this
+            overlay so people can navigate away without closing it first */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] sm:pb-5">
           <ol className="list-none space-y-5 pl-0">
             {SECTIONS.map((s, i) => (
               <li key={s.title} className="flex gap-3.5">

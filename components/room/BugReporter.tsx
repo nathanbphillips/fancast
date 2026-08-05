@@ -86,7 +86,10 @@ export function BugReporter({
   }
 
   return (
-    <div className="fixed right-3 bottom-24 z-50 lg:right-5">
+    // sits ABOVE the chat composer + the mobile tab bar (founder 2026-08-05: at
+    // bottom-24 it covered the message box and the send arrow). Includes the
+    // safe-area inset so it tracks the tab bar on notched phones.
+    <div className="fixed right-3 bottom-[calc(11rem+env(safe-area-inset-bottom))] z-50 lg:right-5 lg:bottom-24">
       {open ? (
         <div className="w-[min(92vw,340px)] overflow-hidden rounded-2xl border border-line bg-surface shadow-raised">
           <div className="flex items-center justify-between border-b border-line px-4 py-2.5">

@@ -1673,7 +1673,9 @@ export function RealtimeRoom(props: Props) {
       {/* mobile: bottom segmented bar (Cloud Design) — CHAT / STATS / CALL IN */}
       <nav
         aria-label="Room sections"
-        className={`${composerFocused ? "hidden" : "flex"} flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden`}
+        /* z-65 floats the bar ABOVE the FAQ overlay (z-60) so it stays usable
+           there, while the mandatory listen gate (z-70) still covers it */
+        className={`${composerFocused ? "hidden" : "flex"} relative z-[65] flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden`}
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {!isRoomCommentator && (
@@ -1699,7 +1701,10 @@ export function RealtimeRoom(props: Props) {
           <button
             key={t.id}
             type="button"
-            onClick={() => setTab(t.id)}
+            onClick={() => {
+              setTab(t.id);
+              setHelpOpen(false); // the bar floats over the FAQ; tapping a tab leaves it
+            }}
             aria-current={tab === t.id ? "page" : undefined}
             className={`relative flex flex-1 flex-col items-center gap-1 py-1 transition-colors ${
               tab === t.id ? "text-gold-bright" : "text-red"
