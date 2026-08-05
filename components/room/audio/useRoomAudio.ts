@@ -525,6 +525,13 @@ export function useRoomAudio(opts: {
       return r;
     } catch (err) {
       console.error("audio connect failed:", err);
+      track("audio_connect_failed", {
+        roomId: opts.roomId,
+        props: {
+          gestured,
+          message: String((err as Error)?.message ?? err).slice(0, 200),
+        },
+      });
       // never orphan a half-connected room — its handlers would keep
       // feeding audio with no way to stop it
       if (room) {

@@ -833,6 +833,13 @@ export function RealtimeRoom(props: Props) {
     const watchdog = setTimeout(() => {
       setAutoOnAir(false);
       audio.cancelMicStart();
+      // a hang leaves no exception and no failed request, so it would be
+      // invisible without this — it's what stranded callers on "Putting you on
+      // air" with nothing in diagnostics to show for it
+      track("callin_mic_timeout", {
+        roomId: room.id,
+        props: { after: "10s", stage: "auto-start on accept" },
+      });
     }, 10_000);
     void audio.startMic(false).finally(() => {
       clearTimeout(watchdog);

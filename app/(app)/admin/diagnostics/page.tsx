@@ -8,9 +8,19 @@ import {
 import { isAdmin } from "@/lib/roles";
 import { AdminBugs, type BugRow } from "@/components/admin/AdminBugs";
 import {
-  AdminClientErrors,
-  type ClientErrorRow,
-} from "@/components/admin/AdminClientErrors";
+  AdminDiagnostics,
+  type DiagRow,
+} from "@/components/admin/AdminDiagnostics";
+
+/** Every event that represents something GOING WRONG. Product-analytics events
+ *  (room_view, listen_started…) are deliberately excluded. Add new fault events
+ *  here and they render with full context automatically. */
+const DIAGNOSTIC_EVENTS = [
+  "client_error", // uncaught errors, rejections, failed/unreachable API calls
+  "callin_mic_failed",
+  "callin_mic_timeout",
+  "audio_connect_failed",
+];
 
 export const metadata: Metadata = { title: "Diagnostics" };
 
@@ -26,13 +36,29 @@ export default async function DiagnosticsPage() {
 
   const service = createServiceClient();
 
-  const { data: errorRows } = await service
+  const { data: diagRows } = await service
     .from("events")
-    .select("id, created_at, path, session_id, props")
-    .eq("event", "client_error")
+    .select("id, created_at, event, user_id, session_id, room_id, path, props")
+    .in("event", DIAGNOSTIC_EVENTS)
     .order("created_at", { ascending: false })
-    .limit(300);
-  const clientErrors = (errorRows ?? []) as ClientErrorRow[];
+    .limit(400);
+  const diagnostics = (diagRows ?? []) as DiagRow[];
+
+  // resolve who hit each fault — "which user, on which device" is the question
+  // you actually ask when something breaks
+  const userIds = [
+    ...new Set(diagnostics.map((d) => d.user_id).filter(Boolean)),
+  ] as string[];
+  const usernames: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: profs } = await service
+      .from("profiles")
+      .select("user_id, username")
+      .in("user_id", userIds);
+    for (const p of profs ?? []) {
+      usernames[p.user_id as string] = p.username as string;
+    }
+  }
 
   const { data: bugRows } = await service
     .from("bug_reports")
@@ -59,12 +85,13 @@ export default async function DiagnosticsPage() {
       </p>
 
       <section className="mt-8">
-        <h2 className="text-sm font-bold">Client errors</h2>
+        <h2 className="text-sm font-bold">Faults</h2>
         <p className="text-xs text-secondary">
-          Uncaught JS errors + promise rejections from listeners&apos; browsers,
-          with the device and environment that hit them.
+          Failed API calls (with the server&apos;s reason), uncaught errors,
+          promise rejections, and audio / call-in faults — each with the user,
+          device, page and room it happened on.
         </p>
-        <AdminClientErrors initial={clientErrors} />
+        <AdminDiagnostics initial={diagnostics} usernames={usernames} />
       </section>
 
       <section className="mt-10">
