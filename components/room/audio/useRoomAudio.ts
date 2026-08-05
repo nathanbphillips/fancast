@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { track } from "@/lib/track";
+import { identityUserId } from "@/lib/livekitIdentity";
 import {
   ConnectionState,
   LocalAudioTrack,
@@ -45,6 +46,11 @@ export function useRoomAudio(opts: {
   isRoomCommentator: boolean;
 }) {
   const [listenStatus, setListenStatus] = useState<ListenStatus>("idle");
+  // mirrored in a ref so event handlers can report the status at drop time
+  const listenStatusRef = useRef<ListenStatus>("idle");
+  useEffect(() => {
+    listenStatusRef.current = listenStatus;
+  }, [listenStatus]);
   // set when a gesture-less autostart is blocked by the browser (iOS Safari, or
   // a browser with no media engagement) so the UI can show a "Tap to listen"
   // prompt instead of failing silently (founder 2026-08-05)
@@ -377,13 +383,22 @@ export function useRoomAudio(opts: {
   /* -------------------------------------------------------- connection */
 
   const refreshSpeakers = useCallback((room: Room) => {
-    const remote: Speaker[] = [...room.remoteParticipants.values()]
-      .filter((p) => p.audioTrackPublications.size > 0)
-      .map((p) => ({
-        identity: p.identity,
-        name: p.name || p.identity,
-        isCommentator: p.identity === opts.commentatorId,
-      }));
+    // Speaker.identity carries the ACCOUNT id, not the raw connection identity:
+    // everything downstream (end call, mute, flag) addresses a user, and those
+    // routes validate a uuid. Dedupe so one account on two devices is one chip.
+    const seen = new Set<string>();
+    const remote: Speaker[] = [];
+    for (const p of room.remoteParticipants.values()) {
+      if (p.audioTrackPublications.size === 0) continue;
+      const userId = identityUserId(p.identity);
+      if (seen.has(userId)) continue;
+      seen.add(userId);
+      remote.push({
+        identity: userId,
+        name: p.name || userId,
+        isCommentator: userId === opts.commentatorId,
+      });
+    }
     if (publishedTrackRef.current && opts.viewerId) {
       remote.push({
         identity: opts.viewerId,
@@ -466,7 +481,7 @@ export function useRoomAudio(opts: {
           el.volume = volumeRef.current; // desktop only; iOS ignores it
           audioContainerRef.current?.appendChild(el);
         }
-        if (participant.identity === opts.commentatorId) {
+        if (identityUserId(participant.identity) === opts.commentatorId) {
           watchCommentatorTrack(track);
           clearTech();
         }
@@ -481,20 +496,20 @@ export function useRoomAudio(opts: {
           trackNodesRef.current.delete(track.sid ?? participant.identity);
         }
         track.detach().forEach((el) => el.remove());
-        if (participant.identity === opts.commentatorId) {
+        if (identityUserId(participant.identity) === opts.commentatorId) {
           stopAnalyser();
           commentatorTrackRef.current = null;
         }
         refreshSpeakers(r);
       });
       r.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
-        if (p.identity === opts.commentatorId && !opts.isRoomCommentator) {
+        if (identityUserId(p.identity) === opts.commentatorId && !opts.isRoomCommentator) {
           flagTech();
         }
         refreshSpeakers(r);
       });
       r.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
-        if (p.identity === opts.commentatorId) clearTech();
+        if (identityUserId(p.identity) === opts.commentatorId) clearTech();
         refreshSpeakers(r);
       });
       r.on(RoomEvent.ParticipantPermissionsChanged, () => {
@@ -504,7 +519,18 @@ export function useRoomAudio(opts: {
           void stopMicInternal();
         }
       });
-      r.on(RoomEvent.Disconnected, () => {
+      r.on(RoomEvent.Disconnected, (reason) => {
+        // Record WHY. A drop is otherwise indistinguishable from a deliberate
+        // stop, and DUPLICATE_IDENTITY (the same account connecting elsewhere)
+        // is exactly the failure that made the play button look dead for
+        // signed-in listeners (founder report 2026-08-05).
+        const why = reason !== undefined ? String(reason) : "unknown";
+        if (why !== "unknown") {
+          track("audio_disconnected", {
+            roomId: opts.roomId,
+            props: { reason: why, wasListening: listenStatusRef.current },
+          });
+        }
         // stop the mic FIRST (it reads roomRef): an unexpected drop must
         // not leave getUserMedia capturing with the indicator lit
         void stopMicInternal();

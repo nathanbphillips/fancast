@@ -20,6 +20,7 @@ const DIAGNOSTIC_EVENTS = [
   "callin_mic_failed",
   "callin_mic_timeout",
   "audio_connect_failed",
+  "audio_disconnected", // carries the LiveKit DisconnectReason
 ];
 
 export const metadata: Metadata = { title: "Diagnostics" };

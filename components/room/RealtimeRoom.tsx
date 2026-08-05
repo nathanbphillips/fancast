@@ -606,6 +606,25 @@ export function RealtimeRoom(props: Props) {
         ),
       );
     });
+    // an author deleted their own message — tombstone it for everyone
+    chat.subscribe("delete", (msg) => {
+      const { messageId } = msg.data as { messageId: string };
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                body: "[deleted]",
+                deleted_at: new Date().toISOString(),
+                link_url: null,
+                link_title: null,
+                link_image: null,
+                link_domain: null,
+              }
+            : m,
+        ),
+      );
+    });
     chat.subscribe("hide", (msg) => {
       const { messageId, hiddenBy } = msg.data as {
         messageId: string;
@@ -1221,21 +1240,58 @@ export function RealtimeRoom(props: Props) {
 
   // manual chat refresh (founder 2026-06-29): re-pull complete threads from the
   // DB snapshot and merge — a fallback if a realtime message was missed.
+  /** Pull fresh room state for the Refresh button. THROWS on failure so the
+   *  button can say so — it used to swallow everything and return silently,
+   *  which is why it looked like it did nothing (founder feedback 2026-08-05).
+   *  Takes the snapshot's messages AND links, so "refresh" refreshes the stream
+   *  rather than just new chat. */
   const refreshChat = async () => {
-    try {
-      const res = await fetch(`/api/rooms/${room.id}/snapshot`, { cache: "no-store" });
-      if (!res.ok) return;
-      const s = (await res.json()) as { messages?: ChatMessage[] };
-      if (!s.messages) return;
-      setMessages((prev) => {
-        const byId = new Map(prev.map((m) => [m.id, m]));
-        for (const m of s.messages!) byId.set(m.id, m);
-        return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
-      });
-    } catch {
-      /* best-effort */
+    const res = await fetch(`/api/rooms/${room.id}/snapshot`, {
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`snapshot ${res.status}`);
+    const s = (await res.json()) as {
+      messages?: ChatMessage[];
+      links?: Link[];
+    };
+    if (s.messages) {
+      // replace, don't merge: a merge could never drop a message the server no
+      // longer returns (hidden or deleted), so stale rows lingered forever
+      setMessages(
+        [...s.messages].sort((a, b) =>
+          a.created_at.localeCompare(b.created_at),
+        ),
+      );
     }
+    if (s.links) setLinks(s.links);
   };
+
+  /** Author deletes their own message. Optimistic locally; the chat channel's
+   *  "delete" event tombstones it for everyone else. */
+  async function deleteOwnMessage(id: string): Promise<boolean> {
+    const res = await fetch("/api/chat/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messageId: id }),
+    }).catch(() => null);
+    if (!res?.ok) return false;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === id
+          ? {
+              ...m,
+              body: "[deleted]",
+              deleted_at: new Date().toISOString(),
+              link_url: null,
+              link_title: null,
+              link_image: null,
+              link_domain: null,
+            }
+          : m,
+      ),
+    );
+    return true;
+  }
 
   const chatPanel = showDownloads ? (
     <div className="min-h-0 flex-1 overflow-y-auto">
@@ -1254,6 +1310,7 @@ export function RealtimeRoom(props: Props) {
       linksOpen={linksOpen}
       onLinkSubmitted={appendLink}
       onRefresh={refreshChat}
+      onDeleteMessage={deleteOwnMessage}
       watching={watching}
       conn={conn}
       onSent={appendMessage}
@@ -1987,6 +2044,7 @@ function LiveChat({
   linksOpen,
   onLinkSubmitted,
   onRefresh,
+  onDeleteMessage,
   watching,
   conn,
   onSent,
@@ -2017,7 +2075,9 @@ function LiveChat({
   myLinkVotes: Record<string, 1 | -1>;
   linksOpen: boolean;
   onLinkSubmitted: (l: Link) => void;
-  onRefresh: () => void;
+  onRefresh: () => Promise<void>;
+  /** author deleting their own message; resolves false on failure */
+  onDeleteMessage: (id: string) => Promise<boolean>;
   watching: number | null;
   conn: ConnState;
   onSent: (m: ChatMessage) => void;
@@ -2058,6 +2118,36 @@ function LiveChat({
   // frozen top-level display order for the ranked (non-"new") modes — so live
   // votes/inserts don't re-rank under the reader; new items batch behind a pill
   const [frozenIds, setFrozenIds] = useState<string[] | null>(null);
+  // Refresh button state. It previously had NO feedback and swallowed failures,
+  // so a tap was indistinguishable from a no-op — and in the ranked sort modes
+  // the frozen order meant nothing visibly changed either (feedback 2026-08-05).
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshState, setRefreshState] = useState<"ok" | "fail" | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  async function deleteOwnMessage(id: string) {
+    if (deletingId) return;
+    if (!window.confirm("Delete this message? This can't be undone.")) return;
+    setDeletingId(id);
+    const ok = await onDeleteMessage(id);
+    setDeletingId(null);
+    if (!ok) toast("Couldn't delete that message.");
+  }
+  async function doRefresh() {
+    if (refreshing) return;
+    setRefreshing(true);
+    setRefreshState(null);
+    try {
+      await onRefresh();
+      setFrozenIds(null); // unfreeze so a ranked list actually re-orders
+      setUnread(0);
+      setRefreshState("ok");
+    } catch {
+      setRefreshState("fail");
+    } finally {
+      setRefreshing(false);
+      setTimeout(() => setRefreshState(null), 2200);
+    }
+  }
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkDraft, setLinkDraft] = useState("");
   const [submittingLink, setSubmittingLink] = useState(false);
@@ -2452,6 +2542,11 @@ function LiveChat({
           <div className="rounded-lg px-3 py-2 text-xs text-secondary italic">
             Message hidden{m.hidden_by === "flags" ? " by community flags" : ""}
           </div>
+        ) : m.deleted_at ? (
+          /* author deleted it — tombstone keeps the thread readable */
+          <div className="rounded-lg px-3 py-2 text-xs text-secondary italic">
+            Message deleted by the author
+          </div>
         ) : (
           <div
             className={`group rounded-lg px-2 py-1 lg:py-1.5 ${
@@ -2569,6 +2664,18 @@ function LiveChat({
                       Reply
                     </button>
                   )}
+                  {/* author-only delete (founder feedback 2026-08-05). Soft:
+                      the tombstone keeps any replies intact. */}
+                  {viewer?.userId === m.user_id && !m.deleted_at && (
+                    <button
+                      type="button"
+                      onClick={() => void deleteOwnMessage(m.id)}
+                      disabled={deletingId === m.id}
+                      className="text-[11.5px] font-semibold text-secondary hover:text-red disabled:opacity-60"
+                    >
+                      {deletingId === m.id ? "Deleting…" : "Delete"}
+                    </button>
+                  )}
                 </div>
                 {/* replies toggle */}
                 {kids.length > 0 && (
@@ -2624,6 +2731,8 @@ function LiveChat({
         {/* a hidden node never renders its replies — matches the reload path
             (RLS drops a hidden root's whole thread) and stops moderated content
             from carrying a visible reply pile live */}
+        {/* a deleted node still shows its replies — only moderation collapses a
+            subtree; deleting your own comment shouldn't erase other people's */}
         {!m.hidden_by &&
           kids.length > 0 &&
           !isCollapsed &&
@@ -2661,12 +2770,32 @@ function LiveChat({
           )}
           <button
             type="button"
-            onClick={onRefresh}
+            onClick={() => void doRefresh()}
+            disabled={refreshing}
             aria-label="Refresh chat"
             title="Refresh chat"
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-line px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] text-secondary uppercase transition-colors hover:border-red hover:text-primary"
+            aria-live="polite"
+            className={`flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 font-mono text-[10px] tracking-[0.04em] uppercase transition-colors disabled:opacity-70 ${
+              refreshState === "fail"
+                ? "border-red text-red"
+                : refreshState === "ok"
+                  ? "border-green text-green"
+                  : "border-line text-secondary hover:border-red hover:text-primary"
+            }`}
           >
-            <span aria-hidden="true">↻</span> Refresh
+            <span
+              aria-hidden="true"
+              className={refreshing ? "inline-block animate-spin" : ""}
+            >
+              ↻
+            </span>{" "}
+            {refreshing
+              ? "Refreshing"
+              : refreshState === "ok"
+                ? "Updated"
+                : refreshState === "fail"
+                  ? "Failed"
+                  : "Refresh"}
           </button>
         </div>
         <div

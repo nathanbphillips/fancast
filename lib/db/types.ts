@@ -75,6 +75,9 @@ export type ChatMessage = {
   body: string;
   is_waiting_room: boolean;
   hidden_by: "flags" | "commentator" | "admin" | null;
+  /** set when the AUTHOR deleted it (distinct from moderation); the row lives on
+   *  as a tombstone so threaded replies aren't orphaned */
+  deleted_at?: string | null;
   hidden_at: string | null;
   up_count: number;
   down_count: number;

@@ -4,7 +4,7 @@ import {
   createServiceClient,
   createSupabaseServerClient,
 } from "@/lib/db/server";
-import { mintToken } from "@/lib/livekit";
+import { livekitIdentity, mintToken } from "@/lib/livekit";
 import { isAdmin } from "@/lib/roles";
 import { isRoomHost } from "@/lib/roomHosts";
 import type { Profile, RoomState } from "@/lib/db/types";
@@ -53,12 +53,14 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  let identity = `anon:${crypto.randomUUID().slice(0, 8)}`;
+  // base identifies the ACCOUNT; livekitIdentity() adds a per-connection nonce
+  // so the same account open in two places doesn't kick its own earlier session
+  let base = `anon:${crypto.randomUUID().slice(0, 8)}`;
   let name = "guest";
   let canPublish = false;
 
   if (user) {
-    identity = user.id;
+    base = user.id;
     const { data: profile } = await service
       .from("profiles")
       .select("*")
@@ -94,7 +96,7 @@ export async function GET(request: NextRequest) {
 
   const token = await mintToken({
     roomId: room.id,
-    identity,
+    identity: livekitIdentity(base),
     name,
     canPublish,
   });

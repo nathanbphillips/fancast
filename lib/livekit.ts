@@ -5,6 +5,9 @@ import {
   TrackType,
   type VideoGrant,
 } from "livekit-server-sdk";
+import { identityUserId, livekitIdentity } from "@/lib/livekitIdentity";
+
+export { identityUserId, livekitIdentity };
 
 /**
  * Server-side LiveKit helpers (Phase 5). One LiveKit room per match room;
@@ -14,6 +17,17 @@ import {
 
 export function livekitRoomName(roomId: string): string {
   return `match_${roomId}`;
+}
+
+/** Every live connection belonging to one account (they may have several). */
+async function identitiesFor(
+  roomId: string,
+  userId: string,
+): Promise<string[]> {
+  const ps = await roomService().listParticipants(livekitRoomName(roomId));
+  return ps
+    .filter((p) => identityUserId(p.identity) === userId)
+    .map((p) => p.identity);
 }
 
 export function roomService(): RoomServiceClient {
@@ -55,24 +69,28 @@ export async function mintToken(opts: {
  *  not connected (their next token reflects the DB state anyway). */
 export async function setPublishPermission(
   roomId: string,
-  identity: string,
+  userId: string,
   canPublish: boolean,
 ): Promise<void> {
   try {
-    await roomService().updateParticipant(
-      livekitRoomName(roomId),
-      identity,
-      undefined,
-      {
-        canSubscribe: true,
-        canPublish,
-        canPublishData: false,
-        canPublishSources: canPublish ? [TrackSource.MICROPHONE] : [],
-      },
-    );
+    // an account can hold several connections; elevate/revoke every one of them
+    const identities = await identitiesFor(roomId, userId);
+    for (const identity of identities) {
+      await roomService().updateParticipant(
+        livekitRoomName(roomId),
+        identity,
+        undefined,
+        {
+          canSubscribe: true,
+          canPublish,
+          canPublishData: false,
+          canPublishSources: canPublish ? [TrackSource.MICROPHONE] : [],
+        },
+      );
+    }
   } catch (err) {
     // participant not in the room — fine
-    console.warn(`updateParticipant(${identity}) skipped:`, (err as Error).message);
+    console.warn(`updateParticipant(${userId}) skipped:`, (err as Error).message);
   }
 }
 
@@ -80,18 +98,25 @@ export async function setPublishPermission(
  *  (founder 2026-08-05). Returns false if they have no published audio track. */
 export async function muteParticipantMic(
   roomId: string,
-  identity: string,
+  userId: string,
   muted: boolean,
 ): Promise<boolean> {
   try {
     const svc = roomService();
     const room = livekitRoomName(roomId);
     const participants = await svc.listParticipants(room);
-    const p = participants.find((x) => x.identity === identity);
-    const track = p?.tracks?.find((t) => t.type === TrackType.AUDIO);
-    if (!track) return false;
-    await svc.mutePublishedTrack(room, identity, track.sid, muted);
-    return true;
+    // mute every connection this account has publishing audio
+    const mine = participants.filter(
+      (p) => identityUserId(p.identity) === userId,
+    );
+    let hit = false;
+    for (const p of mine) {
+      const track = p.tracks?.find((t) => t.type === TrackType.AUDIO);
+      if (!track) continue;
+      await svc.mutePublishedTrack(room, p.identity, track.sid, muted);
+      hit = true;
+    }
+    return hit;
   } catch (err) {
     console.error("muteParticipantMic failed:", (err as Error).message);
     return false;
@@ -107,7 +132,9 @@ export async function muteParticipantMic(
 export async function connectedIdentities(roomId: string): Promise<Set<string>> {
   try {
     const ps = await roomService().listParticipants(livekitRoomName(roomId));
-    return new Set(ps.map((p) => p.identity));
+    // keyed by ACCOUNT, not connection, so callers can test membership with a
+    // plain user id
+    return new Set(ps.map((p) => identityUserId(p.identity)));
   } catch {
     return new Set();
   }

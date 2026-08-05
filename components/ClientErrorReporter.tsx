@@ -64,8 +64,21 @@ export function ClientErrorReporter() {
       });
     };
     const onRejection = (e: PromiseRejectionEvent) => {
-      const r = e.reason as { message?: string; stack?: string } | undefined;
-      report("unhandledrejection", String(r?.message ?? r ?? "unknown"), {
+      const r = e.reason as
+        | { message?: string; stack?: string; type?: string; name?: string }
+        | undefined;
+      // an Event (media/websocket failure) stringifies to "[object Event]",
+      // which told us nothing — pull something identifiable out of it instead
+      let message: string;
+      if (r instanceof Event) {
+        const t = r.target as { constructor?: { name?: string }; src?: string };
+        message = `${r.type} on ${t?.constructor?.name ?? "target"}${
+          t?.src ? ` (${String(t.src).slice(0, 80)})` : ""
+        }`;
+      } else {
+        message = String(r?.message ?? r?.name ?? r ?? "unknown");
+      }
+      report("unhandledrejection", message, {
         stack: r?.stack ? String(r.stack).slice(0, 800) : undefined,
       });
     };
@@ -122,8 +135,18 @@ export function ClientErrorReporter() {
         }
         return res;
       } catch (err) {
+        // Ignore EXPECTED cancellations. Browsers (iOS especially) abort
+        // in-flight fetches when a tab is backgrounded or navigates, and the
+        // stats poller aborts its own requests — those drowned the real faults
+        // in noise during the first live test (2026-08-05).
+        const name = (err as Error)?.name;
+        const msg = String((err as Error)?.message ?? "");
+        const expected =
+          name === "AbortError" ||
+          /aborted|cancell?ed/i.test(msg) ||
+          document.visibilityState === "hidden";
         // the request never completed (offline, DNS, CORS, aborted)
-        if (track_it) {
+        if (track_it && !expected) {
           const path = url.replace(location.origin, "").split("?")[0];
           report("api_unreachable", `${method} ${path} failed`, {
             route: path,
