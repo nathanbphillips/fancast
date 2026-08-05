@@ -43,14 +43,13 @@ export async function POST(request: NextRequest) {
   if (!message) {
     return NextResponse.json({ error: "Message not found." }, { status: 404 });
   }
-  // no self-votes (FR-24.6): a message author can't vote their own message up
-  // to inflate their fan score
-  if (message.user_id === caller.userId) {
-    return NextResponse.json(
-      { error: "You can't vote on your own message." },
-      { status: 403 },
-    );
-  }
+  // Self-votes are ALLOWED (founder 2026-08-05) but carry ZERO weight. FR-24.6
+  // blocked them outright to stop an author inflating their own fan score —
+  // since fan_score and the "top" sort both read the WEIGHTED columns
+  // (migration 0033: comments + upvotes_weighted - downvotes_weighted), a
+  // weight-0 vote keeps that protection while letting the author use the arrows
+  // on their own message. Only the raw up/down display moves.
+  const selfVote = message.user_id === caller.userId;
 
   // Mutate the vote row and recompute the denormalized counts atomically
   // under a parent-row lock (M-3, audit) — vote rows stay the source of truth.
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
       p_message_id: messageId,
       p_user_id: caller.userId,
       p_value: value,
-      p_weight: voteWeight(caller.profile),
+      p_weight: selfVote ? 0 : voteWeight(caller.profile),
     })
     .single<{ up: number; down: number; score: number }>();
   if (error || !data) {
