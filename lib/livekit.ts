@@ -2,6 +2,7 @@ import {
   AccessToken,
   RoomServiceClient,
   TrackSource,
+  TrackType,
   type VideoGrant,
 } from "livekit-server-sdk";
 
@@ -72,6 +73,28 @@ export async function setPublishPermission(
   } catch (err) {
     // participant not in the room — fine
     console.warn(`updateParticipant(${identity}) skipped:`, (err as Error).message);
+  }
+}
+
+/** Host control: mute or unmute an on-air guest's microphone server-side
+ *  (founder 2026-08-05). Returns false if they have no published audio track. */
+export async function muteParticipantMic(
+  roomId: string,
+  identity: string,
+  muted: boolean,
+): Promise<boolean> {
+  try {
+    const svc = roomService();
+    const room = livekitRoomName(roomId);
+    const participants = await svc.listParticipants(room);
+    const p = participants.find((x) => x.identity === identity);
+    const track = p?.tracks?.find((t) => t.type === TrackType.AUDIO);
+    if (!track) return false;
+    await svc.mutePublishedTrack(room, identity, track.sid, muted);
+    return true;
+  } catch (err) {
+    console.error("muteParticipantMic failed:", (err as Error).message);
+    return false;
   }
 }
 

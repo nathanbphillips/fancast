@@ -808,8 +808,9 @@ export function MicControls({
   );
 }
 
-/** On-air guest chips (commentator bar, FR-4.3). The X ends the call —
- *  always neutral; ⚑ opens flag/block actions for problem callers. */
+/** On-air guest chips (commentator bar, FR-4.3): who is LIVE with the host, and
+ *  the controls over them — Mute (reversible) and ✕ End call (always neutral).
+ *  ⚑ opens flag/block actions for problem callers. */
 export function SpeakerChips({
   speakers,
   roomId,
@@ -819,18 +820,50 @@ export function SpeakerChips({
   roomId: string;
   onEndCall: (identity: string) => void;
 }) {
+  const [muted, setMuted] = useState<Record<string, boolean>>({});
+  const [busy, setBusy] = useState<string | null>(null);
   const guests = speakers.filter((s) => !s.isCommentator && s.name !== "you");
   if (guests.length === 0) return null;
+
+  async function toggleMute(identity: string) {
+    const next = !muted[identity];
+    setBusy(identity);
+    const res = await fetch("/api/talk/mute", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId, userId: identity, muted: next }),
+    }).catch(() => null);
+    setBusy(null);
+    if (res?.ok) setMuted((m) => ({ ...m, [identity]: next }));
+  }
+
   return (
     <div className="flex shrink-0 items-center gap-1.5">
       {guests.map((s) => (
         <span
           key={s.identity}
-          className="flex items-center gap-1 rounded-full border border-red/40 bg-raised px-2.5 py-1 text-xs font-semibold"
+          className="flex items-center gap-1.5 rounded-full border border-red/40 bg-raised px-2.5 py-1 text-xs font-semibold"
         >
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
+          <span className="font-mono text-[9px] tracking-[0.08em] text-red uppercase">
+            Live
+          </span>
           {s.name}
           <CallerActions userId={s.identity} username={s.name} roomId={roomId} />
+          <button
+            type="button"
+            disabled={busy === s.identity}
+            aria-label={`${muted[s.identity] ? "Unmute" : "Mute"} ${s.name}`}
+            title={muted[s.identity] ? "Unmute this caller" : "Mute this caller"}
+            onClick={() => void toggleMute(s.identity)}
+            className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-60 ${
+              muted[s.identity]
+                ? "border-red text-red"
+                : "border-line text-secondary hover:text-primary"
+            }`}
+          >
+            {muted[s.identity] ? "Muted" : "Mute"}
+          </button>
           <button
             type="button"
             aria-label={`End ${s.name}'s call`}
