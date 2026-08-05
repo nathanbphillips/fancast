@@ -9,6 +9,10 @@ import { isAdmin } from "@/lib/roles";
 import { AdminTools } from "@/components/admin/AdminTools";
 import { AdminGuide } from "@/components/admin/AdminGuide";
 import { AdminBugs, type BugRow } from "@/components/admin/AdminBugs";
+import {
+  AdminClientErrors,
+  type ClientErrorRow,
+} from "@/components/admin/AdminClientErrors";
 
 export const metadata: Metadata = { title: "Admin" };
 
@@ -26,6 +30,16 @@ export default async function AdminPage() {
     .order("created_at", { ascending: false })
     .limit(100);
   const bugs = (bugRows ?? []) as BugRow[];
+
+  // client-side errors captured in listeners' browsers (ClientErrorReporter →
+  // /api/events, event "client_error"); surfaced for the live test
+  const { data: errorRows } = await service
+    .from("events")
+    .select("id, created_at, path, session_id, props")
+    .eq("event", "client_error")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  const clientErrors = (errorRows ?? []) as ClientErrorRow[];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-8">
@@ -54,6 +68,15 @@ export default async function AdminPage() {
       <section className="mt-8">
         <h2 className="text-sm font-bold">Bug reports</h2>
         <AdminBugs initial={bugs} />
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-bold">Client errors</h2>
+        <p className="text-xs text-secondary">
+          Uncaught JS errors + promise rejections from listeners&apos; browsers,
+          with the device (user-agent) that hit them. Live-test debugging.
+        </p>
+        <AdminClientErrors initial={clientErrors} />
       </section>
 
       <AdminGuide />

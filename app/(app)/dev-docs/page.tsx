@@ -7,7 +7,8 @@ import { brand } from "@/lib/brand";
  * map of the build for an incoming developer (telemetry + features). Reflects
  * what is ACTUALLY built, not the aspirational spec in docs/ARCHITECTURE.md.
  * Last full refresh: 2026-07-06 (post Cloud Design overhaul, Commentator
- * Platform Epic PRDs 01-09, avatar uploads, front-end review pass).
+ * Platform Epic PRDs 01-09, avatar uploads, front-end review pass). Telemetry +
+ * admin + live-test hardening update: 2026-08-05.
  *
  * Visibility: noindex + HTTP Basic auth in middleware.ts (any username;
  * password = DEV_DOCS_PASSWORD env, with a built-in fallback).
@@ -158,13 +159,14 @@ export default function DevDocsPage() {
                 the iOS-Safari audio certification pass, final name + logo.
               </li>
               <li>
-                <b className="text-primary">The greenfield is telemetry:</b> essentially none beyond{" "}
-                <C>listener_segments</C> (audio-session rows) + a SQL query pack. No error tracking,
-                APM, product analytics, or web-vitals reporting yet. See the{" "}
-                <a className="text-gold hover:underline" href="#telemetry">
-                  Telemetry section
-                </a>
-                .
+                <b className="text-primary">Telemetry is now light but real:</b> a product-event
+                stream (<C>events</C> table + <C>lib/track.ts</C> + <C>/api/events</C>) feeds an{" "}
+                <C>/admin/insights</C> dashboard (signup funnel, retention, per-room), an in-room bug
+                reporter (<C>bug_reports</C>), and client-side error capture (uncaught errors +
+                rejections → <C>/admin</C> &quot;Client errors&quot;), on top of{" "}
+                <C>listener_segments</C> (audio sessions). Still missing: APM/traces, a hosted error
+                service (Sentry), and web-vitals. See the{" "}
+                <a className="text-gold hover:underline" href="#telemetry">Telemetry section</a>.
               </li>
             </UL>
           </Section>
@@ -333,7 +335,7 @@ export default function DevDocsPage() {
                 [<C key="b">app/api/</C>, "All server routes (zod-validated). Grouped below. Also app/robots.ts, app/sitemap.ts, app/opengraph-image.tsx (default OG card) + app/(app)/room/[id]/opengraph-image.tsx (per-room OG card)."],
                 [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures (league-wide sync), adminFixtures, ably, livekit, egress, recording, unfurl, redirect (safeNextPath), ratelimit, standing, predictions/polls/ratings, callers, roles, api (auth helpers), config, brand, theme, slug, roomHosts (isRoomHost), createRoom, fixtureSearch (custom-room suggest), seasonHosting, friends, fanScore, avatars, reserved-usernames, commentator-terms. lib/notify/ = the notification engine (types, outbox, producers, email, push, render, tokens, urls). lib/strings/attendance.ts = the load-bearing attendance copy. lib/db/ = Supabase client/server/types + threads/matches/fixtures loaders. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
                 [<C key="d">components/</C>, "UI. components/room/ (RealtimeRoom orchestrator, CommentatorBar, ClockControls, ShareButton, audio/, widgets), components/stats/ (StatsPanel + bars/timeline/lineups/pitch/info/history/editor), components/marketing/ (OnAirCard, HostLanding, NotifyForm, Faq), components/matches/ (MatchesSchedule, RoomRow), components/host/ (dashboard, cohost invites, RoomCreatePicker), components/friends/, components/admin/, plus shared (AppHeader, MatchHeader, Avatar, ProfilePopover, ClockState, Toast, Legal, SiteFooter…)."],
-                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0037 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
+                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0041 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
                 [<C key="f">scripts/</C>, "tsx scripts: migrate, grant-role, metrics, and ~25 phase smoke / unit-ish tests (see package.json). No Jest/Vitest - tests are standalone tsx scripts."],
                 [<C key="g">docs/</C>, "The spec: ARCHITECTURE, PRD, DESIGN, PHASES (living status), METRICS, RUNBOOK, LEGAL_PAGES, AUDIT*. CLAUDE.md (repo root) is the agent/dev brief + decision log (the most current record of founder rulings)."],
               ]}
@@ -342,7 +344,7 @@ export default function DevDocsPage() {
 
           <Section id="data" title="Data model (Supabase, RLS everywhere)">
             <p>
-              ~40 tables across migrations 0001–0037. The ones you&apos;ll touch most:
+              ~42 tables across migrations 0001–0041. The ones you&apos;ll touch most:
             </p>
             <Table
               head={["Table", "Purpose / key fields"]}
@@ -370,6 +372,7 @@ export default function DevDocsPage() {
                 ["profile_reports", "Listener reports on profiles (PRD-01/09 moderation), admin backstop tools alongside suspend/clear-avatar/clear-profile-text."],
                 ["waitlist", "Pre-launch email capture (migration 0036): RLS on with NO anon policy (no address harvesting); the public POST /api/waitlist writes via service role, IP rate-limited, idempotent. Doubles as the launch list."],
                 ["league_requests", "Free-text league/competition requests from the custom-room create page (migration 0037): service-role only, rate-limited, triaged by hand."],
+                ["bug_reports / events", "Telemetry (migrations 0040/0041), both RLS service-role-only. bug_reports = the in-room bug reporter (triaged in /admin). events = an append-only product-event stream (room_view / listen_started / call_in_started / signup_completed / rsvp_created / client_error) powering /admin/insights (funnel, retention, per-room) + the /admin Client errors feed. Written fire-and-forget via lib/track.ts."],
                 ["blocklist_domains / bans", "Moderation: link-domain blocklist + user/device bans."],
               ]}
             />
@@ -581,7 +584,10 @@ export default function DevDocsPage() {
               <li>
                 <b className="text-primary">SSRF / link safety:</b> the link unfurler is hardened against
                 redirect-based SSRF + DNS rebinding; a domain blocklist rejects unauthorized streams. The
-                stats proxy is fixture-allowlisted (no client-supplied upstream URL).
+                stats proxy is fixture-allowlisted (no client-supplied upstream URL). Link-preview
+                thumbnails render through <C>/api/link-image</C> (first-party proxy, reuses the unfurl SSRF
+                guard, refuses redirects + non-images) so a posted link&apos;s image host can&apos;t
+                harvest listeners&apos; IPs.
               </li>
               <li>
                 <b className="text-primary">Avatar uploads:</b> <C>/api/profile/avatar</C> is the ONLY
@@ -683,8 +689,12 @@ export default function DevDocsPage() {
             <H3>Admin</H3>
             <p>
               <C>/admin</C> (admin-gated): create a room for any game from team names + kickoff; &quot;Run
-              match check&quot; to resolve it to Sportmonks immediately; a built-in user guide. See{" "}
-              <C>components/admin/</C>.
+              match check&quot; to resolve it to Sportmonks immediately; the{" "}
+              <b className="text-primary">Insights dashboard</b> (<C>/admin/insights</C> - registrations,
+              activity, listening time, hosts, signup funnel, retention, per-room analytics, 30-day
+              growth); <b className="text-primary">Bug reports</b> triage; a{" "}
+              <b className="text-primary">Client errors</b> feed (browser errors + device, live-test
+              debugging); and a built-in user guide. See <C>components/admin/</C>.
             </p>
             <p className="mt-2">
               <b className="text-primary">Send test email</b> (<C>/api/admin/test-email</C>): fires one
@@ -725,29 +735,48 @@ export default function DevDocsPage() {
             <H3>What exists today</H3>
             <UL>
               <li>
-                <b className="text-primary">Audio sessions only:</b> <C>listener_segments</C> (one row per
+                <b className="text-primary">Product-event stream (migration 0041):</b> the{" "}
+                <C>events</C> table (append-only, RLS service-role-only) written by{" "}
+                <C>POST /api/events</C> via <C>lib/track.ts</C> (
+                <C>track(event, {"{ roomId, props }"})</C>, fire-and-forget sendBeacon/keepalive).
+                Instrumented today: <C>room_view</C> / <C>listen_started</C> / <C>call_in_started</C>{" "}
+                / <C>signup_completed</C> / <C>rsvp_created</C> / <C>client_error</C>. Surfaced in the{" "}
+                <C>/admin/insights</C> dashboard - signup funnel, retention, per-room analytics (peak
+                concurrent), 30-day growth, event counts (<C>lib/db/adminInsights.ts</C>).
+              </li>
+              <li>
+                <b className="text-primary">Audio sessions:</b> <C>listener_segments</C> (one row per
                 listen session: room, user-or-anon, mode live/radio, start/heartbeat/end), written by{" "}
-                <C>/api/listen</C>. Query pack + <C>npm run metrics</C> in <C>docs/METRICS.md</C> (per-room
-                summary, total listen-hours, peak concurrent, retention buckets).
+                <C>/api/listen</C>. Query pack + <C>npm run metrics</C> in <C>docs/METRICS.md</C>.
               </li>
               <li>
-                <b className="text-primary">Everything else is implicit in the DB:</b> chats, votes, links,
-                widget responses, follows, friendships, RSVPs, waitlist signups, notification outbox rows,
-                and talk requests are all queryable, but there is no event stream, funnel, or dashboard.
+                <b className="text-primary">Client-side error capture (2026-08-05):</b>{" "}
+                <C>ClientErrorReporter</C> (mounted app-wide in <C>app/layout.tsx</C>) beacons uncaught{" "}
+                <C>error</C> + <C>unhandledrejection</C> events - message, stack, path, and the{" "}
+                <C>user-agent</C> - to <C>/api/events</C> as event <C>client_error</C> (deduped + capped
+                per session). Read them in <C>/admin</C> → &quot;Client errors&quot; (device + message
+                per occurrence). A live-test debugging surface, NOT a hosted error service (no
+                source-mapped stacks, no alerting).
               </li>
               <li>
-                <b className="text-primary">Not present at all:</b> error tracking (Sentry et al.), APM/traces,
-                product analytics (PostHog/Amplitude), web-vitals reporting, uptime/alerting, and any
-                client-side analytics SDK. <C>app/(app)/error.tsx</C> + <C>global-error.tsx</C> render fallback
-                UI but report nowhere.
+                <b className="text-primary">In-app bug reporter (migration 0040):</b> a room widget
+                (<C>BugReporter</C>) → <C>bug_reports</C> (RLS service-role-only), triaged open/closed
+                in <C>/admin</C>. Short-term testing tool.
+              </li>
+              <li>
+                <b className="text-primary">Everything else is implicit in the DB:</b> chats, votes,
+                links, widget responses, follows, friendships, RSVPs, waitlist, notification outbox,
+                and talk requests are all queryable directly.
               </li>
             </UL>
             <H3>High-value instrumentation points</H3>
             <UL>
               <li>
-                <b className="text-primary">Errors first.</b> Wire an error sink into the existing{" "}
-                <C>error.tsx</C> / <C>global-error.tsx</C> boundaries and into every API route&apos;s{" "}
-                <C>catch</C>. Routes already fail soft with structured responses - add capture there.
+                <b className="text-primary">Server-side errors + a hosted service.</b> Client errors
+                are now captured (<C>client_error</C> events); the gap is server-side. Wire a hosted
+                error service (Sentry et al.) into the <C>error.tsx</C> / <C>global-error.tsx</C>{" "}
+                boundaries AND every API route&apos;s <C>catch</C> (they fail soft with structured
+                responses - add capture there) for source-mapped stacks + alerting.
               </li>
               <li>
                 <b className="text-primary">API route timing/counters.</b> A thin <C>withTelemetry</C> wrapper
@@ -949,7 +978,7 @@ export default function DevDocsPage() {
             </UL>
             <p className="pt-2 text-[13px] text-secondary">
               This page is written by hand, not auto-synced - if the build moves, update{" "}
-              <C>app/(app)/dev-docs/page.tsx</C> (last refresh 2026-07-06). It&apos;s <C>noindex</C> and
+              <C>app/(app)/dev-docs/page.tsx</C> (last refresh 2026-08-05). It&apos;s <C>noindex</C> and
               behind HTTP Basic auth (<C>DEV_DOCS_PASSWORD</C> in <C>middleware.ts</C>).
             </p>
           </Section>

@@ -665,9 +665,9 @@ export function useRoomAudio(opts: {
       const name = err instanceof DOMException ? err.name : "";
       setMicError(
         name === "NotAllowedError" || name === "SecurityError"
-          ? "Allow microphone access to go on air — check your browser's site settings."
+          ? "Allow microphone access to go on air. Check your browser's site settings."
           : name === "NotFoundError"
-            ? "No microphone found — plug one in or check your device."
+            ? "No microphone found. Plug one in or check your device."
             : "Couldn't start your mic. Close anything else using it, then try again.",
       );
       await stopMicInternal();
