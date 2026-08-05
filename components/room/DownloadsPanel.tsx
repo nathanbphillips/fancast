@@ -59,9 +59,12 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     void load();
   }, [load]);
 
-  // poll while processing (server status, or a local recut in flight)
+  // Poll while the recording is still settling. "recording" MUST be included:
+  // after End Broadcast the row sits at 'recording' until processing claims it,
+  // and without polling that state the host stared at "Still recording…"
+  // forever unless they reloaded (founder 2026-08-05).
   const status = data?.recording?.status;
-  const polling = status === "processing" || recutting;
+  const polling = status === "processing" || status === "recording" || recutting;
   useEffect(() => {
     if (!polling) return;
     const id = setInterval(load, 4000);
@@ -134,16 +137,44 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
   return (
     <div className="mx-auto max-w-2xl space-y-5 p-4">
       <div>
-        <h2 className="text-lg font-bold">Your recording</h2>
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="text-lg font-bold">Your recording</h2>
+          {/* these files outlive the room — point the host at the library */}
+          <a
+            href="/host/recordings"
+            className="shrink-0 text-xs font-semibold text-secondary hover:text-primary"
+          >
+            All recordings →
+          </a>
+        </div>
         <p className="mt-0.5 text-sm text-secondary">
           {rec.status === "processing" && "Cutting your segments — this can take a few minutes."}
           {rec.status === "ready" &&
             `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.durationSeconds)} total`}
           {rec.status === "failed" && `Processing failed: ${rec.error ?? "unknown error"}`}
           {rec.status === "empty" && "No audio was captured for this session."}
-          {rec.status === "recording" && "Still recording…"}
+          {rec.status === "recording" &&
+            "Finishing up — your files appear here automatically."}
         </p>
       </div>
+
+      {rec.status === "recording" && (
+        <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
+          <span className="h-3 w-3 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
+          <span className="flex-1 text-sm">
+            Wrapping up the session…
+          </span>
+          {/* the trigger runs after End Broadcast, but if that never landed
+              this starts it by hand rather than leaving the host stuck */}
+          <button
+            type="button"
+            onClick={triggerProcess}
+            className="h-9 shrink-0 rounded-md border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
+          >
+            Process now
+          </button>
+        </div>
+      )}
 
       {rec.status === "processing" && (
         <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">

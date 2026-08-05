@@ -166,6 +166,23 @@ export function HostRoomsDashboard({
 
   return (
     <div className="space-y-8">
+      {/* the durable home for finished shows — a host shouldn't have to re-enter
+          a wrapped room to get their files (founder 2026-08-05) */}
+      <a
+        href="/host/recordings"
+        className="flex items-center justify-between rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-raised"
+      >
+        <span>
+          <span className="block text-sm font-bold">Your recordings →</span>
+          <span className="block text-xs text-secondary">
+            Every show you&apos;ve hosted, ready to download.
+          </span>
+        </span>
+        <span aria-hidden="true" className="text-xl">
+          🎧
+        </span>
+      </a>
+
       {notice && (
         <p
           role="status"
