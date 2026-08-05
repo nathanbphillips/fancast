@@ -24,7 +24,10 @@ const OPEN_STATES: RoomState[] = [
 
 const submitSchema = z.object({
   roomId: z.uuid(),
-  topic: z.string().trim().min(1).max(120),
+  // optional (founder 2026-08-05): a caller shouldn't have to justify wanting on
+  // air. The column is NOT NULL with a min length, so a blank falls back to a
+  // neutral label rather than needing a migration.
+  topic: z.string().trim().max(120).optional(),
   /** must be true on the account's first-ever request (Terms §5) */
   consent: z.boolean().optional(),
 });
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
     .insert({
       room_id: room.id,
       user_id: caller.userId,
-      topic: parsed.data.topic,
+      topic: parsed.data.topic?.trim() || "Wants to talk",
       consent_at: consentAt,
     })
     .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")

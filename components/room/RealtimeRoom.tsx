@@ -58,7 +58,6 @@ import { Avatar } from "@/components/Avatar";
 import { ProfilePopover } from "@/components/ProfilePopover";
 import { ShareButton } from "@/components/room/ShareButton";
 import { HowThisWorks } from "./HowThisWorks";
-import { parseUserAgent } from "@/lib/ua";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -262,6 +261,9 @@ export function RealtimeRoom(props: Props) {
   // channel — the requester roster is never broadcast (FR-4.2). (Phase 5c)
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const lastTalkResolvedTsRef = useRef(0); // newest talk_resolved Ably timestamp
+  // call-in acceptances already acted on (auto mic), keyed by requestId, so one
+  // acceptance can never open the mic twice (review 2026-08-05)
+  const actedAcceptsRef = useRef<Set<string>>(new Set());
   const [leavingQueue, setLeavingQueue] = useState(false);
   const leaveQueue = useCallback(async () => {
     setLeavingQueue(true);
@@ -675,6 +677,8 @@ export function RealtimeRoom(props: Props) {
       const mine = client.channels.get(`room:${room.id}:user:${viewer.userId}`, {
         params: { rewind: "5" },
       });
+      // anything older than this attach is a rewind replay, never a live accept
+      const attachedAt = Date.now();
       mine.subscribe("talk_resolved", (msg) => {
         setTalkResolvedSignal((n) => n + 1);
         setQueuePosition(null); // left pending (accepted/dismissed) → no longer queued
@@ -682,11 +686,27 @@ export function RealtimeRoom(props: Props) {
         // (concurrent accept+withdraw, or rewind replay) can't flip the UI
         // back to "In line #N" (audit 2026-07-02)
         lastTalkResolvedTsRef.current = msg.timestamp ?? Date.now();
-        // accept carries status:"accepted" — flip publish-capable so "Go on air"
-        // appears even if this caller had dropped off LiveKit; their tap
-        // reconnects with a publish token (call-in audit 2026-08-05)
-        if ((msg.data as { status?: string } | null)?.status === "accepted") {
-          audio.markAccepted();
+        // accept carries status:"accepted" → put them on air INSTANTLY (no
+        // "Go on air" tap; founder 2026-08-05). Handled in an effect so the mic
+        // call always uses the current audio engine, never a stale closure.
+        // HOT-MIC GUARDS. This channel attaches with rewind, so a reload, a
+        // back-nav or a second tab replays past messages — and auto-opening a
+        // microphone from a replayed acceptance (possibly of a call that already
+        // ended) would be a serious surprise. Two independent guards:
+        //  1. only messages DELIVERED AFTER this attach can auto-start (a replay
+        //     always carries its original, older timestamp);
+        //  2. each acceptance is consumed once, keyed by requestId.
+        // A replayed accept falls back to the explicit "Go on air" button.
+        const d = msg.data as { status?: string; requestId?: string } | null;
+        const ts = msg.timestamp ?? 0;
+        if (
+          d?.status === "accepted" &&
+          d.requestId &&
+          ts >= attachedAt &&
+          !actedAcceptsRef.current.has(d.requestId)
+        ) {
+          actedAcceptsRef.current.add(d.requestId);
+          setAcceptedNonce((n) => n + 1);
         }
       });
       mine.subscribe("queue_position", (msg) => {
@@ -769,34 +789,48 @@ export function RealtimeRoom(props: Props) {
   // browser, start the commentary automatically whenever the host is live — no
   // manual Play tap each visit. Browsers that forbid gesture-less audio (iOS
   // Safari) come back "blocked" and get a one-tap overlay instead.
-  const [autoplayDismissed, setAutoplayDismissed] = useState(false);
-  // Safari can't start audio without a gesture and listening is the whole point,
-  // so on Safari we ALWAYS block the room with a tap-to-listen gate (no dismiss)
-  // until they listen (founder 2026-08-05). Detected client-side to avoid an
-  // SSR/hydration flash.
-  const [isSafari, setIsSafari] = useState(false);
+  // Listening is the entire point of the room, and most browsers block audio
+  // that starts without a tap. So EVERY listener who lands in a live room and
+  // isn't already hearing it gets one unmistakable, non-dismissable gate until
+  // they tap (founder 2026-08-05). No browser detection: if audio is playing
+  // the gate never shows, and if it isn't, the tap is what makes it play.
+  // Once they've listened, a deliberate pause is respected (no re-gate).
+  // bumped when the host accepts this listener's call-in; the effect below puts
+  // them straight on air (founder 2026-08-05: no "Go on air" step)
+  const [acceptedNonce, setAcceptedNonce] = useState(0);
+  // only true WHILE the auto-start is in flight, so a failed attempt can never
+  // strand the caller on a non-interactive "Putting you on air…" pill
+  const [autoOnAir, setAutoOnAir] = useState(false);
   useEffect(() => {
-    try {
-      setIsSafari(
-        parseUserAgent(navigator.userAgent).browser.startsWith("Safari"),
-      );
-    } catch {}
-  }, []);
-  const notListening =
-    audio.listenStatus === "idle" || audio.listenStatus === "error";
-  // mandatory on Safari (no way out but to listen or close the tab); on other
-  // browsers it's the one-tap fallback after a blocked silent autostart. Only
-  // while the show is live and they aren't already listening (or on radio).
-  const mustListen =
-    isSafari && !isRoomCommentator && audioLive && !audio.radioActive && notListening;
+    if (acceptedNonce === 0) return;
+    audio.markAccepted(); // publish-capable even if they'd dropped off LiveKit
+    setAutoOnAir(true);
+    void audio.startMic().finally(() => setAutoOnAir(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [acceptedNonce]);
+
+  // Gate escape hatch: if audio genuinely can't start (a network that blocks
+  // WebRTC, a token error), a non-dismissable gate would lock them out of chat,
+  // stats and the radio fallback too. After repeated failures we offer a way
+  // past it — the gate stays mandatory on the happy path (review 2026-08-05).
+  const [gateOverridden, setGateOverridden] = useState(false);
+  const [gateFails, setGateFails] = useState(0);
+  const [autoInFlight, setAutoInFlight] = useState(false);
+  useEffect(() => {
+    if (audio.listenStatus === "error") setGateFails((n) => n + 1);
+  }, [audio.listenStatus]);
+  // Gate whenever the show is live and this listener isn't hearing it — unless
+  // they deliberately stopped. No browser detection and no "already listened"
+  // latch: an involuntary drop or a blocked autostart re-gates them, which is
+  // the point (they'd otherwise sit in silence).
   const showAudioGate =
-    mustListen ||
-    (!isRoomCommentator &&
-      audio.autoplayBlocked &&
-      audioLive &&
-      !audio.radioActive &&
-      audio.listenStatus === "idle" &&
-      !autoplayDismissed);
+    !isRoomCommentator &&
+    audioLive &&
+    !audio.radioActive &&
+    !audio.userStopped &&
+    !gateOverridden &&
+    !autoInFlight &&
+    (audio.listenStatus === "idle" || audio.listenStatus === "error");
   // "How this works" listener walkthrough (desktop header button / mobile FAQ)
   const [helpOpen, setHelpOpen] = useState(false);
   const autoTriedRef = useRef(false);
@@ -825,7 +859,10 @@ export function RealtimeRoom(props: Props) {
     } catch {}
     if (!optedIn) return; // first-ever visit uses the normal Play button
     autoTriedRef.current = true;
-    void audio.tryAutostart();
+    // suppress the gate while this attempt runs, so a browser that CAN autoplay
+    // doesn't flash the full-screen gate before the audio takes over
+    setAutoInFlight(true);
+    void audio.tryAutostart().finally(() => setAutoInFlight(false));
   }, [
     audioLive,
     isRoomCommentator,
@@ -1006,6 +1043,14 @@ export function RealtimeRoom(props: Props) {
   // horizontal swipe between mobile sections (|dx|>55 and clearly horizontal)
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
   const onPanelTouchStart = (e: React.TouchEvent) => {
+    // dragging a horizontal control (the commentary/discussion slider) is NOT a
+    // tab swipe — without this, moving the slider on Android flips you to the
+    // next tab mid-drag (founder 2026-08-05)
+    const target = e.target as HTMLElement | null;
+    if (target?.closest?.('input[type="range"], [data-noswipe]')) {
+      swipeRef.current = null;
+      return;
+    }
     const t = e.touches[0];
     swipeRef.current = { x: t.clientX, y: t.clientY };
   };
@@ -1078,6 +1123,7 @@ export function RealtimeRoom(props: Props) {
       canPublish={viewer !== null && audio.canPublish}
       micStatus={audio.micStatus}
       micError={audio.micError}
+      autoOnAir={autoOnAir}
       micMuted={audio.micMuted}
       onGoOnAir={() => void audio.startMic()}
       onLeaveAir={() => void leaveAir()}
@@ -1233,70 +1279,95 @@ export function RealtimeRoom(props: Props) {
       awayName={room.away}
     />
   ) : null;
-  // desktop Polls tab: poll + predictor + player ratings (unchanged)
+  // commentary<->discussion slider: moved out of the chat footer into the Polls
+  // tab and PINNED at the top of it (founder 2026-08-05). data-noswipe stops a
+  // drag on it from being read as a mobile tab swipe.
+  const sliderBlock = audioLive ? (
+    <div
+      data-noswipe
+      className="shrink-0 border-b border-line px-3 py-2.5"
+    >
+      {isRoomCommentator ? (
+        <AggregateMeter agg={sliderAgg} />
+      ) : (
+        <PreferenceSlider
+          roomId={room.id}
+          myValue={props.mySliderValue}
+          agg={sliderAgg}
+          enabled={!!viewer}
+        />
+      )}
+    </div>
+  ) : null;
+  // Polls tab body — shared by desktop + mobile (ratings included on both since
+  // 2026-08-05). The slider is pinned above the scrolling widget list.
+  const pollsBody = (
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
+      {pollBlock}
+      {predictorBlock}
+      {ratingsWidget}
+      {!pollRelevant && !predictorRelevant && !ratingsRelevant && (
+        <p className="px-1 py-6 text-center text-sm text-secondary">
+          Nothing to vote on right now. Polls and player ratings appear here
+          when the host opens them.
+        </p>
+      )}
+    </div>
+  );
   const pollsPanel = (
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
-      {pollBlock}
-      {predictorBlock}
-      {ratingsWidget}
-      {!pollRelevant && !predictorRelevant && !ratingsRelevant && (
-        <p className="px-1 py-6 text-center text-sm text-secondary">
-          Nothing to vote on right now. Polls and player ratings appear here
-          when the host opens them.
-        </p>
-      )}
+    <div className="flex min-h-0 flex-1 flex-col">
+      {sliderBlock}
+      {pollsBody}
     </div>
   );
-  // mobile Polls tab: poll + predictor + player ratings (founder 2026-08-05 —
-  // ratings moved here from under STATS to match desktop)
-  const mobilePollsPanel = (
-    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
-      {pollBlock}
-      {predictorBlock}
-      {ratingsWidget}
-      {!pollRelevant && !predictorRelevant && !ratingsRelevant && (
-        <p className="px-1 py-6 text-center text-sm text-secondary">
-          Nothing to vote on right now. Polls and player ratings appear here
-          when the host opens them.
-        </p>
-      )}
-    </div>
-  );
+  const mobilePollsPanel = pollsPanel;
 
   return (
     <div className="relative flex h-dvh flex-col overflow-hidden">
-      {/* Audio gate. On Safari it's MANDATORY (listening is required to use the
-          platform, and Safari needs a gesture to start audio) — no dismiss, the
-          only way out is to listen or close the tab. On other browsers it's the
-          one-tap fallback after a blocked silent autostart. (founder 2026-08-05) */}
+      {/* MANDATORY listen gate — every listener, every browser. Browsers block
+          audio that starts without a tap, and listening is the whole product, so
+          there is no dismiss: the only way in is to tap (founder 2026-08-05). */}
       {showAudioGate && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-canvas/85 p-6 backdrop-blur-md">
-          <div className="w-full max-w-xs rounded-2xl border border-line bg-surface p-6 text-center shadow-[var(--shadow-raised)]">
-            <p className="display text-[22px] leading-tight">
+        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-canvas/90 p-6 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-7 text-center shadow-[var(--shadow-raised)]">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red text-white">
+              <svg aria-hidden="true" viewBox="0 0 16 16" className="ml-1 h-7 w-7 fill-current">
+                <path d="M4 2.5v11l9-5.5-9-5.5z" />
+              </svg>
+            </span>
+            <p className="display text-[26px] leading-tight">
               {room.hosts.map((h) => h.username).join(" & ") ||
                 room.commentatorUsername}{" "}
-              is live
+              is on air
             </p>
-            <p className="mt-1 text-sm text-secondary">
-              {mustListen
-                ? "Tap to hear the live commentary — it won't play until you do."
-                : "Tap to start the commentary."}
+            <p className="mt-2 text-sm leading-relaxed text-secondary">
+              {audio.listenStatus === "error"
+                ? "That didn't connect. Tap to try again."
+                : "Your browser needs one tap before it can play audio. Tap below to hear the live commentary."}
             </p>
             <button
               type="button"
               autoFocus
               onClick={() => void audio.startListening()}
-              className="btn-grad-red mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-lg text-sm font-bold text-white"
+              disabled={audio.listenStatus === "connecting"}
+              className="btn-grad-red mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-lg text-base font-bold text-white disabled:opacity-70"
             >
-              <span aria-hidden="true">▶</span> Tap to listen
+              <span aria-hidden="true">▶</span>
+              {audio.listenStatus === "connecting"
+                ? "Connecting…"
+                : audio.listenStatus === "error"
+                  ? "Try again"
+                  : "Tap to listen"}
             </button>
-            {!mustListen && (
+            {/* only after audio has genuinely failed twice: never strand someone
+                whose network can't do WebRTC without chat/stats/radio */}
+            {gateFails >= 2 && (
               <button
                 type="button"
-                onClick={() => setAutoplayDismissed(true)}
-                className="mt-2 font-mono text-xs tracking-wide text-secondary hover:text-primary"
+                onClick={() => setGateOverridden(true)}
+                className="mt-3 font-mono text-xs tracking-wide text-secondary underline hover:text-primary"
               >
-                Not now
+                Audio won&apos;t start — continue without it
               </button>
             )}
           </div>
@@ -2700,17 +2771,12 @@ function LiveChat({
                   queuePosition={queuePosition}
                   askSignal={askSignal}
                 />
-                <PreferenceSlider
-                  roomId={room.id}
-                  myValue={mySliderValue}
-                  agg={sliderAgg}
-                  enabled
-                />
               </div>
               {/* mobile: just the ask form (opened by the "Ask the host" pill).
-                  Calling in has its own Call In tab, so the two big buttons + the
-                  sentiment slider are dropped from the mobile chat footer to
-                  declutter it (founder 2026-08-05). */}
+                  Calling in has its own Call In tab, so the two big buttons are
+                  dropped from the mobile chat footer to declutter it. The
+                  commentary/discussion slider moved to the Polls tab entirely
+                  (founder 2026-08-05). */}
               <div className="lg:hidden">
                 <InteractionButtons
                   roomId={room.id}

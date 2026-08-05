@@ -54,6 +54,12 @@ export function useRoomAudio(opts: {
   // gets a clear reason instead of the "Go on air" button silently reverting
   // (live-test review 2026-08-05)
   const [micError, setMicError] = useState<string | null>(null);
+  const micStartingRef = useRef(false);
+  // true only when the listener THEMSELVES stopped playback (pause / radio
+  // switch). An involuntary LiveKit drop leaves this false, which is how the
+  // room tells "they chose silence" apart from "the audio died on them"
+  // (adversarial review 2026-08-05).
+  const [userStopped, setUserStopped] = useState(false);
   const [canPublish, setCanPublish] = useState(false);
   const [selfDelay, setSelfDelayState] = useState(0);
   const [speakers, setSpeakers] = useState<Speaker[]>([]);
@@ -396,6 +402,7 @@ export function useRoomAudio(opts: {
   );
 
   async function doConnect(gestured: boolean): Promise<Room | null> {
+    setUserStopped(false); // any (re)connect attempt means they want audio
     // a gestured start (Play tap / lock-screen / go-on-air) shows "Connecting…"
     // immediately; a silent autostart stays idle until we know it isn't blocked
     if (gestured) setListenStatus("connecting");
@@ -518,6 +525,7 @@ export function useRoomAudio(opts: {
   }
 
   const disconnect = useCallback(async () => {
+    setUserStopped(true); // deliberate stop — don't re-gate them
     await stopMicInternal();
     await roomRef.current?.disconnect();
     roomRef.current = null;
@@ -625,11 +633,25 @@ export function useRoomAudio(opts: {
   }
 
   const startMic = useCallback(async () => {
-    const room = roomRef.current ?? (await connect());
-    if (!room) return;
-    setMicStatus("starting");
+    // RE-ENTRANCY GUARD: two concurrent starts each open their own getUserMedia
+    // stream + published track and overwrite the refs, orphaning the first — it
+    // then keeps capturing after Leave Air (mic indicator stays lit). Mirrors
+    // connect()'s connectPromiseRef dedupe. Also covers a StrictMode double
+    // effect and a double-tap. (adversarial review 2026-08-05)
+    if (micStartingRef.current || publishedTrackRef.current) return;
+    micStartingRef.current = true;
+    // clear any stale error up front, so a dead error from a previous attempt
+    // can't render a competing "Retry mic" button while this start is in flight
     setMicError(null);
     try {
+      const room = roomRef.current ?? (await connect());
+      if (!room) {
+        // connect failed — surface it instead of bailing silently, which left
+        // the caller stuck on "Putting you on air…" forever
+        setMicError("Couldn't connect you to the room. Tap to try again.");
+        return;
+      }
+      setMicStatus("starting");
       const raw = await navigator.mediaDevices.getUserMedia({
         audio: {
           channelCount: 1, // mono (FR-4.1)
@@ -675,6 +697,8 @@ export function useRoomAudio(opts: {
             : "Couldn't start your mic. Close anything else using it, then try again.",
       );
       await stopMicInternal();
+    } finally {
+      micStartingRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connect, selfDelay, opts.isRoomCommentator]);
@@ -732,6 +756,7 @@ export function useRoomAudio(opts: {
   return {
     listenStatus,
     autoplayBlocked,
+    userStopped,
     tryAutostart,
     startListening: connect,
     stopListening: disconnect,

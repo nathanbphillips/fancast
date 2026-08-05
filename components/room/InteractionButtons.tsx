@@ -8,12 +8,10 @@ import { useEffect, useState } from "react";
  * checkbox; copy verbatim from docs/LEGAL_PAGES.md.
  */
 
+// Kept deliberately short (founder 2026-08-05) while still stating the three
+// things that matter: it's live, it's recorded, and the host may publish it.
 const CONSENT_COPY =
-  "You're asking to go on air. If the commentator accepts, your voice is " +
-  "broadcast live to everyone in the room and becomes part of the show's " +
-  "recording, which the commentator owns and may publish (for example, as " +
-  "a podcast episode). You can leave the air at any time with the Leave " +
-  "Air button.";
+  "Your voice goes out live, is recorded, and the host may publish it.";
 
 const REPEAT_COPY = "Live to the room. Recorded as part of the show.";
 
@@ -230,9 +228,8 @@ export function InteractionButtons({
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             maxLength={120}
-            required
-            placeholder="What do you want to talk about?"
-            aria-label="Call-in topic"
+            placeholder="What do you want to talk about? (optional)"
+            aria-label="Call-in topic (optional)"
             className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
           />
           {!consentGiven && (
@@ -254,7 +251,7 @@ export function InteractionButtons({
           )}
           <button
             type="submit"
-            disabled={busy || !topic.trim() || (!consentGiven && !consent)}
+            disabled={busy || (!consentGiven && !consent)}
             className="h-11 w-full rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
           >
             Send request

@@ -69,7 +69,7 @@ export function PreferenceSlider({
   }
 
   return (
-    <div className="mt-3 space-y-2 px-1">
+    <div className="space-y-1.5">
       <div>
         <label
           htmlFor="pref-slider"

@@ -218,6 +218,7 @@ export function ListenerBar({
   micStatus,
   micMuted,
   micError,
+  autoOnAir = false,
   onGoOnAir,
   onLeaveAir,
   onToggleMute,
@@ -256,6 +257,9 @@ export function ListenerBar({
   micMuted: boolean;
   /** why the mic couldn't start (e.g. denied permission), shown by the caller CTA */
   micError?: string | null;
+  /** the host just accepted them and the mic is auto-starting — show progress,
+   *  never a "Go on air" step (founder 2026-08-05) */
+  autoOnAir?: boolean;
   onGoOnAir: () => void;
   onLeaveAir: () => void;
   onToggleMute: () => void;
@@ -384,23 +388,45 @@ export function ListenerBar({
     <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} />
   );
 
+  // An accepted caller goes on air INSTANTLY — no "Go on air" step (founder
+  // 2026-08-05). Three states remain:
+  //  - mic failed (e.g. permission denied) -> retry, so it's never a dead end
+  //  - auto-start in flight -> progress only
+  //  - publish rights but no auto-start this session (they reloaded while
+  //    accepted) -> an explicit tap, because silently opening someone's mic on
+  //    page load would be a hot-mic surprise
   const goOnAir =
     canPublish && micStatus !== "live" ? (
-      <div className="flex shrink-0 flex-col gap-1">
-        <button
-          type="button"
-          onClick={onGoOnAir}
-          disabled={micStatus === "starting"}
-          className="h-11 shrink-0 rounded-lg btn-grad-red px-4 text-sm font-bold text-white disabled:opacity-60"
-        >
-          {micStatus === "starting" ? "Mic…" : "Go on air"}
-        </button>
-        {micError && (
+      micError ? (
+        <div className="flex shrink-0 flex-col gap-1">
+          <button
+            type="button"
+            onClick={onGoOnAir}
+            className="btn-grad-red h-11 shrink-0 rounded-lg px-4 text-sm font-bold text-white"
+          >
+            Retry mic
+          </button>
           <p className="max-w-[240px] text-[11px] leading-snug text-red">
             {micError}
           </p>
-        )}
-      </div>
+        </div>
+      ) : micStatus === "starting" || autoOnAir ? (
+        <span className="flex shrink-0 items-center gap-2 rounded-lg border border-red/40 px-3 py-2 text-sm font-bold text-red">
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 animate-live-pulse rounded-full bg-red"
+          />
+          Putting you on air…
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onGoOnAir}
+          className="btn-grad-red h-11 shrink-0 rounded-lg px-4 text-sm font-bold text-white"
+        >
+          Go on air
+        </button>
+      )
     ) : null;
 
   const liveBadge =
