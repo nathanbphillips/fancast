@@ -222,6 +222,16 @@ export function useRoomAudio(opts: {
     blocked: boolean;
     worklet: boolean;
   }> {
+    // HOSTS SKIP THE SYNC GRAPH (founder 2026-08-05: call-in conversation had a
+    // 1-2s lag). Sync-to-TV is a listener feature — a host has no sync UI and no
+    // volume slider — so for them the ring buffer + MediaStreamDestination +
+    // <audio> detour is pure latency on the one path where it matters most:
+    // hearing an on-air caller. Returning here falls through to the existing
+    // plain-attached-element branch in TrackSubscribed (the same path browsers
+    // without AudioWorklet already use), cutting ~110-280ms off the round trip.
+    // It also makes it impossible for a host to sit behind the live edge on a
+    // stale saved sync offset, since they no longer have a worklet at all.
+    if (opts.isRoomCommentator) return { blocked: false, worklet: false };
     if (playbackCtxRef.current) {
       await playbackCtxRef.current.resume().catch(() => {});
       // iOS can pause the element across interruptions/backgrounding —
