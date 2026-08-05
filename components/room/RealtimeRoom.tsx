@@ -1258,6 +1258,7 @@ export function RealtimeRoom(props: Props) {
       floats={floats}
       onReact={sendReaction}
       onComposerFocus={setComposerFocused}
+      primeMic={audio.primeMicPermission}
     />
   );
 
@@ -1638,7 +1639,63 @@ export function RealtimeRoom(props: Props) {
                 </p>
               </div>
 
-              {!viewer ? (
+              {audio.micStatus === "live" ? (
+                /* ON AIR — the caller's own unmistakable live state, with the
+                   control that ends the call. Previously the only Leave Air
+                   lived in the top transport, so a caller had no obvious way
+                   off the air from this screen (founder 2026-08-05). */
+                <div
+                  className="rounded-[16px] border-2 border-red bg-red/10 p-6 text-center"
+                  style={{ boxShadow: "0 0 22px rgba(239,1,7,0.35)" }}
+                >
+                  <span className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-red text-white">
+                    <svg
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                      className="h-[30px] w-[30px]"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.9}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect x="9" y="3" width="6" height="11" rx="3" />
+                      <path d="M5 11a7 7 0 0014 0" />
+                      <line x1="12" y1="18" x2="12" y2="21" />
+                    </svg>
+                  </span>
+                  <p className="display flex items-center justify-center gap-2 text-[30px] leading-none text-red">
+                    <span
+                      aria-hidden="true"
+                      className="h-2.5 w-2.5 animate-live-pulse rounded-full bg-red"
+                    />
+                    YOU ARE LIVE
+                  </p>
+                  <p className="mt-2.5 text-[13.5px] text-secondary">
+                    {audio.micMuted
+                      ? "You're muted — the room can't hear you."
+                      : "The room can hear you. Talk to the host."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void leaveAir()}
+                    className="mt-5 h-14 w-full rounded-xl bg-red text-base font-bold text-white"
+                  >
+                    Leave the air
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void audio.toggleMute()}
+                    className={`mt-2.5 h-11 w-full rounded-lg border text-sm font-bold ${
+                      audio.micMuted
+                        ? "border-red text-red"
+                        : "border-line text-secondary hover:text-primary"
+                    }`}
+                  >
+                    {audio.micMuted ? "Unmute" : "Mute myself"}
+                  </button>
+                </div>
+              ) : !viewer ? (
                 <div className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center">
                   <p className="text-sm text-secondary">
                     Sign in to request the mic and join the show.
@@ -1678,6 +1735,7 @@ export function RealtimeRoom(props: Props) {
                   hasPendingTalk={props.hasPendingTalk}
                   resolvedSignal={talkResolvedSignal}
                   queuePosition={queuePosition}
+                  primeMic={audio.primeMicPermission}
                 />
               )}
 
@@ -1933,6 +1991,7 @@ function LiveChat({
   floats,
   onReact,
   onComposerFocus,
+  primeMic,
 }: {
   room: RoomInfo;
   roomState: RoomState;
@@ -1965,6 +2024,8 @@ function LiveChat({
   /** the chat input gained/lost focus — the room hides the mobile tab bar while
    *  typing so only the composer sits above the keyboard (founder 2026-08-05) */
   onComposerFocus?: (focused: boolean) => void;
+  /** grabs mic permission inside the request tap (see InteractionButtons) */
+  primeMic?: () => Promise<boolean>;
 }) {
   const pathname = usePathname();
   const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
@@ -2805,6 +2866,7 @@ function LiveChat({
                   resolvedSignal={talkResolvedSignal}
                   queuePosition={queuePosition}
                   askSignal={askSignal}
+                  primeMic={primeMic}
                 />
               </div>
               {/* mobile carries NOTHING here: Ask Question + Request to Talk

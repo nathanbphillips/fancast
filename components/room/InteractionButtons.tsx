@@ -23,6 +23,7 @@ export function InteractionButtons({
   queuePosition = null,
   askSignal = 0,
   askOnly = false,
+  primeMic,
 }: {
   roomId: string;
   consentGiven: boolean;
@@ -39,6 +40,9 @@ export function InteractionButtons({
    *  "Ask the host" pill) — no buttons, no talk form, since calling in lives in
    *  the Call In tab there (founder 2026-08-05) */
   askOnly?: boolean;
+  /** grabs mic permission inside this tap so the automatic start when the host
+   *  accepts can't hang on an unanswered prompt (founder 2026-08-05) */
+  primeMic?: () => Promise<boolean>;
 }) {
   const [open, setOpen] = useState<"none" | "question" | "talk">("none");
   const [question, setQuestion] = useState("");
@@ -116,6 +120,20 @@ export function InteractionButtons({
     e.preventDefault();
     setBusy(true);
     setNote(null);
+    // Get the mic NOW, while we still have this tap's user activation. If we
+    // wait until the host accepts, that request has no gesture behind it and a
+    // permission prompt can hang forever — which stranded callers on "Putting
+    // you on air…". Don't queue someone who can't actually speak.
+    if (primeMic) {
+      const ok = await primeMic();
+      if (!ok) {
+        setBusy(false);
+        setNote(
+          "Allow microphone access to call in, then try again — your browser blocked it.",
+        );
+        return;
+      }
+    }
     const res = await fetch("/api/talk", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

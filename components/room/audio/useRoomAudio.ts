@@ -736,6 +736,25 @@ export function useRoomAudio(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connect, selfDelay, opts.isRoomCommentator]);
 
+  /**
+   * Ask for the microphone DURING a real user gesture (the "request to talk"
+   * tap) and immediately release it again. This is the fix for the auto-start
+   * hanging: by the time the host accepts, the browser has already granted the
+   * mic, so the gesture-less getUserMedia on the accept path resolves instantly
+   * instead of sitting on an unanswered prompt forever (founder 2026-08-05).
+   * Returns false if the user denied or no device exists.
+   */
+  const primeMicPermission = useCallback(async (): Promise<boolean> => {
+    try {
+      const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+      probe.getTracks().forEach((t) => t.stop()); // release straight away
+      return true;
+    } catch (err) {
+      console.warn("mic permission not granted:", (err as Error)?.name);
+      return false;
+    }
+  }, []);
+
   /** Abandon a mic start that never resolved (a permission prompt left hanging),
    *  so the caller gets a tappable retry instead of a frozen "Putting you on
    *  air…". Invalidates the in-flight attempt and releases the re-entrancy lock
@@ -822,6 +841,7 @@ export function useRoomAudio(opts: {
     micError,
     micMuted,
     startMic,
+    primeMicPermission,
     cancelMicStart,
     stopMic,
     toggleMute,
