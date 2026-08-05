@@ -90,13 +90,17 @@ export async function POST(request: NextRequest) {
   // 2026-08-05): a caller already holding a slot could otherwise queue again and
   // occupy TWO of the on-air slots at once, and if their mic never started
   // nobody could clear either.
-  const { data: existing } = await service
+  // NB: .limit(2) + array, NOT maybeSingle() — maybeSingle errors when more than
+  // one row matches (a user can legitimately hold e.g. a pending AND an accepted
+  // row), and that error would be swallowed here.
+  const { data: existingRows } = await service
     .from("talk_requests")
     .select("id, status")
     .eq("room_id", room.id)
     .eq("user_id", caller.userId)
     .in("status", ["pending", "accepted"])
-    .maybeSingle();
+    .limit(2);
+  const existing = (existingRows ?? [])[0];
   if (existing) {
     return NextResponse.json(
       {

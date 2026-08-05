@@ -55,6 +55,7 @@ export function useRoomAudio(opts: {
   // (live-test review 2026-08-05)
   const [micError, setMicError] = useState<string | null>(null);
   const micStartingRef = useRef(false);
+  const micStartGenRef = useRef(0);
   // true only when the listener THEMSELVES stopped playback (pause / radio
   // switch). An involuntary LiveKit drop leaves this false, which is how the
   // room tells "they chose silence" apart from "the audio died on them"
@@ -653,11 +654,18 @@ export function useRoomAudio(opts: {
     // effect and a double-tap. (adversarial review 2026-08-05)
     if (micStartingRef.current || publishedTrackRef.current) return;
     micStartingRef.current = true;
+    // Generation token: getUserMedia can stay PENDING FOREVER while a permission
+    // prompt sits unanswered (exactly what hangs an auto-start on accept). The
+    // watchdog cancels the attempt; if this one later resolves anyway it must not
+    // publish a second mic behind the retry's back (founder 2026-08-05).
+    const gen = ++micStartGenRef.current;
+    const stale = () => micStartGenRef.current !== gen;
     // clear any stale error up front, so a dead error from a previous attempt
     // can't render a competing "Retry mic" button while this start is in flight
     setMicError(null);
     try {
       const room = roomRef.current ?? (await connect());
+      if (stale()) return;
       if (!room) {
         // connect failed — surface it instead of bailing silently, which left
         // the caller stuck on "Putting you on air…" forever
@@ -673,6 +681,11 @@ export function useRoomAudio(opts: {
           autoGainControl: true,
         },
       });
+      if (stale()) {
+        // abandoned while the prompt was open — release the device
+        raw.getTracks().forEach((t) => t.stop());
+        return;
+      }
       rawStreamRef.current = raw;
 
       // mic -> delay node -> published track; delayTime 0 = passthrough,
@@ -716,10 +729,26 @@ export function useRoomAudio(opts: {
       );
       await stopMicInternal();
     } finally {
-      micStartingRef.current = false;
+      // only release the lock if we're still the current attempt — a cancelled
+      // one must not unlock the retry that replaced it
+      if (!stale()) micStartingRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connect, selfDelay, opts.isRoomCommentator]);
+
+  /** Abandon a mic start that never resolved (a permission prompt left hanging),
+   *  so the caller gets a tappable retry instead of a frozen "Putting you on
+   *  air…". Invalidates the in-flight attempt and releases the re-entrancy lock
+   *  so the retry actually runs (founder 2026-08-05). */
+  const cancelMicStart = useCallback(() => {
+    if (publishedTrackRef.current) return; // already live — nothing to cancel
+    micStartGenRef.current += 1;
+    micStartingRef.current = false;
+    setMicStatus("off");
+    setMicError(
+      "Your browser didn't hand over the mic. Tap to go on air and allow access when asked.",
+    );
+  }, []);
 
   const stopMic = useCallback(async () => {
     await stopMicInternal();
@@ -793,6 +822,7 @@ export function useRoomAudio(opts: {
     micError,
     micMuted,
     startMic,
+    cancelMicStart,
     stopMic,
     toggleMute,
     canPublish,

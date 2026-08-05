@@ -87,7 +87,9 @@ export function InteractionButtons({
       }, 2000);
     } else {
       const body = await res.json().catch(() => ({}));
-      setNote(body.error ?? "Couldn't send that.");
+      // include the status when the server didn't give a reason (a crash or a
+      // non-JSON response) — a bare "Couldn't send that." is undiagnosable live
+      setNote(body.error ?? `Couldn't send that (error ${res.status}).`);
     }
   }
 
@@ -130,7 +132,9 @@ export function InteractionButtons({
       setOpen("none");
     } else {
       const body = await res.json().catch(() => ({}));
-      setNote(body.error ?? "Couldn't send that.");
+      // include the status when the server didn't give a reason (a crash or a
+      // non-JSON response) — a bare "Couldn't send that." is undiagnosable live
+      setNote(body.error ?? `Couldn't send that (error ${res.status}).`);
     }
   }
 

@@ -818,7 +818,21 @@ export function RealtimeRoom(props: Props) {
     if (acceptedNonce === 0) return;
     audio.markAccepted(); // publish-capable even if they'd dropped off LiveKit
     setAutoOnAir(true);
-    void audio.startMic(false).finally(() => setAutoOnAir(false));
+    // WATCHDOG: the auto-start calls getUserMedia with no user gesture, and a
+    // browser showing an unanswered permission prompt leaves that promise
+    // PENDING FOREVER — which froze the caller on "Putting you on air…" and
+    // never published, so the host never saw them. Give up after 10s and fall
+    // back to the tappable button, whose tap is a real gesture and prompts
+    // properly (founder 2026-08-05).
+    const watchdog = setTimeout(() => {
+      setAutoOnAir(false);
+      audio.cancelMicStart();
+    }, 10_000);
+    void audio.startMic(false).finally(() => {
+      clearTimeout(watchdog);
+      setAutoOnAir(false);
+    });
+    return () => clearTimeout(watchdog);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [acceptedNonce]);
 
