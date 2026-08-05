@@ -880,11 +880,16 @@ export function RealtimeRoom(props: Props) {
       {paths}
     </svg>
   );
-  // mobile Polls badge — a poll is active or the pregame predictor is open.
-  // Excludes player ratings (they live under STATS on mobile), so it won't
-  // light up over an otherwise-empty panel.
+  // mobile Polls badge — active poll, pregame predictor, or an open ratings
+  // window (ratings now live in this tab too, founder 2026-08-05). Mirrors the
+  // desktop pollsBadge.
   const mobilePollsBadge =
-    (activePoll ? 1 : 0) + (roomState === "pregame" ? 1 : 0);
+    (activePoll ? 1 : 0) +
+    ((roomState === "halftime" || roomState === "postgame") &&
+    ratingPlayers.length > 0
+      ? 1
+      : 0) +
+    (roomState === "pregame" && audioLive ? 1 : 0);
   const mobileTabs: { id: TabId; label: string; badge: number; icon: React.ReactNode }[] = [
     {
       id: "chat",
@@ -1199,16 +1204,17 @@ export function RealtimeRoom(props: Props) {
       )}
     </div>
   );
-  // mobile Polls tab: poll + predictor only — player ratings stay under STATS on
-  // mobile (founder 2026-07-02), so they're intentionally excluded here
+  // mobile Polls tab: poll + predictor + player ratings (founder 2026-08-05 —
+  // ratings moved here from under STATS to match desktop)
   const mobilePollsPanel = (
     <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-3">
       {pollBlock}
       {predictorBlock}
-      {!pollRelevant && !predictorRelevant && (
+      {ratingsWidget}
+      {!pollRelevant && !predictorRelevant && !ratingsRelevant && (
         <p className="px-1 py-6 text-center text-sm text-secondary">
-          Nothing to vote on right now. Polls and predictions appear here when
-          the host opens them.
+          Nothing to vote on right now. Polls and player ratings appear here
+          when the host opens them.
         </p>
       )}
     </div>
@@ -1335,9 +1341,8 @@ export function RealtimeRoom(props: Props) {
             }
             demo={room.demo}
           />
-          {/* mobile: RATE THE PLAYERS lives under STATS (Cloud Design); the
-              desktop copy renders in the chat column's Polls tab */}
-          {ratingsWidget && <div className="px-3 pb-3 lg:hidden">{ratingsWidget}</div>}
+          {/* player ratings moved to the mobile Polls tab (founder 2026-08-05);
+              STATS no longer carries them on mobile */}
         </aside>
         )}
 
