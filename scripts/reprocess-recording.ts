@@ -1,4 +1,18 @@
-/** Re-run recording processing on production for a given room id. */
+/**
+ * Re-run recording processing for one or more rooms on production, then poll
+ * until each finishes.
+ *
+ *   npm run recording:reprocess -- <roomId> [roomId...]
+ *
+ * Recovery tool. The room's broadcast.mp4 must still be in the recordings
+ * bucket (60-day retention); everything after that is rebuilt: full.mp3, the
+ * per-segment MP3s and the zip. Safe to re-run - processRecording takes an
+ * atomic claim, so a second run against the same room is a no-op while the
+ * first is in flight.
+ *
+ * Auth: creates a throwaway admin user with a per-run random password and
+ * deletes it in a finally, the same pattern as scripts/preflight.ts.
+ */
 import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
