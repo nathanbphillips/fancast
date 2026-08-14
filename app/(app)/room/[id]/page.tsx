@@ -414,11 +414,13 @@ export default async function RoomPage({
   const { data: hostRows } = await service
     .from("room_hosts")
     .select(
-      "created_at, host:profiles!room_hosts_user_id_fkey(username, avatar_url)",
+      "created_at, user_id, host:profiles!room_hosts_user_id_fkey(username, avatar_url)",
     )
     .eq("room_id", room.id)
     .eq("status", "accepted")
     .order("created_at", { ascending: true });
+  // ids so the commentator bar can tell a CO-HOST from an end-able caller
+  const hostIds = (hostRows ?? []).map((r) => r.user_id as string);
   const hosts = (hostRows ?? [])
     .map((r) => {
       const h = r.host as unknown as {
@@ -448,6 +450,7 @@ export default async function RoomPage({
       hosts.length > 0
         ? hosts
         : [{ username: room.commentator.username, avatarUrl: null }],
+    hostIds: hostIds.length > 0 ? hostIds : [room.commentator_id],
     commentatorId: room.commentator_id,
     competition: room.fixture?.competition ?? "",
     fixtureId: statsFixtureId(room) ?? 0,

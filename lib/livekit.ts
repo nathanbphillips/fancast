@@ -71,7 +71,7 @@ export async function setPublishPermission(
   roomId: string,
   userId: string,
   canPublish: boolean,
-): Promise<void> {
+): Promise<boolean> {
   try {
     // an account can hold several connections; elevate/revoke every one of them
     const identities = await identitiesFor(roomId, userId);
@@ -88,9 +88,48 @@ export async function setPublishPermission(
         },
       );
     }
+    return true;
   } catch (err) {
-    // participant not in the room — fine
+    // Report failure instead of swallowing it. The caller may legitimately not
+    // be connected (a no-op), but a LiveKit outage looked identical — so the
+    // host's end-call X returned 200 while the caller stayed live
+    // (audit 2026-08-05).
     console.warn(`updateParticipant(${userId}) skipped:`, (err as Error).message);
+    return false;
+  }
+}
+
+/**
+ * Enforce ONE on-air connection per account (founder 2026-08-05). Revokes
+ * publish on every other connection this account holds in the room, so a second
+ * tab or device can't also open a microphone. The demoted clients get
+ * ParticipantPermissionsChanged with canPublish=false, which their audio engine
+ * already handles by stopping the mic.
+ */
+export async function keepOnlyPublisher(
+  roomId: string,
+  userId: string,
+  keepIdentity: string,
+): Promise<void> {
+  try {
+    const others = (await identitiesFor(roomId, userId)).filter(
+      (id) => id !== keepIdentity,
+    );
+    for (const identity of others) {
+      await roomService().updateParticipant(
+        livekitRoomName(roomId),
+        identity,
+        undefined,
+        {
+          canSubscribe: true,
+          canPublish: false,
+          canPublishData: false,
+          canPublishSources: [],
+        },
+      );
+    }
+  } catch (err) {
+    console.warn("keepOnlyPublisher failed:", (err as Error).message);
   }
 }
 
@@ -129,13 +168,19 @@ export async function muteParticipantMic(
  *  slot; before accepting we complete rows whose caller isn't a live participant
  *  so the 2-guest cap reflects who's actually on air (call-in audit 2026-08-05).
  *  Best-effort: returns an empty set on any error. */
-export async function connectedIdentities(roomId: string): Promise<Set<string>> {
+/** Accounts currently connected, or NULL if we couldn't find out. Null matters:
+ *  an empty set used to be returned on error, and the cap reconcile reads that
+ *  as "nobody is on air" — so one LiveKit blip silently completed every live
+ *  caller and un-capped the room (audit 2026-08-05). Callers must fail closed. */
+export async function connectedIdentities(
+  roomId: string,
+): Promise<Set<string> | null> {
   try {
     const ps = await roomService().listParticipants(livekitRoomName(roomId));
     // keyed by ACCOUNT, not connection, so callers can test membership with a
     // plain user id
     return new Set(ps.map((p) => identityUserId(p.identity)));
   } catch {
-    return new Set();
+    return null;
   }
 }

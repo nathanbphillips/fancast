@@ -335,7 +335,7 @@ export default function DevDocsPage() {
                 [<C key="b">app/api/</C>, "All server routes (zod-validated). Grouped below. Also app/robots.ts, app/sitemap.ts, app/opengraph-image.tsx (default OG card) + app/(app)/room/[id]/opengraph-image.tsx (per-room OG card)."],
                 [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures (league-wide sync), adminFixtures, ably, livekit, egress, recording, unfurl, redirect (safeNextPath), ratelimit, standing, predictions/polls/ratings, callers, roles, api (auth helpers), config, brand, theme, slug, roomHosts (isRoomHost), createRoom, fixtureSearch (custom-room suggest), seasonHosting, friends, fanScore, avatars, reserved-usernames, commentator-terms. lib/notify/ = the notification engine (types, outbox, producers, email, push, render, tokens, urls). lib/strings/attendance.ts = the load-bearing attendance copy. lib/db/ = Supabase client/server/types + threads/matches/fixtures loaders. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
                 [<C key="d">components/</C>, "UI. components/room/ (RealtimeRoom orchestrator, CommentatorBar, ClockControls, ShareButton, audio/, widgets), components/stats/ (StatsPanel + bars/timeline/lineups/pitch/info/history/editor), components/marketing/ (OnAirCard, HostLanding, NotifyForm, Faq), components/matches/ (MatchesSchedule, RoomRow), components/host/ (dashboard, cohost invites, RoomCreatePicker), components/friends/, components/admin/, plus shared (AppHeader, MatchHeader, Avatar, ProfilePopover, ClockState, Toast, Legal, SiteFooter…)."],
-                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0041 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
+                [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0044 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
                 [<C key="f">scripts/</C>, "tsx scripts: migrate, grant-role, metrics, and ~25 phase smoke / unit-ish tests (see package.json). No Jest/Vitest - tests are standalone tsx scripts."],
                 [<C key="g">docs/</C>, "The spec: ARCHITECTURE, PRD, DESIGN, PHASES (living status), METRICS, RUNBOOK, LEGAL_PAGES, AUDIT*. CLAUDE.md (repo root) is the agent/dev brief + decision log (the most current record of founder rulings)."],
               ]}
@@ -344,7 +344,7 @@ export default function DevDocsPage() {
 
           <Section id="data" title="Data model (Supabase, RLS everywhere)">
             <p>
-              ~42 tables across migrations 0001–0041. The ones you&apos;ll touch most:
+              ~42 tables across migrations 0001–0044. The ones you&apos;ll touch most:
             </p>
             <Table
               head={["Table", "Purpose / key fields"]}
@@ -394,7 +394,6 @@ export default function DevDocsPage() {
                 [<C key="c">room:{"{id}"}:control</C>, "Room state, clock events, markers, stats-tab push, widget aggregates, stat_overrides, broadcast_start, radio, features.", "Server only"],
                 [<C key="d">room:{"{id}"}:private</C>, "Questions + talk-request status.", "Subscribe via commentator capability token; listeners write via API."],
                 [<C key="e">room:{"{id}"}:user:{"{uid}"}</C>, "Per-viewer signals (e.g. talk-request resolution, call-in queue position).", "Server only"],
-                [<C key="f">room:{"{id}"}:reactions</C>, "Ephemeral floating emoji (no DB rows; rate-limited via /api/reactions; intentionally NOT rehydrated on reconnect).", "Server only"],
               ]}
             />
             <p>
@@ -422,7 +421,7 @@ export default function DevDocsPage() {
               <li>
                 <b className="text-primary">Stream:</b> <C>/api/chat</C> (+ <C>/hide</C>, <C>/flag</C>,{" "}
                 <C>/vote</C>), <C>/api/links</C> (+ <C>/vote</C>) - submit does server-side OG unfurl -
-                and <C>/api/reactions</C> (ephemeral emoji, hard rate-limit).
+                (the emoji reaction channel + route were retired 2026-08-05).
               </li>
               <li>
                 <b className="text-primary">Interaction:</b> <C>/api/questions</C>, <C>/api/talk</C> (+{" "}
@@ -980,7 +979,7 @@ export default function DevDocsPage() {
             </UL>
             <p className="pt-2 text-[13px] text-secondary">
               This page is written by hand, not auto-synced - if the build moves, update{" "}
-              <C>app/(app)/dev-docs/page.tsx</C> (last refresh 2026-08-05). It&apos;s <C>noindex</C> and
+              <C>app/(app)/dev-docs/page.tsx</C> (last refresh 2026-08-05 (late)). It&apos;s <C>noindex</C> and
               behind HTTP Basic auth (<C>DEV_DOCS_PASSWORD</C> in <C>middleware.ts</C>).
             </p>
           </Section>

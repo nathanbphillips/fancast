@@ -23,9 +23,7 @@ export const channels = {
   chat: (roomId: string) => `room:${roomId}:chat`,
   links: (roomId: string) => `room:${roomId}:links`,
   control: (roomId: string) => `room:${roomId}:control`,
-  /** ephemeral floating-reaction emoji — no DB, published server-side, clients
-   *  subscribe only. Never rehydrated on reconnect (Phase 5a). */
-  reactions: (roomId: string) => `room:${roomId}:reactions`,
+  // reactions channel retired 2026-08-05 with the emoji row
   private: (roomId: string) => `room:${roomId}:private`,
   /** per-user channel: only that signed-in user holds the token capability,
    *  used for resolutions that must reach one requester without broadcasting

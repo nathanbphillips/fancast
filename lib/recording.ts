@@ -189,7 +189,18 @@ export async function processRecording(
     // We delete+insert the segment rows only AFTER every cut/upload succeeds, so
     // a mid-run failure (return fail) leaves the prior segments intact instead of
     // wiping them up front (audit polish — a recut no longer has a zero-row window).
-    const zipEntries: { name: string; data: Buffer }[] = [{ name: "full.mp3", data: fullBuf }];
+    // MEMORY CEILING (audit 2026-08-05). The zip is built in memory and holds a
+    // second copy of everything, so a long show used to peak at roughly
+    // 2x(full + segments) — a 2.5h broadcast is ~185MB of MP3, which OOMs the
+    // function before it ever reaches the time limit. Past the budget we simply
+    // skip the zip: every individual MP3 is still uploaded and downloadable, and
+    // losing the convenience bundle beats losing the whole recording.
+    const ZIP_BUDGET_BYTES = 120 * 1024 * 1024;
+    let zipBytes = fullBuf.length;
+    let zipTooBig = zipBytes > ZIP_BUDGET_BYTES;
+    const zipEntries: { name: string; data: Buffer }[] = zipTooBig
+      ? []
+      : [{ name: "full.mp3", data: fullBuf }];
     const segRows: {
       recording_id: string;
       idx: number;
@@ -226,7 +237,19 @@ export async function processRecording(
         size_bytes: buf.length,
         duration_seconds: seg.endOffset - seg.startOffset,
       });
-      zipEntries.push({ name: `${String(seg.idx).padStart(2, "0")} ${seg.label}.mp3`, data: buf });
+      zipBytes += buf.length;
+      if (!zipTooBig && zipBytes > ZIP_BUDGET_BYTES) {
+        // crossed the budget mid-run: drop what we were accumulating so the
+        // rest of the job doesn't carry it
+        zipTooBig = true;
+        zipEntries.length = 0;
+      }
+      if (!zipTooBig) {
+        zipEntries.push({
+          name: `${String(seg.idx).padStart(2, "0")} ${seg.label}.mp3`,
+          data: buf,
+        });
+      }
     }
     // every segment cut + uploaded — now swap the rows (narrow delete→insert window)
     await service.from("recording_segments").delete().eq("recording_id", rec.id);
@@ -239,6 +262,12 @@ export async function processRecording(
     // must not deny the commentator the individual MP3s
     let zipPath: string | null = null;
     try {
+      if (zipTooBig) {
+        console.warn(
+          `recording ${rec.id}: skipping zip, ${Math.round(zipBytes / 1e6)}MB exceeds the in-memory budget`,
+        );
+        throw new Error("zip skipped (too large)");
+      }
       const zipBuf = buildZipStore(zipEntries);
       zipPath = `${roomId}/all.zip`;
       await service.storage

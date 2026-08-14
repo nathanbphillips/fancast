@@ -814,27 +814,34 @@ export function MicControls({
 export function SpeakerChips({
   speakers,
   roomId,
+  hostIds,
   onEndCall,
 }: {
   speakers: Speaker[];
   roomId: string;
+  /** accepted host user ids — co-hosts are colleagues, not end-able guests */
+  hostIds?: string[];
   onEndCall: (identity: string) => void;
 }) {
-  const [muted, setMuted] = useState<Record<string, boolean>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const guests = speakers.filter((s) => !s.isCommentator && s.name !== "you");
+  // hostIds covers co-hosts: isCommentator only knows the room CREATOR, so a
+  // co-host was rendering as an end-able guest chip (audit 2026-08-05)
+  const guests = speakers.filter(
+    (s) => !s.isCommentator && s.name !== "you" && !hostIds?.includes(s.identity),
+  );
   if (guests.length === 0) return null;
 
-  async function toggleMute(identity: string) {
-    const next = !muted[identity];
+  // muted comes from LiveKit via Speaker.muted — never from local button state,
+  // which went stale the moment the caller muted themselves or the host reloaded
+  async function toggleMute(identity: string, currentlyMuted: boolean) {
     setBusy(identity);
-    const res = await fetch("/api/talk/mute", {
+    await fetch("/api/talk/mute", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roomId, userId: identity, muted: next }),
+      body: JSON.stringify({ roomId, userId: identity, muted: !currentlyMuted }),
     }).catch(() => null);
     setBusy(null);
-    if (res?.ok) setMuted((m) => ({ ...m, [identity]: next }));
+    // no optimistic write: the LiveKit mute event refreshes Speaker.muted
   }
 
   return (
@@ -853,16 +860,16 @@ export function SpeakerChips({
           <button
             type="button"
             disabled={busy === s.identity}
-            aria-label={`${muted[s.identity] ? "Unmute" : "Mute"} ${s.name}`}
-            title={muted[s.identity] ? "Unmute this caller" : "Mute this caller"}
-            onClick={() => void toggleMute(s.identity)}
+            aria-label={`${s.muted ? "Unmute" : "Mute"} ${s.name}`}
+            title={s.muted ? "Unmute this caller" : "Mute this caller"}
+            onClick={() => void toggleMute(s.identity, s.muted)}
             className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-60 ${
-              muted[s.identity]
+              s.muted
                 ? "border-red text-red"
                 : "border-line text-secondary hover:text-primary"
             }`}
           >
-            {muted[s.identity] ? "Muted" : "Mute"}
+            {s.muted ? "Muted" : "Mute"}
           </button>
           <button
             type="button"

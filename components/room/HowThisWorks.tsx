@@ -59,8 +59,8 @@ const SECTIONS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         Read the live chat and shared links as they land. Sign in to post a
-        message, reply to anyone (replies thread underneath), and tap a reaction.
-        Paste a link and it turns into a preview card.
+        message, reply to anyone (replies thread underneath), and delete your
+        own messages. Paste a link and it turns into a preview card.
       </>
     ),
   },
@@ -69,8 +69,8 @@ const SECTIONS: { title: string; body: ReactNode }[] = [
     body: (
       <>
         Upvote or downvote any message or link. Sort the stream by <K>New</K>,{" "}
-        <K>Top</K>, or <K>Controversial</K>, or filter it to just chat or just
-        links. See something off? Flag it for the host.
+        <K>Top</K>, or <K>Controversial</K>, and hit <K>Refresh</K> to pull the
+        latest. See something off? Flag it for the host.
       </>
     ),
   },

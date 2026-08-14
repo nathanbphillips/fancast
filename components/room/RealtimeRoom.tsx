@@ -58,6 +58,11 @@ import { Avatar } from "@/components/Avatar";
 import { ProfilePopover } from "@/components/ProfilePopover";
 import { ShareButton } from "@/components/room/ShareButton";
 import { HowThisWorks } from "./HowThisWorks";
+import {
+  claimOnAir,
+  refreshOnAirClaim,
+  releaseOnAirClaim,
+} from "@/lib/onAirClaim";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -92,6 +97,8 @@ export type RoomInfo = {
   commentatorUsername: string;
   /** all accepted hosts, creator first (FR-25.4 both-badge display) */
   hosts: { username: string; avatarUrl: string | null }[];
+  /** accepted host user ids — lets the bar tell a co-host from a caller */
+  hostIds: string[];
   commentatorId: string;
   competition: string; // league/competition name for the match-bar chip
   fixtureId: number; // the room's fixture id (PK; negative for dev seeds, epoch-ms for admin games)
@@ -160,17 +167,10 @@ const INPUTS_OPEN: RoomState[] = [
   "postgame",
 ];
 
-/** The five floating-reaction emoji (Cloud Design). Kept in sync with the
- *  allow-list in app/api/reactions/route.ts. */
-const REACTION_EMOJI = ["⚽", "🔥", "👏", "😱", "🙌"] as const;
-
-type ReactionFloat = {
-  id: number;
-  emoji: string;
-  left: number;
-  dur: number;
-  rot: number;
-};
+/* Floating-emoji reactions were removed from the UI on 2026-08-05 and the
+ * removal is intentional, so the transport went with them: no sender, no
+ * subscriber, and no Ably channel attach per listener for something that
+ * nothing renders. The route + channel capability are retired alongside. */
 
 export function RealtimeRoom(props: Props) {
   const { room, viewer } = props;
@@ -222,39 +222,6 @@ export function RealtimeRoom(props: Props) {
   const [syncedClockText, setSyncedClockText] = useState<string | undefined>(undefined);
   const [syncSheetOpen, setSyncSheetOpen] = useState(false);
 
-  // floating reaction emoji (Phase 5a) — ephemeral, capped at 12 in flight,
-  // reduced-motion neutralised via the fcfloat keyframe wildcard. spawnFloat
-  // only touches setFloats(prev=>…), so the realtime effect can call it through
-  // a stable closure without re-subscribing.
-  const [floats, setFloats] = useState<ReactionFloat[]>([]);
-  const floatIdRef = useRef(0);
-  const spawnFloat = useCallback((emoji: string) => {
-    const id = (floatIdRef.current += 1);
-    const dur = 2.4 + Math.random() * 1.2;
-    const f: ReactionFloat = {
-      id,
-      emoji,
-      left: 6 + Math.random() * 84,
-      dur,
-      rot: -20 + Math.random() * 40,
-    };
-    setFloats((prev) => [...prev.slice(-11), f]);
-    window.setTimeout(
-      () => setFloats((prev) => prev.filter((x) => x.id !== id)),
-      (dur + 0.3) * 1000,
-    );
-  }, []);
-  const sendReaction = useCallback(
-    (emoji: string) => {
-      spawnFloat(emoji); // optimistic — show it instantly, publish in the background
-      void fetch("/api/reactions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId: room.id, emoji }),
-      }).catch(() => {});
-    },
-    [room.id, spawnFloat],
-  );
   // bumped when THIS viewer's talk request is resolved, so their button clears
   const [talkResolvedSignal, setTalkResolvedSignal] = useState(0);
   // call-in queue position (#N), pushed to this viewer on their own per-user
@@ -579,17 +546,6 @@ export function RealtimeRoom(props: Props) {
       params: { rewind: "100" },
     });
 
-    // ephemeral floating reactions (Phase 5a): no rewind — a reaction that
-    // happened before you joined shouldn't replay. client.close() (cleanup
-    // below) tears this down with the rest.
-    const reactionsCh = client.channels.get(`room:${room.id}:reactions`);
-    reactionsCh.subscribe("reaction", (msg) => {
-      const emoji = (msg.data as { emoji?: string } | null)?.emoji;
-      if (emoji && REACTION_EMOJI.includes(emoji as (typeof REACTION_EMOJI)[number])) {
-        spawnFloat(emoji);
-      }
-    });
-
     chat.subscribe("message", (msg) => appendMessage(msg.data as ChatMessage));
     chat.subscribe("vote", (msg) => {
       const { messageId, up, down, score } = msg.data as {
@@ -836,11 +792,36 @@ export function RealtimeRoom(props: Props) {
   // bumped when the host accepts this listener's call-in; the effect below puts
   // them straight on air (founder 2026-08-05: no "Go on air" step)
   const [acceptedNonce, setAcceptedNonce] = useState(0);
+  // this account is on air in ANOTHER tab/device, so this one stays a listener
+  const [onAirElsewhere, setOnAirElsewhere] = useState(false);
+  // hold the claim while genuinely publishing; release it the moment we stop so
+  // another device can take over
+  useEffect(() => {
+    if (audio.micStatus !== "live") {
+      releaseOnAirClaim(room.id);
+      return;
+    }
+    setOnAirElsewhere(false);
+    refreshOnAirClaim(room.id);
+    const id = setInterval(() => refreshOnAirClaim(room.id), 5000);
+    return () => {
+      clearInterval(id);
+      releaseOnAirClaim(room.id);
+    };
+  }, [audio.micStatus, room.id]);
   // only true WHILE the auto-start is in flight, so a failed attempt can never
   // strand the caller on a non-interactive "Putting you on air…" pill
   const [autoOnAir, setAutoOnAir] = useState(false);
   useEffect(() => {
     if (acceptedNonce === 0) return;
+    // ONE DEVICE ON AIR PER ACCOUNT (founder 2026-08-05). The accept lands on
+    // the per-user channel, which EVERY tab/device of this account subscribes
+    // to — so without a claim they would all open a microphone at once. First
+    // one to claim wins; the others stay listeners and say so.
+    if (!claimOnAir(room.id)) {
+      setOnAirElsewhere(true);
+      return;
+    }
     audio.markAccepted(); // publish-capable even if they'd dropped off LiveKit
     setAutoOnAir(true);
     // WATCHDOG: the auto-start calls getUserMedia with no user gesture, and a
@@ -1180,6 +1161,7 @@ export function RealtimeRoom(props: Props) {
           <SpeakerChips
             speakers={audio.speakers}
             roomId={room.id}
+            hostIds={room.hostIds}
             onEndCall={removeSpeaker}
           />
         )
@@ -1326,8 +1308,6 @@ export function RealtimeRoom(props: Props) {
       queuePosition={queuePosition}
       broadcastStart={broadcastStart}
       chatOpen={chatOpen}
-      floats={floats}
-      onReact={sendReaction}
       onComposerFocus={setComposerFocused}
       primeMic={audio.primeMicPermission}
     />
@@ -1710,7 +1690,17 @@ export function RealtimeRoom(props: Props) {
                 </p>
               </div>
 
-              {audio.micStatus === "live" ? (
+              {onAirElsewhere && audio.micStatus !== "live" ? (
+                <div className="rounded-xl border border-line bg-raised p-5 text-center">
+                  <p className="text-sm font-semibold">
+                    You&apos;re on air on another device
+                  </p>
+                  <p className="mt-1.5 text-[13px] text-secondary">
+                    Only one device can be on air at a time. Use the device
+                    you&apos;re speaking on, or leave the air there first.
+                  </p>
+                </div>
+              ) : audio.micStatus === "live" ? (
                 /* ON AIR — the caller's own unmistakable live state, with the
                    control that ends the call. Previously the only Leave Air
                    lived in the top transport, so a caller had no obvious way
@@ -2060,8 +2050,6 @@ function LiveChat({
   queuePosition,
   broadcastStart,
   chatOpen,
-  floats,
-  onReact,
   onComposerFocus,
   primeMic,
 }: {
@@ -2093,8 +2081,6 @@ function LiveChat({
   queuePosition: number | null;
   broadcastStart: string | null;
   chatOpen: boolean;
-  floats: ReactionFloat[];
-  onReact: (emoji: string) => void;
   /** the chat input gained/lost focus — the room hides the mobile tab bar while
    *  typing so only the composer sits above the keyboard (founder 2026-08-05) */
   onComposerFocus?: (focused: boolean) => void;

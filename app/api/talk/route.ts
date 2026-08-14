@@ -305,6 +305,10 @@ export async function PATCH(request: NextRequest) {
     // reflects who's actually on air (call-in audit 2026-08-05).
     try {
       const live = await connectedIdentities(talkRequest.room_id);
+      // FAIL CLOSED: null means we couldn't reach LiveKit. Treating that as
+      // "nobody is connected" would complete every genuinely on-air caller and
+      // un-cap the room, so skip the reconcile entirely (audit 2026-08-05).
+      if (live === null) throw new Error("livekit unavailable");
       const { data: accepted } = await service
         .from("talk_requests")
         .select("id, user_id")

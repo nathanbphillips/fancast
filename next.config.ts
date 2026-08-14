@@ -120,8 +120,13 @@ const nextConfig: NextConfig = {
     // these two routes, so both function bundles need the binary force-included
     // (same class of fix as sharp above). Surfaced by the first live test's
     // recording download, 2026-08-05.
-    "/api/recordings": ["./node_modules/ffmpeg-static/**/*"],
-    "/api/rooms": ["./node_modules/ffmpeg-static/**/*"],
+    // NB: Next matches these keys with picomatch `contains: true`, so a bare
+    // "/api/rooms" also pulls the ~80MB binary into /api/rooms/[id]/snapshot,
+    // /rsvp, /roster and friends, none of which spawn ffmpeg. Anchor both keys
+    // to the exact route so only the two that reach processRecording carry it
+    // (audit 2026-08-05).
+    "/api/recordings/route": ["./node_modules/ffmpeg-static/**/*"],
+    "/api/rooms/route": ["./node_modules/ffmpeg-static/**/*"],
   },
   images: {
     remotePatterns: avatarRemotePatterns,

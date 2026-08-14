@@ -67,6 +67,68 @@ export async function GET(request: NextRequest) {
     results.fanScoreRecompute = { ok: false, reason: String(err) };
   }
 
+  // 60-day retention (founder 2026-08-05). Recordings and diagnostics both grow
+  // without bound otherwise: recordings are the expensive one (storage objects),
+  // events the noisy one. Deleting the storage objects first means a failure
+  // here never orphans files with no DB row pointing at them.
+  try {
+    results.retention = await pruneOldData(service);
+  } catch (err) {
+    results.retention = { ok: false, reason: String(err) };
+  }
+
   console.log("daily cron:", JSON.stringify(results));
   return NextResponse.json(results);
+}
+
+const RETENTION_DAYS = 60;
+
+/** Delete recordings + telemetry older than the retention window. */
+async function pruneOldData(service: ReturnType<typeof createServiceClient>) {
+  const cutoff = new Date(
+    Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+
+  // --- recordings: storage objects first, then the rows ---
+  const { data: old } = await service
+    .from("recordings")
+    .select("id, room_id, full_mp3_path, zip_path, source_path")
+    .lt("started_at", cutoff);
+  let filesDeleted = 0;
+  for (const rec of old ?? []) {
+    const { data: segs } = await service
+      .from("recording_segments")
+      .select("storage_path")
+      .eq("recording_id", rec.id as string);
+    const paths = [
+      rec.full_mp3_path,
+      rec.zip_path,
+      rec.source_path,
+      ...(segs ?? []).map((s) => s.storage_path),
+    ].filter(Boolean) as string[];
+    if (paths.length > 0) {
+      const { error } = await service.storage.from("recordings").remove(paths);
+      if (!error) filesDeleted += paths.length;
+    }
+  }
+  const oldIds = (old ?? []).map((r) => r.id as string);
+  if (oldIds.length > 0) {
+    // segments cascade via recording_id FK, but be explicit
+    await service.from("recording_segments").delete().in("recording_id", oldIds);
+    await service.from("recordings").delete().in("id", oldIds);
+  }
+
+  // --- telemetry ---
+  const { count: eventsDeleted } = await service
+    .from("events")
+    .delete({ count: "exact" })
+    .lt("created_at", cutoff);
+
+  return {
+    ok: true,
+    cutoff,
+    recordingsDeleted: oldIds.length,
+    filesDeleted,
+    eventsDeleted: eventsDeleted ?? 0,
+  };
 }

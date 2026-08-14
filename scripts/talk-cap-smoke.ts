@@ -18,7 +18,7 @@ const APP = "http://localhost:3000";
 const PROJECT_REF = new URL(URL_).hostname.split(".")[0];
 const PASSWORD = "talkcap-Pass-1!";
 const FIXTURE_ID = -1;
-const CALLERS = 3;
+const CALLERS = 4; // cap is 3 guests (migration 0042), so 4 proves the cap bites
 
 const service = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 let failures = 0;
@@ -97,18 +97,18 @@ async function main() {
   const controlCh = observer.channels.get(`room:${roomId}:control`);
   await controlCh.subscribe((m) => controlEvents.push({ name: m.name! }));
 
-  // 3 concurrent accepts on a 2-slot room
+  // 4 concurrent accepts on a 3-slot room (cap raised 2 -> 3 in 0042)
   const results = await Promise.all(
     requestIds.map((id) => api("/api/talk", commentator.cookie, { requestId: id, status: "accepted" }, "PATCH")),
   );
   const ok = results.filter((x) => x.status === 200).length;
   const capFull = results.filter((x) => x.status === 409).length;
-  check("exactly 2 accepts succeed (200)", ok === 2, `${ok} ok`);
-  check("the 3rd is rejected cap_full (409)", capFull === 1, `${capFull} rejected, msg=${results.find((x) => x.status === 409)?.body?.error}`);
+  check("exactly 3 accepts succeed (200)", ok === 3, `${ok} ok`);
+  check("the 4th is rejected cap_full (409)", capFull === 1, `${capFull} rejected, msg=${results.find((x) => x.status === 409)?.body?.error}`);
   const { count: acceptedCount } = await service
     .from("talk_requests").select("*", { count: "exact", head: true })
     .eq("room_id", roomId).eq("status", "accepted");
-  check("DB has exactly 2 accepted (never 3)", acceptedCount === 2, `${acceptedCount}`);
+  check("DB has exactly 3 accepted (never 4)", acceptedCount === 3, `${acceptedCount}`);
 
   // dismiss the still-pending one -> talk_resolved on the requester's per-user
   // channel (requestId only); never on control; never to other callers

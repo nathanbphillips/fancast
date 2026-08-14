@@ -22,12 +22,20 @@ async function authorizeRoom(
 ) {
   const { data: room } = await service
     .from("rooms")
-    .select("id, commentator_id, fixture:fixtures(home_team, away_team, kickoff_utc)")
+    .select(
+      "id, commentator_id, title, fixture:fixtures(home_team, away_team, kickoff_utc)",
+    )
     .eq("id", roomId)
     .maybeSingle<{
       id: string;
       commentator_id: string;
-      fixture: { home_team: string; away_team: string; kickoff_utc: string };
+      /** discussion rooms carry a free-text title and NO fixture */
+      title: string | null;
+      fixture: {
+        home_team: string;
+        away_team: string;
+        kickoff_utc: string;
+      } | null;
     }>();
   if (!room) return { error: "not_found" as const };
   // FR-25.7: both accepted hosts get full recording access
@@ -75,8 +83,19 @@ export async function GET(request: NextRequest) {
   // we hand out (signed) links to the room mix
   await ensureRecordingsPrivate(service);
 
-  const fixtureLabel = `${room.fixture.home_team} vs ${room.fixture.away_team}`;
-  const dateLabel = room.fixture.kickoff_utc.slice(0, 10);
+  // A DISCUSSION room has no fixture (nullable since migration 0038), and this
+  // dereferenced it unconditionally — a 500 for any discussion host opening
+  // their downloads (audit 2026-08-05). PostgREST also types the embed as an
+  // array, so normalise before reading.
+  const fxRaw = room.fixture as unknown;
+  const fx = (Array.isArray(fxRaw) ? fxRaw[0] : fxRaw) as
+    | { home_team: string; away_team: string; kickoff_utc: string }
+    | null
+    | undefined;
+  const fixtureLabel = fx
+    ? `${fx.home_team} vs ${fx.away_team}`
+    : (room.title ?? "Arseradio show");
+  const dateLabel = (fx?.kickoff_utc ?? new Date().toISOString()).slice(0, 10);
 
   const files: {
     label: string;

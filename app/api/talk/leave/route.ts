@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   // nothing whenever state had drifted (e.g. the row was completed when the
   // caller re-requested). Revoking publish and announcing the departure must
   // happen regardless; the row update is best-effort on top.
-  await setPublishPermission(roomId, targetUserId, false);
+  const revoked = await setPublishPermission(roomId, targetUserId, false);
   if (accepted) {
     await service
       .from("talk_requests")
@@ -86,5 +86,13 @@ export async function POST(request: NextRequest) {
   await publish(channels.userPrivate(roomId, targetUserId), "talk_resolved", {
     requestId: accepted?.id ?? null,
   });
+  // If LiveKit refused the revoke, say so — this used to return 200 regardless,
+  // so the host's X looked like it worked while the caller stayed live.
+  if (!revoked) {
+    return NextResponse.json(
+      { error: "Couldn't cut them off — audio service didn't respond. Try again." },
+      { status: 502 },
+    );
+  }
   return NextResponse.json({ ok: true });
 }

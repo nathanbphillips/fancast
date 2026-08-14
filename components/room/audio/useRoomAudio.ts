@@ -30,6 +30,11 @@ export type Speaker = {
   identity: string;
   name: string;
   isCommentator: boolean;
+  /** true when their published mic is muted, read from LiveKit rather than from
+   *  whoever pressed the button — the host's chip used to track only its OWN
+   *  taps, so a caller's self-mute was invisible to the host and vice versa
+   *  (audit 2026-08-05) */
+  muted: boolean;
 };
 
 // 25s so a natural commentary lull (pregame setup, a goal-kick, a sip of water)
@@ -397,6 +402,8 @@ export function useRoomAudio(opts: {
         identity: userId,
         name: p.name || userId,
         isCommentator: userId === opts.commentatorId,
+        // truth from LiveKit: every audio publication of theirs is muted
+        muted: [...p.audioTrackPublications.values()].every((pub) => pub.isMuted),
       });
     }
     if (publishedTrackRef.current && opts.viewerId) {
@@ -404,6 +411,7 @@ export function useRoomAudio(opts: {
         identity: opts.viewerId,
         name: "you",
         isCommentator: opts.isRoomCommentator,
+        muted: publishedTrackRef.current.isMuted,
       });
     }
     setSpeakers(remote);
@@ -519,6 +527,21 @@ export function useRoomAudio(opts: {
           void stopMicInternal();
         }
       });
+      // Mute state is authoritative from LiveKit, not from whoever tapped.
+      // A host mute lands on the guest as a remote mute of their LOCAL track,
+      // so without this the guest's card kept saying "the room can hear you"
+      // and their own Mute button would have UNMUTED them (audit 2026-08-05).
+      const onMuteChanged = (
+        pub: { isMuted: boolean },
+        participant: { identity: string },
+      ) => {
+        if (participant.identity === r.localParticipant.identity) {
+          setMicMuted(pub.isMuted);
+        }
+        refreshSpeakers(r);
+      };
+      r.on(RoomEvent.TrackMuted, onMuteChanged);
+      r.on(RoomEvent.TrackUnmuted, onMuteChanged);
       r.on(RoomEvent.Disconnected, (reason) => {
         // Record WHY. A drop is otherwise indistinguishable from a deliberate
         // stop, and DUPLICATE_IDENTITY (the same account connecting elsewhere)
@@ -749,6 +772,16 @@ export function useRoomAudio(opts: {
       });
       publishedTrackRef.current = track;
       setMicStatus("live");
+      // claim the single on-air slot for this account: the server revokes
+      // publish on any other device/tab of ours (founder 2026-08-05)
+      void fetch("/api/talk/claim-air", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roomId: opts.roomId,
+          identity: room.localParticipant.identity,
+        }),
+      }).catch(() => {});
       // a listener-caller going on air: snap their playback to the live edge so
       // the call with the host is real time (restored when the call ends). The
       // commentator/co-hosts broadcast live already, so they never snap.
@@ -825,6 +858,8 @@ export function useRoomAudio(opts: {
   const toggleMute = useCallback(async () => {
     const track = publishedTrackRef.current;
     if (!track) return;
+    // read the CURRENT track state rather than local UI state, so a host-side
+    // mute can't be flipped back on by a stale toggle
     if (track.isMuted) {
       await track.unmute();
       setMicMuted(false);

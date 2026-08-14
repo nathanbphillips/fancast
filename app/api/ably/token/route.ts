@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
     [channels.chat(roomId!)]: ["subscribe", "presence", "history"],
     [channels.links(roomId!)]: ["subscribe", "history"],
     [channels.control(roomId!)]: ["subscribe", "history"],
-    // reactions are ephemeral + fire-and-forget; subscribe only, no history
-    [channels.reactions(roomId!)]: ["subscribe"],
+    // (the reactions channel was retired with the emoji row on 2026-08-05 —
+    // no capability minted, so listeners no longer attach to a dead channel)
   };
 
   if (user) {

@@ -8,10 +8,16 @@ import { useEffect, useState } from "react";
  * checkbox; copy verbatim from docs/LEGAL_PAGES.md.
  */
 
-// Kept deliberately short (founder 2026-08-05) while still stating the three
-// things that matter: it's live, it's recorded, and the host may publish it.
+// RESTORED to the verbatim wording in docs/LEGAL_PAGES.md (founder 2026-08-05).
+// It was shortened earlier that day for brevity, which dropped the explicit
+// statement that the commentator OWNS the recording and may publish it — the
+// one clause this consent exists to obtain. Brevity is not worth it here.
 const CONSENT_COPY =
-  "Your voice goes out live, is recorded, and the host may publish it.";
+  "You're asking to go on air. If the commentator accepts, your voice is " +
+  "broadcast live to everyone in the room and becomes part of the show's " +
+  "recording, which the commentator owns and may publish (for example, as " +
+  "a podcast episode). You can leave the air at any time with the Leave " +
+  "Air button.";
 
 const REPEAT_COPY = "Live to the room. Recorded as part of the show.";
 
