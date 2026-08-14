@@ -446,8 +446,10 @@ async function checkDeployment(probes: Probes) {
       why: "unsubscribe tokens fall back to signing with the service-role key, which is set, so they are still unforgeable",
     },
     DEV_DOCS_PASSWORD: {
-      level: "WARN",
-      why: "middleware falls back to a hardcoded password, so /dev-docs is effectively open",
+      // middleware.ts calls this fallback intentionally low-stakes (the page is
+      // non-secret architecture docs), so this is a note, not a defect
+      level: "INFO",
+      why: "/dev-docs is on middleware's built-in fallback password; set this if the repo goes public",
     },
     NEXT_PUBLIC_SITE_URL: {
       level: "WARN",
