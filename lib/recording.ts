@@ -337,9 +337,14 @@ export async function processRecording(
       }
       const zipBuf = buildZipStore(zipEntries);
       zipPath = `${roomId}/all.zip`;
-      await service.storage
+      // The full and segment uploads above check .error and this one did not,
+      // so a rejected upload still wrote zip_path and the host got a "Download
+      // all" button that 404s. Seen for real on a 3h show whose 83MB zip did
+      // not land while every individual MP3 did.
+      const zipUp = await service.storage
         .from(REC_BUCKET)
         .upload(zipPath, zipBuf, { contentType: "application/zip", upsert: true });
+      if (zipUp.error) throw new Error(`zip upload failed: ${zipUp.error.message}`);
     } catch (e) {
       console.error("zip failed (segments still available):", (e as Error).message);
       zipPath = null;
