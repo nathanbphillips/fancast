@@ -881,13 +881,21 @@ export default function DevDocsPage() {
                 <C>--room &lt;slug&gt;</C>, <C>--url &lt;base&gt;</C>, <C>--quick</C>.
               </li>
               <li>
-                <b className="text-primary">The two native-binary probes live IN the routes that use them</b>{" "}
-                - <C>/api/recordings?probe=ffmpeg</C> and <C>/api/profile/avatar?probe=sharp</C>, both
-                admin-only. <C>outputFileTracingIncludes</C> is keyed PER ROUTE, so a probe in its own route
-                would need its own ~80MB copy and would still prove nothing about the bundle that actually
-                spawns ffmpeg. Both binaries are always present locally and have each failed only on Vercel
-                (the Linux <C>@img/sharp-libvips-linux-x64</C> split, and the recordings ENOENT), so in-situ
-                is the only truthful test.
+                <b className="text-primary">The native-binary probes live IN the routes that use them</b> -{" "}
+                <C>/api/recordings?probe=ffmpeg</C>, <C>/api/rooms?probe=ffmpeg</C> (the End Broadcast path
+                that actually produces recordings) and <C>/api/profile/avatar?probe=sharp</C>, all admin-only.{" "}
+                <C>outputFileTracingIncludes</C> is keyed PER ROUTE, so a probe in its own route would need
+                its own ~80MB copy and would still prove nothing about the bundle that spawns ffmpeg. Both
+                binaries are always present locally and have each failed only on Vercel (the Linux{" "}
+                <C>@img/sharp-libvips-linux-x64</C> split, and the recordings ENOENT), so in-situ is the only
+                truthful test. Each probe RUNS the binary rather than stat-ing it.
+              </li>
+              <li>
+                <C>/api/health?probe=sportmonks&amp;fixture=&#123;id&#125;</C> (admin-only, opt-in, one metered
+                call) asks Sportmonks with <b className="text-primary">the deployment&apos;s</b> token.{" "}
+                <C>getFixtureStats</C> serves last-good from memory forever on error, so a warm lambda returns
+                a healthy-looking payload long after the token was revoked, and checking from a laptop only
+                proves the laptop&apos;s token.
               </li>
             </UL>
             <H3>Run it locally</H3>

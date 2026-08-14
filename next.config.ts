@@ -120,13 +120,26 @@ const nextConfig: NextConfig = {
     // these two routes, so both function bundles need the binary force-included
     // (same class of fix as sharp above). Surfaced by the first live test's
     // recording download, 2026-08-05.
-    // NB: Next matches these keys with picomatch `contains: true`, so a bare
-    // "/api/rooms" also pulls the ~80MB binary into /api/rooms/[id]/snapshot,
-    // /rsvp, /roster and friends, none of which spawn ffmpeg. Anchor both keys
-    // to the exact route so only the two that reach processRecording carry it
-    // (audit 2026-08-05).
-    "/api/recordings/route": ["./node_modules/ffmpeg-static/**/*"],
-    "/api/rooms/route": ["./node_modules/ffmpeg-static/**/*"],
+    //
+    // DO NOT "ANCHOR" THESE KEYS BY APPENDING "/route". That was tried on
+    // 2026-08-05 to stop the over-inclusion described below, and it silently
+    // disabled the include ENTIRELY: the key is matched against the PAGE path
+    // ("/api/recordings"), which never contains the substring
+    // "/api/recordings/route", so nothing matched and both bundles shipped
+    // without the binary for over a week. Measured on 2026-08-14 by diffing the
+    // nft manifests: with "/route" each route traced 2 ffmpeg-static files
+    // (index.js + package.json, which nft finds on its own); without it, 12,
+    // including the binary. scripts/preflight.ts now RUNS the binary in each
+    // deployed bundle so this can never regress unnoticed again.
+    //
+    // The over-inclusion is real and accepted: Next matches with picomatch
+    // `contains: true`, so "/api/rooms" also pulls the ~80MB binary into
+    // /api/rooms/[id]/snapshot, /rsvp, /roster and friends. There is no
+    // substring of "/api/rooms" that is absent from "/api/rooms/[id]/roster",
+    // so no key can select the parent alone. A fat bundle beats a recording
+    // pipeline that cannot run.
+    "/api/recordings": ["./node_modules/ffmpeg-static/**/*"],
+    "/api/rooms": ["./node_modules/ffmpeg-static/**/*"],
   },
   images: {
     remotePatterns: avatarRemotePatterns,
