@@ -3,7 +3,7 @@ import { z } from "zod";
 import { brand, recordingFileName } from "@/lib/brand";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
-import { triggerProcessing } from "@/lib/recording";
+import { ffmpegProbe, triggerProcessing } from "@/lib/recording";
 import { ensureRecordingsPrivate } from "@/lib/egress";
 import { isAdmin } from "@/lib/roles";
 import { isRoomHost } from "@/lib/roomHosts";
@@ -45,10 +45,23 @@ async function authorizeRoom(
   return { room };
 }
 
-/** GET /api/recordings?room={id} — status, segments, signed downloads. */
+/** GET /api/recordings?room={id} — status, segments, signed downloads.
+ *  GET /api/recordings?probe=ffmpeg — admin-only check that ffmpeg is present
+ *  and runnable in THIS function's bundle (scripts/preflight.ts). It lives here
+ *  rather than in a tidy /api/admin/* route because `outputFileTracingIncludes`
+ *  is keyed PER ROUTE: a dedicated probe route would need its own ~80MB copy
+ *  and would still prove nothing about the bundle that actually spawns ffmpeg.
+ *  /api/rooms carries the same probe for the End Broadcast path. */
 export async function GET(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
+
+  if (request.nextUrl.searchParams.get("probe") === "ffmpeg") {
+    if (!isAdmin(caller.userId, caller.profile)) {
+      return NextResponse.json({ error: "Admins only." }, { status: 403 });
+    }
+    return NextResponse.json({ probe: "ffmpeg", bundle: "recordings", ...(await ffmpegProbe()) });
+  }
 
   const roomId = request.nextUrl.searchParams.get("room");
   if (!roomId || !z.uuid().safeParse(roomId).success) {

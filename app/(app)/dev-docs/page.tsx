@@ -336,7 +336,7 @@ export default function DevDocsPage() {
                 [<C key="c">lib/</C>, "Pure logic + integrations: clock, markers, stats (Sportmonks normalize), history, statsCache, statOverrides, fotmob, fixtures (league-wide sync), adminFixtures, ably, livekit, egress, recording, unfurl, redirect (safeNextPath), ratelimit, standing, predictions/polls/ratings, callers, roles, api (auth helpers), config, brand, theme, slug, roomHosts (isRoomHost), createRoom, fixtureSearch (custom-room suggest), seasonHosting, friends, fanScore, avatars, reserved-usernames, commentator-terms. lib/notify/ = the notification engine (types, outbox, producers, email, push, render, tokens, urls). lib/strings/attendance.ts = the load-bearing attendance copy. lib/db/ = Supabase client/server/types + threads/matches/fixtures loaders. lib/hooks/ = useFixtureStats, useMatchHistory, useFotmobLinks."],
                 [<C key="d">components/</C>, "UI. components/room/ (RealtimeRoom orchestrator, CommentatorBar, ClockControls, ShareButton, audio/, widgets), components/stats/ (StatsPanel + bars/timeline/lineups/pitch/info/history/editor), components/marketing/ (OnAirCard, HostLanding, NotifyForm, Faq), components/matches/ (MatchesSchedule, RoomRow), components/host/ (dashboard, cohost invites, RoomCreatePicker), components/friends/, components/admin/, plus shared (AppHeader, MatchHeader, Avatar, ProfilePopover, ClockState, Toast, Legal, SiteFooter…)."],
                 [<C key="e">db/migrations/</C>, "Forward-only SQL migrations 0001–0044 (npm run migrate; tracked in public.schema_migrations). DB is kept AHEAD of code (back-compatible)."],
-                [<C key="f">scripts/</C>, "tsx scripts: migrate, grant-role, metrics, and ~25 phase smoke / unit-ish tests (see package.json). No Jest/Vitest - tests are standalone tsx scripts."],
+                [<C key="f">scripts/</C>, "tsx scripts: preflight (the match-day checker), migrate, grant-role, metrics, and ~25 phase smoke / unit-ish tests (see package.json). No Jest/Vitest - tests are standalone tsx scripts."],
                 [<C key="g">docs/</C>, "The spec: ARCHITECTURE, PRD, DESIGN, PHASES (living status), METRICS, RUNBOOK, LEGAL_PAGES, AUDIT*. CLAUDE.md (repo root) is the agent/dev brief + decision log (the most current record of founder rulings)."],
               ]}
             />
@@ -869,6 +869,25 @@ export default function DevDocsPage() {
                 <C>CRON_SECRET</C>) - the single entry point that fans out to fixture sync, admin-game
                 matching + cache-warm, no-show expiry, subscription auto-create, notification drain, and
                 fan-score recompute (everything fits Vercel Hobby&apos;s once-daily crons by design).
+              </li>
+              <li>
+                <b className="text-primary">Before every broadcast: <C>npm run preflight</C></b> - the
+                match-day checker. Where <C>npm run smoke:prod</C> asks &quot;is the platform configured&quot;,
+                preflight asks &quot;is TONIGHT going to work&quot;: migrations on disk vs applied, the live{" "}
+                <C>accept_talk_request</C> cap read from the function body, the deployed commit vs{" "}
+                <C>origin/main</C>, env presence, Ably + LiveKit + Storage credentials, and the whole stats
+                chain for the actual room (fixture linked → Sportmonks reachable → real data, not the zeros
+                placeholder and not a stale cache). Exits non-zero on any blocker. Flags:{" "}
+                <C>--room &lt;slug&gt;</C>, <C>--url &lt;base&gt;</C>, <C>--quick</C>.
+              </li>
+              <li>
+                <b className="text-primary">The two native-binary probes live IN the routes that use them</b>{" "}
+                - <C>/api/recordings?probe=ffmpeg</C> and <C>/api/profile/avatar?probe=sharp</C>, both
+                admin-only. <C>outputFileTracingIncludes</C> is keyed PER ROUTE, so a probe in its own route
+                would need its own ~80MB copy and would still prove nothing about the bundle that actually
+                spawns ffmpeg. Both binaries are always present locally and have each failed only on Vercel
+                (the Linux <C>@img/sharp-libvips-linux-x64</C> split, and the recordings ENOENT), so in-situ
+                is the only truthful test.
               </li>
             </UL>
             <H3>Run it locally</H3>

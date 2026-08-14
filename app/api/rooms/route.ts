@@ -22,7 +22,7 @@ import {
   enqueuePreStartReminders,
   enqueueRoomScheduled,
 } from "@/lib/notify/producers";
-import { triggerProcessing } from "@/lib/recording";
+import { ffmpegProbe, triggerProcessing } from "@/lib/recording";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
@@ -97,6 +97,27 @@ async function publishState(roomId: string, state: RoomState) {
     state,
     ts: new Date().toISOString(),
   });
+}
+
+/**
+ * GET /api/rooms?probe=ffmpeg — admin-only, and the ONLY thing GET serves here.
+ *
+ * End Broadcast runs `triggerProcessing` inside after() in this route, so THIS
+ * bundle is the one that turns a finished show into downloadable audio. Its
+ * ffmpeg binary arrives through this route's own `outputFileTracingIncludes`
+ * key, which means /api/recordings passing tells you nothing about it: the two
+ * keys can drift independently, and they were already re-anchored once.
+ */
+export async function GET(request: NextRequest) {
+  const caller = await requireParticipant();
+  if (caller.error) return caller.error;
+  if (request.nextUrl.searchParams.get("probe") !== "ffmpeg") {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+  if (!isAdmin(caller.userId, caller.profile)) {
+    return NextResponse.json({ error: "Admins only." }, { status: 403 });
+  }
+  return NextResponse.json({ probe: "ffmpeg", bundle: "rooms", ...(await ffmpegProbe()) });
 }
 
 export async function POST(request: NextRequest) {

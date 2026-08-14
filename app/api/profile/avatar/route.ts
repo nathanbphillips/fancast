@@ -26,6 +26,51 @@ export const maxDuration = 30;
  * `outputFileTracingIncludes` in next.config.ts (nft otherwise drops the
  * separate @img/sharp-libvips-linux-x64 package and the route 500s on Vercel).
  */
+/**
+ * GET /api/profile/avatar?probe=sharp — admin-only preflight probe.
+ *
+ * Same reasoning as the ffmpeg probe in /api/recordings: sharp's native addon
+ * reaches a function only through this route's `outputFileTracingIncludes` key,
+ * so the only bundle worth testing is this one, and the failure is invisible
+ * locally (Windows/macOS bundle libvips inline; Linux splits it into a separate
+ * package that nft used to drop, which is what 500'd avatar uploads in prod).
+ * Encodes a real 1px image so the native addon is genuinely exercised.
+ */
+export async function GET(request: NextRequest) {
+  const caller = await requireParticipant();
+  if (caller.error) return caller.error;
+  if (request.nextUrl.searchParams.get("probe") !== "sharp") {
+    return NextResponse.json({ error: "Not found." }, { status: 404 });
+  }
+  const { isAdmin } = await import("@/lib/roles");
+  if (!isAdmin(caller.userId, caller.profile)) {
+    return NextResponse.json({ error: "Admins only." }, { status: 403 });
+  }
+  const started = Date.now();
+  try {
+    const sharp = (await import("sharp")).default;
+    const out = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: "#000" },
+    })
+      .webp()
+      .toBuffer();
+    return NextResponse.json({
+      probe: "sharp",
+      ok: out.length > 0,
+      version: sharp.versions?.vips ? `libvips ${sharp.versions.vips}` : null,
+      bytes: out.length,
+      ms: Date.now() - started,
+    });
+  } catch (err) {
+    return NextResponse.json({
+      probe: "sharp",
+      ok: false,
+      error: (err as Error).message,
+      ms: Date.now() - started,
+    });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;

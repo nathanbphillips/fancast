@@ -14,6 +14,49 @@ import { deriveSegments, type Marker } from "@/lib/markers";
 const run = promisify(execFile);
 const REC_BUCKET = "recordings";
 const FFMPEG = (ffmpegPath as unknown as string) || "ffmpeg";
+
+/**
+ * Is the ffmpeg binary actually present and RUNNABLE in the calling function's
+ * bundle? Exported so each route that spawns ffmpeg can answer for its OWN
+ * bundle: `outputFileTracingIncludes` is keyed per route, so a probe living
+ * anywhere else proves nothing about this one. This is the failure that ate the
+ * first live test's recording ("spawn ... ENOENT") and it cannot be reproduced
+ * locally, where the binary is always present.
+ */
+export async function ffmpegProbe(): Promise<{
+  ok: boolean;
+  stage: string;
+  path?: string;
+  bytes?: number;
+  version?: string;
+  error?: string;
+  ms: number;
+}> {
+  const started = Date.now();
+  const ms = () => Date.now() - started;
+  if (!ffmpegPath) {
+    return { ok: false, stage: "resolve", error: "ffmpeg-static exported no path", ms: ms() };
+  }
+  try {
+    const { existsSync, statSync } = await import("node:fs");
+    if (!existsSync(FFMPEG)) {
+      return { ok: false, stage: "exists", path: FFMPEG, error: "binary not in the function bundle", ms: ms() };
+    }
+    // resolving and existing is not the same as runnable: the executable bit is
+    // the classic casualty of a repacked Linux bundle, so actually run it
+    const { stdout } = await run(FFMPEG, ["-version"], { timeout: 10_000 });
+    return {
+      ok: true,
+      stage: "exec",
+      path: FFMPEG,
+      bytes: statSync(FFMPEG).size,
+      version: String(stdout).split("\n")[0] ?? "",
+      ms: ms(),
+    };
+  } catch (err) {
+    return { ok: false, stage: "exec", path: FFMPEG, error: (err as Error).message, ms: ms() };
+  }
+}
 // a processing run older than this is presumed dead (crash/timeout) and
 // may be reclaimed
 const STALE_PROCESSING_MS = 10 * 60 * 1000;

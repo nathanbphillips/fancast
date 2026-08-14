@@ -121,6 +121,11 @@ const RESERVED = [
   "redub",
   "redubradio",
   "fancast",
+  // usernames the health/preflight scripts create and delete with the service
+  // role. Reserved so a real person can never hold one and get swept up by a
+  // script's cleanup (scripts/preflight.ts, scripts/prod-smoke.ts).
+  "preflight_probe",
+  "health_probe",
 ] as const;
 
 // the platform's own name is always reserved (from config, golden rule 7:
