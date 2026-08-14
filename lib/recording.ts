@@ -141,6 +141,23 @@ async function waitForEgress(
   };
 }
 
+/** Is the egress source MP4 already sitting in storage, with bytes in it? */
+async function sourceObjectExists(
+  service: SupabaseClient,
+  sourcePath: string | null,
+): Promise<boolean> {
+  if (!sourcePath || !sourcePath.includes("/")) return false;
+  const dir = sourcePath.slice(0, sourcePath.lastIndexOf("/"));
+  const name = sourcePath.slice(sourcePath.lastIndexOf("/") + 1);
+  try {
+    const { data } = await service.storage.from(REC_BUCKET).list(dir, { limit: 100 });
+    const hit = (data ?? []).find((o) => o.name === name);
+    return !!hit && ((hit.metadata as { size?: number } | null)?.size ?? 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
 export async function processRecording(
   service: SupabaseClient,
   roomId: string,
@@ -176,7 +193,14 @@ export async function processRecording(
     return { status: "failed", segments: 0 };
   };
 
-  if (rec.egress_id) {
+  // The egress wait exists for ONE reason: to know the MP4 has finished being
+  // written. If the object is already in storage that question is settled, so
+  // skip the wait. Without this, reprocessing an old recording is impossible:
+  // LiveKit prunes egress history after a few days, listEgress then returns
+  // nothing, and the run dies with "egress status unknown (object cannot be
+  // found)" while the perfectly good source file sits right there. Found on
+  // 2026-08-14 trying to recover the recordings the ffmpeg bug had killed.
+  if (rec.egress_id && !(await sourceObjectExists(service, rec.source_path))) {
     const egress = await waitForEgress(rec.egress_id);
     if (!egress.ok) return fail(egress.reason ?? "egress did not complete");
   }
