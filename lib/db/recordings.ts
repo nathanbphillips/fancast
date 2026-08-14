@@ -20,6 +20,8 @@ export type HostRecording = {
   endedAt: string | null;
   status: string;
   durationSeconds: number | null;
+  /** measured length of the produced audio; null on older rows */
+  audioSeconds: number | null;
   error: string | null;
   segmentCount: number;
   fullUrl: string | null;
@@ -43,7 +45,7 @@ export async function loadHostRecordings(
   const { data: recs } = await service
     .from("recordings")
     .select(
-      "id, room_id, status, duration_seconds, error, started_at, ended_at, full_mp3_path, zip_path",
+      "id, room_id, status, duration_seconds, audio_seconds, error, started_at, ended_at, full_mp3_path, zip_path",
     )
     .in("room_id", roomIds)
     .order("started_at", { ascending: false });
@@ -89,10 +91,13 @@ export async function loadHostRecordings(
       (room?.title as string | null) ??
       (fx ? `${fx.home_team} vs ${fx.away_team}` : "Room");
 
-    // only sign what exists; a failed/empty run has nothing to hand out
+    // only sign what exists; a failed/empty run has nothing to hand out.
+    // 'damaged' DOES get links: the files are real, they just do not represent
+    // the whole show, and withholding the only copy would be worse than
+    // handing it over with a warning attached.
     let fullUrl: string | null = null;
     let zipUrl: string | null = null;
-    if (r.status === "ready") {
+    if (r.status === "ready" || r.status === "damaged") {
       if (r.full_mp3_path) {
         const { data } = await service.storage
           .from(REC_BUCKET)
@@ -116,6 +121,7 @@ export async function loadHostRecordings(
       endedAt: (r.ended_at as string | null) ?? null,
       status: r.status as string,
       durationSeconds: (r.duration_seconds as number | null) ?? null,
+      audioSeconds: (r.audio_seconds as number | null) ?? null,
       error: (r.error as string | null) ?? null,
       segmentCount: segCount.get(r.id as string) ?? 0,
       fullUrl,

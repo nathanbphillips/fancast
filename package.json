@@ -41,7 +41,8 @@
     "smoke:prod": "tsx --env-file=.env.local scripts/prod-smoke.ts",
     "smoke:snapshot": "tsx --env-file=.env.local scripts/snapshot-smoke.ts",
     "sync:fixtures": "tsx --env-file=.env.local scripts/fixtures-sync.ts",
-    "test:attendance": "tsx scripts/attendance-test.ts"
+    "test:attendance": "tsx scripts/attendance-test.ts",
+    "test:integrity": "tsx scripts/recording-integrity-test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

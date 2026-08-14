@@ -141,6 +141,79 @@ async function waitForEgress(
   };
 }
 
+/**
+ * Measure what is actually in a produced MP3: how long it is, and how much of
+ * that is not silence. One decode-only pass, both filters chained.
+ *
+ * This exists because nothing else in the pipeline ever looked at the audio.
+ * duration_seconds is the span between broadcast markers, so a capture that
+ * dies 100 seconds in still reports the full show length and still says
+ * "ready" - which is exactly what happened to the Betis broadcast.
+ */
+async function measureAudio(
+  file: string,
+): Promise<{ seconds: number; audible: number; meanDb: number | null }> {
+  // ffmpeg writes its analysis to stderr and exits 0; -f null discards output
+  let stderr = "";
+  try {
+    ({ stderr } = await run(
+      FFMPEG,
+      ["-hide_banner", "-i", file, "-af", "silencedetect=noise=-45dB:d=1,volumedetect", "-f", "null", "-"],
+      { timeout: 240_000, maxBuffer: 1 << 26 },
+    ));
+  } catch (e) {
+    stderr = String((e as { stderr?: string }).stderr ?? "");
+  }
+
+  const hms = (h: string, m: string, s: string) => Number(h) * 3600 + Number(m) * 60 + Number(s);
+  const durMatch = stderr.match(/Duration:\s*(\d+):(\d+):([\d.]+)/);
+  // the final "time=" line is where decoding actually stopped, which beats the
+  // container header when a file is truncated mid-write
+  const timeMatches = [...stderr.matchAll(/time=(\d+):(\d+):([\d.]+)/g)];
+  const last = timeMatches[timeMatches.length - 1];
+  const seconds = last
+    ? hms(last[1], last[2], last[3])
+    : durMatch
+      ? hms(durMatch[1], durMatch[2], durMatch[3])
+      : 0;
+
+  const silent = [...stderr.matchAll(/silence_duration:\s*([\d.]+)/g)].reduce(
+    (a, m) => a + Number(m[1]),
+    0,
+  );
+  const meanRaw = stderr.match(/mean_volume:\s*(-?[\d.]+) dB/)?.[1];
+  return {
+    seconds,
+    audible: Math.max(0, seconds - silent),
+    meanDb: meanRaw ? Number(meanRaw) : null,
+  };
+}
+
+/**
+ * Does the produced audio plausibly represent the broadcast? Returns a reason
+ * when it does not. Two independent failures, because they look nothing alike:
+ * a capture that stops early is SHORT, and a capture that stays connected but
+ * receives nothing is full-length and SILENT.
+ */
+export function integrityProblem(
+  measured: { seconds: number; audible: number; meanDb: number | null },
+  expectedSeconds: number,
+): string | null {
+  const fmt = (s: number) => (s >= 60 ? `${Math.round(s / 60)} min` : `${Math.round(s)}s`);
+  // only judge length when we know what to expect and the show was long enough
+  // for a shortfall to be unambiguous rather than marker jitter
+  if (expectedSeconds > 120 && measured.seconds < expectedSeconds * 0.5) {
+    return `only ${fmt(measured.seconds)} of audio was captured for a ${fmt(expectedSeconds)} broadcast - the recorder stopped early`;
+  }
+  if (measured.meanDb !== null && measured.meanDb < -60) {
+    return `the recording is silent (mean ${measured.meanDb.toFixed(0)} dB) - the recorder stayed connected but received no audio`;
+  }
+  if (measured.seconds > 60 && measured.audible < measured.seconds * 0.02) {
+    return `almost none of the ${fmt(measured.seconds)} recorded is audible (${fmt(measured.audible)}) - the recorder lost the microphone`;
+  }
+  return null;
+}
+
 /** Is the egress source MP4 already sitting in storage, with bytes in it? */
 async function sourceObjectExists(
   service: SupabaseClient,
@@ -350,17 +423,33 @@ export async function processRecording(
       zipPath = null;
     }
 
+    // Look at what we actually produced before calling it a success. Every
+    // check above this point only proves a file exists and is non-trivial in
+    // BYTES; none of them would notice 11 minutes of digital silence sitting
+    // where a 2.5 hour show should be.
+    const expectedSeconds = Math.max(0, (endMs - startMs) / 1000);
+    const measured = await measureAudio(fullLocal);
+    const problem = integrityProblem(measured, expectedSeconds);
+    const status = problem ? "damaged" : "ready";
+    if (problem) {
+      console.error(`recording ${rec.id}: DAMAGED - ${problem}`);
+    }
+
     await service
       .from("recordings")
       .update({
-        status: "ready",
+        status,
         full_mp3_path: fullPath,
         zip_path: zipPath,
-        duration_seconds: Math.max(0, (endMs - startMs) / 1000),
+        duration_seconds: expectedSeconds,
+        audio_seconds: measured.seconds,
+        audible_seconds: measured.audible,
+        // the host reads this string; keep it plain and specific
+        error: problem,
       })
       .eq("id", rec.id);
 
-    return { status: "ready", segments: segments.length };
+    return { status, segments: segments.length };
   } catch (e) {
     return fail((e as Error).message);
   } finally {

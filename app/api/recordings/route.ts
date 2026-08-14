@@ -127,7 +127,9 @@ export async function GET(request: NextRequest) {
     return data?.signedUrl ?? null;
   }
 
-  if (rec.status === "ready") {
+  // a damaged recording still hands out its files: they are real, just not the
+  // whole show, and the warning travels with them
+  if (rec.status === "ready" || rec.status === "damaged") {
     const fullName = recordingFileName(fixtureLabel, dateLabel);
     files.push({
       label: "Full broadcast",
@@ -155,7 +157,7 @@ export async function GET(request: NextRequest) {
   }
 
   const zipUrl =
-    rec.status === "ready"
+    rec.status === "ready" || rec.status === "damaged"
       ? await signed(
           rec.zip_path,
           `${brand.name} - ${fixtureLabel} - ${dateLabel}.zip`,
@@ -173,6 +175,7 @@ export async function GET(request: NextRequest) {
     recording: {
       status: rec.status,
       durationSeconds: rec.duration_seconds,
+      audioSeconds: rec.audio_seconds,
       error: rec.error,
     },
     files,

@@ -24,7 +24,12 @@ type RecMarker = {
   adjusted_ts: string | null;
 };
 type RecData = {
-  recording: { status: string; durationSeconds: number | null; error: string | null } | null;
+  recording: {
+    status: string;
+    durationSeconds: number | null;
+    audioSeconds: number | null;
+    error: string | null;
+  } | null;
   files: RecFile[];
   zipUrl: string | null;
   markers: RecMarker[];
@@ -117,7 +122,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
       const s = fresh.recording?.status;
       if (s === "processing") sawProcessing = true;
       else if (s === "ready" && (sawProcessing || Date.now() - started > 6000)) break;
-      else if (s === "failed") break;
+      else if (s === "failed" || s === "damaged") break;
     }
     setRecutting(false);
   }
@@ -151,12 +156,37 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           {rec.status === "processing" && "Cutting your segments — this can take a few minutes."}
           {rec.status === "ready" &&
             `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.durationSeconds)} total`}
+          {rec.status === "damaged" &&
+            `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`}
           {rec.status === "failed" && `Processing failed: ${rec.error ?? "unknown error"}`}
           {rec.status === "empty" && "No audio was captured for this session."}
           {rec.status === "recording" &&
             "Finishing up — your files appear here automatically."}
         </p>
       </div>
+
+      {/* A damaged recording downloads perfectly well, which is exactly the
+          problem: without this the host finds out by pressing play. */}
+      {rec.status === "damaged" && (
+        <div className="rounded-xl border border-red/50 bg-red/10 p-4">
+          <p className="text-sm font-bold text-red">
+            This recording does not match your broadcast
+          </p>
+          <p className="mt-1 text-sm text-primary">
+            {rec.error ?? "The captured audio is incomplete."}
+          </p>
+          {rec.durationSeconds != null && rec.audioSeconds != null && (
+            <p className="mt-1 text-xs text-secondary tabular-nums">
+              {fmtDuration(rec.audioSeconds)} of audio captured for a{" "}
+              {fmtDuration(rec.durationSeconds)} broadcast.
+            </p>
+          )}
+          <p className="mt-2 text-xs text-secondary">
+            The files below are real, they just are not the whole show. Keep
+            them, and report this so we can find out what dropped.
+          </p>
+        </div>
+      )}
 
       {rec.status === "recording" && (
         <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
@@ -192,7 +222,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
         </div>
       )}
 
-      {rec.status === "ready" && (
+      {(rec.status === "ready" || rec.status === "damaged") && (
         <>
           {data.zipUrl && (
             <a

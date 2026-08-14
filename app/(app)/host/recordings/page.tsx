@@ -31,6 +31,7 @@ function statusChip(status: string) {
     recording: "border-red/50 text-red",
     failed: "border-red/50 text-red",
     empty: "border-line text-secondary",
+    damaged: "border-red/60 bg-red/10 text-red",
   };
   const label: Record<string, string> = {
     ready: "Ready",
@@ -38,6 +39,7 @@ function statusChip(status: string) {
     recording: "Finishing up",
     failed: "Failed",
     empty: "No audio",
+    damaged: "Incomplete",
   };
   return (
     <span
@@ -90,8 +92,8 @@ export default async function HostRecordingsPage() {
               </div>
               <p className="mt-1.5 text-[17px] font-bold">{r.title}</p>
               <p className="mt-0.5 text-xs text-secondary tabular-nums">
-                {r.status === "ready"
-                  ? `${fmtDuration(r.durationSeconds)} · ${r.segmentCount} segment${
+                {r.status === "ready" || r.status === "damaged"
+                  ? `${fmtDuration(r.audioSeconds ?? r.durationSeconds)} · ${r.segmentCount} segment${
                       r.segmentCount === 1 ? "" : "s"
                     }`
                   : r.status === "failed"
@@ -100,6 +102,21 @@ export default async function HostRecordingsPage() {
                       ? "No audio was captured"
                       : "Still being prepared"}
               </p>
+              {/* the whole point of the 'damaged' state: the files download
+                  fine, so nothing else would tell the host they are wrong */}
+              {r.status === "damaged" && (
+                <p className="mt-2 rounded-lg border border-red/40 bg-red/10 px-3 py-2 text-xs font-semibold text-primary">
+                  This recording does not match the broadcast:{" "}
+                  <span className="font-normal">{r.error ?? "the captured audio is incomplete"}</span>
+                  {r.durationSeconds != null && r.audioSeconds != null && (
+                    <span className="font-normal">
+                      {" "}
+                      ({fmtDuration(r.audioSeconds)} captured of {fmtDuration(r.durationSeconds)} broadcast)
+                    </span>
+                  )}
+                  . The files below are what was recorded.
+                </p>
+              )}
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 {r.zipUrl && (
