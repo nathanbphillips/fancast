@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServiceClient, getCurrentUserAndProfile } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
+import { MatchFactRow } from "@/components/MatchFactRow";
 import { getMatchFacts, groupFacts, type MatchFactSet } from "@/lib/matchFacts";
 
 export const metadata: Metadata = { title: "Match facts" };
@@ -174,12 +175,7 @@ export default async function AdminMatchFactsPage() {
                   </h3>
                   <ul className="space-y-1">
                     {g.facts.map((fact) => (
-                      <li
-                        key={fact.id}
-                        className="rounded-lg border border-line bg-raised px-3 py-2 text-[13px] leading-snug"
-                      >
-                        {fact.text}
-                      </li>
+                      <MatchFactRow key={fact.id} text={fact.text} />
                     ))}
                   </ul>
                 </div>

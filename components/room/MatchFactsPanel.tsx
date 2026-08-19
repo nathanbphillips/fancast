@@ -1,15 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { emptyFacts, groupFacts, type MatchFact, type MatchFactSet } from "@/lib/matchFacts";
+import { MatchFactRow } from "@/components/MatchFactRow";
+import { emptyFacts, groupFacts, type MatchFactSet } from "@/lib/matchFacts";
 
 /**
  * Match Facts tab (host only). Pre-written head-to-head, form, manager and
  * league-comparison lines from the Sportmonks add-on, for reading on air.
  *
  * Built for someone who is live: scannable, search filters as you type, and
- * tapping a fact copies it. It loads on first open rather than on mount, so a
- * host who never opens the tab never spends a metered call.
+ * every fact has a copy button on the right. It loads on first open rather than
+ * on mount, so a host who never opens the tab never spends a metered call.
  */
 export function MatchFactsPanel({
   fixtureId,
@@ -26,8 +27,6 @@ export function MatchFactsPanel({
   const [data, setData] = useState<MatchFactSet | null>(null);
   const [state, setState] = useState<"idle" | "loading" | "error">("idle");
   const [query, setQuery] = useState("");
-  const [copied, setCopied] = useState<number | null>(null);
-  const [copyFailed, setCopyFailed] = useState(false);
   const inFlight = useRef(false);
 
   const load = useCallback(async () => {
@@ -62,18 +61,6 @@ export function MatchFactsPanel({
     return groupFacts(q ? facts.filter((f) => f.text.toLowerCase().includes(q)) : facts);
   }, [data, query]);
 
-  async function copy(f: MatchFact) {
-    try {
-      await navigator.clipboard.writeText(f.text);
-      setCopied(f.id);
-      setCopyFailed(false);
-      setTimeout(() => setCopied((c) => (c === f.id ? null : c)), 1200);
-    } catch {
-      // swallowing this leaves the host believing they copied something
-      setCopyFailed(true);
-      setTimeout(() => setCopyFailed(false), 2500);
-    }
-  }
 
   const total = data?.facts.length ?? 0;
   const shown = groups.reduce((n, g) => n + g.facts.length, 0);
@@ -106,10 +93,6 @@ export function MatchFactsPanel({
         </button>
       </div>
 
-      {/* copy outcome is announced, not only shown */}
-      <p aria-live="polite" className="sr-only">
-        {copyFailed ? "Copy failed" : copied !== null ? "Fact copied" : ""}
-      </p>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {loading && data === null && (
@@ -129,11 +112,6 @@ export function MatchFactsPanel({
           </div>
         )}
 
-        {copyFailed && (
-          <p className="mb-3 rounded-lg border border-line bg-raised px-3 py-2 text-xs text-primary">
-            Couldn&apos;t copy automatically. Select the text and copy it.
-          </p>
-        )}
 
         {data?.stale && (
           <p className="mb-3 rounded-lg border border-line bg-raised px-3 py-2 text-xs text-secondary">
@@ -166,24 +144,7 @@ export function MatchFactsPanel({
             </h3>
             <ul className="space-y-1">
               {g.facts.map((f) => (
-                <li key={f.id}>
-                  <button
-                    type="button"
-                    onClick={() => void copy(f)}
-                    title="Click to copy"
-                    className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-left text-[13px] leading-snug text-primary transition-colors hover:bg-raised"
-                  >
-                    {f.text}
-                    {copied === f.id && (
-                      <span
-                        aria-hidden="true"
-                        className="ml-1.5 font-mono text-[10px] font-bold text-green"
-                      >
-                        copied
-                      </span>
-                    )}
-                  </button>
-                </li>
+                <MatchFactRow key={f.id} text={f.text} />
               ))}
             </ul>
           </section>

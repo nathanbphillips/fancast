@@ -190,7 +190,7 @@ export function RealtimeRoom(props: Props) {
   // the home page (live-test review 2026-08-05)
   const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
   const [tab, setTab] = useState<
-    "chat" | "stats" | "questions" | "callin" | "polls"
+    "chat" | "stats" | "questions" | "callin" | "polls" | "facts"
   >("chat");
   // desktop chat-column tabs: Room chat | Polls (+ Questions for the
   // commentator). Polls hosts the interactive widgets so they stop consuming
@@ -1000,7 +1000,7 @@ export function RealtimeRoom(props: Props) {
     setTalkRequests((prev) => prev.filter((r) => r.id !== id));
   }
 
-  type TabId = "chat" | "stats" | "questions" | "callin" | "polls";
+  type TabId = "chat" | "stats" | "questions" | "callin" | "polls" | "facts";
   // Mobile room sections (Cloud Design): CHAT / STATS / CALL IN in a bottom
   // segmented bar, swipeable. The commentator swaps CALL IN (they're already
   // on air) for their QUESTIONS inbox.
@@ -1093,6 +1093,26 @@ export function RealtimeRoom(props: Props) {
                 <line x1="6" y1="20" x2="6" y2="14" />
                 <line x1="12" y1="20" x2="12" y2="8" />
                 <line x1="18" y1="20" x2="18" y2="4" />
+              </>,
+            ),
+          },
+        ]
+      : []),
+    // Match Facts, host only, and only where a fixture exists to have facts
+    // about (same gate as the desktop tab). A listener never sees this, so the
+    // host bar goes to five items and the listener bar is unchanged.
+    ...(isRoomCommentator && room.fixtureId > 0
+      ? [
+          {
+            id: "facts" as const,
+            label: "Facts",
+            badge: 0,
+            icon: tabIcon(
+              <>
+                <path d="M5 4.5A1.5 1.5 0 016.5 3H16l3 3v13.5A1.5 1.5 0 0117.5 21h-11A1.5 1.5 0 015 19.5z" />
+                <line x1="8.5" y1="9" x2="15" y2="9" />
+                <line x1="8.5" y1="13" x2="15" y2="13" />
+                <line x1="8.5" y1="17" x2="12" y2="17" />
               </>,
             ),
           },
@@ -1602,7 +1622,7 @@ export function RealtimeRoom(props: Props) {
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex ${showStats ? "lg:border-r lg:border-line" : ""}`}
+          className={`${tab === "chat" || tab === "questions" || tab === "facts" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex ${showStats ? "lg:border-r lg:border-line" : ""}`}
         >
           <div className="hidden border-b border-line bg-surface lg:flex">
             {[
@@ -1646,35 +1666,48 @@ export function RealtimeRoom(props: Props) {
             ))}
           </div>
           {/* mobile: driven by the tab bar; desktop: by centerTab */}
-          <div className={`min-h-0 flex-1 ${tab === "questions" ? "overflow-y-auto" : "flex flex-col"} lg:hidden`}>
+          {/* one display class only: `hidden` and `flex` are both single-class
+              utilities, so emitting both and hoping for the right winner is a
+              coin flip on stylesheet order */}
+          <div
+            className={`min-h-0 flex-1 ${
+              tab === "facts"
+                ? "hidden"
+                : tab === "questions"
+                  ? "overflow-y-auto"
+                  : "flex flex-col"
+            } lg:hidden`}
+          >
             {tab === "questions" ? questionsPanel : chatPanel}
           </div>
-          <div className={`hidden min-h-0 flex-1 ${centerTab === "questions" ? "overflow-y-auto" : ""} lg:flex lg:flex-col`}>
+          <div
+            className={`hidden min-h-0 flex-1 ${centerTab === "questions" ? "overflow-y-auto" : ""} ${
+              centerTab === "facts" ? "lg:hidden" : "lg:flex"
+            } lg:flex-col`}
+          >
             {centerTab === "questions" && isRoomCommentator
               ? questionsPanel
               : centerTab === "polls"
                 ? pollsPanel
-                : centerTab === "facts" && isRoomCommentator
-                  ? null
-                  : chatPanel}
-            {/* Mounted once and hidden rather than swapped in and out. Inside
-                the ternary it was destroyed on every tab switch, so the "load
-                on first open" deferral did nothing and a host paid a fresh
-                fetch and a loading flash each time they came back to it. */}
-            {isRoomCommentator && room.fixtureId > 0 && (
-              <div
-                className={
-                  (centerTab === "facts" ? "flex" : "hidden") +
-                  " min-h-0 flex-1 flex-col"
-                }
-              >
-                <MatchFactsPanel
-                  fixtureId={room.fixtureId}
-                  active={centerTab === "facts"}
-                />
-              </div>
-            )}
+                : chatPanel}
           </div>
+          {/* ONE instance, serving both breakpoints: mobile shows it on the
+              Facts tab, desktop on the Facts column tab. Mounted once and
+              hidden rather than swapped in and out, so the "load on first open"
+              deferral holds and switching tabs never costs another metered
+              fetch. Two instances would double every call. */}
+          {isRoomCommentator && room.fixtureId > 0 && (
+            <div
+              className={`${tab === "facts" ? "flex" : "hidden"} min-h-0 flex-1 flex-col ${
+                centerTab === "facts" ? "lg:flex" : "lg:hidden"
+              }`}
+            >
+              <MatchFactsPanel
+                fixtureId={room.fixtureId}
+                active={tab === "facts" || centerTab === "facts"}
+              />
+            </div>
+          )}
         </section>
 
         {/* POLLS (mobile only): poll + score predictor, moved out of the chat
