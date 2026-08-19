@@ -897,6 +897,17 @@ export default function DevDocsPage() {
                 a healthy-looking payload long after the token was revoked, and checking from a laptop only
                 proves the laptop&apos;s token.
               </li>
+              <li>
+                <b className="text-primary">Match Facts</b> (Sportmonks add-on, 2026-08-19) -{" "}
+                <C>lib/matchFacts.ts</C> fetches via{" "}
+                <C>/fixtures/&#123;id&#125;?include=matchFacts</C>, which returns the whole set in one
+                call (the response key is lowercase <C>matchfacts</C>; <C>/match-facts</C> pages at 25).
+                Only rows carrying <C>natural_language</C> are shown, roughly a quarter of them: the rest
+                are raw <C>data</C> blobs keyed to a <C>type_id</C> lexicon we don&apos;t have. Facts are
+                generated close to kickoff, so an empty set is normal, and <C>emptyReason</C> keeps that
+                distinct from a fixture with no <C>sportmonks_fixture_id</C>, which will never have any.
+                Surfaced as a host-only desktop tab in the room and at <C>/admin/match-facts</C>.
+              </li>
             </UL>
             <H3>Run it locally</H3>
             <p>

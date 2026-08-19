@@ -50,6 +50,7 @@ import { PollComposer, PollWidget } from "./PollWidget";
 import { RosterPanel } from "./RosterPanel";
 import { PlayerRatings } from "./PlayerRatings";
 import { QuestionsPanel } from "./QuestionsPanel";
+import { MatchFactsPanel } from "./MatchFactsPanel";
 import { FollowButton } from "@/components/FollowButton";
 import { useToast } from "@/components/Toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -194,7 +195,9 @@ export function RealtimeRoom(props: Props) {
   // desktop chat-column tabs: Room chat | Polls (+ Questions for the
   // commentator). Polls hosts the interactive widgets so they stop consuming
   // permanent chat-column height (founder 2026-07-02, Cloud Design).
-  const [centerTab, setCenterTab] = useState<"chat" | "questions" | "polls">("chat");
+  const [centerTab, setCenterTab] = useState<
+    "chat" | "questions" | "polls" | "facts"
+  >("chat");
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
   const [questions, setQuestions] = useState<Question[]>(props.initialQuestions);
@@ -1614,6 +1617,13 @@ export function RealtimeRoom(props: Props) {
                     },
                   ]
                 : []),
+              // Host-only talking points from the Sportmonks add-on. Gated on a
+              // real fixture the same way the stats aside is: with none, this
+              // could only ever say "no facts yet", about a kickoff the room
+              // does not have.
+              ...(isRoomCommentator && room.fixtureId > 0
+                ? [{ id: "facts" as const, label: "Match Facts", badge: 0 }]
+                : []),
             ].map((t) => (
               <button
                 key={t.id}
@@ -1644,7 +1654,26 @@ export function RealtimeRoom(props: Props) {
               ? questionsPanel
               : centerTab === "polls"
                 ? pollsPanel
-                : chatPanel}
+                : centerTab === "facts" && isRoomCommentator
+                  ? null
+                  : chatPanel}
+            {/* Mounted once and hidden rather than swapped in and out. Inside
+                the ternary it was destroyed on every tab switch, so the "load
+                on first open" deferral did nothing and a host paid a fresh
+                fetch and a loading flash each time they came back to it. */}
+            {isRoomCommentator && room.fixtureId > 0 && (
+              <div
+                className={
+                  (centerTab === "facts" ? "flex" : "hidden") +
+                  " min-h-0 flex-1 flex-col"
+                }
+              >
+                <MatchFactsPanel
+                  fixtureId={room.fixtureId}
+                  active={centerTab === "facts"}
+                />
+              </div>
+            )}
           </div>
         </section>
 

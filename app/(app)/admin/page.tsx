@@ -49,6 +49,21 @@ export default async function AdminPage() {
         </span>
       </Link>
 
+      <Link
+        href="/admin/match-facts"
+        className="mt-3 flex items-center justify-between rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-raised"
+      >
+        <span>
+          <span className="block text-sm font-bold">Match facts →</span>
+          <span className="block text-xs text-secondary">
+            Sportmonks talking points for the upcoming fixtures.
+          </span>
+        </span>
+        <span aria-hidden="true" className="text-xl">
+          📋
+        </span>
+      </Link>
+
       <AdminTools />
 
       <AdminGuide />
