@@ -700,6 +700,62 @@ export function useRoomAudio(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /* -------------------------------------- background continuation (Android) */
+
+  // Keep the live path audible when the app is backgrounded (founder
+  // 2026-08-21). Android suspends the WebAudio pipeline in a hidden tab; the
+  // audible element's SOURCE is that pipeline, so playback went silent, Chrome
+  // then throttled the "silent" tab, and the connection died. While hidden,
+  // the OWNED keep-alive elements (fed straight from the WebRTC stream, no
+  // graph involved - the same elements the echo fix made ours) become the
+  // audible path at the live edge; on return the graph takes back over.
+  //
+  // Deliberate exception: a listener with a sync offset (behind their TV) is
+  // NOT switched - the keep-alives play the live edge, which would spoil
+  // goals for someone listening ahead of their own feed. They keep the old
+  // behaviour (background = silence, resumes on return). iOS is untested here;
+  // radio mode remains the certified background path there (golden rule 3).
+  useEffect(() => {
+    const setKeepAlives = (audible: boolean) => {
+      trackNodesRef.current.forEach((n) => {
+        for (const el of n.el) {
+          const a = el as HTMLAudioElement;
+          a.muted = !audible;
+          if (audible) {
+            a.volume = volumeRef.current; // Android honours element volume
+            void a.play().catch(() => {});
+          }
+        }
+      });
+    };
+    const onVis = () => {
+      if (!workletRef.current) return; // fallback path already plays direct
+      if (listenStatusRef.current !== "live") return;
+      if (document.visibilityState === "hidden") {
+        if (syncRequestedRef.current > 0 && !liveSnapRef.current) return;
+        setKeepAlives(true);
+        playbackElRef.current?.pause();
+      } else {
+        // re-mute only after the graph element is confirmed playing again, so
+        // a blocked resume leaves the direct path sounding rather than silence
+        const pb = playbackElRef.current;
+        if (!pb) {
+          setKeepAlives(false);
+          return;
+        }
+        void pb
+          .play()
+          .then(() => setKeepAlives(false))
+          .catch(() => {
+            /* keep-alives stay audible; the next gesture rebuilds the graph */
+          });
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ------------------------------------------------- radio mode (HLS) */
 
   const enableRadio = useCallback(
