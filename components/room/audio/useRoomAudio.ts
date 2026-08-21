@@ -71,6 +71,8 @@ function needsBackgroundRadio(): boolean {
 async function attachHls(
   el: HTMLAudioElement,
   url: string,
+  /** called when the engine is genuinely dead (recovery exhausted) */
+  onDead?: () => void,
 ): Promise<(() => void) | null> {
   if (el.canPlayType("application/vnd.apple.mpegurl")) {
     el.src = url;
@@ -83,25 +85,45 @@ async function attachHls(
     const { default: Hls } = await import("hls.js");
     if (!Hls.isSupported()) return null;
     const hls = new Hls({
-      // Hug the live edge (founder 2026-08-21: the background handoff jumped
-      // 10-15s back). One segment behind the head instead of three, allow
-      // 1.5x playback to close any drift, and hard-resync past 4 segments.
-      // The other half of the latency lives in lib/egress.ts segmentDuration.
-      liveSyncDurationCount: 1,
-      liveMaxLatencyDurationCount: 4,
+      // Hug the live edge (founder 2026-08-21). With 1s segments (lib/egress)
+      // this targets ~2s behind the newest segment, 1.5x catch-up playback
+      // when drifting, hard resync past 6 segments.
+      liveSyncDurationCount: 2,
+      liveMaxLatencyDurationCount: 6,
       maxLiveSyncPlaybackRate: 1.5,
       maxBufferLength: 12,
       backBufferLength: 30,
     });
     hls.loadSource(url);
     hls.attachMedia(el);
-    hls.on(Hls.Events.ERROR, (_e: unknown, data: { fatal?: boolean }) => {
-      if (data?.fatal) {
-        try {
-          hls.destroy();
-        } catch {}
-      }
-    });
+    // A mid-show egress restart replaces the playlist and resets its media
+    // sequence, which lands here as a fatal error. Dying permanently bricked
+    // every armed listener (proven live 2026-08-21: the understudy froze at
+    // t=6 with ready=2 after a restart). Recover the standard hls.js way and
+    // only report dead after repeated failures.
+    let recoveries = 0;
+    hls.on(
+      Hls.Events.ERROR,
+      (_e: unknown, data: { fatal?: boolean; type?: string }) => {
+        if (!data?.fatal) return;
+        recoveries++;
+        if (recoveries > 4) {
+          try {
+            hls.destroy();
+          } catch {}
+          onDead?.();
+          return;
+        }
+        if (data.type === "networkError") hls.startLoad();
+        else if (data.type === "mediaError") hls.recoverMediaError();
+        else {
+          try {
+            hls.destroy();
+          } catch {}
+          onDead?.();
+        }
+      },
+    );
     return () => {
       try {
         hls.destroy();
@@ -839,14 +861,26 @@ export function useRoomAudio(opts: {
     bgRadioCleanupRef.current = null;
     bgRadioRef.current = null;
   }, []);
+  const bgRetryRef = useRef(0);
   const ensureBgRadio = useCallback(async () => {
     if (!needsBackgroundRadio()) return;
     if (!hlsUrlRef.current || bgRadioRef.current) return;
+    if (bgRetryRef.current > 5) return; // a truly dead stream: stop looping
     const el = new Audio();
     el.volume = 0; // unmuted, silent - volume changes are never policy-gated
     el.setAttribute("playsinline", "");
     bgRadioRef.current = el;
-    const cleanup = await attachHls(el, hlsUrlRef.current);
+    // an egress restart or stream death re-arms rather than bricking the
+    // listener until reload (the 2026-08-21 failure mode)
+    const rearm = () => {
+      if (bgRadioRef.current !== el) return;
+      bgRetryRef.current++;
+      teardownBgRadio();
+      setTimeout(() => {
+        if (listenStatusRef.current === "live") void ensureBgRadio();
+      }, 4000);
+    };
+    const cleanup = await attachHls(el, hlsUrlRef.current, rearm);
     if (!cleanup || bgRadioRef.current !== el) {
       // no engine, or torn down while attaching - don't fake coverage
       if (bgRadioRef.current === el) bgRadioRef.current = null;
@@ -854,14 +888,24 @@ export function useRoomAudio(opts: {
       return;
     }
     bgRadioCleanupRef.current = cleanup;
-    el.addEventListener("error", () => {
-      if (bgRadioRef.current === el) teardownBgRadio();
+    el.addEventListener("error", rearm);
+    el.addEventListener("playing", () => {
+      if (bgRadioRef.current === el) bgRetryRef.current = 0; // healthy again
+    });
+    // starvation without a fatal error (frozen position, ready<3): heal it
+    el.addEventListener("waiting", () => {
+      setTimeout(() => {
+        if (bgRadioRef.current !== el) return;
+        if (el.readyState >= 3 && !el.paused) return; // recovered on its own
+        rearm();
+      }, 3000);
     });
     void el.play().catch(() => {
-      // couldn't start (rare - page has sticky activation by now): drop it so
-      // the visibility handler knows there is no background path
-      if (bgRadioRef.current === el) teardownBgRadio();
+      // couldn't start (rare - page has sticky activation by now)
+      rearm();
     });
+    // re-armed WHILE backgrounded: come back audible, not silently at vol 0
+    if (bgEngagedRef.current) el.volume = volumeRef.current;
   }, [teardownBgRadio]);
   // egress can start mid-show (it did on 2026-08-21): arm as soon as the url
   // exists while already listening
