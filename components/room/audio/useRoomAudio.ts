@@ -504,7 +504,14 @@ export function useRoomAudio(opts: {
       const { token, url, canPublish: granted } = await res.json();
       setCanPublish(granted);
 
-      const r = new Room();
+      // disconnectOnPageLeave defaults to TRUE and fires on 'pagehide' -
+      // which Android sends when it freezes a backgrounded tab. The SDK was
+      // HANGING UP THE CALL the moment a listener switched apps (the
+      // "client initiated" disconnects in telemetry, live-test 2026-08-21),
+      // which is why no amount of element juggling kept background audio
+      // alive. A real tab close still disconnects: the websocket dies with
+      // the page and the server reaps the participant.
+      const r = new Room({ disconnectOnPageLeave: false });
       room = r;
       roomRef.current = r;
 
