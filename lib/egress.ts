@@ -140,7 +140,11 @@ export async function startBroadcastEgress(
         filenamePrefix: `${roomId}/seg`,
         playlistName: `${roomId}/full.m3u8`,
         livePlaylistName: `${roomId}/live.m3u8`,
-        segmentDuration: 4,
+        // 2s (was 4): radio latency is (upload of a finished segment) +
+        // (player's live-sync distance), and both scale with this number.
+        // Halving it took the background handoff from ~15s to single digits
+        // (founder 2026-08-21). Applies from the next egress start.
+        segmentDuration: 2,
         output: { case: "s3", value: s3(RADIO_BUCKET) },
       }),
       file: new EncodedFileOutput({

@@ -83,9 +83,15 @@ async function attachHls(
     const { default: Hls } = await import("hls.js");
     if (!Hls.isSupported()) return null;
     const hls = new Hls({
-      // a live radio ear stays near the live edge and rides out gaps
-      liveSyncDurationCount: 3,
-      maxBufferLength: 20,
+      // Hug the live edge (founder 2026-08-21: the background handoff jumped
+      // 10-15s back). One segment behind the head instead of three, allow
+      // 1.5x playback to close any drift, and hard-resync past 4 segments.
+      // The other half of the latency lives in lib/egress.ts segmentDuration.
+      liveSyncDurationCount: 1,
+      liveMaxLatencyDurationCount: 4,
+      maxLiveSyncPlaybackRate: 1.5,
+      maxBufferLength: 12,
+      backBufferLength: 30,
     });
     hls.loadSource(url);
     hls.attachMedia(el);
