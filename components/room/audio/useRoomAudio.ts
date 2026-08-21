@@ -502,14 +502,25 @@ export function useRoomAudio(opts: {
         const ctx = playbackCtxRef.current;
         const worklet = workletRef.current;
         if (ctx && worklet) {
-          // muted element keeps Safari delivering WebRTC frames; audible
-          // output comes from the ring-buffer graph
-          const el = track.attach() as HTMLAudioElement;
+          // A muted element keeps Safari delivering WebRTC frames; the audible
+          // output comes from the ring-buffer graph. It is deliberately OUR OWN
+          // element, never track.attach(): livekit-client's Room.startAudio()
+          // force-unmutes every element the SDK knows about (`e.muted = false;
+          // e.play()`), which made this keep-alive audible at the live edge
+          // ALONGSIDE the worklet output a few hundred ms behind it - the
+          // persistent "slight echo" every sync-path listener could hit,
+          // timing-dependent per browser (live-test 2026-08-21; the published
+          // stream measured clean while phones heard doubling). An element the
+          // SDK has never seen stays muted forever.
+          const ms = new MediaStream([track.mediaStreamTrack]);
+          const el = document.createElement("audio");
           el.muted = true;
+          el.autoplay = true;
+          el.setAttribute("playsinline", "");
+          el.srcObject = ms;
+          void el.play().catch(() => {}); // muted autoplay is always allowed
           audioContainerRef.current?.appendChild(el);
-          const src = ctx.createMediaStreamSource(
-            new MediaStream([track.mediaStreamTrack]),
-          );
+          const src = ctx.createMediaStreamSource(ms);
           src.connect(worklet);
           trackNodesRef.current.set(track.sid ?? participant.identity, {
             src,
@@ -533,6 +544,12 @@ export function useRoomAudio(opts: {
         );
         if (node) {
           node.src.disconnect();
+          // the keep-alive element is OURS (not SDK-attached, see subscribe),
+          // so track.detach() below cannot remove it - do it here
+          for (const el of node.el) {
+            (el as HTMLAudioElement).srcObject = null;
+            el.remove();
+          }
           trackNodesRef.current.delete(track.sid ?? participant.identity);
         }
         track.detach().forEach((el) => el.remove());
@@ -659,6 +676,11 @@ export function useRoomAudio(opts: {
         n.src.disconnect();
       } catch {
         /* already disconnected */
+      }
+      // our own keep-alive elements (not SDK-attached) go with the map
+      for (const el of n.el) {
+        (el as HTMLAudioElement).srcObject = null;
+        el.remove();
       }
     });
     trackNodesRef.current.clear();
