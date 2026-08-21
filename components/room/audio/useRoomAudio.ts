@@ -526,6 +526,13 @@ export function useRoomAudio(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.commentatorId, opts.viewerId, opts.isRoomCommentator]);
 
+  /** Optimistically drop one account's chip (e.g. the host's ✕ succeeded).
+   *  LiveKit remains the source of truth: if they are somehow still
+   *  publishing, the next track event re-adds them. */
+  const dropSpeaker = useCallback((userId: string) => {
+    setSpeakers((prev) => prev.filter((s) => s.identity !== userId));
+  }, []);
+
   const connectPromiseRef = useRef<Promise<Room | null> | null>(null);
 
   const connect = useCallback(
@@ -634,6 +641,12 @@ export function useRoomAudio(opts: {
         }
         refreshSpeakers(r);
       });
+      // TrackUnsubscribed can fire BEFORE the SDK drops the publication from
+      // participant.audioTrackPublications, so a refresh from that handler
+      // alone can still count the caller and leave a stale LIVE chip on the
+      // host's bar after the X (live-test 2026-08-21). TrackUnpublished is the
+      // event that means the publication itself is gone.
+      r.on(RoomEvent.TrackUnpublished, () => refreshSpeakers(r));
       r.on(RoomEvent.TrackUnsubscribed, (track, _pub, participant) => {
         const node = trackNodesRef.current.get(
           track.sid ?? participant.identity,
@@ -1231,6 +1244,7 @@ export function useRoomAudio(opts: {
     selfDelay,
     setSelfDelay,
     speakers,
+    dropSpeaker,
     techDifficulties,
     techSince,
     setAudioContainer,

@@ -434,7 +434,11 @@ export function RealtimeRoom(props: Props) {
     if (!res || !res.ok) {
       const body = res ? await res.json().catch(() => ({})) : {};
       roomToast(body.error ?? "Couldn't end that call. Try again.");
+      return;
     }
+    // the server confirmed the call is over: drop the chip now rather than
+    // waiting on LiveKit events that can race (stale LIVE pill, 2026-08-21)
+    audio.dropSpeaker(identity);
   }
 
   useEffect(() => {
