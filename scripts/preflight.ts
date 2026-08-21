@@ -22,7 +22,10 @@
  *      resolve to real upstream data", which is what the Betis friendly missed
  *      (the league was outside the Sportmonks plan and nothing said so).
  *
- * Read-only against production. The one write is a throwaway admin user, used
+ * Read-only against production, with two sanctioned throwaway writes: a
+ * scratch egress started and immediately stopped (the only truthful test of
+ * the LiveKit egress quota, ~one audio-minute of billing; skipped by --quick),
+ * and a throwaway admin user, used
  * to reach the admin-gated probes and deleted in a finally block.
  */
 import { execFileSync } from "node:child_process";
@@ -588,6 +591,81 @@ async function checkServices(service: SupabaseClient) {
     const names = (buckets ?? []).map((b) => b.name);
     for (const need of ["recordings", "avatars"]) {
       check(`storage bucket "${need}" exists`, names.includes(need), names.includes(need) ? "" : "uploads to it will fail");
+    }
+  }
+
+  // EGRESS QUOTA (2026-08-21). listRooms proves the credentials; it says
+  // NOTHING about egress. The Build plan's 60 included minutes ran out mid
+  // live-test and every broadcast after that silently lost its recording and
+  // radio: /api/rooms 'start' catches the "egress minutes exceeded" error,
+  // logs it server-side, and the show carries on looking normal. The only
+  // truthful test is starting a real egress, so this starts one on a scratch
+  // LiveKit room and stops it immediately. This is preflight's second
+  // sanctioned write (with the throwaway admin): it costs roughly one
+  // audio-only egress minute of billing, and the scratch room, egress and any
+  // uploaded scrap are cleaned up in a finally.
+  if (QUICK) {
+    skip("egress quota (recording + radio)", "--quick was passed");
+  } else if (!lkUrl || !lkKey || !lkSecret) {
+    skip("egress quota (recording + radio)", "LIVEKIT_* not set locally");
+  } else {
+    const SCRATCH = "preflight-egress-probe";
+    const SCRATCH_PATH = "preflight-probe/egress-check.mp4";
+    let egressId: string | null = null;
+    try {
+      const { EgressClient, EncodedFileOutput, EncodedFileType, RoomServiceClient, S3Upload } =
+        await import("livekit-server-sdk");
+      const http = lkUrl.replace(/^wss:/, "https:");
+      const rooms = new RoomServiceClient(http, lkKey, lkSecret);
+      await rooms.createRoom({ name: SCRATCH, emptyTimeout: 60 });
+      const eg = new EgressClient(http, lkKey, lkSecret);
+      const info = await eg.startRoomCompositeEgress(
+        SCRATCH,
+        {
+          file: new EncodedFileOutput({
+            fileType: EncodedFileType.MP4,
+            filepath: SCRATCH_PATH,
+            output: {
+              case: "s3",
+              value: new S3Upload({
+                endpoint: process.env.SUPABASE_S3_ENDPOINT!,
+                accessKey: process.env.SUPABASE_S3_ACCESS_KEY!,
+                secret: process.env.SUPABASE_S3_SECRET_KEY!,
+                region: process.env.SUPABASE_S3_REGION || "us-east-1",
+                bucket: "recordings",
+                forcePathStyle: true,
+              }),
+            },
+          }),
+        },
+        { audioOnly: true },
+      );
+      egressId = info.egressId;
+      // the quota refusal happens AT start ("egress minutes exceeded"), so
+      // reaching here IS the proof; stop straight away to spend the minimum
+      check("egress quota available (recording + radio will start)", true, `probe egress ${info.egressId} started`);
+      for (let i = 0; i < 5; i++) {
+        try {
+          await eg.stopEgress(info.egressId);
+          break;
+        } catch {
+          await new Promise((r) => setTimeout(r, 2000)); // still STARTING; retry
+        }
+      }
+      await rooms.deleteRoom(SCRATCH).catch(() => {});
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (/minutes exceeded|quota|limit/i.test(msg)) {
+        fail(
+          "egress quota available (recording + radio will start)",
+          `${msg} - the show will look normal but NOTHING will be recorded. Fix billing at cloud.livekit.io before going live.`,
+        );
+      } else {
+        warn("egress quota probe did not complete", msg);
+      }
+    } finally {
+      // scrap file may land after the stop; best-effort delete either way
+      await service.storage.from("recordings").remove([SCRATCH_PATH]).catch(() => {});
     }
   }
 }
