@@ -54,12 +54,68 @@ function isIOS(): boolean {
   );
 }
 
+/** Android phone or similar: the platforms whose OS mutes WebRTC-backed audio
+ *  in a backgrounded tab (proven by the 2026-08-21 bg_audio_snapshot: element
+ *  playing, unmuted, volume 1, connection live - and inaudible). Desktop keeps
+ *  WebRTC audible in background, iOS ignores element volume, so the background
+ *  radio handoff below applies only here. */
+function needsBackgroundRadio(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Android|Mobi/i.test(navigator.userAgent) && !isIOS();
+}
+
+/** Point an <audio> element at our HLS stream: natively where the browser can
+ *  (Safari/iOS), via hls.js (MediaSource) everywhere else - which is what
+ *  finally makes radio REAL on Android and desktop Chrome instead of
+ *  Safari-only. Returns a cleanup that detaches the engine. */
+async function attachHls(
+  el: HTMLAudioElement,
+  url: string,
+): Promise<(() => void) | null> {
+  if (el.canPlayType("application/vnd.apple.mpegurl")) {
+    el.src = url;
+    return () => {
+      el.removeAttribute("src");
+      el.load();
+    };
+  }
+  try {
+    const { default: Hls } = await import("hls.js");
+    if (!Hls.isSupported()) return null;
+    const hls = new Hls({
+      // a live radio ear stays near the live edge and rides out gaps
+      liveSyncDurationCount: 3,
+      maxBufferLength: 20,
+    });
+    hls.loadSource(url);
+    hls.attachMedia(el);
+    hls.on(Hls.Events.ERROR, (_e: unknown, data: { fatal?: boolean }) => {
+      if (data?.fatal) {
+        try {
+          hls.destroy();
+        } catch {}
+      }
+    });
+    return () => {
+      try {
+        hls.destroy();
+      } catch {}
+      el.removeAttribute("src");
+      el.load();
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function useRoomAudio(opts: {
   roomId: string;
   commentatorId: string;
   /** viewer's user id, null when anonymous */
   viewerId: string | null;
   isRoomCommentator: boolean;
+  /** radio (HLS) playlist for this room, null until egress starts */
+  hlsUrl: string | null;
 }) {
   const [listenStatus, setListenStatus] = useState<ListenStatus>("idle");
   // mirrored in a ref so event handlers can report the status at drop time
@@ -91,6 +147,18 @@ export function useRoomAudio(opts: {
   const [techSince, setTechSince] = useState<number | null>(null);
   const [radioActive, setRadioActive] = useState(false);
   const radioElRef = useRef<HTMLAudioElement | null>(null);
+  // Background radio (Android): a SECOND, silent HLS element pre-armed while
+  // the live path plays. Android's OS mutes WebRTC-backed audio in hidden
+  // tabs but keeps real media elements sounding, so backgrounding raises this
+  // element's volume and foregrounding zeroes it again. Pre-armed inside the
+  // listen session (not started while hidden) so no autoplay policy is ever
+  // asked to bless a background start.
+  const bgRadioRef = useRef<HTMLAudioElement | null>(null);
+  const bgRadioCleanupRef = useRef<(() => void) | null>(null);
+  const hlsUrlRef = useRef<string | null>(opts.hlsUrl);
+  useEffect(() => {
+    hlsUrlRef.current = opts.hlsUrl;
+  }, [opts.hlsUrl]);
 
   // listener volume (0..1). The live sync path is scaled by a Web Audio gain
   // node (the only volume control iOS Safari honours — element .volume is a
@@ -669,6 +737,7 @@ export function useRoomAudio(opts: {
       }
       setListenStatus("live");
       refreshSpeakers(r);
+      void ensureBgRadio(); // silent HLS understudy for Android backgrounding
       return r;
     } catch (err) {
       console.error("audio connect failed:", err);
@@ -692,6 +761,7 @@ export function useRoomAudio(opts: {
 
   const disconnect = useCallback(async () => {
     setUserStopped(true); // deliberate stop — don't re-gate them
+    teardownBgRadio();
     await stopMicInternal();
     await roomRef.current?.disconnect();
     roomRef.current = null;
@@ -744,26 +814,59 @@ export function useRoomAudio(opts: {
   // behaviour (background = silence, resumes on return). iOS is untested here;
   // radio mode remains the certified background path there (golden rule 3).
   const bgEngagedRef = useRef(false);
+  const teardownBgRadio = useCallback(() => {
+    bgRadioRef.current?.pause();
+    bgRadioCleanupRef.current?.();
+    bgRadioCleanupRef.current = null;
+    bgRadioRef.current = null;
+  }, []);
+  const ensureBgRadio = useCallback(async () => {
+    if (!needsBackgroundRadio()) return;
+    if (!hlsUrlRef.current || bgRadioRef.current) return;
+    const el = new Audio();
+    el.volume = 0; // unmuted, silent - volume changes are never policy-gated
+    el.setAttribute("playsinline", "");
+    bgRadioRef.current = el;
+    const cleanup = await attachHls(el, hlsUrlRef.current);
+    if (!cleanup || bgRadioRef.current !== el) {
+      // no engine, or torn down while attaching - don't fake coverage
+      if (bgRadioRef.current === el) bgRadioRef.current = null;
+      cleanup?.();
+      return;
+    }
+    bgRadioCleanupRef.current = cleanup;
+    el.addEventListener("error", () => {
+      if (bgRadioRef.current === el) teardownBgRadio();
+    });
+    void el.play().catch(() => {
+      // couldn't start (rare - page has sticky activation by now): drop it so
+      // the visibility handler knows there is no background path
+      if (bgRadioRef.current === el) teardownBgRadio();
+    });
+  }, [teardownBgRadio]);
+  // egress can start mid-show (it did on 2026-08-21): arm as soon as the url
+  // exists while already listening
   useEffect(() => {
-    const setKeepAliveVolume = (v: number) => {
-      trackNodesRef.current.forEach((n) => {
-        for (const el of n.el) {
-          const a = el as HTMLAudioElement;
-          a.volume = v;
-          if (v > 0 && a.paused) void a.play().catch(() => {});
-        }
-      });
-    };
+    if (opts.hlsUrl && listenStatusRef.current === "live") void ensureBgRadio();
+  }, [opts.hlsUrl, ensureBgRadio]);
+  useEffect(() => {
     const onVis = () => {
-      if (isIOS()) return; // element volume is a no-op there; radio covers it
-      if (!workletRef.current) return; // fallback path already plays direct
+      if (!needsBackgroundRadio()) return; // desktop keeps WebRTC; iOS: radio toggle
       if (document.visibilityState === "hidden") {
         if (listenStatusRef.current !== "live") return;
-        // a synced listener is deliberately BEHIND their TV: live-edge
-        // background audio would call the goal before their feed shows it
-        if (syncRequestedRef.current > 0 && !liveSnapRef.current) return;
+        const bg = bgRadioRef.current;
+        if (!bg) return; // no armed radio path - nothing that can survive
         bgEngagedRef.current = true;
-        setKeepAliveVolume(volumeRef.current);
+        // radio trails live by ~10-20s: for a live-edge listener that means a
+        // short replay on handoff, which beats silence; a SYNCED listener is
+        // deliberately behind their TV, and radio's lag is usually LESS than
+        // a TV sync offset, so the same guard from the earlier design applies
+        if (syncRequestedRef.current > 0 && !liveSnapRef.current) {
+          bgEngagedRef.current = false;
+          return;
+        }
+        bg.volume = volumeRef.current;
+        if (bg.paused) void bg.play().catch(() => {});
         playbackElRef.current?.pause();
       } else {
         if (!bgEngagedRef.current) return;
@@ -777,6 +880,7 @@ export function useRoomAudio(opts: {
             kas.push({ paused: a.paused, muted: a.muted, vol: a.volume });
           }
         });
+        const bg = bgRadioRef.current;
         track("bg_audio_snapshot", {
           roomId: opts.roomId,
           props: {
@@ -784,18 +888,24 @@ export function useRoomAudio(opts: {
             ctx: playbackCtxRef.current?.state ?? "none",
             listen: listenStatusRef.current,
             lkState: roomRef.current?.state ?? "none",
+            bgRadio: bg
+              ? JSON.stringify({ paused: bg.paused, vol: bg.volume, ready: bg.readyState, t: Math.round(bg.currentTime) })
+              : "none",
           },
         });
         const pb = playbackElRef.current;
+        const silenceBg = () => {
+          if (bgRadioRef.current) bgRadioRef.current.volume = 0;
+        };
         if (!pb) {
-          setKeepAliveVolume(0);
+          silenceBg();
           return;
         }
         void pb
           .play()
-          .then(() => setKeepAliveVolume(0))
+          .then(silenceBg)
           .catch(() => {
-            /* keep-alives stay audible; the next gesture rebuilds the graph */
+            /* radio stays audible; the next gesture rebuilds the graph */
           });
       }
     };
@@ -806,6 +916,7 @@ export function useRoomAudio(opts: {
 
   /* ------------------------------------------------- radio mode (HLS) */
 
+  const radioCleanupRef = useRef<(() => void) | null>(null);
   const enableRadio = useCallback(
     async (url: string) => {
       await disconnect(); // WebRTC and HLS paths are mutually exclusive
@@ -818,8 +929,14 @@ export function useRoomAudio(opts: {
         el.addEventListener("error", () => setRadioActive(false));
         radioElRef.current = el;
       }
-      el.volume = volumeRef.current; // desktop only; iOS ignores element volume
-      el.src = url;
+      el.volume = volumeRef.current; // desktop/Android; iOS ignores element volume
+      radioCleanupRef.current?.();
+      radioCleanupRef.current = await attachHls(el, url);
+      if (!radioCleanupRef.current) {
+        console.error("radio: no HLS engine available");
+        setRadioActive(false);
+        return;
+      }
       try {
         await el.play(); // called inside the toggle gesture
         setRadioActive(true);
@@ -833,11 +950,9 @@ export function useRoomAudio(opts: {
 
   const disableRadio = useCallback(() => {
     const el = radioElRef.current;
-    if (el) {
-      el.pause();
-      el.removeAttribute("src");
-      el.load();
-    }
+    if (el) el.pause();
+    radioCleanupRef.current?.();
+    radioCleanupRef.current = null;
     setRadioActive(false);
   }, []);
 
@@ -1069,6 +1184,10 @@ export function useRoomAudio(opts: {
       playbackElRef.current?.pause();
       playbackElRef.current = null;
       trackNodesRef.current.clear();
+      bgRadioRef.current?.pause();
+      bgRadioCleanupRef.current?.();
+      bgRadioCleanupRef.current = null;
+      bgRadioRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.roomId]);

@@ -273,6 +273,7 @@ export function RealtimeRoom(props: Props) {
     commentatorId: room.commentatorId,
     viewerId: viewer?.userId ?? null,
     isRoomCommentator,
+    hlsUrl,
   });
 
   // product telemetry (admin insights): fire-once per mount / first transition
