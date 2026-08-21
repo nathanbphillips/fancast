@@ -245,8 +245,27 @@ export function useRoomAudio(opts: {
     // It also makes it impossible for a host to sit behind the live edge on a
     // stale saved sync offset, since they no longer have a worklet at all.
     if (opts.isRoomCommentator) return { blocked: false, worklet: false };
+    // resume() is NOT awaited bare anywhere in this function. On iOS it
+    // resolves and leaves the context "suspended"; on Chrome Android, outside a
+    // real tap, it stays PENDING FOREVER. Awaiting it unbounded hung the silent
+    // autostart, which kept the gate suppressed - the "gate flashed once then
+    // vanished, no way to play" report from the 2026-08-21 live test, on both
+    // Brave and Chrome. Bounded: if the context is not running shortly, the
+    // caller treats it as autoplay-blocked and shows the one-tap gate; inside a
+    // real gesture resume() completes immediately, so the bound never bites.
+    const resumeBounded = async (ctx: AudioContext) => {
+      await Promise.race([
+        ctx.resume().catch(() => {}),
+        new Promise<void>((res) => setTimeout(res, 1200)),
+      ]);
+    };
     if (playbackCtxRef.current) {
-      await playbackCtxRef.current.resume().catch(() => {});
+      await resumeBounded(playbackCtxRef.current);
+      if (playbackCtxRef.current.state !== "running") {
+        // suspended with no gesture to open it: blocked, NOT unsupported. Keep
+        // the graph - the gate's tap re-enters here with real activation.
+        return { blocked: true, worklet: workletRef.current !== null };
+      }
       // iOS can pause the element across interruptions/backgrounding —
       // a dead audible element means the whole sync path is silent
       const replayed = await playbackElRef.current
@@ -268,7 +287,7 @@ export function useRoomAudio(opts: {
       setSyncSupported(false);
       return { blocked: false, worklet: false };
     }
-    await ctx.resume().catch(() => {});
+    await resumeBounded(ctx);
     // Autoplay gate: outside a user gesture (iOS Safari, or a browser with no
     // media engagement) resume() RESOLVES but leaves the context "suspended"
     // and el.play() below would reject. A "running" context is the single

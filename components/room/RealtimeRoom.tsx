@@ -924,6 +924,24 @@ export function RealtimeRoom(props: Props) {
       } catch {}
     }
   }, [audio.listenStatus]);
+  // Has this page been LOOKED AT since it loaded? Autostart is gated on it
+  // (founder 2026-08-21): a context that has never been visible - a restored
+  // background tab, an embedded webview, a hidden automation pane - must never
+  // begin playing on its own; that is exactly how a hidden pane fed a host's
+  // speakers into his mic during the live test. A listener who opened the room
+  // with eyes on it and then pocketed the phone HAS been visible, so the
+  // show still starts in their pocket, and backgrounded/locked playback of an
+  // already-running stream is untouched (that is continuation, not a start).
+  const [everVisible, setEverVisible] = useState(false);
+  useEffect(() => {
+    const mark = () => {
+      if (document.visibilityState === "visible") setEverVisible(true);
+    };
+    mark();
+    document.addEventListener("visibilitychange", mark);
+    return () => document.removeEventListener("visibilitychange", mark);
+  }, []);
+
   // attempt the silent autostart while the host is broadcasting (listeners only)
   useEffect(() => {
     if (!audioLive) {
@@ -934,6 +952,10 @@ export function RealtimeRoom(props: Props) {
     if (audio.radioActive) return; // radio is a separate explicit choice
     if (audio.listenStatus !== "idle") return; // already live/connecting
     if (autoTriedRef.current) return; // one attempt; respect a manual stop
+    // never consume the attempt while unseen: when a never-visible tab is
+    // finally brought forward, everVisible flips and this effect re-runs, so
+    // the listener still gets the no-tap start at that moment
+    if (!everVisible) return;
     let optedIn = false;
     try {
       optedIn = localStorage.getItem("fc_autoplay_ok") === "1";
@@ -943,13 +965,18 @@ export function RealtimeRoom(props: Props) {
     // suppress the gate while this attempt runs, so a browser that CAN autoplay
     // doesn't flash the full-screen gate before the audio takes over
     setAutoInFlight(true);
-    void audio.tryAutostart().finally(() => setAutoInFlight(false));
+    void audio.tryAutostart().then((started) => {
+      // a start nobody tapped for is never silent in the UI (founder 2026-08-21)
+      if (started) roomToast("Listening resumed", "info");
+    }).finally(() => setAutoInFlight(false));
   }, [
     audioLive,
     isRoomCommentator,
     audio.radioActive,
     audio.listenStatus,
     audio.tryAutostart,
+    everVisible,
+    roomToast,
   ]);
 
   // Phase 7: poll live match detail (faster cadence while live); push a tab
