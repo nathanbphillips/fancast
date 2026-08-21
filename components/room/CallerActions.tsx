@@ -33,9 +33,10 @@ export function CallerActions({
           ? { action, userId, roomId, note: note.trim() || undefined }
           : { action, userId, reason: note.trim() || undefined },
       ),
-    });
+    }).catch(() => null);
     setBusy(false);
     setConfirmBlock(false);
+    if (!res) return;
     if (res.ok) {
       setDone(action === "flag" ? "Flagged" : "Blocked from call-ins");
       setNote("");

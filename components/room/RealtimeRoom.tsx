@@ -2413,12 +2413,20 @@ function LiveChat({
     if (!draft.trim() || sending) return;
     setSending(true);
     setNotice(null);
+    // .catch: a NETWORK-level rejection (wifi drops, phone loses signal) makes
+    // the await throw, which would skip setSending(false) and leave the
+    // composer disabled for the rest of the show with nothing on screen saying
+    // why. A non-OK response was always handled; an unreachable server was not.
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId: room.id, body: draft.trim() }),
-    });
+    }).catch(() => null);
     setSending(false);
+    if (!res) {
+      setNotice("Couldn't send. Check your connection and try again.");
+      return;
+    }
     if (res.ok) {
       const body = await res.json().catch(() => ({}));
       if (body.message) onSent(body.message);

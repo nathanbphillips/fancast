@@ -86,8 +86,12 @@ export function InteractionButtons({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId, body: question.trim() }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    if (!res) {
+      setNote("Couldn't reach the server. Check your connection.");
+      return;
+    }
     if (res.ok) {
       setQuestion("");
       setQuestionSent(true);
@@ -110,8 +114,12 @@ export function InteractionButtons({
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    if (!res) {
+      setNote("Couldn't reach the server. Check your connection.");
+      return;
+    }
     if (res.ok || res.status === 404) {
       // 404 = already resolved elsewhere (accepted/dismissed) — either way,
       // nothing is pending any more
@@ -148,8 +156,12 @@ export function InteractionButtons({
         topic: topic.trim(),
         consent: consentGiven || consent,
       }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    if (!res) {
+      setNote("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
     if (res.ok) {
       setTopic("");
       setTalkPending(true);

@@ -17,12 +17,18 @@ export function ClockControls({
   async function send(action: string, offsetSeconds?: number) {
     setBusy(true);
     setError(null);
+    // .catch: a network-level rejection would throw past setBusy(false) and
+    // leave Half time / Full time dead for the rest of the match
     const res = await fetch("/api/clock", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ roomId, action, offsetSeconds }),
-    });
+    }).catch(() => null);
     setBusy(false);
+    if (!res) {
+      setError("Couldn't reach the server. Try again.");
+      return;
+    }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setError(body.error ?? "Clock action failed.");

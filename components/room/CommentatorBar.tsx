@@ -136,13 +136,21 @@ export function CommentatorBar({
   async function transition(action: "start" | "end") {
     setBusy(true);
     setError(null);
+    // .catch, matching handleRequest below: without it a network-level
+    // rejection (the wifi blipping at the ground) throws past setBusy(false)
+    // and leaves Start Broadcast greyed out for good, with no explanation, at
+    // the exact moment it matters most.
     const res = await fetch("/api/rooms", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action, roomId }),
-    });
+    }).catch(() => null);
     setBusy(false);
     setConfirmEnd(false);
+    if (!res) {
+      setError("Couldn't reach the server. Check your connection and try again.");
+      return;
+    }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       setError(body.error ?? "Something went wrong.");
