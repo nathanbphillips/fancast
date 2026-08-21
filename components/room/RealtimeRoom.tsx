@@ -878,14 +878,36 @@ export function RealtimeRoom(props: Props) {
   // they deliberately stopped. No browser detection and no "already listened"
   // latch: an involuntary drop or a blocked autostart re-gates them, which is
   // the point (they'd otherwise sit in silence).
+  // A connect that hangs (Brave stalling WebRTC) used to leave the status on
+  // "connecting" with the gate unmounted - it flashed once and never came back
+  // (live-test 2026-08-21). Debounced so a quick successful start or a mid-show
+  // reconnect blip never flashes the overlay, but a genuinely stuck connect
+  // resurfaces the gate with its Connecting state instead of a silent void.
+  const [connectingLong, setConnectingLong] = useState(false);
+  useEffect(() => {
+    if (audio.listenStatus !== "connecting") {
+      setConnectingLong(false);
+      return;
+    }
+    const t = setTimeout(() => setConnectingLong(true), 4000);
+    return () => clearTimeout(t);
+  }, [audio.listenStatus]);
+  // Brave ships a real detection API; Shields blocking WebRTC is the one
+  // browser-specific failure a listener can actually fix themselves
+  const [isBrave, setIsBrave] = useState(false);
+  useEffect(() => {
+    const b = (navigator as unknown as { brave?: { isBrave?: () => Promise<boolean> } }).brave;
+    if (b?.isBrave) void b.isBrave().then((v) => setIsBrave(!!v)).catch(() => {});
+  }, []);
   const showAudioGate =
     !isRoomCommentator &&
     audioLive &&
     !audio.radioActive &&
     !audio.userStopped &&
     !gateOverridden &&
-    !autoInFlight &&
-    (audio.listenStatus === "idle" || audio.listenStatus === "error");
+    ((audio.listenStatus === "idle" && !autoInFlight) ||
+      audio.listenStatus === "error" ||
+      (audio.listenStatus === "connecting" && connectingLong));
   // "How this works" listener walkthrough (desktop header button / mobile FAQ)
   const [helpOpen, setHelpOpen] = useState(false);
   const roomToast = useToast();
@@ -1474,10 +1496,16 @@ export function RealtimeRoom(props: Props) {
             </p>
             <p className="mt-2 text-sm leading-relaxed text-secondary">
               {audio.listenStatus === "error"
-                ? "That didn't connect. Tap to try again."
-                : roomState === "pregame"
-                  ? "Your browser needs one tap before it can play audio. Tap below and you'll hear the show the moment it starts."
-                  : "Your browser needs one tap before it can play audio. Tap below to hear the live commentary."}
+                ? isBrave
+                  ? "Brave is blocking the live audio connection. Tap the orange lion in the address bar, turn Shields down for this site, then try again. Or open this page in Chrome."
+                  : gateFails >= 2
+                    ? "Still not connecting. Your browser may be blocking live audio. Chrome usually works."
+                    : "That didn't connect. Tap to try again."
+                : audio.listenStatus === "connecting"
+                  ? "Still connecting. If this doesn't start in a few seconds it will say why."
+                  : roomState === "pregame"
+                    ? "Your browser needs one tap before it can play audio. Tap below and you'll hear the show the moment it starts."
+                    : "Your browser needs one tap before it can play audio. Tap below to hear the live commentary."}
             </p>
             <button
               type="button"

@@ -456,7 +456,10 @@ export function useRoomAudio(opts: {
       }
       setAutoplayBlocked(false);
       setListenStatus("connecting");
-      const res = await fetch(`/api/livekit/token?room=${opts.roomId}`);
+      const res = await fetch(`/api/livekit/token?room=${opts.roomId}`, {
+        // a stalled token fetch must fail into the catch, not hang "connecting"
+        signal: AbortSignal.timeout(10_000),
+      });
       if (!res.ok) throw new Error("token request failed");
       const { token, url, canPublish: granted } = await res.json();
       setCanPublish(granted);
@@ -567,8 +570,29 @@ export function useRoomAudio(opts: {
           setListenStatus("connecting");
       });
 
-      await r.connect(url, token);
-      await r.startAudio(); // inside the user gesture
+      // WATCHDOG (live-test 2026-08-21). A browser that BLOCKS WebRTC (Brave
+      // with Shields up) can stall connect() rather than reject it. Untended,
+      // that did two bad things at once: the status sat on "connecting" forever
+      // so the listen gate never came back (the "gate flashed then vanished"
+      // report), and the attempt could finally sneak through MINUTES later in a
+      // background tab - which is how a phone ended up playing the stream twice
+      // and hearing everything echoed. Past the deadline we kill the attempt:
+      // the catch below tears the half-open room down and shows a real error.
+      let cancelDeadline: () => void = () => {};
+      const deadline = new Promise<never>((_, reject) => {
+        const t = setTimeout(
+          () => reject(new Error("connect timed out (browser may be blocking live audio)")),
+          15_000,
+        );
+        cancelDeadline = () => clearTimeout(t);
+      });
+      deadline.catch(() => {}); // never an unhandled rejection after success
+      try {
+        await Promise.race([r.connect(url, token), deadline]);
+        await Promise.race([r.startAudio(), deadline]); // inside the user gesture
+      } finally {
+        cancelDeadline();
+      }
       setListenStatus("live");
       refreshSpeakers(r);
       return r;
