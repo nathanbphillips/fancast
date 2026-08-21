@@ -43,6 +43,17 @@ export type Speaker = {
 const SILENCE_SECONDS = 25;
 const SILENCE_RMS = 0.0035;
 
+/** iOS ignores element volume entirely (it is effectively read-only), so the
+ *  volume-based background handoff below cannot work there; iOS keeps the
+ *  muted keep-alive + radio mode as its background story (golden rule 3). */
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 export function useRoomAudio(opts: {
   roomId: string;
   commentatorId: string;
@@ -514,11 +525,21 @@ export function useRoomAudio(opts: {
           // SDK has never seen stays muted forever.
           const ms = new MediaStream([track.mediaStreamTrack]);
           const el = document.createElement("audio");
-          el.muted = true;
+          // Non-iOS: UNMUTED at volume 0, established while the page holds the
+          // listen tap's activation. Backgrounding then only RAISES the volume
+          // - volume changes are never autoplay-gated, whereas unmuting a muted
+          // element inside a hidden tab can be refused outright. iOS ignores
+          // element volume, so there it stays muted (radio covers background).
+          if (isIOS()) {
+            el.muted = true;
+          } else {
+            el.muted = false;
+            el.volume = 0;
+          }
           el.autoplay = true;
           el.setAttribute("playsinline", "");
           el.srcObject = ms;
-          void el.play().catch(() => {}); // muted autoplay is always allowed
+          void el.play().catch(() => {});
           audioContainerRef.current?.appendChild(el);
           const src = ctx.createMediaStreamSource(ms);
           src.connect(worklet);
@@ -715,37 +736,57 @@ export function useRoomAudio(opts: {
   // goals for someone listening ahead of their own feed. They keep the old
   // behaviour (background = silence, resumes on return). iOS is untested here;
   // radio mode remains the certified background path there (golden rule 3).
+  const bgEngagedRef = useRef(false);
   useEffect(() => {
-    const setKeepAlives = (audible: boolean) => {
+    const setKeepAliveVolume = (v: number) => {
       trackNodesRef.current.forEach((n) => {
         for (const el of n.el) {
           const a = el as HTMLAudioElement;
-          a.muted = !audible;
-          if (audible) {
-            a.volume = volumeRef.current; // Android honours element volume
-            void a.play().catch(() => {});
-          }
+          a.volume = v;
+          if (v > 0 && a.paused) void a.play().catch(() => {});
         }
       });
     };
     const onVis = () => {
+      if (isIOS()) return; // element volume is a no-op there; radio covers it
       if (!workletRef.current) return; // fallback path already plays direct
-      if (listenStatusRef.current !== "live") return;
       if (document.visibilityState === "hidden") {
+        if (listenStatusRef.current !== "live") return;
+        // a synced listener is deliberately BEHIND their TV: live-edge
+        // background audio would call the goal before their feed shows it
         if (syncRequestedRef.current > 0 && !liveSnapRef.current) return;
-        setKeepAlives(true);
+        bgEngagedRef.current = true;
+        setKeepAliveVolume(volumeRef.current);
         playbackElRef.current?.pause();
       } else {
-        // re-mute only after the graph element is confirmed playing again, so
-        // a blocked resume leaves the direct path sounding rather than silence
+        if (!bgEngagedRef.current) return;
+        bgEngagedRef.current = false;
+        // diagnose what the background actually did to us - this event is the
+        // difference between "not working" and knowing which part died
+        const kas: { paused: boolean; muted: boolean; vol: number }[] = [];
+        trackNodesRef.current.forEach((n) => {
+          for (const el of n.el) {
+            const a = el as HTMLAudioElement;
+            kas.push({ paused: a.paused, muted: a.muted, vol: a.volume });
+          }
+        });
+        track("bg_audio_snapshot", {
+          roomId: opts.roomId,
+          props: {
+            keepAlives: JSON.stringify(kas).slice(0, 160),
+            ctx: playbackCtxRef.current?.state ?? "none",
+            listen: listenStatusRef.current,
+            lkState: roomRef.current?.state ?? "none",
+          },
+        });
         const pb = playbackElRef.current;
         if (!pb) {
-          setKeepAlives(false);
+          setKeepAliveVolume(0);
           return;
         }
         void pb
           .play()
-          .then(() => setKeepAlives(false))
+          .then(() => setKeepAliveVolume(0))
           .catch(() => {
             /* keep-alives stay audible; the next gesture rebuilds the graph */
           });

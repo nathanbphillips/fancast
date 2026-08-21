@@ -21,6 +21,7 @@ const DIAGNOSTIC_EVENTS = [
   "callin_mic_timeout",
   "audio_connect_failed",
   "audio_disconnected", // carries the LiveKit DisconnectReason
+  "bg_audio_snapshot", // what backgrounding did to the audio path (2026-08-21)
 ];
 
 export const metadata: Metadata = { title: "Diagnostics" };
