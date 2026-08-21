@@ -93,9 +93,9 @@ export function useRoomAudio(opts: {
   const syncRequestedRef = useRef(0);
   // Call-in sync snap (founder 2026-08-03): while a listener-caller is on air,
   // their playback snaps to the live edge (delay 0) so the conversation with the
-  // host is real time, not behind by their sync offset. Worklet-only override —
-  // never persisted, so the saved offset (syncRequested/sessionStorage) is what
-  // we restore to when the call ends.
+  // host is real time, not behind by their sync offset. After the call they
+  // STAY at the live edge and the saved offset is cleared (founder 2026-08-21;
+  // see restorePlaybackSync).
   const liveSnapRef = useRef(false);
   const [syncEffective, setSyncEffective] = useState(0);
   const [syncAvailable, setSyncAvailable] = useState(0);
@@ -393,15 +393,25 @@ export function useRoomAudio(opts: {
     liveSnapRef.current = true;
     workletRef.current?.port.postMessage({ type: "setDelay", seconds: 0 });
   }
-  /** Restore the caller's pre-call sync offset when the call ends. The ring
-   *  buffer has been filling the whole time, so the offset returns instantly. */
+  /** After a call ends the caller STAYS at the live edge (founder 2026-08-21,
+   *  supersedes the 2026-08-03 "restore the pre-call offset" behaviour).
+   *  Restoring silently put a caller 3-4s behind the conversation they were
+   *  just part of - a SYNC NOW tap earlier in the session leaves an offset in
+   *  sessionStorage, so "I never adjusted anything" callers were rewound
+   *  without any indication. The saved offset is cleared too; re-syncing to a
+   *  TV is one tap in the drawer, being secretly behind is not fixable. */
   function restorePlaybackSync() {
     if (!liveSnapRef.current) return;
     liveSnapRef.current = false;
-    workletRef.current?.port.postMessage({
-      type: "setDelay",
-      seconds: syncRequestedRef.current,
-    });
+    syncRequestedRef.current = 0;
+    setSyncRequested(0);
+    try {
+      sessionStorage.removeItem(`fc_sync_${opts.roomId}`);
+    } catch {}
+    workletRef.current?.port.postMessage({ type: "setDelay", seconds: 0 });
+    // and drop the buffered timeline: any backlog that built up during the
+    // call (device route changes stall the sink) must not replay as lag
+    workletRef.current?.port.postMessage({ type: "reset" });
   }
 
   /* -------------------------------------------------------- connection */
