@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -62,11 +62,12 @@ export async function ffmpegProbe(): Promise<{
 const STALE_PROCESSING_MS = 10 * 60 * 1000;
 
 /**
- * Post-session processing (FR-13.5/13.7). On End Broadcast the MP4/AAC room
- * mix is finalized by egress (MP4 not OGG — codec-compatible with the HLS
- * radio output of the same composite); this transcodes it to a full MP3,
- * cuts one MP3 per segment at marker offsets (stream-copy — I/O bound,
- * fast), zips everything, and records segment rows. Target <15 min.
+ * Post-session processing (FR-13.5/13.7). Since 2026-08-22 the source is the
+ * per-second HLS segments the egress uploaded all show (byte-concatenated -
+ * durable the moment they are captured); rows from before then keep their
+ * legacy broadcast.mp4 path. The source is transcoded to a full MP3, cut into
+ * one MP3 per marker segment (stream-copy - I/O bound, fast), zipped when it
+ * fits, and measured before anything is called ready. Target <15 min.
  *
  * Concurrency: an atomic status claim serializes runs and lets a crashed
  * run be reclaimed after STALE_PROCESSING_MS. NOTE (decision log): a full
@@ -189,6 +190,22 @@ async function measureAudio(
   };
 }
 
+/** Parse duration/silence/volume out of an encode pass that carried the
+ *  measurement filters, so long shows only decode once. */
+function parseMeasure(
+  stderr: string,
+): { seconds: number; audible: number; meanDb: number | null } | null {
+  if (!stderr) return null;
+  const hms = (h: string, m: string, s: string) => Number(h) * 3600 + Number(m) * 60 + Number(s);
+  const times = [...stderr.matchAll(/time=(\d+):(\d+):([\d.]+)/g)];
+  const last = times[times.length - 1];
+  if (!last) return null;
+  const seconds = hms(last[1], last[2], last[3]);
+  const silent = [...stderr.matchAll(/silence_duration:\s*([\d.]+)/g)].reduce((a, m) => a + Number(m[1]), 0);
+  const meanRaw = stderr.match(/mean_volume:\s*(-?[\d.]+) dB/)?.[1];
+  return { seconds, audible: Math.max(0, seconds - silent), meanDb: meanRaw ? Number(meanRaw) : null };
+}
+
 /**
  * Does the produced audio plausibly represent the broadcast? Returns a reason
  * when it does not. Two independent failures, because they look nothing alike:
@@ -212,6 +229,47 @@ export function integrityProblem(
     return `almost none of the ${fmt(measured.seconds)} recorded is audible (${fmt(measured.audible)}) - the recorder lost the microphone`;
   }
   return null;
+}
+
+const RADIO_BUCKET = "radio";
+// fewer surviving seconds than this means nothing was really captured
+const MIN_SEGMENTS = 5;
+
+/**
+ * The per-second HLS segments in the radio bucket, in playback order. Since
+ * 2026-08-22 these ARE the recording source: the egress no longer writes a
+ * growing MP4 (whose size-cap failure at ~3h killed the whole recorder and
+ * the last 16 minutes of the first real match show). Segments upload every
+ * second while live, so whatever the recorder captured is durable the moment
+ * it happens.
+ */
+async function listRadioSegments(
+  service: SupabaseClient,
+  roomId: string,
+): Promise<string[]> {
+  const names: string[] = [];
+  for (let page = 0; page < 40; page++) {
+    let data: { name: string; metadata: unknown }[] | null = null;
+    let error: { message: string } | null = null;
+    // a transient list error must not read as end-of-list: a first-page blip
+    // would mark a real recording "empty", a mid-page one would truncate it
+    for (let attempt = 0; attempt < 3; attempt++) {
+      ({ data, error } = (await service.storage
+        .from(RADIO_BUCKET)
+        .list(roomId, { limit: 1000, offset: page * 1000 })) as never);
+      if (!error) break;
+      await sleep(400 * (attempt + 1));
+    }
+    if (error) throw new Error(`segment listing failed: ${error.message}`);
+    if (!data?.length) break;
+    for (const o of data) {
+      if (/^seg_\d+\.ts$/.test(o.name) && ((o.metadata as { size?: number } | null)?.size ?? 0) > 0) {
+        names.push(o.name);
+      }
+    }
+    if (data.length < 1000) break;
+  }
+  return names.sort((a, b) => Number(a.match(/\d+/)![0]) - Number(b.match(/\d+/)![0]));
 }
 
 /** Is the egress source MP4 already sitting in storage, with bytes in it? */
@@ -258,24 +316,53 @@ export async function processRecording(
     return { status: existing ? "busy" : "missing", segments: 0 };
   }
 
+  // A RECUT that fails must never hide a recording that was already good:
+  // restore the prior terminal status instead of flipping ready -> failed
+  // (review 2026-08-22: a marker nudge after the radio sweep would otherwise
+  // bury every existing download behind a failed banner).
+  const priorStatus = rec.status as string;
+  const failStatus = ["ready", "damaged"].includes(priorStatus) ? priorStatus : "failed";
   const fail = async (error: string) => {
-    await service
+    console.error(`recording ${rec.id}: ${error}${failStatus !== "failed" ? " (prior files kept)" : ""}`);
+    const { error: upErr } = await service
       .from("recordings")
-      .update({ status: "failed", error })
+      .update({ status: failStatus, error: failStatus === "failed" ? error : null })
       .eq("id", rec.id);
-    return { status: "failed", segments: 0 };
+    if (upErr) console.error(`recording ${rec.id}: status write failed too: ${upErr.message}`);
+    return { status: failStatus, segments: 0 };
   };
 
-  // The egress wait exists for ONE reason: to know the MP4 has finished being
-  // written. If the object is already in storage that question is settled, so
-  // skip the wait. Without this, reprocessing an old recording is impossible:
-  // LiveKit prunes egress history after a few days, listEgress then returns
-  // nothing, and the run dies with "egress status unknown (object cannot be
-  // found)" while the perfectly good source file sits right there. Found on
-  // 2026-08-14 trying to recover the recordings the ffmpeg bug had killed.
-  if (rec.egress_id && !(await sourceObjectExists(service, rec.source_path))) {
+  // NEVER process a room that is still broadcasting: the manual "process"
+  // action used to be able to reach deleteBroadcastRoom mid-show and cut every
+  // listener off a LIVE broadcast (review 2026-08-22). The 'end' action flips
+  // state to wrapped before triggering, so the normal path is unaffected.
+  const { data: roomRow } = await service
+    .from("rooms")
+    .select("state")
+    .eq("id", roomId)
+    .maybeSingle<{ state: string }>();
+  if (roomRow && !["wrapped", "canceled"].includes(roomRow.state)) {
+    return fail("the broadcast is still live - end it before processing");
+  }
+
+  // Legacy rows (pre-2026-08-22) have a broadcast.mp4; new recordings build
+  // from the radio segments. The egress wait only exists to know the recorder
+  // has flushed its tail - and if it FAILED or its history was pruned, the
+  // segments already in storage are still a valid (possibly truncated) source,
+  // so a dead egress downgrades to a warning instead of killing the run. That
+  // makes the 2026-08-21 manual rescue automatic.
+  const legacySource = await sourceObjectExists(service, rec.source_path);
+  if (rec.egress_id && !legacySource) {
     const egress = await waitForEgress(rec.egress_id);
-    if (!egress.ok) return fail(egress.reason ?? "egress did not complete");
+    if (!egress.ok) {
+      const survivors = await listRadioSegments(service, roomId).catch(() => []);
+      if (survivors.length < MIN_SEGMENTS) {
+        return fail(egress.reason ?? "egress did not complete");
+      }
+      console.warn(
+        `recording ${rec.id}: egress not clean (${egress.reason}); building from ${survivors.length} surviving segments`,
+      );
+    }
   }
 
   // Egress is terminal and the MP4 is flushed, so it's now safe to delete the
@@ -286,31 +373,136 @@ export async function processRecording(
 
   // per-run unique temp dir so concurrent/sequential runs never share files
   const work = await mkdtemp(join(tmpdir(), `fc-rec-${roomId}-`));
-  const sourceLocal = join(work, "source.mp4");
+  const sourceLocal = join(work, legacySource ? "source.mp4" : "source.ts");
   const fullLocal = join(work, "full.mp3");
+  // wall-offset -> audio-offset mapping; identity for the legacy MP4 path
+  let presentBefore: (wallOffsetS: number) => number = (s) => s;
 
   try {
-    // download the MP4 room mix
-    const { data: blob, error: dlErr } = await service.storage
-      .from(REC_BUCKET)
-      .download(rec.source_path!);
-    if (dlErr || !blob) return fail(`source download failed: ${dlErr?.message}`);
-    const bytes = Buffer.from(await blob.arrayBuffer());
-    // a real MP4 with audio is many KB even for a short clip; a tiny file
-    // means egress captured nothing
-    if (bytes.length < 4096) return markEmpty(service, rec.id);
-    await writeFile(sourceLocal, bytes);
+    if (legacySource) {
+      // legacy path: the room-mix MP4 from a pre-2026-08-22 egress
+      const { data: blob, error: dlErr } = await service.storage
+        .from(REC_BUCKET)
+        .download(rec.source_path!);
+      if (dlErr || !blob) return fail(`source download failed: ${dlErr?.message}`);
+      const bytes = Buffer.from(await blob.arrayBuffer());
+      if (bytes.length < 4096) return markEmpty(service, rec.id);
+      await writeFile(sourceLocal, bytes);
+    } else {
+      // Segment path: append the per-second MPEG-TS files in playback order.
+      // Plain byte concatenation is valid for contiguous TS from one muxer,
+      // and appending as we go means /tmp never holds a second copy.
+      let names: string[];
+      try {
+        names = await listRadioSegments(service, roomId);
+      } catch (e) {
+        return fail((e as Error).message);
+      }
+      if (names.length < MIN_SEGMENTS) return markEmpty(service, rec.id);
+      // Gap awareness (review 2026-08-22): markers are wall-clock, audio time
+      // is "seconds actually present". Missing indices (storage holes or
+      // skipped downloads) compress the audio, so every marker offset is
+      // remapped through a present-before count further down.
+      const presentIdx = names.map((n) => Number(n.match(/\d+/)![0]));
+      const firstIdx = presentIdx[0];
+      presentBefore = (wallOffsetS: number) => {
+        const target = firstIdx + wallOffsetS;
+        // count of present segments with index < target = audio seconds before
+        let lo = 0, hi = presentIdx.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (presentIdx[mid] < target) lo = mid + 1;
+          else hi = mid;
+        }
+        return lo;
+      };
+      await writeFile(sourceLocal, Buffer.alloc(0));
+      let missing = 0;
+      const BATCH = 24;
+      for (let i = 0; i < names.length; i += BATCH) {
+        const batch = names.slice(i, i + BATCH);
+        const bufs = await Promise.all(
+          batch.map(async (n) => {
+            for (let attempt = 0; attempt < 3; attempt++) {
+              const { data } = await service.storage
+                .from(RADIO_BUCKET)
+                .download(`${roomId}/${n}`);
+              if (data) {
+                const b = Buffer.from(await data.arrayBuffer());
+                if (b.length > 0) return b;
+              }
+              await sleep(200 * (attempt + 1));
+            }
+            return null;
+          }),
+        );
+        for (const b of bufs) {
+          if (b) await appendFile(sourceLocal, b);
+          else missing++;
+        }
+        // a few unfetchable seconds is a warning; a large hole must never be
+        // handed to a host labelled "ready"
+        if (missing > Math.max(20, names.length * 0.02)) {
+          return fail(`${missing} segments unreadable while rebuilding the source`);
+        }
+      }
+      if (missing > 0) {
+        console.warn(`recording ${rec.id}: proceeding without ${missing} unreadable segment(s) (~${missing}s)`);
+      }
+    }
 
-    // one-time transcode to the headline full MP3
-    await run(FFMPEG, ["-y", "-i", sourceLocal, "-c:a", "libmp3lame", "-q:a", "4", fullLocal]);
+    // One-time transcode to the headline full MP3, WITH the integrity
+    // measurement in the same pass (silencedetect+volumedetect run pre-encode,
+    // saving a whole second decode of a 3h show against the 300s wall).
+    // Cap discipline (Supabase Free: 50MB/object, the cap that killed the old
+    // MP4 pipeline): short shows keep q4 stereo; anything longer goes q7 MONO,
+    // which keeps a 2h cut near 43MB and also encodes ~1.3x faster.
+    const roughSpanS = rec.ended_at
+      ? (new Date(rec.ended_at).getTime() - new Date(rec.started_at).getTime()) / 1000
+      : 0;
+    const shortShow = roughSpanS > 0 && roughSpanS <= 25 * 60;
+    const encodeArgs = shortShow
+      ? ["-c:a", "libmp3lame", "-q:a", "4"]
+      : ["-ac", "1", "-c:a", "libmp3lame", "-q:a", "7"];
+    let encodeStderr = "";
+    try {
+      ({ stderr: encodeStderr } = await run(
+        FFMPEG,
+        ["-y", "-i", sourceLocal, "-af", "silencedetect=noise=-45dB:d=1,volumedetect", ...encodeArgs, fullLocal],
+        { timeout: 280_000, maxBuffer: 1 << 26 },
+      ));
+    } catch (e) {
+      const es = String((e as { stderr?: string }).stderr ?? "");
+      if (!es.includes("volumedetect")) throw e;
+      encodeStderr = es;
+    }
+    // /tmp is 500MB and a 3h source is ~250MB: drop it the moment the MP3
+    // exists (everything downstream cuts from fullLocal)
+    await rm(sourceLocal, { force: true }).catch(() => {});
     const fullBuf = await readFile(fullLocal);
     // a near-empty transcode (no real audio) also means an empty session
     if (fullBuf.length < 2048) return markEmpty(service, rec.id);
     const fullPath = `${roomId}/full.mp3`;
-    const up = await service.storage
+    let up = await service.storage
       .from(REC_BUCKET)
       .upload(fullPath, fullBuf, { contentType: "audio/mpeg", upsert: true });
-    if (up.error) return fail(`full upload failed: ${up.error.message}`);
+    const isSizeError = (m: string) => /maximum allowed size|EntityTooLarge|exceeded|too large|413/i.test(m);
+    if (up.error && !isSizeError(up.error.message)) {
+      // transient errors get one retry; only a SIZE rejection may degrade
+      up = await service.storage
+        .from(REC_BUCKET)
+        .upload(fullPath, fullBuf, { contentType: "audio/mpeg", upsert: true });
+    }
+    let fullStored = true;
+    if (up.error) {
+      if (!isSizeError(up.error.message)) {
+        return fail(`full upload failed: ${up.error.message}`);
+      }
+      // Bigger than the storage cap: the per-part cuts below are the real
+      // deliverables (this is exactly how the old pipeline died). Degrade.
+      console.error(`recording ${rec.id}: full.mp3 over the storage cap (${up.error.message}); continuing without it`);
+      fullStored = false;
+    }
 
     // derive segments from markers
     const { data: markers } = await service
@@ -352,21 +544,47 @@ export async function processRecording(
       duration_seconds: number;
     }[] = [];
     for (const seg of segments) {
+      // remap wall offsets into gap-aware audio offsets (identity for legacy)
+      const aStart = presentBefore(seg.startOffset);
+      const aEnd = presentBefore(seg.endOffset);
+      if (aEnd - aStart < 3) continue; // the audio for this span is gone
       const local = join(work, `seg-${seg.idx}.mp3`);
       await run(FFMPEG, [
         "-y",
-        "-ss", String(seg.startOffset),
-        "-to", String(seg.endOffset),
+        "-ss", String(aStart),
+        "-to", String(aEnd),
         "-i", fullLocal,
         "-c", "copy",
         local,
       ]);
-      const buf = await readFile(local);
+      let buf = await readFile(local);
       const storagePath = `${roomId}/seg-${seg.idx}.mp3`;
-      const segUp = await service.storage
+      let segUp = await service.storage
         .from(REC_BUCKET)
         .upload(storagePath, buf, { contentType: "audio/mpeg", upsert: true });
-      if (segUp.error) return fail(`segment upload failed: ${segUp.error.message}`);
+      if (segUp.error && isSizeError(segUp.error.message)) {
+        // one very long uninterrupted stretch (a discussion room with no clock
+        // markers) can exceed the cap - re-encode that cut smaller and retry
+        await run(FFMPEG, [
+          "-y", "-ss", String(aStart), "-to", String(aEnd),
+          "-i", fullLocal, "-ac", "1", "-c:a", "libmp3lame", "-q:a", "9", local,
+        ]);
+        buf = await readFile(local);
+        segUp = await service.storage
+          .from(REC_BUCKET)
+          .upload(storagePath, buf, { contentType: "audio/mpeg", upsert: true });
+      }
+      if (segUp.error) {
+        if (isSizeError(segUp.error.message) && fullStored) {
+          // even q9 mono won't fit: skip this one cut rather than burying the
+          // whole recording - the full file still carries the audio
+          console.error(`recording ${rec.id}: cut #${seg.idx} over the storage cap even at q9; skipped`);
+          await rm(local, { force: true }).catch(() => {});
+          continue;
+        }
+        return fail(`segment upload failed: ${segUp.error.message}`);
+      }
+      await rm(local, { force: true }).catch(() => {}); // /tmp discipline
       segRows.push({
         recording_id: rec.id,
         idx: seg.idx,
@@ -427,19 +645,22 @@ export async function processRecording(
     // check above this point only proves a file exists and is non-trivial in
     // BYTES; none of them would notice 11 minutes of digital silence sitting
     // where a 2.5 hour show should be.
+    if (!fullStored && segRows.length === 0) {
+      return fail("nothing fits under the storage size cap - the audio is safe in the radio segments; raise the Supabase upload limit and retry");
+    }
     const expectedSeconds = Math.max(0, (endMs - startMs) / 1000);
-    const measured = await measureAudio(fullLocal);
+    const measured = parseMeasure(encodeStderr) ?? (await measureAudio(fullLocal));
     const problem = integrityProblem(measured, expectedSeconds);
     const status = problem ? "damaged" : "ready";
     if (problem) {
       console.error(`recording ${rec.id}: DAMAGED - ${problem}`);
     }
 
-    await service
+    const { error: finalErr } = await service
       .from("recordings")
       .update({
         status,
-        full_mp3_path: fullPath,
+        full_mp3_path: fullStored ? fullPath : null,
         zip_path: zipPath,
         duration_seconds: expectedSeconds,
         audio_seconds: measured.seconds,
@@ -448,6 +669,14 @@ export async function processRecording(
         error: problem,
       })
       .eq("id", rec.id);
+    if (finalErr) return fail(`final status write failed: ${finalErr.message}`);
+
+    // The segments are deliberately NOT purged here: the marker-adjust recut
+    // (FR-13.3) re-runs this whole pipeline and needs its source intact, and a
+    // 3h full.mp3 cannot be re-derived from anything else under the storage
+    // cap. The daily cron purges radio prefixes 48h after a room ends - the
+    // recut window - which relaxes FR-14.2's live-only rule by two days
+    // (decision-logged as Assumed, founder can override).
 
     return { status, segments: segments.length };
   } catch (e) {

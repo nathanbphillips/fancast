@@ -4,9 +4,10 @@
  *
  *   npm run recording:reprocess -- <roomId> [roomId...]
  *
- * Recovery tool. The room's broadcast.mp4 must still be in the recordings
- * bucket (60-day retention); everything after that is rebuilt: full.mp3, the
- * per-segment MP3s and the zip. Safe to re-run - processRecording takes an
+ * Recovery tool. Needs the room's source to still exist: the radio-bucket
+ * segments for post-2026-08-22 rooms (kept 48h after the show, longer if
+ * processing never succeeded), or the legacy broadcast.mp4 for older rooms.
+ * Everything else is rebuilt: full.mp3, the per-segment MP3s and the zip. Safe to re-run - processRecording takes an
  * atomic claim, so a second run against the same room is a no-op while the
  * first is in flight.
  *

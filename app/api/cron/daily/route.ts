@@ -5,6 +5,7 @@ import { sweepNoShowRooms, syncFixtures } from "@/lib/fixtures";
 import { autoCreateSubscriptionRooms } from "@/lib/seasonHosting";
 import { drainDue } from "@/lib/notify/outbox";
 import { recomputeAll } from "@/lib/fanScore";
+import { purgeRadio } from "@/lib/egress";
 
 // league-wide sync + matching can take a moment
 export const maxDuration = 300;
@@ -67,6 +68,16 @@ export async function GET(request: NextRequest) {
     results.fanScoreRecompute = { ok: false, reason: String(err) };
   }
 
+  // Radio prefixes purge 48h after a room ends (2026-08-22): the segments are
+  // now the RECORDING SOURCE, so End Broadcast no longer deletes them - the
+  // marker-adjust recut needs them - but a public byte-identical copy of the
+  // show must not live forever either. 48h covers every realistic recut.
+  try {
+    results.radioSweep = await sweepRadio(service);
+  } catch (err) {
+    results.radioSweep = { ok: false, reason: String(err) };
+  }
+
   // 60-day retention (founder 2026-08-05). Recordings and diagnostics both grow
   // without bound otherwise: recordings are the expensive one (storage objects),
   // events the noisy one. Deleting the storage objects first means a failure
@@ -82,6 +93,41 @@ export async function GET(request: NextRequest) {
 }
 
 const RETENTION_DAYS = 60;
+
+/** Purge public radio segments 48h after a room ends - but NEVER while they
+ *  are still the only source of an unprocessed recording. A failed or stuck
+ *  recording keeps its segments until it reaches a good terminal state (or
+ *  until the 60-day retention backstop), because deleting them would turn a
+ *  retryable failure into permanent loss mislabeled "empty" (review
+ *  2026-08-22 - the exact catastrophe this pipeline exists to prevent). */
+async function sweepRadio(service: ReturnType<typeof createServiceClient>) {
+  const to = new Date(Date.now() - 48 * 3600_000).toISOString();
+  const from = new Date(Date.now() - 70 * 24 * 3600_000).toISOString();
+  const backstop = new Date(Date.now() - RETENTION_DAYS * 24 * 3600_000).toISOString();
+  const { data: rooms } = await service
+    .from("rooms")
+    .select("id, ended_at")
+    .not("ended_at", "is", null)
+    .gte("ended_at", from)
+    .lte("ended_at", to)
+    .limit(50);
+  let purged = 0;
+  for (const r of rooms ?? []) {
+    const { data: rec } = await service
+      .from("recordings")
+      .select("status")
+      .eq("room_id", r.id as string)
+      .maybeSingle();
+    const terminalGood = !rec || ["ready", "damaged", "empty"].includes(String(rec.status));
+    const pastBackstop = String(r.ended_at) < backstop;
+    if (!terminalGood && !pastBackstop) continue; // still someone's only source
+    const { data: any1 } = await service.storage.from("radio").list(r.id as string, { limit: 1 });
+    if (!any1?.length) continue;
+    await purgeRadio(service, r.id as string);
+    purged++;
+  }
+  return { ok: true, purged };
+}
 
 /** Delete recordings + telemetry older than the retention window. */
 async function pruneOldData(service: ReturnType<typeof createServiceClient>) {

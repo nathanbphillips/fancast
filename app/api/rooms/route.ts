@@ -6,7 +6,6 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import {
   deleteBroadcastRoom,
-  purgeRadio,
   startBroadcastEgress,
   stopBroadcastEgress,
 } from "@/lib/egress";
@@ -961,10 +960,10 @@ export async function POST(request: NextRequest) {
   if (room.hls_egress_id) {
     await stopBroadcastEgress(room.hls_egress_id);
   }
-  // radio is live-only; purge the public HLS copy so a byte-identical
-  // broadcast can't be re-fetched anonymously after the show (the private
-  // recording is the only durable copy — FR-14.2)
-  await purgeRadio(service, room.id);
+  // Radio is live-only (FR-14.2), but the segments are now ALSO the
+  // recording's SOURCE, so the purge moved to the daily cron's 48h sweep -
+  // purging here would destroy the show before it was processed, and the
+  // sweep keeps anything that is still an unprocessed recording's only source.
 
   const { data: rec } = await service
     .from("recordings")

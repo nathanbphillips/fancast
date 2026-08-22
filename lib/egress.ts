@@ -91,11 +91,24 @@ export async function purgeRadio(
   roomId: string,
 ): Promise<void> {
   try {
-    const { data } = await service.storage.from(RADIO_BUCKET).list(roomId);
-    if (data?.length) {
-      await service.storage
+    // PAGED. list() defaults to 100 rows, so the old single call deleted the
+    // first ~100 objects and silently left the rest - a 3h show is ~10,000
+    // segments. (That accident preserved the source for the 2026-08-21 rescue,
+    // and also ate that show's first 98 seconds.) Loop until the prefix is
+    // actually empty.
+    for (let round = 0; round < 200; round++) {
+      const { data } = await service.storage
+        .from(RADIO_BUCKET)
+        .list(roomId, { limit: 1000 });
+      if (!data?.length) break;
+      const { error } = await service.storage
         .from(RADIO_BUCKET)
         .remove(data.map((o) => `${roomId}/${o.name}`));
+      if (error) {
+        // a failing delete must not spin 200 confident no-op rounds
+        console.warn(`purgeRadio(${roomId}): remove failed, aborting: ${error.message}`);
+        break;
+      }
     }
   } catch (err) {
     console.warn(`purgeRadio(${roomId}) failed:`, (err as Error).message);
@@ -105,7 +118,7 @@ export async function purgeRadio(
 export type BroadcastEgress = {
   egressId: string;
   hlsUrl: string;
-  sourcePath: string;
+  sourcePath: string | null;
 };
 
 /** Start the combined radio + recording egress. Null when storage is
@@ -128,11 +141,14 @@ export async function startBroadcastEgress(
     emptyTimeout: 60 * 60,
   });
 
-  // both outputs share one composite encode, so they must agree on codec:
-  // HLS segments are AAC, so the recording file is MP4/AAC (not OGG/Opus,
-  // which would fail "no codec compatible with all outputs"). Processing
-  // transcodes the MP4 to MP3 either way.
-  const sourcePath = `${roomId}/broadcast.mp4`;
+  // SEGMENTS ONLY - no MP4 file output (2026-08-22). The egress used to also
+  // write one continuously growing broadcast.mp4, and at ~3h its S3 multipart
+  // upload crossed the Supabase max-object cap (413 EntityTooLarge). LiveKit
+  // treats a failed output as fatal, so it killed the WHOLE egress - the
+  // healthy segment output included - and the final 16 minutes of the first
+  // real match show were never captured by anything. One-second segments
+  // never grow, so no cap can ever kill the recorder again; processing now
+  // builds the recording from the segments (lib/recording.ts).
   const info = await egressClient().startRoomCompositeEgress(
     livekitRoomName(roomId),
     {
@@ -148,11 +164,6 @@ export async function startBroadcastEgress(
         segmentDuration: 1,
         output: { case: "s3", value: s3(RADIO_BUCKET) },
       }),
-      file: new EncodedFileOutput({
-        fileType: EncodedFileType.MP4,
-        filepath: sourcePath,
-        output: { case: "s3", value: s3(REC_BUCKET) },
-      }),
     },
     { audioOnly: true },
   );
@@ -161,7 +172,9 @@ export async function startBroadcastEgress(
   return {
     egressId: info.egressId,
     hlsUrl: `${base}/storage/v1/object/public/${RADIO_BUCKET}/${roomId}/live.m3u8`,
-    sourcePath,
+    // legacy field: new recordings are built from the radio segments, so
+    // there is no MP4 source object any more
+    sourcePath: null as string | null,
   };
 }
 
