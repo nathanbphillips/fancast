@@ -593,7 +593,10 @@ export async function processRecording(
         end_offset: seg.endOffset,
         storage_path: storagePath,
         size_bytes: buf.length,
-        duration_seconds: seg.endOffset - seg.startOffset,
+        // AUDIO length, not the wall span - on a truncated capture the wall
+        // span can be hours longer than the file (e2e 2026-08-22: a 27min
+        // file showed as 637min in the library)
+        duration_seconds: aEnd - aStart,
       });
       zipBytes += buf.length;
       if (!zipTooBig && zipBytes > ZIP_BUDGET_BYTES) {
