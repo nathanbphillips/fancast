@@ -17,7 +17,11 @@ export type MarkerKind =
   | "start_et"
   | "stop_et"
   | "broadcast_end"
-  | "manual";
+  | "manual"
+  // recording pause/resume (founder 2026-08-22): not segment boundaries -
+  // the span between them is EXCLUDED from every produced file
+  | "record_pause"
+  | "record_resume";
 
 export type Marker = {
   id: string;
@@ -40,7 +44,101 @@ export const SEGMENT_LABEL: Record<MarkerKind, string | null> = {
   stop_et: "Post-game show",
   broadcast_end: null, // closes the outermost span
   manual: "Segment",
+  record_pause: null,
+  record_resume: null,
 };
+
+export const PAUSE_KINDS: ReadonlySet<string> = new Set(["record_pause", "record_resume"]);
+
+/**
+ * Paused spans as [start, end) offsets in seconds from the recording start.
+ * Pairs up pause/resume in time order; a pause still open at the end closes
+ * at the recording end; stray resumes and double pauses are ignored. Pauses
+ * are final (no adjusted_ts), so server_ts is the only timestamp that counts.
+ */
+export function pauseIntervals(
+  markers: Pick<Marker, "kind" | "server_ts">[],
+  recordingStartMs: number,
+  recordingEndMs: number,
+): Array<[number, number]> {
+  const endOffset = Math.max(0, (recordingEndMs - recordingStartMs) / 1000);
+  const ordered = markers
+    .filter((m) => PAUSE_KINDS.has(m.kind))
+    .sort((a, b) => new Date(a.server_ts).getTime() - new Date(b.server_ts).getTime());
+  const out: Array<[number, number]> = [];
+  let open: number | null = null;
+  for (const m of ordered) {
+    const at = (new Date(m.server_ts).getTime() - recordingStartMs) / 1000;
+    if (m.kind === "record_pause" && open === null) open = at;
+    else if (m.kind === "record_resume" && open !== null) {
+      out.push([open, at]);
+      open = null;
+    }
+  }
+  if (open !== null) out.push([open, endOffset]);
+  return out
+    .map(([s, e]): [number, number] => [Math.max(0, Math.min(endOffset, s)), Math.max(0, Math.min(endOffset, e))])
+    .filter(([s, e]) => e > s);
+}
+
+/** Total paused seconds. */
+export function pausedTotal(intervals: Array<[number, number]>): number {
+  return intervals.reduce((a, [s, e]) => a + (e - s), 0);
+}
+
+/** Is the one-second segment at index `idx` (covering [idx, idx+1)) inside a
+ *  paused span? A second is dropped when its midpoint falls in the span, so
+ *  a pause lands on whole-second boundaries with no double-counting. */
+export function segmentPaused(idx: number, intervals: Array<[number, number]>): boolean {
+  return instantPaused(idx + 0.5, intervals);
+}
+
+/** Is the instant `atS` (seconds from recording start) inside a paused span? */
+export function instantPaused(atS: number, intervals: Array<[number, number]>): boolean {
+  return intervals.some(([s, e]) => atS >= s && atS < e);
+}
+
+/** One HLS segment as the egress described it in its playlist. */
+export type SegmentTiming = {
+  idx: number;
+  /** wall-clock start (EXT-X-PROGRAM-DATE-TIME), epoch ms */
+  startMs: number;
+  /** audio seconds in the file (EXTINF) */
+  durS: number;
+};
+
+/**
+ * Parse the egress's `full.m3u8` into per-segment wall-clock timing. The
+ * index is "wall second N" only approximately: a 1s AAC segment holds 43
+ * frames = 0.99846s, so the index drifts ~5.5s per hour (review 2026-08-23,
+ * measured on the Coventry show). The playlist carries the exact start time
+ * and duration of every segment, which is what pause exclusion and marker
+ * cuts need. Entries without a date tag (or unparseable) are skipped; the
+ * caller falls back to index arithmetic for anything missing.
+ */
+export function parseSegmentPlaylist(text: string): SegmentTiming[] {
+  const out: SegmentTiming[] = [];
+  let startMs: number | null = null;
+  let durS: number | null = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (line.startsWith("#EXT-X-PROGRAM-DATE-TIME:")) {
+      const t = Date.parse(line.slice("#EXT-X-PROGRAM-DATE-TIME:".length));
+      startMs = Number.isFinite(t) ? t : null;
+    } else if (line.startsWith("#EXTINF:")) {
+      const d = parseFloat(line.slice("#EXTINF:".length));
+      durS = Number.isFinite(d) && d > 0 ? d : null;
+    } else if (line && !line.startsWith("#")) {
+      const m = line.match(/seg_(\d+)\.ts$/);
+      if (m && startMs !== null && durS !== null) {
+        out.push({ idx: Number(m[1]), startMs, durS });
+      }
+      startMs = null;
+      durS = null;
+    }
+  }
+  return out;
+}
 
 const CLOCK_TO_KIND: Record<ClockAction, MarkerKind | null> = {
   start1h: "start_1h",
@@ -119,7 +217,10 @@ export function deriveSegments(
     new Date(m.adjusted_ts ?? m.server_ts).getTime();
 
   const endOffset = Math.max(0, (recordingEndMs - recordingStartMs) / 1000);
-  const ordered = [...markers].sort((a, b) => effective(a) - effective(b));
+  // pause/resume are exclusions handled by the caller, never boundaries
+  const ordered = markers
+    .filter((m) => !PAUSE_KINDS.has(m.kind))
+    .sort((a, b) => effective(a) - effective(b));
 
   // boundary points in seconds-from-start, each carrying the label of the
   // segment that begins there (broadcast_end carries null). Every boundary

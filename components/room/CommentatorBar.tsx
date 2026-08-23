@@ -50,6 +50,7 @@ export function CommentatorBar({
   micControls,
   speakerChips,
   clockControls,
+  recordingControls,
   roster,
   startDisabled = false,
 }: {
@@ -65,6 +66,8 @@ export function CommentatorBar({
   speakerChips?: React.ReactNode;
   /** Phase 6 clock controls slot */
   clockControls?: React.ReactNode;
+  /** pause / resume the recording (founder 2026-08-22); hidden outside recording states */
+  recordingControls?: React.ReactNode;
   /** host-only "who's here" roster popover (founder 2026-08-05) */
   roster?: React.ReactNode;
   /** FR-3.3: Start Broadcast requires a live mic */
@@ -327,6 +330,7 @@ export function CommentatorBar({
       </div>
 
       {clockControls}
+      {recordingControls}
       {micControls}
       {roster}
 

@@ -48,6 +48,16 @@ function PlayStopButton({
   );
 }
 
+/** Shown INSTEAD of the tech card when the host paused the recording and
+ *  muted (founder 2026-08-22): a deliberate break, not a fault. */
+export function BackShortlyCard() {
+  return (
+    <div className="flex-1 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5">
+      <p className="text-sm font-semibold">Back shortly. The commentator is taking a break.</p>
+    </div>
+  );
+}
+
 export function TechDifficultiesCard({ since }: { since: number | null }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
@@ -214,6 +224,7 @@ export function ListenerBar({
   onStop,
   techDifficulties,
   techSince,
+  breakNotice = false,
   canPublish,
   micStatus,
   micMuted,
@@ -252,6 +263,8 @@ export function ListenerBar({
   onStop: () => void;
   techDifficulties: boolean;
   techSince: number | null;
+  /** host paused the recording AND muted: show "back shortly", not a fault */
+  breakNotice?: boolean;
   canPublish: boolean;
   micStatus: MicStatus;
   micMuted: boolean;
@@ -462,7 +475,9 @@ export function ListenerBar({
       {/* DESKTOP: full inline bar */}
       <div className="hidden flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 lg:flex">
         {playButton}
-        {techDifficulties && !radioActive ? (
+        {breakNotice ? (
+          <BackShortlyCard />
+        ) : techDifficulties && !radioActive ? (
           <TechDifficultiesCard since={techSince} />
         ) : (
           /* on-air card (Cloud Design, founder 2026-07-02): who's speaking —
@@ -593,7 +608,12 @@ export function ListenerBar({
             )}
 
             {/* play + host card (tech difficulties swaps in) */}
-            {techDifficulties && !radioActive ? (
+            {breakNotice ? (
+              <div className="mb-3 flex items-center gap-2.5">
+                {playButton}
+                <BackShortlyCard />
+              </div>
+            ) : techDifficulties && !radioActive ? (
               <div className="mb-3 flex items-center gap-2.5">
                 {playButton}
                 <TechDifficultiesCard since={techSince} />
@@ -698,10 +718,12 @@ export function ListenerBar({
                   read differently — no fake "Synced" claims (audit 2026-07-02) */}
               <span
                 className={`ml-auto min-w-0 truncate text-right font-mono text-[9px] tracking-[0.05em] uppercase ${
-                  techDifficulties && !radioActive ? "text-red" : "text-secondary"
+                  techDifficulties && !radioActive && !breakNotice ? "text-red" : "text-secondary"
                 }`}
               >
-                {techDifficulties && !radioActive
+                {breakNotice
+                  ? "Back shortly ▼"
+                  : techDifficulties && !radioActive
                   ? "Tech difficulties ▼"
                   : radioActive
                     ? "Radio playing ▼"

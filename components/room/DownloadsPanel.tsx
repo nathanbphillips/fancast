@@ -33,6 +33,8 @@ type RecData = {
   files: RecFile[];
   zipUrl: string | null;
   markers: RecMarker[];
+  /** recording pauses (founder 2026-08-22): stretches the host cut out live */
+  pauses?: { count: number; excludedSeconds: number };
   courtesyLine: string;
 };
 
@@ -163,6 +165,14 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           {rec.status === "recording" &&
             "Finishing up — your files appear here automatically."}
         </p>
+        {data.pauses && data.pauses.count > 0 && (
+          <p className="mt-0.5 text-xs text-secondary tabular-nums">
+            {data.pauses.count === 1
+              ? "1 recording pause"
+              : `${data.pauses.count} recording pauses`}{" "}
+            · {fmtDuration(data.pauses.excludedSeconds)} left out of the files.
+          </p>
+        )}
       </div>
 
       {/* A damaged recording downloads perfectly well, which is exactly the

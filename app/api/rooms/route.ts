@@ -22,6 +22,7 @@ import {
   enqueueRoomScheduled,
 } from "@/lib/notify/producers";
 import { ffmpegProbe, triggerProcessing } from "@/lib/recording";
+import { recordingPauseState } from "@/lib/recordingPause";
 import type { Room, RoomState } from "@/lib/db/types";
 import { isAdmin } from "@/lib/roles";
 
@@ -955,6 +956,12 @@ export async function POST(request: NextRequest) {
   }
   await publishState(room.id, "wrapped");
 
+  // a recording pause still open at the end is closed here, so the data is
+  // never left dangling (processing would treat it as running to the end anyway)
+  const pauseState = await recordingPauseState(service, room.id);
+  if (pauseState.paused) {
+    await emitMarker(service, room.id, "record_resume", endedAt, "auto", "Recording resumed");
+  }
   // close the outermost span (FR-13.2), stop the egress, kick off cutting
   await emitMarker(service, room.id, "broadcast_end", endedAt, "auto");
   if (room.hls_egress_id) {

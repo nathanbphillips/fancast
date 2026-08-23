@@ -5,6 +5,7 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import { ffmpegProbe, triggerProcessing } from "@/lib/recording";
 import { ensureRecordingsPrivate } from "@/lib/egress";
+import { PAUSE_KINDS, pauseIntervals, pausedTotal } from "@/lib/markers";
 import { isAdmin } from "@/lib/roles";
 import { isRoomHost } from "@/lib/roomHosts";
 
@@ -171,6 +172,14 @@ export async function GET(request: NextRequest) {
     .eq("room_id", roomId)
     .order("server_ts", { ascending: true });
 
+  // recording pauses (founder 2026-08-22) are exclusions, not boundaries:
+  // never adjustable, summarised for the host instead
+  const pauseSpans = pauseIntervals(
+    markers ?? [],
+    new Date(rec.started_at).getTime(),
+    rec.ended_at ? new Date(rec.ended_at).getTime() : Date.now(),
+  );
+
   return NextResponse.json({
     recording: {
       status: rec.status,
@@ -180,7 +189,13 @@ export async function GET(request: NextRequest) {
     },
     files,
     zipUrl,
-    markers: (markers ?? []).filter((m) => m.kind !== "broadcast_start" && m.kind !== "broadcast_end"),
+    markers: (markers ?? []).filter(
+      (m) => m.kind !== "broadcast_start" && m.kind !== "broadcast_end" && !PAUSE_KINDS.has(m.kind),
+    ),
+    pauses: {
+      count: pauseSpans.length,
+      excludedSeconds: Math.round(pausedTotal(pauseSpans)),
+    },
     courtesyLine: `Recorded live on ${brand.name} during ${fixtureLabel}.`,
   });
 }
@@ -225,16 +240,22 @@ export async function POST(request: NextRequest) {
     // adjusted marker strictly between its neighbours — a boundary that
     // crosses another would scramble segment labels (derivation orders by
     // time but labels are intrinsic to marker kind)
-    const { data: markers } = await service
+    const { data: allMarkers } = await service
       .from("broadcast_markers")
-      .select("id, server_ts, adjusted_ts")
+      .select("id, kind, server_ts, adjusted_ts")
       .eq("room_id", body.roomId)
       .order("server_ts", { ascending: true });
-    const idx = (markers ?? []).findIndex((m) => m.id === body.markerId);
+    // pauses are final (founder 2026-08-22): not a boundary, never nudged,
+    // and not a neighbour either so a real boundary keeps its full +-2 min
+    if ((allMarkers ?? []).some((m) => m.id === body.markerId && PAUSE_KINDS.has(m.kind))) {
+      return NextResponse.json({ error: "Recording pauses cannot be adjusted." }, { status: 400 });
+    }
+    const markers = (allMarkers ?? []).filter((m) => !PAUSE_KINDS.has(m.kind));
+    const idx = markers.findIndex((m) => m.id === body.markerId);
     if (idx === -1) {
       return NextResponse.json({ error: "Marker not found." }, { status: 404 });
     }
-    const marker = markers![idx];
+    const marker = markers[idx];
     const eff = (m: { server_ts: string; adjusted_ts: string | null }) =>
       new Date(m.adjusted_ts ?? m.server_ts).getTime();
     const base = new Date(marker.server_ts).getTime();
@@ -250,8 +271,8 @@ export async function POST(request: NextRequest) {
     const GAP = 250; // keep a small gap so boundaries never coincide
     let lo = base - 120_000;
     let hi = base + 120_000;
-    if (idx > 0) lo = Math.max(lo, eff(markers![idx - 1]) + GAP);
-    if (idx < markers!.length - 1) hi = Math.min(hi, eff(markers![idx + 1]) - GAP);
+    if (idx > 0) lo = Math.max(lo, eff(markers[idx - 1]) + GAP);
+    if (idx < markers.length - 1) hi = Math.min(hi, eff(markers[idx + 1]) - GAP);
     if (rec?.started_at) lo = Math.max(lo, new Date(rec.started_at).getTime());
     if (rec?.ended_at) hi = Math.min(hi, new Date(rec.ended_at).getTime());
 

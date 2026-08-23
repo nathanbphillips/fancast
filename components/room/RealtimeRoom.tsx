@@ -40,6 +40,7 @@ import {
 import { SyncSheet } from "./audio/SyncSheet";
 import { useRoomAudio } from "./audio/useRoomAudio";
 import { ClockControls } from "./ClockControls";
+import { RecordingControls } from "./RecordingControls";
 import { CommentatorBar } from "./CommentatorBar";
 import { Countdown } from "./Countdown";
 import { DownloadsPanel } from "./DownloadsPanel";
@@ -109,6 +110,16 @@ export type RoomInfo = {
   demo: boolean;
 };
 
+// recording exists only between Start and End Broadcast (mirrors /api/recording-pause)
+const RECORDING_STATES: ReadonlySet<RoomState> = new Set<RoomState>([
+  "pregame",
+  "live_1h",
+  "halftime",
+  "live_2h",
+  "extra_time",
+  "postgame",
+]);
+
 type Props = {
   room: RoomInfo;
   viewer: Viewer;
@@ -134,6 +145,8 @@ type Props = {
   initialChatOpen: boolean;
   initialLinksOpen: boolean;
   initialHlsUrl: string | null;
+  /** ISO time the recording was paused at, null when recording normally */
+  initialRecordingPausedSince: string | null;
   initialClockEvents: ClockEventInput[];
 };
 
@@ -217,6 +230,10 @@ export function RealtimeRoom(props: Props) {
   const [chatOpen, setChatOpen] = useState(props.initialChatOpen);
   const [linksOpen, setLinksOpen] = useState(props.initialLinksOpen);
   const [hlsUrl, setHlsUrl] = useState(props.initialHlsUrl);
+  // recording pause (founder 2026-08-22): shared host state, DB is truth
+  const [recordingPausedSince, setRecordingPausedSince] = useState<string | null>(
+    props.initialRecordingPausedSince,
+  );
   const [clockEvents, setClockEvents] = useState<ClockEventInput[]>(
     props.initialClockEvents,
   );
@@ -256,6 +273,7 @@ export function RealtimeRoom(props: Props) {
   const [statsPushNonce, setStatsPushNonce] = useState(0);
   // reconnect resilience (M-4): rehydrate room state from the DB on a *re*connect
   const lastStateTsRef = useRef(""); // newest `state` event ts seen
+  const lastRecordingTsRef = useRef(""); // newest `recording` event ts seen
   const lastOverrideTsRef = useRef(""); // newest `stat_overrides` event ts seen
   const pendingOverrideRef = useRef(false); // an optimistic override save is in flight
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
@@ -455,6 +473,7 @@ export function RealtimeRoom(props: Props) {
       rehydratingRef.current = true;
       const tsBefore = lastStateTsRef.current;
       const ovTsBefore = lastOverrideTsRef.current;
+      const recTsBefore = lastRecordingTsRef.current;
       try {
         const res = await fetch(`/api/rooms/${room.id}/snapshot`, {
           cache: "no-store",
@@ -470,6 +489,7 @@ export function RealtimeRoom(props: Props) {
           chatOpen: boolean;
           linksOpen: boolean;
           hlsUrl: string | null;
+          recordingPausedSince?: string | null;
           clockEvents: ClockEventInput[];
           messages: ChatMessage[];
           links: Link[];
@@ -504,6 +524,10 @@ export function RealtimeRoom(props: Props) {
         setChatOpen(s.chatOpen);
         setLinksOpen(s.linksOpen);
         setHlsUrl(s.hlsUrl);
+        // same guard as `state`: a pause/resume that landed mid-fetch is newer
+        // than the snapshot that was read before it
+        if (lastRecordingTsRef.current === recTsBefore)
+          setRecordingPausedSince(s.recordingPausedSince ?? null);
         setClockEvents((prev) => {
           const merged = [...prev];
           for (const e of s.clockEvents ?? []) {
@@ -659,6 +683,13 @@ export function RealtimeRoom(props: Props) {
     });
     control.subscribe("radio", (msg) => {
       setHlsUrl((msg.data as { url: string }).url);
+    });
+    control.subscribe("recording", (msg) => {
+      const d = msg.data as { paused: boolean; since: string | null; at?: string };
+      // rewind can replay history: never let an older pause/resume win
+      if (d.at && d.at < lastRecordingTsRef.current) return;
+      if (d.at) lastRecordingTsRef.current = d.at;
+      setRecordingPausedSince(d.paused ? d.since : null);
     });
     control.subscribe("clock", (msg) => {
       const e = msg.data as ClockEventInput;
@@ -1203,6 +1234,15 @@ export function RealtimeRoom(props: Props) {
     }
   };
 
+  // The hosts have gone quiet on purpose: every host this listener can hear
+  // is muted, or no host is publishing at all (Mic off is the other way to
+  // take a break, review 2026-08-23). Only meaningful on a CONNECTED sync
+  // listener; an idle or radio listener has an empty speaker list and must
+  // not be told the host is on a break. Co-hosts count (identity = user id).
+  const hostSpeakers = audio.speakers.filter((s) => room.hostIds.includes(s.identity));
+  const hostsAllMuted =
+    audio.listenStatus === "live" && hostSpeakers.every((s) => s.muted);
+
   const bar = isRoomCommentator ? (
     <CommentatorBar
       roomId={room.id}
@@ -1218,6 +1258,18 @@ export function RealtimeRoom(props: Props) {
         roomState === "wrapped" || isDiscussion ? null : (
           <ClockControls roomId={room.id} state={roomState} />
         )
+      }
+      recordingControls={
+        RECORDING_STATES.has(roomState) && hlsUrl !== null ? (
+          <RecordingControls
+            roomId={room.id}
+            pausedSince={recordingPausedSince}
+            onState={(since, at) => {
+              if (at && at > lastRecordingTsRef.current) lastRecordingTsRef.current = at;
+              setRecordingPausedSince(since);
+            }}
+          />
+        ) : null
       }
       micControls={
         roomState === "wrapped" ? null : (
@@ -1265,6 +1317,11 @@ export function RealtimeRoom(props: Props) {
         roomState !== "halftime"
       }
       techSince={audio.techSince}
+      // "back shortly" (founder 2026-08-22): only when the host paused the
+      // recording AND muted; a pause on its own is invisible to listeners
+      breakNotice={
+        RECORDING_STATES.has(roomState) && recordingPausedSince !== null && hostsAllMuted
+      }
       canPublish={viewer !== null && audio.canPublish}
       micStatus={audio.micStatus}
       micError={audio.micError}

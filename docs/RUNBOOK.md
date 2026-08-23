@@ -32,7 +32,8 @@ Operational guide for running a broadcast — pre-flight checks, the live flow, 
    - A guest goes live on accept; end a call via the **X** on their speaker chip, or they tap **Leave Air**. Ending a call is **neutral** — no effect on the caller's standing.
    - Problem callers: **flag** the caller (informational note on future cards) and/or apply a **reversible call-in block** (bars their call-ins only). Both are commentator-only.
 7. **Self-delay** (commentator bar) — route your mic through the delay node (Off, or 1–5s) if you're watching a delayed feed.
-8. **End Broadcast** — room → `wrapped`. Recording processing kicks off asynchronously; the **Downloads panel** shows status → full MP3 + per-segment MP3s + a zip, with ±2 min marker adjust + recut. Radio HLS is **purged** on End (radio is live-only); the private recording is the durable copy.
+7b. **Pause recording** (commentator bar, next to the clock): listeners keep hearing you and the radio keeps streaming; only the recording skips until you tap **Resume recording**. The REC indicator turns amber and counts the pause. Co-hosts share the state. Pauses are final (no post-show editing), and End Broadcast closes one left open. If you also **mute** your mic, listeners see a "Back shortly" card instead of "Technical difficulties"; the mic is never muted for you.
+8. **End Broadcast** — room → `wrapped`. Recording processing kicks off asynchronously; the **Downloads panel** shows status → full MP3 + per-segment MP3s + a zip, with ±2 min marker adjust + recut. Radio segments are kept for **48h** (they are the recording's source and the recut source), then swept by the daily cron; the private recording is the durable copy.
 
 ## If something breaks
 

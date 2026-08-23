@@ -10,6 +10,7 @@ import type { Link, Question, TalkRequest } from "@/lib/db/types";
 import { predictionAggregate } from "@/lib/predictions";
 import { loadActivePoll } from "@/lib/polls";
 import { ratingsAggregate } from "@/lib/ratings";
+import { recordingPauseState } from "@/lib/recordingPause";
 import { loadRoomThreadMessages } from "@/lib/db/threads";
 import { isAdmin } from "@/lib/roles";
 import { isRoomHost } from "@/lib/roomHosts";
@@ -51,6 +52,7 @@ export async function GET(
 
   const service = createServiceClient();
   const [
+    recordingPause,
     { data: clockEvents },
     { data: sliderRows },
     { data: predRows },
@@ -58,6 +60,7 @@ export async function GET(
     messages,
     { data: links },
   ] = await Promise.all([
+    recordingPauseState(service, id),
     supabase
       .from("clock_events")
       .select("action, server_ts, offset_seconds")
@@ -139,6 +142,8 @@ export async function GET(
     chatOpen: room.chat_open,
     linksOpen: room.links_open,
     hlsUrl: room.hls_url,
+    // recording pause (founder 2026-08-22): reconstructable after reconnect
+    recordingPausedSince: recordingPause.paused ? recordingPause.since : null,
     clockEvents: clockEvents ?? [],
     messages: messages ?? [],
     links: links ?? [],

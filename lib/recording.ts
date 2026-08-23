@@ -9,7 +9,15 @@ import { EgressClient, EgressStatus } from "livekit-server-sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/db/server";
 import { deleteBroadcastRoom } from "@/lib/egress";
-import { deriveSegments, type Marker } from "@/lib/markers";
+import {
+  deriveSegments,
+  instantPaused,
+  parseSegmentPlaylist,
+  pauseIntervals,
+  pausedTotal,
+  type Marker,
+  type SegmentTiming,
+} from "@/lib/markers";
 
 const run = promisify(execFile);
 const REC_BUCKET = "recordings";
@@ -234,6 +242,22 @@ export function integrityProblem(
 const RADIO_BUCKET = "radio";
 // fewer surviving seconds than this means nothing was really captured
 const MIN_SEGMENTS = 5;
+// audio seconds in a nominal 1s segment when the playlist is unavailable:
+// 43 AAC frames x 1024 samples at 44.1kHz; measured 0.99844 on a 3h show
+const FALLBACK_SEG_S = 0.998458;
+
+/** The egress's own per-segment timing from `full.m3u8`, or null when the
+ *  playlist is missing (purged, or an egress that never wrote one). */
+async function loadSegmentTimeline(
+  service: SupabaseClient,
+  roomId: string,
+): Promise<Map<number, SegmentTiming> | null> {
+  const { data } = await service.storage.from(RADIO_BUCKET).download(`${roomId}/full.m3u8`);
+  if (!data) return null;
+  const entries = parseSegmentPlaylist(await data.text());
+  if (entries.length === 0) return null;
+  return new Map(entries.map((e) => [e.idx, e]));
+}
 
 /**
  * The per-second HLS segments in the radio bucket, in playback order. Since
@@ -378,6 +402,22 @@ export async function processRecording(
   // wall-offset -> audio-offset mapping; identity for the legacy MP4 path
   let presentBefore: (wallOffsetS: number) => number = (s) => s;
 
+  // every marker, fetched once: lifecycle kinds cut the files, pause/resume
+  // kinds EXCLUDE seconds (founder 2026-08-22: "Pause recording" leaves the
+  // broadcast on air and simply keeps that stretch out of every file)
+  const { data: markers } = await service
+    .from("broadcast_markers")
+    .select("kind, label, server_ts, adjusted_ts")
+    .eq("room_id", roomId);
+  const startMs = new Date(rec.started_at).getTime();
+  const endMs = new Date(rec.ended_at ?? rec.started_at).getTime();
+  const pauses = pauseIntervals(
+    (markers ?? []) as Pick<Marker, "kind" | "server_ts">[],
+    startMs,
+    endMs,
+  );
+  const pausedSeconds = pausedTotal(pauses);
+
   try {
     if (legacySource) {
       // legacy path: the room-mix MP4 from a pre-2026-08-22 egress
@@ -399,24 +439,51 @@ export async function processRecording(
         return fail((e as Error).message);
       }
       if (names.length < MIN_SEGMENTS) return markEmpty(service, rec.id);
-      // Gap awareness (review 2026-08-22): markers are wall-clock, audio time
-      // is "seconds actually present". Missing indices (storage holes or
-      // skipped downloads) compress the audio, so every marker offset is
-      // remapped through a present-before count further down.
-      const presentIdx = names.map((n) => Number(n.match(/\d+/)![0]));
-      const firstIdx = presentIdx[0];
-      presentBefore = (wallOffsetS: number) => {
-        const target = firstIdx + wallOffsetS;
-        // count of present segments with index < target = audio seconds before
-        let lo = 0, hi = presentIdx.length;
-        while (lo < hi) {
-          const mid = (lo + hi) >> 1;
-          if (presentIdx[mid] < target) lo = mid + 1;
-          else hi = mid;
-        }
-        return lo;
+
+      // Wall-clock timing per segment (review 2026-08-23). A "1s" segment is
+      // really 0.99846s of audio, so index arithmetic drifts ~5.5s/hour; the
+      // playlist the egress wrote carries each segment's exact start time and
+      // duration. Index arithmetic from an anchor is the fallback only when
+      // the playlist is gone (an old purge, or an egress that never wrote one).
+      const timeline = await loadSegmentTimeline(service, roomId);
+      const firstIdx = Number(names[0].match(/\d+/)![0]);
+      const anchor: { idx: number; startMs: number } = timeline
+        ? (() => {
+            const e = [...timeline.values()].sort((a, b) => a.idx - b.idx)[0];
+            return { idx: e.idx, startMs: e.startMs };
+          })()
+        : { idx: firstIdx, startMs };
+      const timingOf = (idx: number): { startMs: number; durS: number } =>
+        timeline?.get(idx) ?? {
+          startMs: anchor.startMs + (idx - anchor.idx) * FALLBACK_SEG_S * 1000,
+          durS: FALLBACK_SEG_S,
+        };
+      // a segment's midpoint, in seconds from the recording's started_at (the
+      // unit pause spans and marker offsets use)
+      const midOf = (idx: number): number => {
+        const t = timingOf(idx);
+        return (t.startMs - startMs) / 1000 + t.durS / 2;
       };
+      console.log(
+        `recording ${rec.id}: segment timing from ${timeline ? `playlist (${timeline.size} entries)` : "index fallback (no playlist)"}`,
+      );
+
+      // Pause recording: drop every segment whose midpoint lies inside a paused
+      // span BEFORE the stitch; the audio-time remap below then lands every
+      // later marker on the right second automatically.
+      if (pauses.length) {
+        const before = names.length;
+        names = names.filter((n) => !instantPaused(midOf(Number(n.match(/\d+/)![0])), pauses));
+        console.log(`recording ${rec.id}: ${pauses.length} pause(s) exclude ${before - names.length} segment(s)`);
+        if (names.length < MIN_SEGMENTS) return markEmpty(service, rec.id);
+      }
+
       await writeFile(sourceLocal, Buffer.alloc(0));
+      // Gap awareness (review 2026-08-22): markers are wall-clock, audio time
+      // is "seconds actually present". Only segments that really reached the
+      // source file count, so storage holes AND unreadable downloads both
+      // compress the audio the way the file does.
+      const kept: { midS: number; durS: number }[] = [];
       let missing = 0;
       const BATCH = 24;
       for (let i = 0; i < names.length; i += BATCH) {
@@ -436,9 +503,13 @@ export async function processRecording(
             return null;
           }),
         );
-        for (const b of bufs) {
-          if (b) await appendFile(sourceLocal, b);
-          else missing++;
+        for (let j = 0; j < bufs.length; j++) {
+          const b = bufs[j];
+          if (b) {
+            await appendFile(sourceLocal, b);
+            const idx = Number(batch[j].match(/\d+/)![0]);
+            kept.push({ midS: midOf(idx), durS: timingOf(idx).durS });
+          } else missing++;
         }
         // a few unfetchable seconds is a warning; a large hole must never be
         // handed to a host labelled "ready"
@@ -449,6 +520,19 @@ export async function processRecording(
       if (missing > 0) {
         console.warn(`recording ${rec.id}: proceeding without ${missing} unreadable segment(s) (~${missing}s)`);
       }
+      // audio seconds before a wall offset = total duration of the kept
+      // segments whose midpoint precedes it (prefix sums + binary search)
+      const prefix: number[] = new Array(kept.length + 1).fill(0);
+      for (let i = 0; i < kept.length; i++) prefix[i + 1] = prefix[i] + kept[i].durS;
+      presentBefore = (wallOffsetS: number) => {
+        let lo = 0, hi = kept.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (kept[mid].midS < wallOffsetS) lo = mid + 1;
+          else hi = mid;
+        }
+        return prefix[lo];
+      };
     }
 
     // One-time transcode to the headline full MP3, WITH the integrity
@@ -505,12 +589,9 @@ export async function processRecording(
     }
 
     // derive segments from markers
-    const { data: markers } = await service
-      .from("broadcast_markers")
-      .select("kind, label, server_ts, adjusted_ts")
-      .eq("room_id", roomId);
-    const startMs = new Date(rec.started_at).getTime();
-    const endMs = new Date(rec.ended_at ?? rec.started_at).getTime();
+    if (legacySource && pauses.length) {
+      console.warn(`recording ${rec.id}: ${pauses.length} pause marker(s) ignored on the legacy MP4 path`);
+    }
     const segments = deriveSegments(
       (markers ?? []) as Pick<Marker, "kind" | "label" | "server_ts" | "adjusted_ts">[],
       startMs,
@@ -651,7 +732,8 @@ export async function processRecording(
     if (!fullStored && segRows.length === 0) {
       return fail("nothing fits under the storage size cap - the audio is safe in the radio segments; raise the Supabase upload limit and retry");
     }
-    const expectedSeconds = Math.max(0, (endMs - startMs) / 1000);
+    // paused stretches are deliberately absent, not lost
+    const expectedSeconds = Math.max(0, (endMs - startMs) / 1000 - (legacySource ? 0 : pausedSeconds));
     const measured = parseMeasure(encodeStderr) ?? (await measureAudio(fullLocal));
     const problem = integrityProblem(measured, expectedSeconds);
     const status = problem ? "damaged" : "ready";

@@ -23,7 +23,7 @@ Tier requirements: **LiveKit Ship ($50/mo) before any real session** (free tier 
 | follows | follower_id, commentator_id, created_at |
 | rooms | id, fixture_id, commentator_id, state, scheduled_kickoff, opened_at, started_at, ended_at, livekit_room |
 | clock_events | room_id, action (start1h/stop1h/start2h/stop2h/adjust), server_ts, offset_seconds |
-| broadcast_markers | room_id, label, server_ts, source (auto/manual), adjusted_ts |
+| broadcast_markers | room_id, kind, label, server_ts, source (auto/manual), adjusted_ts. Kinds record_pause / record_resume (0046) are recording exclusions, not segment boundaries: never adjustable, dropped by deriveSegments, removed from the stitch by processRecording |
 | chat_messages | room_id, user_id, body, created_at, hidden_by (null/flags/commentator/admin), is_waiting_room |
 | message_votes | message_id, user_id, value (+1/-1), unique pair |
 | message_flags | message_id, user_id, weight, created_at |

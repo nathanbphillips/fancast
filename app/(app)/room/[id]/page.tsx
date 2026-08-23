@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { recordingPauseState } from "@/lib/recordingPause";
 import NextLink from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { looksLikeUuid } from "@/lib/slug";
@@ -212,7 +213,7 @@ export default async function RoomPage({
 
   // chat as COMPLETE threads (Phase 11): the N most recent roots + all their
   // replies, so reconnect/first-paint never split a thread across the cap
-  const [messages, { data: links }, { data: clockEvents }] = await Promise.all([
+  const [messages, { data: links }, { data: clockEvents }, recordingPause] = await Promise.all([
     loadRoomThreadMessages(supabase, room.id),
     supabase
       .from("links")
@@ -226,6 +227,9 @@ export default async function RoomPage({
       .select("action, server_ts, offset_seconds")
       .eq("room_id", room.id)
       .order("server_ts", { ascending: true }),
+    // service client: broadcast_markers RLS is commentator/admin-only, but
+    // every listener needs the pause state for the "back shortly" card
+    recordingPauseState(createServiceClient(), room.id),
   ]);
 
   const myMessageVotes: Record<string, 1 | -1> = {};
@@ -486,6 +490,7 @@ export default async function RoomPage({
       initialChatOpen={room.chat_open}
       initialLinksOpen={room.links_open}
       initialHlsUrl={room.hls_url}
+      initialRecordingPausedSince={recordingPause.paused ? recordingPause.since : null}
       initialClockEvents={
         (clockEvents ?? []) as import("@/lib/clock").ClockEventInput[]
       }
