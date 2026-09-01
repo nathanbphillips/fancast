@@ -85,16 +85,9 @@ export function ClockControls({
           {primary("Full time", "stop2h")}
         </>
       )}
-      {state === "postgame" && (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => send("start_et")}
-          className="h-9 rounded-md border border-line px-3 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
-        >
-          Start ET
-        </button>
-      )}
+      {/* Extra time retired (founder 2026-09-01): the five segments are
+          Pre-game / 1H / Halftime / 2H / Post-game. The End ET button below
+          stays only as the exit for a room already in that legacy state. */}
       {state === "extra_time" && (
         <>
           {adjusters}

@@ -17,7 +17,9 @@ import { isRoomHost } from "@/lib/roomHosts";
 
 const bodySchema = z.object({
   roomId: z.uuid(),
-  action: z.enum(["start1h", "stop1h", "start2h", "stop2h", "start_et", "stop_et", "adjust"]),
+  // start_et removed (founder 2026-09-01: extra time retired); stop_et stays
+  // as the exit for a room already in the legacy extra_time state
+  action: z.enum(["start1h", "stop1h", "start2h", "stop2h", "stop_et", "adjust"]),
   /** for adjust: ±1s steps from the bar (small bounds for safety) */
   offsetSeconds: z.number().int().min(-10).max(10).optional(),
 });
@@ -31,7 +33,6 @@ const TRANSITIONS: Record<
   stop1h: { from: ["live_1h"], to: "halftime" },
   start2h: { from: ["halftime"], to: "live_2h" },
   stop2h: { from: ["live_2h"], to: "postgame" },
-  start_et: { from: ["postgame"], to: "extra_time" },
   stop_et: { from: ["extra_time"], to: "postgame" },
   adjust: { from: ["live_1h", "live_2h", "extra_time"], to: null },
 };

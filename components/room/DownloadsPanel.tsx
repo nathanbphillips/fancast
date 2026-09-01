@@ -40,8 +40,74 @@ type RecData = {
   attempts?: number;
   /** why there is no Full broadcast file, when that is by design */
   fullNote?: string | null;
+  /** podcast-style notes for the pre/post-game shows (match rooms only) */
+  episodeNotes?: {
+    pregame: { title: string; description: string; txtName: string };
+    postgame: { title: string; description: string; txtName: string };
+  } | null;
+  podcast?: { canPublish: boolean; publishedAt: string | null };
   courtesyLine: string;
 };
+
+/** copy-to-clipboard with a brief confirmation flash */
+function CopyBtn({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={() => {
+        void navigator.clipboard?.writeText(text).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        });
+      }}
+      className="h-8 shrink-0 rounded-md border border-line px-2 text-[11px] font-semibold text-secondary hover:text-primary"
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
+}
+
+/** episode notes block: title + description, copyable, downloadable as .txt */
+function NotesBlock({
+  heading,
+  note,
+}: {
+  heading: string;
+  note: { title: string; description: string; txtName: string };
+}) {
+  const txt = `${note.title}\n\n${note.description}\n`;
+  return (
+    <div className="rounded-lg border-[0.75px] border-line bg-raised p-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-mono text-[10px] tracking-[0.08em] text-secondary uppercase">{heading}</p>
+        <button
+          type="button"
+          onClick={() => {
+            const url = URL.createObjectURL(new Blob([txt], { type: "text/plain" }));
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = note.txtName;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 5000);
+          }}
+          className="h-8 shrink-0 rounded-md border border-line px-2 text-[11px] font-semibold text-secondary hover:text-primary"
+        >
+          Download .txt
+        </button>
+      </div>
+      <div className="mt-2 flex items-start gap-2">
+        <p className="min-w-0 flex-1 text-sm font-semibold">{note.title}</p>
+        <CopyBtn text={note.title} label={`Copy the ${heading} title`} />
+      </div>
+      <div className="mt-1.5 flex items-start gap-2">
+        <p className="min-w-0 flex-1 text-xs text-secondary">{note.description}</p>
+        <CopyBtn text={note.description} label={`Copy the ${heading} description`} />
+      </div>
+    </div>
+  );
+}
 
 function fmtDuration(s: number | null): string {
   if (s == null) return "—";
@@ -60,6 +126,8 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
   const [data, setData] = useState<RecData | null>(null);
   const [pending, setPending] = useState<Record<string, number>>({});
   const [recutting, setRecutting] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [podcastError, setPodcastError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -95,6 +163,25 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
         No recording for this session.
       </div>
     );
+  }
+
+  async function publishPodcast() {
+    setPublishing(true);
+    setPodcastError(null);
+    try {
+      const res = await fetch("/api/podcast/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId }),
+      });
+      const body = (await res.json().catch(() => null)) as { error?: string } | null;
+      if (!res.ok) setPodcastError(body?.error ?? "Publish failed. Try again.");
+      await load();
+    } catch {
+      setPodcastError("Publish failed. Try again.");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   async function triggerProcess() {
@@ -283,6 +370,62 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
               </li>
             ))}
           </ul>
+
+          {data.episodeNotes && (
+            <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">
+              <h3 className="text-sm font-bold">Episode notes</h3>
+              <p className="mt-0.5 text-xs text-secondary">
+                Ready-made title and description for each show. Copy them, or
+                download as .txt.
+              </p>
+              <div className="mt-3 space-y-2">
+                <NotesBlock heading="Pre-game show" note={data.episodeNotes.pregame} />
+                <NotesBlock heading="Post-game show" note={data.episodeNotes.postgame} />
+              </div>
+            </section>
+          )}
+
+          {data.podcast && (data.podcast.canPublish || data.podcast.publishedAt) && (
+            <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">
+              <h3 className="text-sm font-bold">Podcast</h3>
+              {data.podcast.publishedAt ? (
+                <p className="mt-0.5 text-sm text-secondary">
+                  The post-game show is on the {brand.name} podcast feed
+                  (published {new Date(data.podcast.publishedAt).toLocaleDateString()}).
+                  Spotify picks changes up on its next poll, usually within the
+                  hour. Publishing again replaces the audio and notes.
+                </p>
+              ) : (
+                <p className="mt-0.5 text-sm text-secondary">
+                  One tap puts the post-game show on the {brand.name} podcast
+                  feed; Spotify ingests it automatically, usually within the
+                  hour.
+                </p>
+              )}
+              {podcastError && <p className="mt-2 text-xs text-red">{podcastError}</p>}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  disabled={publishing || !data.podcast.canPublish}
+                  onClick={() => void publishPodcast()}
+                  className="h-11 rounded-lg bg-red px-5 text-sm font-bold text-white disabled:opacity-60"
+                >
+                  {publishing
+                    ? "Publishing…"
+                    : data.podcast.publishedAt
+                      ? "Publish again"
+                      : "Publish post-game show"}
+                </button>
+                <span className="flex items-center gap-1.5 font-mono text-[11px] text-secondary">
+                  {typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
+                  <CopyBtn
+                    text={typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
+                    label="Copy the podcast feed address"
+                  />
+                </span>
+              </div>
+            </section>
+          )}
 
           {data.markers.length > 0 && (
             <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">

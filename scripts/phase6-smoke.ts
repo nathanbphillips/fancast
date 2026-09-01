@@ -145,8 +145,9 @@ async function main() {
 
   r = await api("/api/clock", cookies.smoke6_kev, { roomId, action: "stop2h" });
   check("stop2h -> postgame", r.status === 200 && r.body.state === "postgame");
+  // ET retired (founder 2026-09-01): the way in is gone from the API
   r = await api("/api/clock", cookies.smoke6_kev, { roomId, action: "start_et" });
-  check("start_et -> extra_time", r.status === 200 && r.body.state === "extra_time");
+  check("start_et is rejected (ET retired)", r.status === 400);
 
   const { data: events3 } = await service
     .from("clock_events")
@@ -160,18 +161,20 @@ async function main() {
     d3.running ? formatClock(d3.elapsedSeconds) : "not running",
   );
 
+  // stop_et remains only as the exit for a legacy extra_time room; from
+  // postgame it is a state error
   r = await api("/api/clock", cookies.smoke6_kev, { roomId, action: "stop_et" });
-  check("stop_et -> postgame", r.status === 200 && r.body.state === "postgame");
+  check("stop_et from postgame is a state error (ET retired)", r.status === 409);
 
   await sleep(1500);
   check(
     "every clock action published exactly once",
-    clockEvents.length === 8,
+    clockEvents.length === 6, // ET retired: start_et/stop_et no longer fire
     `${clockEvents.length} events`,
   );
   check(
     "state events accompanied the transitions",
-    ["live_1h", "halftime", "live_2h", "postgame", "extra_time"].every((s) => states.includes(s)),
+    ["live_1h", "halftime", "live_2h", "postgame"].every((s) => states.includes(s)),
     states.join(","),
   );
 

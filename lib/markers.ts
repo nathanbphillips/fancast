@@ -50,6 +50,13 @@ export const SEGMENT_LABEL: Record<MarkerKind, string | null> = {
 
 export const PAUSE_KINDS: ReadonlySet<string> = new Set(["record_pause", "record_resume"]);
 
+/** Extra time retired from the show structure (founder 2026-09-01): the five
+ *  segments are Pre-game / First half / Halftime / Second half / Post-game.
+ *  Legacy start_et/stop_et rows still exist (the Villa show has an accidental
+ *  pair), so they are filtered out of segmentation rather than migrated:
+ *  everything after Full time is simply the Post-game show. */
+export const ET_KINDS: ReadonlySet<string> = new Set(["start_et", "stop_et"]);
+
 /**
  * Paused spans as [start, end) offsets in seconds from the recording start.
  * Pairs up pause/resume in time order; a pause still open at the end closes
@@ -217,9 +224,10 @@ export function deriveSegments(
     new Date(m.adjusted_ts ?? m.server_ts).getTime();
 
   const endOffset = Math.max(0, (recordingEndMs - recordingStartMs) / 1000);
-  // pause/resume are exclusions handled by the caller, never boundaries
+  // pause/resume are exclusions handled by the caller, never boundaries;
+  // ET kinds are retired and never cut (founder 2026-09-01)
   const ordered = markers
-    .filter((m) => !PAUSE_KINDS.has(m.kind))
+    .filter((m) => !PAUSE_KINDS.has(m.kind) && !ET_KINDS.has(m.kind))
     .sort((a, b) => effective(a) - effective(b));
 
   // boundary points in seconds-from-start, each carrying the label of the

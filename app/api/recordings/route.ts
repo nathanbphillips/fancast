@@ -9,6 +9,8 @@ import {
   ffmpegProbe,
   triggerProcessing,
 } from "@/lib/recording";
+import { ET_KINDS } from "@/lib/markers";
+import { episodeNotes } from "@/lib/episodeNotes";
 import { ensureRecordingsPrivate } from "@/lib/egress";
 import { PAUSE_KINDS, pauseIntervals, pausedTotal } from "@/lib/markers";
 import { isAdmin } from "@/lib/roles";
@@ -29,7 +31,7 @@ async function authorizeRoom(
   const { data: room } = await service
     .from("rooms")
     .select(
-      "id, commentator_id, title, fixture:fixtures(home_team, away_team, kickoff_utc)",
+      "id, commentator_id, title, fixture:fixtures(home_team, away_team, kickoff_utc, home_score, away_score)",
     )
     .eq("id", roomId)
     .maybeSingle<{
@@ -38,6 +40,8 @@ async function authorizeRoom(
       /** discussion rooms carry a free-text title and NO fixture */
       title: string | null;
       fixture: {
+        home_score: number | null;
+        away_score: number | null;
         home_team: string;
         away_team: string;
         kickoff_utc: string;
@@ -75,11 +79,12 @@ export async function GET(request: NextRequest) {
   }
 
   const service = createServiceClient();
+  const callerIsAdmin = isAdmin(caller.userId, caller.profile);
   const auth = await authorizeRoom(
     service,
     roomId,
     caller.userId,
-    isAdmin(caller.userId, caller.profile),
+    callerIsAdmin,
   );
   if (auth.error === "not_found") {
     return NextResponse.json({ error: "Room not found." }, { status: 404 });
@@ -108,7 +113,13 @@ export async function GET(request: NextRequest) {
   // array, so normalise before reading.
   const fxRaw = room.fixture as unknown;
   const fx = (Array.isArray(fxRaw) ? fxRaw[0] : fxRaw) as
-    | { home_team: string; away_team: string; kickoff_utc: string }
+    | {
+        home_team: string;
+        away_team: string;
+        kickoff_utc: string;
+        home_score: number | null;
+        away_score: number | null;
+      }
     | null
     | undefined;
   const fixtureLabel = fx
@@ -217,6 +228,42 @@ export async function GET(request: NextRequest) {
     .eq("room_id", roomId)
     .order("server_ts", { ascending: true });
 
+  // Episode notes (founder 2026-09-01): match rooms get podcast-style
+  // title + description for the pre/post-game shows, shown for copy/paste
+  // and .txt download next to the audio. Hosts feed the byline.
+  let notes: ReturnType<typeof episodeNotes> | null = null;
+  if (fx && (rec.status === "ready" || rec.status === "damaged")) {
+    const { data: hostRows } = await service
+      .from("room_hosts")
+      .select("user_id")
+      .eq("room_id", roomId)
+      .eq("status", "accepted");
+    const ids = (hostRows ?? []).map((h) => h.user_id);
+    const { data: profs } = ids.length
+      ? await service.from("profiles").select("username").in("user_id", ids)
+      : { data: [] as { username: string }[] };
+    notes = episodeNotes({
+      homeTeam: fx.home_team,
+      awayTeam: fx.away_team,
+      kickoffIso: fx.kickoff_utc,
+      homeScore: fx.home_score,
+      awayScore: fx.away_score,
+      hosts: (profs ?? []).map((p) => p.username),
+    });
+  }
+
+  // podcast state: the publish button and its aftermath
+  // longest, matching the publish route (legacy recordings can carry
+  // pre-recut slivers with the same label)
+  const postGameSeg = files
+    .filter((f) => f.label === "Post-game show")
+    .sort((x, y) => (y.durationSeconds ?? 0) - (x.durationSeconds ?? 0))[0];
+  const { data: episode } = await service
+    .from("podcast_episodes")
+    .select("published_at")
+    .eq("room_id", roomId)
+    .maybeSingle();
+
   // recording pauses (founder 2026-08-22) are exclusions, not boundaries:
   // never adjustable, summarised for the host instead
   const pauseSpans = pauseIntervals(
@@ -235,7 +282,11 @@ export async function GET(request: NextRequest) {
     files,
     zipUrl,
     markers: (markers ?? []).filter(
-      (m) => m.kind !== "broadcast_start" && m.kind !== "broadcast_end" && !PAUSE_KINDS.has(m.kind),
+      (m) =>
+        m.kind !== "broadcast_start" &&
+        m.kind !== "broadcast_end" &&
+        !PAUSE_KINDS.has(m.kind) &&
+        !ET_KINDS.has(m.kind),
     ),
     pauses: {
       count: pauseSpans.length,
@@ -243,6 +294,23 @@ export async function GET(request: NextRequest) {
     },
     stalled,
     attempts,
+    episodeNotes: notes
+      ? {
+          pregame: { ...notes.pregame, txtName: `${brand.name} - ${fixtureLabel} - ${dateLabel} - Pre-game show notes.txt` },
+          postgame: { ...notes.postgame, txtName: `${brand.name} - ${fixtureLabel} - ${dateLabel} - Post-game show notes.txt` },
+        }
+      : null,
+    podcast: {
+      // publishing is admin-only (one platform-branded feed); hide the
+      // button from hosts who would only meet a 403
+      canPublish:
+        callerIsAdmin &&
+        !!fx &&
+        (rec.status === "ready" || rec.status === "damaged") &&
+        !!postGameSeg &&
+        (postGameSeg.durationSeconds ?? 0) >= 60,
+      publishedAt: episode?.published_at ?? null,
+    },
     fullNote:
       rec.status === "ready" && !rec.full_mp3_path
         ? "This show is longer than the single-file size cap, so it ships as parts. Together they carry the whole broadcast."
@@ -300,10 +368,16 @@ export async function POST(request: NextRequest) {
       .order("server_ts", { ascending: true });
     // pauses are final (founder 2026-08-22): not a boundary, never nudged,
     // and not a neighbour either so a real boundary keeps its full +-2 min
-    if ((allMarkers ?? []).some((m) => m.id === body.markerId && PAUSE_KINDS.has(m.kind))) {
-      return NextResponse.json({ error: "Recording pauses cannot be adjusted." }, { status: 400 });
+    if (
+      (allMarkers ?? []).some(
+        (m) => m.id === body.markerId && (PAUSE_KINDS.has(m.kind) || ET_KINDS.has(m.kind)),
+      )
+    ) {
+      return NextResponse.json({ error: "That marker cannot be adjusted." }, { status: 400 });
     }
-    const markers = (allMarkers ?? []).filter((m) => !PAUSE_KINDS.has(m.kind));
+    const markers = (allMarkers ?? []).filter(
+      (m) => !PAUSE_KINDS.has(m.kind) && !ET_KINDS.has(m.kind),
+    );
     const idx = markers.findIndex((m) => m.id === body.markerId);
     if (idx === -1) {
       return NextResponse.json({ error: "Marker not found." }, { status: 404 });

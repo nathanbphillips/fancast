@@ -29,14 +29,16 @@ test("standard full match with extra time → six clean segments", () => {
     m("stop_1h", 14),
     m("start_2h", 19),
     m("stop_2h", 33),
-    m("start_et", 33.4), // prompt ET → tiny post-game sliver dropped
+    // ET retired (founder 2026-09-01): legacy start_et/stop_et rows are
+    // filtered out of segmentation entirely, so they stay here as noise
+    m("start_et", 33.4),
     m("stop_et", 39),
     m("broadcast_end", 43),
   ];
   const segs = deriveSegments(markers, T0, T0 + 43_000);
   assert.deepEqual(
     segs.map((s) => s.label),
-    ["Pre-game show", "First half", "Halftime show", "Second half", "Extra time", "Post-game show"],
+    ["Pre-game show", "First half", "Halftime show", "Second half", "Post-game show"],
   );
   // contiguous, monotonically increasing
   assert.equal(segs[0].startOffset, 0);

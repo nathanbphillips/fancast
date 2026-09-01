@@ -210,9 +210,7 @@ async function main() {
   await sleep(7000); // second half (commentator + two guests)
   await api("/api/clock", cookies.rec_kev, { roomId, action: "stop2h" });
 
-  await api("/api/clock", cookies.rec_kev, { roomId, action: "start_et" }); // prompt -> no sliver
   await sleep(5000); // extra time
-  await api("/api/clock", cookies.rec_kev, { roomId, action: "stop_et" });
   await sleep(3000); // post-game
 
   await kevPublishing.catch(() => {});

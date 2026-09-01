@@ -114,12 +114,11 @@ async function main() {
     // markers (offsets from start)
     const offsets: [string, number][] = [
       ["broadcast_start", 0], ["start_1h", 8], ["stop_1h", 14], ["start_2h", 19],
-      ["stop_2h", 33], ["start_et", 33.3], ["stop_et", 39], ["broadcast_end", 43],
+      ["stop_2h", 33], ["broadcast_end", 43],
     ];
     const labels: Record<string, string> = {
       broadcast_start: "Pre-game show", start_1h: "First half", stop_1h: "Halftime show",
-      start_2h: "Second half", stop_2h: "Post-game show", start_et: "Extra time",
-      stop_et: "Post-game show", broadcast_end: "Pre-game show",
+      start_2h: "Second half", stop_2h: "Post-game show", broadcast_end: "Pre-game show",
     };
     await service.from("broadcast_markers").insert(
       offsets.map(([kind, off]) => ({ room_id: roomId, kind, label: labels[kind], source: "auto", server_ts: new Date(startMs + off * 1000).toISOString() })),
