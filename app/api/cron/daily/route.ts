@@ -1,4 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { MAX_AUTO_ATTEMPTS, STALE_PROCESSING_MS, ffmpegProbe, triggerProcessing } from "@/lib/recording";
+import { getCurrentUserAndProfile } from "@/lib/db/server";
+import { isAdmin } from "@/lib/roles";
 import { createServiceClient } from "@/lib/db/server";
 import { matchPendingFixtures } from "@/lib/adminFixtures";
 import { sweepNoShowRooms, syncFixtures } from "@/lib/fixtures";
@@ -21,6 +24,16 @@ export const maxDuration = 300;
  * Bearer CRON_SECRET like the previous cron; the manual admin triggers stay.
  */
 export async function GET(request: NextRequest) {
+  // preflight proves the ffmpeg binary INSIDE THIS bundle (sweepStuckProcessing
+  // spawns it here since 2026-09-01); admin-gated like the sibling probes so
+  // preflight can reach it without CRON_SECRET, and it never runs the cron
+  if (request.nextUrl.searchParams.get("probe") === "ffmpeg") {
+    const { user, profile } = await getCurrentUserAndProfile();
+    if (!user || !isAdmin(user.id, profile)) {
+      return NextResponse.json({ error: "Not allowed." }, { status: 401 });
+    }
+    return NextResponse.json({ probe: "ffmpeg", bundle: "cron-daily", ...(await ffmpegProbe()) });
+  }
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Not allowed." }, { status: 401 });
@@ -68,6 +81,17 @@ export async function GET(request: NextRequest) {
     results.fanScoreRecompute = { ok: false, reason: String(err) };
   }
 
+  // Backstop for stuck processing (2026-09-01, the Villa show): the page's
+  // poll re-kicks a stale run only while someone has it open; this catches
+  // the rows nobody is watching. Respects the same attempts cap. Honest
+  // caveat: the kicked run shares THIS invocation's 300s budget (after()),
+  // so a very long show may need the panel's poll, which gets a fresh 300s.
+  try {
+    results.processingSweep = await sweepStuckProcessing(service);
+  } catch (err) {
+    results.processingSweep = { ok: false, reason: String(err) };
+  }
+
   // Radio prefixes purge 48h after a room ends (2026-08-22): the segments are
   // now the RECORDING SOURCE, so End Broadcast no longer deletes them - the
   // marker-adjust recut needs them - but a public byte-identical copy of the
@@ -93,6 +117,37 @@ export async function GET(request: NextRequest) {
 }
 
 const RETENTION_DAYS = 60;
+
+/** Re-trigger recordings whose processing run died silently (the 300s wall
+ *  writes nothing) and whose page nobody has open to re-kick it. */
+async function sweepStuckProcessing(service: ReturnType<typeof createServiceClient>) {
+  const staleBefore = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
+  const { data: stuck, error } = await service
+    .from("recordings")
+    .select("room_id, status, attempts, processing_started_at, ended_at")
+    .in("status", ["recording", "processing"])
+    .not("ended_at", "is", null)
+    .lt("ended_at", staleBefore)
+    .lt("attempts", MAX_AUTO_ATTEMPTS)
+    // a backstop, not a batch processor: the kicks run sequentially in this
+    // invocation's leftover budget, so keep the fan-out tiny
+    .limit(2);
+  if (error) return { ok: false, reason: error.message };
+  let kicked = 0;
+  for (const r of stuck ?? []) {
+    // a processing run younger than the stale window still owns its claim
+    if (
+      r.status === "processing" &&
+      r.processing_started_at &&
+      Date.now() - new Date(r.processing_started_at).getTime() <= STALE_PROCESSING_MS
+    ) {
+      continue;
+    }
+    triggerProcessing(r.room_id);
+    kicked++;
+  }
+  return { ok: true, kicked };
+}
 
 /** Purge public radio segments 48h after a room ends - but NEVER while they
  *  are still the only source of an unprocessed recording. A failed or stuck

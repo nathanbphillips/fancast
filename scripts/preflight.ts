@@ -346,6 +346,7 @@ type Probes = {
   health: Json | null;
   ffmpegRecordings: Json | null;
   ffmpegRooms: Json | null;
+  ffmpegCron: Json | null;
   sharp: Json | null;
   /** null when there was no fixture to ask about */
   sportmonks: Json | null;
@@ -365,6 +366,7 @@ async function gatherProbes(
     health: null,
     ffmpegRecordings: null,
     ffmpegRooms: null,
+    ffmpegCron: null,
     sharp: null,
     sportmonks: null,
   };
@@ -376,6 +378,7 @@ async function gatherProbes(
       health,
       ffmpegRecordings: await getJson(`${BASE}/api/recordings?probe=ffmpeg`, h),
       ffmpegRooms: await getJson(`${BASE}/api/rooms?probe=ffmpeg`, h),
+      ffmpegCron: await getJson(`${BASE}/api/cron/daily?probe=ffmpeg`, h),
       sharp: await getJson(`${BASE}/api/profile/avatar?probe=sharp`, h),
       sportmonks: sportmonksFixtureId
         ? await getJson(`${BASE}/api/health?probe=sportmonks&fixture=${sportmonksFixtureId}`, h)
@@ -498,6 +501,7 @@ async function checkDeployment(probes: Probes) {
   const bundles: [string, Json | null, string][] = [
     ["recordings", probes.ffmpegRecordings, "the manual recut path"],
     ["rooms", probes.ffmpegRooms, "the End Broadcast path that produces every recording"],
+    ["cron-daily", probes.ffmpegCron, "the overnight stuck-processing backstop"],
   ];
   for (const [name, res, why] of bundles) {
     const r = res ?? { status: 0, body: null };

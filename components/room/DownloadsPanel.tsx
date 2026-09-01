@@ -35,6 +35,11 @@ type RecData = {
   markers: RecMarker[];
   /** recording pauses (founder 2026-08-22): stretches the host cut out live */
   pauses?: { count: number; excludedSeconds: number };
+  /** a stale run was just re-kicked server-side (2026-09-01) */
+  stalled?: boolean;
+  attempts?: number;
+  /** why there is no Full broadcast file, when that is by design */
+  fullNote?: string | null;
   courtesyLine: string;
 };
 
@@ -155,16 +160,26 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           </a>
         </div>
         <p className="mt-0.5 text-sm text-secondary">
-          {rec.status === "processing" && "Cutting your segments — this can take a few minutes."}
+          {rec.status === "processing" &&
+            ((data.attempts ?? 0) > 1 || data.stalled
+              ? `A long show can take several passes. It retries by itself while this page is open (attempt ${Math.max(1, data.attempts ?? 1)}).`
+              : "Cutting your segments — this can take a few minutes.")}
           {rec.status === "ready" &&
-            `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.durationSeconds)} total`}
+            (data.files[0]?.label === "Full broadcast"
+              ? `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.durationSeconds)} total`
+              : `${data.files.length} part ${data.files.length === 1 ? "file" : "files"} · ${fmtDuration(rec.durationSeconds)} total`)}
           {rec.status === "damaged" &&
-            `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`}
+            (data.files[0]?.label === "Full broadcast"
+              ? `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`
+              : `${data.files.length} part ${data.files.length === 1 ? "file" : "files"} · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`)}
           {rec.status === "failed" && `Processing failed: ${rec.error ?? "unknown error"}`}
           {rec.status === "empty" && "No audio was captured for this session."}
           {rec.status === "recording" &&
             "Finishing up — your files appear here automatically."}
         </p>
+        {data.fullNote && (rec.status === "ready" || rec.status === "damaged") && (
+          <p className="mt-0.5 text-xs text-secondary">{data.fullNote}</p>
+        )}
         {data.pauses && data.pauses.count > 0 && (
           <p className="mt-0.5 text-xs text-secondary tabular-nums">
             {data.pauses.count === 1
@@ -248,7 +263,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
               <li
                 key={f.filename}
                 className={`flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-surface p-3 ${
-                  i === 0 ? "border-l-4 border-l-red" : ""
+                  i === 0 && f.label === "Full broadcast" ? "border-l-4 border-l-red" : ""
                 }`}
               >
                 <div className="min-w-0 flex-1">

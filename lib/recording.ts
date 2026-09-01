@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { appendFile, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -67,7 +67,14 @@ export async function ffmpegProbe(): Promise<{
 }
 // a processing run older than this is presumed dead (crash/timeout) and
 // may be reclaimed
-const STALE_PROCESSING_MS = 10 * 60 * 1000;
+export const STALE_PROCESSING_MS = 10 * 60 * 1000;
+// auto-retries stop here so an impossible job ends honestly instead of
+// looping forever; a manual Retry resets the counter (2026-09-01)
+export const MAX_AUTO_ATTEMPTS = 8;
+// Supabase Free rejects objects over 50MB; skip a doomed upload outright
+const STORAGE_CAP_BYTES = 49 * 1024 * 1024;
+// the streamed encode spans the downloads too; local rescues override this
+const ENCODE_TIMEOUT_MS = Number(process.env.RECORDING_ENCODE_TIMEOUT_MS) || 280_000;
 
 /**
  * Post-session processing (FR-13.5/13.7). Since 2026-08-22 the source is the
@@ -320,6 +327,16 @@ export async function processRecording(
   // atomic claim: flip to 'processing' only if not already being processed
   // (or the prior run is stale). A failed claim means another run owns it.
   const staleBefore = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
+  // The status BEFORE the claim: the claim's returned row is post-update, so
+  // its status is always "processing" - reading it for the recut-restore
+  // guard below made that guard dead code (found 2026-09-01; the read is
+  // technically racy against another claim, but claims serialize the run and
+  // this value only decides what a FAILURE falls back to).
+  const { data: preClaim } = await service
+    .from("recordings")
+    .select("status")
+    .eq("room_id", roomId)
+    .maybeSingle<{ status: string }>();
   const { data: rec } = await service
     .from("recordings")
     .update({
@@ -331,6 +348,14 @@ export async function processRecording(
     .or(`status.neq.processing,processing_started_at.lt.${staleBefore}`)
     .select("*")
     .maybeSingle();
+  // count the attempt (claims are serialized, so read-then-write is safe);
+  // the 300s wall kills a run without a trace, and this is the trace
+  if (rec) {
+    await service
+      .from("recordings")
+      .update({ attempts: ((rec as { attempts?: number }).attempts ?? 0) + 1 })
+      .eq("id", rec.id);
+  }
   if (!rec) {
     const { data: existing } = await service
       .from("recordings")
@@ -344,7 +369,7 @@ export async function processRecording(
   // restore the prior terminal status instead of flipping ready -> failed
   // (review 2026-08-22: a marker nudge after the radio sweep would otherwise
   // bury every existing download behind a failed banner).
-  const priorStatus = rec.status as string;
+  const priorStatus = preClaim?.status ?? "recording";
   const failStatus = ["ready", "damaged"].includes(priorStatus) ? priorStatus : "failed";
   const fail = async (error: string) => {
     console.error(`recording ${rec.id}: ${error}${failStatus !== "failed" ? " (prior files kept)" : ""}`);
@@ -418,6 +443,21 @@ export async function processRecording(
   );
   const pausedSeconds = pausedTotal(pauses);
 
+  // Cap discipline (Supabase Free: 50MB/object, the cap that killed the old
+  // MP4 pipeline): short shows keep q4 stereo; anything longer goes q7 MONO,
+  // which keeps a 2h cut near 43MB and also encodes ~1.3x faster. The
+  // integrity measurement rides the same pass (silencedetect+volumedetect),
+  // saving a whole second decode of a 3h show against the 300s wall.
+  const roughSpanS = rec.ended_at
+    ? (new Date(rec.ended_at).getTime() - new Date(rec.started_at).getTime()) / 1000
+    : 0;
+  const shortShow = roughSpanS > 0 && roughSpanS <= 25 * 60;
+  const encodeArgs = shortShow
+    ? ["-c:a", "libmp3lame", "-q:a", "4"]
+    : ["-ac", "1", "-c:a", "libmp3lame", "-q:a", "7"];
+  let encodeStderr = "";
+  const phaseT0 = Date.now();
+
   try {
     if (legacySource) {
       // legacy path: the room-mix MP4 from a pre-2026-08-22 egress
@@ -478,15 +518,66 @@ export async function processRecording(
         if (names.length < MIN_SEGMENTS) return markEmpty(service, rec.id);
       }
 
-      await writeFile(sourceLocal, Buffer.alloc(0));
+      // Stream the segments STRAIGHT INTO the encoder (2026-09-01). The old
+      // shape (download everything to /tmp, then encode) put the two slowest
+      // phases back to back, and on a 3h+ show their sum can cross the
+      // platform's 300s function wall - the Villa show took ~4.5h of silent
+      // retries before one attempt fit. Piping overlaps them, so the wall
+      // clock is max(downloads, encode), and /tmp never holds the source.
+      const encodeP = run(
+        FFMPEG,
+        [
+          "-y", "-f", "mpegts", "-i", "pipe:0",
+          "-af", "silencedetect=noise=-45dB:d=1,volumedetect",
+          ...encodeArgs,
+          fullLocal,
+        ],
+        { timeout: ENCODE_TIMEOUT_MS, maxBuffer: 1 << 26 },
+      );
+      const enc = encodeP.child;
+      let encoderDead = false;
+      enc.stdin!.on("error", () => {
+        encoderDead = true; // ffmpeg exited; the settled wrapper carries why
+      });
+      enc.on("exit", () => {
+        encoderDead = true;
+      });
+      // a rejection while the download loop is still feeding must not become
+      // an unhandledRejection (that kills the whole invocation): settle here,
+      // inspect after the loop
+      const encodeSettled: Promise<
+        { ok: true; stderr: string } | { ok: false; err: unknown }
+      > = encodeP.then(
+        (r) => ({ ok: true as const, stderr: String(r.stderr ?? "") }),
+        (err) => ({ ok: false as const, err }),
+      );
+      const feed = (b: Buffer) =>
+        new Promise<void>((resolve) => {
+          if (encoderDead || !enc.stdin!.writable) return resolve();
+          if (enc.stdin!.write(b)) return resolve();
+          // waiting only on "drain" deadlocks if ffmpeg dies first: drain
+          // never fires on a dead pipe, so listen for the end too
+          const done = () => {
+            enc.stdin!.off("drain", done);
+            enc.stdin!.off("close", done);
+            enc.stdin!.off("error", done);
+            resolve();
+          };
+          enc.stdin!.once("drain", done);
+          enc.stdin!.once("close", done);
+          enc.stdin!.once("error", done);
+        });
       // Gap awareness (review 2026-08-22): markers are wall-clock, audio time
       // is "seconds actually present". Only segments that really reached the
-      // source file count, so storage holes AND unreadable downloads both
+      // encoder count, so storage holes AND unreadable downloads both
       // compress the audio the way the file does.
       const kept: { midS: number; durS: number }[] = [];
       let missing = 0;
-      const BATCH = 24;
+      let deadSkipped = 0; // downloaded fine, but the encoder was already gone
+      const BATCH = 48;
+      try {
       for (let i = 0; i < names.length; i += BATCH) {
+        if (encoderDead) break; // ffmpeg is gone: stop downloading into a dead pipe
         const batch = names.slice(i, i + BATCH);
         const bufs = await Promise.all(
           batch.map(async (n) => {
@@ -506,7 +597,13 @@ export async function processRecording(
         for (let j = 0; j < bufs.length; j++) {
           const b = bufs[j];
           if (b) {
-            await appendFile(sourceLocal, b);
+            await feed(b);
+            if (encoderDead) {
+              // feed() resolves silently on a dead pipe: the byte count says
+              // this second never reached the file, so it must not count
+              deadSkipped++;
+              continue;
+            }
             const idx = Number(batch[j].match(/\d+/)![0]);
             kept.push({ midS: midOf(idx), durS: timingOf(idx).durS });
           } else missing++;
@@ -514,12 +611,58 @@ export async function processRecording(
         // a few unfetchable seconds is a warning; a large hole must never be
         // handed to a host labelled "ready"
         if (missing > Math.max(20, names.length * 0.02)) {
+          enc.kill();
+          await encodeSettled;
           return fail(`${missing} segments unreadable while rebuilding the source`);
         }
       }
       if (missing > 0) {
         console.warn(`recording ${rec.id}: proceeding without ${missing} unreadable segment(s) (~${missing}s)`);
       }
+      } catch (e) {
+        // anything thrown while feeding must not leave a live encoder behind
+        enc.kill();
+        await encodeSettled;
+        throw e;
+      }
+      if (enc.stdin!.writable) enc.stdin!.end();
+      const settled = await encodeSettled;
+      if (settled.ok) {
+        encodeStderr = settled.stderr;
+      } else {
+        const err = settled.err as { stderr?: string; killed?: boolean; signal?: string };
+        // a KILLED encode (its own time budget, or our kill above) finalizes
+        // the MP3 gracefully and even prints the filter summaries, so it looks
+        // like success by stderr alone - but the file is TRUNCATED. Never let
+        // it ship; the retry loop owns what happens next. (review 2026-09-01)
+        if (err.killed || err.signal) {
+          // Out of time. For a RECUT, restore the prior good files (fail()
+          // does that). For a first run there is nothing to restore, and
+          // tonight proved attempt-to-attempt variance is real (one of many
+          // attempts fit the wall): park the row as instantly-stale
+          // "processing" so the panel's poll and the cron keep retrying it
+          // until the attempts cap turns it into an honest failure.
+          if (["ready", "damaged"].includes(priorStatus)) {
+            return fail("the encode ran out of time before the show finished - prior files kept");
+          }
+          console.error(`recording ${rec.id}: encode ran out of time; parking for auto-retry`);
+          await service
+            .from("recordings")
+            .update({ status: "processing", processing_started_at: new Date(0).toISOString(), error: null })
+            .eq("id", rec.id);
+          return { status: "processing", segments: 0 };
+        }
+        const es = String(err.stderr ?? "");
+        if (!es.includes("volumedetect")) throw settled.err;
+        encodeStderr = es;
+      }
+      if (deadSkipped > 0 || (encoderDead && kept.length < names.length - missing)) {
+        // ffmpeg exited mid-feed: whatever it wrote is partial
+        return fail("the encoder stopped before the whole show reached it - it will be retried");
+      }
+      console.log(
+        `recording ${rec.id}: streamed ${kept.length} segment(s) through the encoder in ${((Date.now() - phaseT0) / 1000).toFixed(0)}s`,
+      );
       // audio seconds before a wall offset = total duration of the kept
       // segments whose midpoint precedes it (prefix sums + binary search)
       const prefix: number[] = new Array(kept.length + 1).fill(0);
@@ -535,57 +678,60 @@ export async function processRecording(
       };
     }
 
-    // One-time transcode to the headline full MP3, WITH the integrity
-    // measurement in the same pass (silencedetect+volumedetect run pre-encode,
-    // saving a whole second decode of a 3h show against the 300s wall).
-    // Cap discipline (Supabase Free: 50MB/object, the cap that killed the old
-    // MP4 pipeline): short shows keep q4 stereo; anything longer goes q7 MONO,
-    // which keeps a 2h cut near 43MB and also encodes ~1.3x faster.
-    const roughSpanS = rec.ended_at
-      ? (new Date(rec.ended_at).getTime() - new Date(rec.started_at).getTime()) / 1000
-      : 0;
-    const shortShow = roughSpanS > 0 && roughSpanS <= 25 * 60;
-    const encodeArgs = shortShow
-      ? ["-c:a", "libmp3lame", "-q:a", "4"]
-      : ["-ac", "1", "-c:a", "libmp3lame", "-q:a", "7"];
-    let encodeStderr = "";
-    try {
-      ({ stderr: encodeStderr } = await run(
-        FFMPEG,
-        ["-y", "-i", sourceLocal, "-af", "silencedetect=noise=-45dB:d=1,volumedetect", ...encodeArgs, fullLocal],
-        { timeout: 280_000, maxBuffer: 1 << 26 },
-      ));
-    } catch (e) {
-      const es = String((e as { stderr?: string }).stderr ?? "");
-      if (!es.includes("volumedetect")) throw e;
-      encodeStderr = es;
+    // Legacy MP4 source: one file-based transcode (the segment path already
+    // encoded while it streamed the downloads above).
+    if (legacySource) {
+      try {
+        ({ stderr: encodeStderr } = await run(
+          FFMPEG,
+          ["-y", "-i", sourceLocal, "-af", "silencedetect=noise=-45dB:d=1,volumedetect", ...encodeArgs, fullLocal],
+          { timeout: ENCODE_TIMEOUT_MS, maxBuffer: 1 << 26 },
+        ));
+      } catch (e) {
+        const err = e as { stderr?: string; killed?: boolean; signal?: string };
+        // a killed encode finalizes a TRUNCATED file that looks like success
+        // by stderr alone (review 2026-09-01); never ship it
+        if (err.killed || err.signal) {
+          return fail("the encode ran out of time before the show finished");
+        }
+        const es = String(err.stderr ?? "");
+        if (!es.includes("volumedetect")) throw e;
+        encodeStderr = es;
+      }
+      // /tmp is 500MB and a 3h source is ~250MB: drop it the moment the MP3
+      // exists (everything downstream cuts from fullLocal)
+      await rm(sourceLocal, { force: true }).catch(() => {});
     }
-    // /tmp is 500MB and a 3h source is ~250MB: drop it the moment the MP3
-    // exists (everything downstream cuts from fullLocal)
-    await rm(sourceLocal, { force: true }).catch(() => {});
     const fullBuf = await readFile(fullLocal);
     // a near-empty transcode (no real audio) also means an empty session
     if (fullBuf.length < 2048) return markEmpty(service, rec.id);
     const fullPath = `${roomId}/full.mp3`;
-    let up = await service.storage
-      .from(REC_BUCKET)
-      .upload(fullPath, fullBuf, { contentType: "audio/mpeg", upsert: true });
     const isSizeError = (m: string) => /maximum allowed size|EntityTooLarge|exceeded|too large|413/i.test(m);
-    if (up.error && !isSizeError(up.error.message)) {
-      // transient errors get one retry; only a SIZE rejection may degrade
-      up = await service.storage
+    let fullStored = true;
+    if (fullBuf.length > STORAGE_CAP_BYTES) {
+      // a 3h+ show cannot fit under the object cap: don't burn 30s uploading
+      // 90MB just to collect a 413 - the per-part cuts are the deliverables
+      console.warn(
+        `recording ${rec.id}: full.mp3 is ${Math.round(fullBuf.length / 1e6)}MB, over the storage cap; shipping parts only`,
+      );
+      fullStored = false;
+    } else {
+      let up = await service.storage
         .from(REC_BUCKET)
         .upload(fullPath, fullBuf, { contentType: "audio/mpeg", upsert: true });
-    }
-    let fullStored = true;
-    if (up.error) {
-      if (!isSizeError(up.error.message)) {
-        return fail(`full upload failed: ${up.error.message}`);
+      if (up.error && !isSizeError(up.error.message)) {
+        // transient errors get one retry; only a SIZE rejection may degrade
+        up = await service.storage
+          .from(REC_BUCKET)
+          .upload(fullPath, fullBuf, { contentType: "audio/mpeg", upsert: true });
       }
-      // Bigger than the storage cap: the per-part cuts below are the real
-      // deliverables (this is exactly how the old pipeline died). Degrade.
-      console.error(`recording ${rec.id}: full.mp3 over the storage cap (${up.error.message}); continuing without it`);
-      fullStored = false;
+      if (up.error) {
+        if (!isSizeError(up.error.message)) {
+          return fail(`full upload failed: ${up.error.message}`);
+        }
+        console.error(`recording ${rec.id}: full.mp3 over the storage cap (${up.error.message}); continuing without it`);
+        fullStored = false;
+      }
     }
 
     // derive segments from markers
@@ -609,11 +755,10 @@ export async function processRecording(
     // skip the zip: every individual MP3 is still uploaded and downloadable, and
     // losing the convenience bundle beats losing the whole recording.
     const ZIP_BUDGET_BYTES = 120 * 1024 * 1024;
-    let zipBytes = fullBuf.length;
+    let zipBytes = fullStored ? fullBuf.length : 0;
     let zipTooBig = zipBytes > ZIP_BUDGET_BYTES;
-    const zipEntries: { name: string; data: Buffer }[] = zipTooBig
-      ? []
-      : [{ name: "full.mp3", data: fullBuf }];
+    const zipEntries: { name: string; data: Buffer }[] =
+      fullStored && !zipTooBig ? [{ name: "full.mp3", data: fullBuf }] : [];
     const segRows: {
       recording_id: string;
       idx: number;
@@ -741,6 +886,9 @@ export async function processRecording(
       console.error(`recording ${rec.id}: DAMAGED - ${problem}`);
     }
 
+    console.log(
+      `recording ${rec.id}: processed in ${((Date.now() - phaseT0) / 1000).toFixed(0)}s (${status})`,
+    );
     const { error: finalErr } = await service
       .from("recordings")
       .update({

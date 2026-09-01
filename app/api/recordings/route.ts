@@ -3,7 +3,12 @@ import { z } from "zod";
 import { brand, recordingFileName } from "@/lib/brand";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
-import { ffmpegProbe, triggerProcessing } from "@/lib/recording";
+import {
+  MAX_AUTO_ATTEMPTS,
+  STALE_PROCESSING_MS,
+  ffmpegProbe,
+  triggerProcessing,
+} from "@/lib/recording";
 import { ensureRecordingsPrivate } from "@/lib/egress";
 import { PAUSE_KINDS, pauseIntervals, pausedTotal } from "@/lib/markers";
 import { isAdmin } from "@/lib/roles";
@@ -131,14 +136,19 @@ export async function GET(request: NextRequest) {
   // a damaged recording still hands out its files: they are real, just not the
   // whole show, and the warning travels with them
   if (rec.status === "ready" || rec.status === "damaged") {
-    const fullName = recordingFileName(fixtureLabel, dateLabel);
-    files.push({
-      label: "Full broadcast",
-      filename: fullName,
-      url: await signed(rec.full_mp3_path, fullName),
-      durationSeconds: rec.duration_seconds,
-      sizeBytes: null,
-    });
+    // no dead row: a 3h+ show has no full file BY DESIGN (over the storage
+    // object cap), and a prominent un-downloadable "Full broadcast" reads as
+    // "the recording is broken" (founder, Villa 2026-08-31)
+    if (rec.full_mp3_path) {
+      const fullName = recordingFileName(fixtureLabel, dateLabel);
+      files.push({
+        label: "Full broadcast",
+        filename: fullName,
+        url: await signed(rec.full_mp3_path, fullName),
+        durationSeconds: rec.duration_seconds,
+        sizeBytes: null,
+      });
+    }
 
     const { data: segs } = await service
       .from("recording_segments")
@@ -164,6 +174,41 @@ export async function GET(request: NextRequest) {
           `${brand.name} - ${fixtureLabel} - ${dateLabel}.zip`,
         )
       : null;
+
+  // Self-healing (2026-09-01, the Villa show): a run killed by the platform's
+  // 300s wall writes NOTHING - the row sits at "processing" forever and the
+  // host stares at "a few minutes". The panel polls this GET, so a stale run
+  // is re-triggered right here; past MAX_AUTO_ATTEMPTS it becomes an honest
+  // failure the Retry button (which resets the counter) can still clear.
+  let stalled = false;
+  const attempts = (rec as { attempts?: number }).attempts ?? 0;
+  const staleSince = (ts: string | null) =>
+    ts !== null && Date.now() - new Date(ts).getTime() > STALE_PROCESSING_MS;
+  const processingStale = rec.status === "processing" && staleSince(rec.processing_started_at);
+  // "recording" with the show long over = the end-of-broadcast trigger never
+  // ran (deploy restart, crashed after()); kick it the same way
+  const neverStarted = rec.status === "recording" && staleSince(rec.ended_at);
+  if (processingStale || neverStarted) {
+    if (attempts >= MAX_AUTO_ATTEMPTS) {
+      // the same recut guard fail() uses: a row that still carries deliverables
+      // was ready/damaged before this recut - restore, never bury (2026-08-22)
+      const { count: priorCuts } = await service
+        .from("recording_segments")
+        .select("id", { count: "exact", head: true })
+        .eq("recording_id", rec.id);
+      const hadFiles = !!rec.full_mp3_path || (priorCuts ?? 0) > 0;
+      const nextStatus = hadFiles ? "ready" : "failed";
+      const msg = hadFiles
+        ? null
+        : "Processing timed out " + attempts + " times. The audio is safe in the radio segments. Retry processing to try again.";
+      await service.from("recordings").update({ status: nextStatus, error: msg }).eq("id", rec.id);
+      rec.status = nextStatus;
+      rec.error = msg;
+    } else {
+      triggerProcessing(roomId);
+      stalled = true;
+    }
+  }
 
   // markers for the ±2min adjust UI
   const { data: markers } = await service
@@ -196,6 +241,14 @@ export async function GET(request: NextRequest) {
       count: pauseSpans.length,
       excludedSeconds: Math.round(pausedTotal(pauseSpans)),
     },
+    stalled,
+    attempts,
+    fullNote:
+      rec.status === "ready" && !rec.full_mp3_path
+        ? "This show is longer than the single-file size cap, so it ships as parts. Together they carry the whole broadcast."
+        : rec.status === "damaged" && !rec.full_mp3_path
+          ? "This show is longer than the single-file size cap, so it ships as parts."
+          : null,
     courtesyLine: `Recorded live on ${brand.name} during ${fixtureLabel}.`,
   });
 }
@@ -288,6 +341,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
+  // a human asked: the auto-retry counter starts over (2026-09-01)
+  await service.from("recordings").update({ attempts: 0 }).eq("room_id", body.roomId);
   // recut asynchronously (atomic claim inside serializes concurrent runs);
   // the panel polls status to ready
   triggerProcessing(body.roomId);

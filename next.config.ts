@@ -140,6 +140,10 @@ const nextConfig: NextConfig = {
     // pipeline that cannot run.
     "/api/recordings": ["./node_modules/ffmpeg-static/**/*"],
     "/api/rooms": ["./node_modules/ffmpeg-static/**/*"],
+    // sweepStuckProcessing (2026-09-01) re-triggers processing from the daily
+    // cron, so ITS bundle spawns ffmpeg too - same force-include or the kick
+    // dies with spawn ENOENT on Vercel only
+    "/api/cron/daily": ["./node_modules/ffmpeg-static/**/*"],
   },
   images: {
     remotePatterns: avatarRemotePatterns,
