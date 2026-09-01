@@ -166,7 +166,17 @@ export async function syncFixtures(
     return { ok: false as const, reason: "Sportmonks returned no fixtures" };
   }
 
-  const rows = fixtures.map((f) => mapSportmonksFixture(f, config.season));
+  // Dedupe by fixture id: Sportmonks between-windows are INCLUSIVE on both
+  // ends, so the 95-day chunk boundary day lands in two chunks and the same
+  // fixture arrives twice - Postgres then rejects the whole upsert with
+  // "ON CONFLICT DO UPDATE command cannot affect row a second time". This
+  // silently killed the daily sync on any day with an EPL fixture exactly on
+  // the boundary date (found 2026-09-01: the Villa result never landed).
+  const rows = [
+    ...new Map(
+      fixtures.map((f) => [f.id, mapSportmonksFixture(f, config.season)] as const),
+    ).values(),
+  ];
 
   // FR-19.6: before the upsert lands, diff kickoffs against what we had so
   // rooms scheduled on a moved fixture shift with it (scheduled_kickoff AND
