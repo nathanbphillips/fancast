@@ -46,7 +46,7 @@ type RecData = {
     match?: { title: string; description: string; txtName: string };
     postgame: { title: string; description: string; txtName: string };
   } | null;
-  podcast?: { canPublish: boolean; publishedAt: string | null };
+  podcast?: Record<"pregame" | "match" | "postgame", { canPublish: boolean; publishedAt: string | null }>;
   courtesyLine: string;
 };
 
@@ -127,8 +127,9 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
   const [data, setData] = useState<RecData | null>(null);
   const [pending, setPending] = useState<Record<string, number>>({});
   const [recutting, setRecutting] = useState(false);
-  const [publishing, setPublishing] = useState(false);
+  const [publishing, setPublishing] = useState<string | null>(null); // kind in flight
   const [podcastError, setPodcastError] = useState<string | null>(null);
+  const [schedule, setSchedule] = useState<Record<string, string>>({}); // kind -> datetime-local
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -166,22 +167,25 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     );
   }
 
-  async function publishPodcast() {
-    setPublishing(true);
+  async function publishPodcast(kind: string, remove = false) {
+    setPublishing(kind);
     setPodcastError(null);
     try {
+      // datetime-local is the host's local wall clock; send it as an instant
+      const when = schedule[kind] ? new Date(schedule[kind]).toISOString() : undefined;
       const res = await fetch("/api/podcast/publish", {
-        method: "POST",
+        method: remove ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roomId }),
+        body: JSON.stringify(remove ? { roomId, kind } : { roomId, kind, publishAt: when }),
       });
       const body = (await res.json().catch(() => null)) as { error?: string } | null;
       if (!res.ok) setPodcastError(body?.error ?? "Publish failed. Try again.");
+      else setSchedule((s) => ({ ...s, [kind]: "" }));
       await load();
     } catch {
       setPodcastError("Publish failed. Try again.");
     } finally {
-      setPublishing(false);
+      setPublishing(null);
     }
   }
 
@@ -389,45 +393,87 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
             </section>
           )}
 
-          {data.podcast && (data.podcast.canPublish || data.podcast.publishedAt) && (
+          {data.podcast &&
+            Object.values(data.podcast).some((k) => k.canPublish || k.publishedAt) && (
             <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">
               <h3 className="text-sm font-bold">Podcast</h3>
-              {data.podcast.publishedAt ? (
-                <p className="mt-0.5 text-sm text-secondary">
-                  The post-game show is on the {brand.name} podcast feed
-                  (published {new Date(data.podcast.publishedAt).toLocaleDateString()}).
-                  Spotify picks changes up on its next poll, usually within the
-                  hour. Publishing again replaces the audio and notes.
-                </p>
-              ) : (
-                <p className="mt-0.5 text-sm text-secondary">
-                  One tap puts the post-game show on the {brand.name} podcast
-                  feed; Spotify ingests it automatically, usually within the
-                  hour.
-                </p>
-              )}
+              <p className="mt-0.5 text-sm text-secondary">
+                Each show publishes to the {brand.name} podcast feed with its
+                episode notes; Spotify ingests changes automatically, usually
+                within the hour. Leave the date empty to publish now, or set
+                one to schedule the release. Publishing again replaces the
+                audio and notes.
+              </p>
               {podcastError && <p className="mt-2 text-xs text-red">{podcastError}</p>}
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  disabled={publishing || !data.podcast.canPublish}
-                  onClick={() => void publishPodcast()}
-                  className="h-11 rounded-lg bg-red px-5 text-sm font-bold text-white disabled:opacity-60"
-                >
-                  {publishing
-                    ? "Publishing…"
-                    : data.podcast.publishedAt
-                      ? "Publish again"
-                      : "Publish post-game show"}
-                </button>
-                <span className="flex items-center gap-1.5 font-mono text-[11px] text-secondary">
-                  {typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
-                  <CopyBtn
-                    text={typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
-                    label="Copy the podcast feed address"
-                  />
-                </span>
-              </div>
+              <ul className="mt-3 space-y-2">
+                {(
+                  [
+                    ["pregame", "Pre-game show"],
+                    ["match", "Full match"],
+                    ["postgame", "Post-game show"],
+                  ] as const
+                ).map(([kind, label]) => {
+                  const st = data.podcast![kind];
+                  if (!st || (!st.canPublish && !st.publishedAt)) return null;
+                  const scheduled =
+                    st.publishedAt && new Date(st.publishedAt).getTime() > Date.now();
+                  return (
+                    <li
+                      key={kind}
+                      className="flex flex-wrap items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">{label}</p>
+                        <p className="text-xs text-secondary">
+                          {st.publishedAt
+                            ? scheduled
+                              ? `Scheduled for ${new Date(st.publishedAt).toLocaleString()}`
+                              : `On the feed since ${new Date(st.publishedAt).toLocaleDateString()}`
+                            : "Not on the feed yet"}
+                        </p>
+                      </div>
+                      <input
+                        type="datetime-local"
+                        aria-label={`Schedule the ${label} release`}
+                        value={schedule[kind] ?? ""}
+                        onChange={(e) => setSchedule((s) => ({ ...s, [kind]: e.target.value }))}
+                        className="h-9 rounded-md border border-line bg-inset px-2 text-xs text-secondary"
+                      />
+                      <button
+                        type="button"
+                        disabled={publishing !== null || !st.canPublish}
+                        onClick={() => void publishPodcast(kind)}
+                        className="h-9 rounded-md bg-red px-3 text-xs font-bold text-white disabled:opacity-60"
+                      >
+                        {publishing === kind
+                          ? "Publishing…"
+                          : st.publishedAt
+                            ? "Publish again"
+                            : schedule[kind]
+                              ? "Schedule"
+                              : "Publish now"}
+                      </button>
+                      {st.publishedAt && (
+                        <button
+                          type="button"
+                          disabled={publishing !== null}
+                          onClick={() => void publishPodcast(kind, true)}
+                          className="h-9 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-secondary">
+                {typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
+                <CopyBtn
+                  text={typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
+                  label="Copy the podcast feed address"
+                />
+              </p>
             </section>
           )}
 

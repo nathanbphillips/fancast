@@ -16,10 +16,12 @@ import { brand } from "@/lib/brand";
 export const PODCAST_BUCKET = "podcast";
 
 export const podcastConfig = {
-  title: process.env.PODCAST_TITLE || `${brand.name}: The Post-Game Show`,
+  // the show now carries pre-game, full-match, and post-game episodes, so
+  // the channel identity is the brand itself (founder 2026-09-06)
+  title: process.env.PODCAST_TITLE || brand.name,
   description:
     process.env.PODCAST_DESCRIPTION ||
-    `Full-time reaction to every match from the ${brand.name} room. Fan commentary with call-ins and questions, recorded live while the room reacts. No pundits, just supporters. We never carry match footage or broadcast audio; this is our own conversation.`,
+    `Live fan commentary from the ${brand.name} matchday room: the pre-game show, the full match, and the post-game reaction, with call-ins and questions from the room. No pundits, just supporters. We never carry match footage or broadcast audio; this is our own conversation.`,
   language: "en",
   author: brand.name,
   ownerName: brand.name,
@@ -31,8 +33,18 @@ export const podcastConfig = {
   subcategory: "Soccer",
 } as const;
 
+export type EpisodeKind = "pregame" | "match" | "postgame";
+export const EPISODE_KINDS: readonly EpisodeKind[] = ["pregame", "match", "postgame"];
+/** which recording cut each kind publishes */
+export const KIND_TO_LABEL: Record<EpisodeKind, string> = {
+  pregame: "Pre-game show",
+  match: "Full match",
+  postgame: "Post-game show",
+};
+
 export type PodcastEpisodeRow = {
   id: string;
+  kind: EpisodeKind;
   title: string;
   description: string;
   audio_path: string;
@@ -105,15 +117,18 @@ ${items}
 `;
 }
 
-/** Newest first; the whole catalogue (a season is well under the cap).
- *  A read error is surfaced, never swallowed: an empty feed served with 200
- *  would be CDN-cached and read by directories as "all episodes removed". */
+/** RELEASED episodes only, newest first: published_at doubles as the
+ *  schedule, so a future date stays off the feed until its time arrives (the
+ *  feed is generated per request, so release needs no cron). A read error is
+ *  surfaced, never swallowed: an empty feed served with 200 would be
+ *  CDN-cached and read by directories as "all episodes removed". */
 export async function loadEpisodes(
   service: SupabaseClient,
 ): Promise<{ episodes: PodcastEpisodeRow[]; error: string | null }> {
   const { data, error } = await service
     .from("podcast_episodes")
-    .select("id, title, description, audio_path, audio_bytes, duration_seconds, guid, published_at")
+    .select("id, kind, title, description, audio_path, audio_bytes, duration_seconds, guid, published_at")
+    .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
     .limit(500)
     .returns<PodcastEpisodeRow[]>();
