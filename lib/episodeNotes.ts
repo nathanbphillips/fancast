@@ -11,7 +11,7 @@ import { brand } from "@/lib/brand";
  * broadcast audio, and never imply club or league affiliation.
  */
 export type EpisodeNote = { title: string; description: string };
-export type EpisodeNotes = { pregame: EpisodeNote; postgame: EpisodeNote };
+export type EpisodeNotes = { pregame: EpisodeNote; match: EpisodeNote; postgame: EpisodeNote };
 
 function hostLine(hosts: string[]): string {
   if (hosts.length === 0) return "";
@@ -46,6 +46,15 @@ export function episodeNotes(args: {
       description:
         `Live fan commentary before ${matchup} (${date}). ` +
         `Team news, form, and predictions, plus questions and call-ins from the room.` +
+        hostLine(args.hosts) +
+        signoff,
+    },
+    // the Full match blend: first half + halftime show + second half in one
+    match: {
+      title: `${scoreline}: The Match Show`,
+      description:
+        `Live fan commentary through ${matchup} (${date})${hasScore ? `, final score ${homeScore}-${awayScore}` : ""}. ` +
+        `The full first half, the halftime show, and the second half in one file, as the room lived it.` +
         hostLine(args.hosts) +
         signoff,
     },

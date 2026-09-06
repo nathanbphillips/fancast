@@ -297,6 +297,7 @@ export async function GET(request: NextRequest) {
     episodeNotes: notes
       ? {
           pregame: { ...notes.pregame, txtName: `${brand.name} - ${fixtureLabel} - ${dateLabel} - Pre-game show notes.txt` },
+          match: { ...notes.match, txtName: `${brand.name} - ${fixtureLabel} - ${dateLabel} - Full match notes.txt` },
           postgame: { ...notes.postgame, txtName: `${brand.name} - ${fixtureLabel} - ${dateLabel} - Post-game show notes.txt` },
         }
       : null,

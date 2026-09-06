@@ -43,6 +43,7 @@ type RecData = {
   /** podcast-style notes for the pre/post-game shows (match rooms only) */
   episodeNotes?: {
     pregame: { title: string; description: string; txtName: string };
+    match?: { title: string; description: string; txtName: string };
     postgame: { title: string; description: string; txtName: string };
   } | null;
   podcast?: { canPublish: boolean; publishedAt: string | null };
@@ -380,6 +381,9 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
               </p>
               <div className="mt-3 space-y-2">
                 <NotesBlock heading="Pre-game show" note={data.episodeNotes.pregame} />
+                {data.episodeNotes.match && (
+                  <NotesBlock heading="Full match" note={data.episodeNotes.match} />
+                )}
                 <NotesBlock heading="Post-game show" note={data.episodeNotes.postgame} />
               </div>
             </section>
