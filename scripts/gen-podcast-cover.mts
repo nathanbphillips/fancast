@@ -5,7 +5,7 @@ const svg = `<svg width="3000" height="3000" xmlns="http://www.w3.org/2000/svg">
   <text x="150" y="1450" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="430" letter-spacing="8">
     <tspan fill="#EF0107">ARSE</tspan><tspan fill="#f7f5f0">RADIO</tspan>
   </text>
-  <text x="150" y="1900" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="150" letter-spacing="30" fill="#f7f5f0">THE POST-GAME SHOW</text>
+  <text x="150" y="1900" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="150" letter-spacing="30" fill="#f7f5f0">THE MATCHDAY SHOWS</text>
   <text x="150" y="2250" font-family="Arial, Helvetica, sans-serif" font-size="76" letter-spacing="4" fill="#a2a2ab">FAN COMMENTARY, RECORDED LIVE IN THE MATCHDAY ROOM</text>
 </svg>`;
 const buf = await sharp(Buffer.from(svg)).png({ compressionLevel: 9 }).toBuffer();
