@@ -1,7 +1,7 @@
 /** Unit tests for segment derivation (lib/markers.ts) — the logic that
  *  turns markers into the cut list. Pure, no native deps. npm run test:markers */
 import assert from "node:assert/strict";
-import { deriveSegments, type Marker } from "../lib/markers";
+import { deriveSegments, fullMatchSpan, type Marker } from "../lib/markers";
 
 let failures = 0;
 function test(name: string, fn: () => void) {
@@ -135,6 +135,36 @@ test("idx is contiguous after drops/merges", () => {
   ];
   const segs = deriveSegments(markers, T0, T0 + 43_000);
   segs.forEach((s, i) => assert.equal(s.idx, i + 1));
+});
+
+test("fullMatchSpan blends 1H start to 2H end", () => {
+  const markers = [
+    m("broadcast_start", 0),
+    m("start_1h", 8),
+    m("stop_1h", 14),
+    m("start_2h", 19),
+    m("stop_2h", 33),
+    m("broadcast_end", 43),
+  ];
+  const segs = deriveSegments(markers, T0, T0 + 43_000);
+  const span = fullMatchSpan(segs);
+  assert.ok(span, "span exists");
+  assert.equal(span!.startOffset, 8); // first-half kick-off boundary
+  assert.equal(span!.endOffset, 33); // full-time boundary
+});
+
+test("fullMatchSpan is null without a clock (discussion rooms)", () => {
+  const segs = deriveSegments([m("broadcast_start", 0), m("broadcast_end", 43)], T0, T0 + 43_000);
+  assert.equal(fullMatchSpan(segs), null);
+});
+
+test("fullMatchSpan is null when the second half never started", () => {
+  const segs = deriveSegments(
+    [m("broadcast_start", 0), m("start_1h", 8), m("stop_1h", 14), m("broadcast_end", 43)],
+    T0,
+    T0 + 43_000,
+  );
+  assert.equal(fullMatchSpan(segs), null);
 });
 
 console.log(failures === 0 ? "\nALL MARKER TESTS PASSED" : `\n${failures} TEST(S) FAILED`);

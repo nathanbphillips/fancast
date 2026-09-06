@@ -11,6 +11,7 @@ import { createServiceClient } from "@/lib/db/server";
 import { deleteBroadcastRoom } from "@/lib/egress";
 import {
   deriveSegments,
+  fullMatchSpan,
   instantPaused,
   parseSegmentPlaylist,
   pauseIntervals,
@@ -249,6 +250,8 @@ export function integrityProblem(
 const RADIO_BUCKET = "radio";
 // fewer surviving seconds than this means nothing was really captured
 const MIN_SEGMENTS = 5;
+// the merged 1H + halftime + 2H convenience file (founder 2026-09-06)
+export const FULL_MATCH_LABEL = "Full match";
 // audio seconds in a nominal 1s segment when the playlist is unavailable:
 // 43 AAC frames x 1024 samples at 44.1kHz; measured 0.99844 on a 3h show
 const FALLBACK_SEG_S = 0.998458;
@@ -743,6 +746,21 @@ export async function processRecording(
       startMs,
       endMs,
     );
+    // Full match blend (founder 2026-09-06): 1H + halftime show + 2H as ONE
+    // file, alongside the individual parts. Those three are contiguous by
+    // construction, so this is a single cut of the master file spanning them;
+    // no concatenation, no join artifacts, and it re-cuts with any recut. It
+    // is a convenience extra: kept out of the zip (it doubles nothing the zip
+    // does not already carry) and its failure never fails the run.
+    const matchSpan = fullMatchSpan(segments);
+    if (matchSpan) {
+      segments.push({
+        idx: segments.length + 1,
+        label: FULL_MATCH_LABEL,
+        startOffset: matchSpan.startOffset,
+        endOffset: matchSpan.endOffset,
+      });
+    }
 
     // cut each segment by stream-copy + upload, COLLECTING rows + zip entries.
     // We delete+insert the segment rows only AFTER every cut/upload succeeds, so
@@ -801,6 +819,13 @@ export async function processRecording(
           .upload(storagePath, buf, { contentType: "audio/mpeg", upsert: true });
       }
       if (segUp.error) {
+        // the merged convenience file must never sink the run: the halves it
+        // blends are already uploaded individually
+        if (isSizeError(segUp.error.message) && seg.label === FULL_MATCH_LABEL) {
+          console.error(`recording ${rec.id}: the full-match blend is over the storage cap even at q9; shipping halves only`);
+          await rm(local, { force: true }).catch(() => {});
+          continue;
+        }
         if (isSizeError(segUp.error.message) && fullStored) {
           // even q9 mono won't fit: skip this one cut rather than burying the
           // whole recording - the full file still carries the audio
@@ -831,7 +856,7 @@ export async function processRecording(
         zipTooBig = true;
         zipEntries.length = 0;
       }
-      if (!zipTooBig) {
+      if (!zipTooBig && seg.label !== FULL_MATCH_LABEL) {
         zipEntries.push({
           name: `${String(seg.idx).padStart(2, "0")} ${seg.label}.mp3`,
           data: buf,

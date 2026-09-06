@@ -234,7 +234,8 @@ async function main() {
 
   const files = panel.files ?? [];
   const segLabels = files.slice(1).map((f) => f.label);
-  const expected = ["Pre-game show", "First half", "Halftime show", "Second half", "Extra time", "Post-game show"];
+  // ET retired (2026-09-01); the Full match blend is appended by processing (2026-09-06)
+  const expected = ["Pre-game show", "First half", "Halftime show", "Second half", "Post-game show", "Full match"];
   check(
     "six correctly-labeled segments",
     JSON.stringify(segLabels) === JSON.stringify(expected),

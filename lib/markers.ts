@@ -202,6 +202,23 @@ export async function emitClockMarker(
   if (kind) await emitMarker(service, roomId, kind, serverTs, "auto");
 }
 
+/** The one-file blend of First half + Halftime show + Second half (founder
+ *  2026-09-06). Those segments are CONTIGUOUS by construction (each boundary
+ *  marker both closes one span and opens the next), so the blend is a single
+ *  span of the master file from the first-half start to the second-half end;
+ *  no concatenation, no join artifacts. Null when a show never ran the clock
+ *  (discussion rooms, or a host who skipped the period buttons). */
+export function fullMatchSpan(
+  segments: DerivedSegment[],
+): { startOffset: number; endOffset: number } | null {
+  const first = segments.find((s) => s.label === "First half");
+  // last occurrence, defensively (labels repeat only in malformed histories)
+  const second = [...segments].reverse().find((s) => s.label === "Second half");
+  if (!first || !second) return null;
+  if (second.endOffset <= first.startOffset) return null;
+  return { startOffset: first.startOffset, endOffset: second.endOffset };
+}
+
 export type DerivedSegment = {
   idx: number;
   label: string;
