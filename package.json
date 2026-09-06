@@ -43,7 +43,8 @@
     "sync:fixtures": "tsx --env-file=.env.local scripts/fixtures-sync.ts",
     "test:attendance": "tsx scripts/attendance-test.ts",
     "test:integrity": "tsx scripts/recording-integrity-test.ts",
-    "test:pauses": "tsx scripts/pauses-test.ts"
+    "test:pauses": "tsx scripts/pauses-test.ts",
+    "test:colors": "tsx scripts/team-colors-test.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",

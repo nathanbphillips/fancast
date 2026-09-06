@@ -1,4 +1,5 @@
 import type { LineupPlayer, SideLineup } from "@/lib/stats";
+import { lineupDiscColors, type DiscColor } from "@/lib/teamColors";
 
 /**
  * Line-ups on a pitch (Phase 11): the home XI on the top half, the away XI on
@@ -65,7 +66,7 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
   return placed;
 }
 
-function Marker({ p, x, y, home, href }: Placed & { home: boolean; href: string }) {
+function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: string; color: DiscColor }) {
   // home labels sit above the disc (toward the top goal), away below — both
   // point outward, keeping names clear of the centre line. Both the number disc
   // AND the name link to the player's profile (founder 2026-07-02).
@@ -79,9 +80,11 @@ function Marker({ p, x, y, home, href }: Placed & { home: boolean; href: string 
       className="relative block"
     >
       <span
-        className={`flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums shadow ${
-          home ? "bg-navy text-white" : "bg-red text-white"
-        }`}
+        // club colours (founder 2026-09-06): Arsenal always red, opponent in
+        // their own colour (secondary when the families clash); the faint ring
+        // keeps a white disc readable on the pitch
+        className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums shadow"
+        style={{ background: color.bg, color: color.fg, boxShadow: "0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.18)" }}
       >
         {p.jersey ?? ""}
       </span>
@@ -170,6 +173,7 @@ export function PitchLineup({
 }) {
   const homeMarks = home ? placeSide(home.starters, true) : [];
   const awayMarks = away ? placeSide(away.starters, false) : [];
+  const disc = lineupDiscColors(home?.teamName, away?.teamName);
 
   return (
     <div className="space-y-2">
@@ -193,10 +197,10 @@ export function PitchLineup({
         <div className="absolute left-1/2 bottom-0 h-[12%] w-[58%] -translate-x-1/2 border border-b-0 border-white/40" />
 
         {homeMarks.map((m) => (
-          <Marker key={m.p.playerId} {...m} home href={playerHref(m.p, fotmob)} />
+          <Marker key={m.p.playerId} {...m} home color={disc.home} href={playerHref(m.p, fotmob)} />
         ))}
         {awayMarks.map((m) => (
-          <Marker key={m.p.playerId} {...m} home={false} href={playerHref(m.p, fotmob)} />
+          <Marker key={m.p.playerId} {...m} home={false} color={disc.away} href={playerHref(m.p, fotmob)} />
         ))}
       </div>
 
