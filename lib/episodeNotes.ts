@@ -13,11 +13,10 @@ import { brand } from "@/lib/brand";
 export type EpisodeNote = { title: string; description: string };
 export type EpisodeNotes = { pregame: EpisodeNote; match: EpisodeNote; postgame: EpisodeNote };
 
-function hostLine(hosts: string[]): string {
-  if (hosts.length === 0) return "";
-  const joined = hosts.length === 1 ? hosts[0] : `${hosts.slice(0, -1).join(", ")} and ${hosts[hosts.length - 1]}`;
-  return ` Hosted by ${joined}.`;
-}
+// Fixed byline (founder 2026-09-06): the shows are presented as Nathan and
+// Christopher regardless of which ACCOUNTS host the room (Christopher is on
+// air without one). Env-overridable for the day that changes.
+const HOSTS = process.env.EPISODE_NOTES_HOSTS || "Nathan and Christopher";
 
 export function episodeNotes(args: {
   homeTeam: string;
@@ -25,8 +24,6 @@ export function episodeNotes(args: {
   kickoffIso: string;
   homeScore: number | null;
   awayScore: number | null;
-  /** accepted hosts' usernames, in any order */
-  hosts: string[];
 }): EpisodeNotes {
   const { homeTeam, awayTeam, homeScore, awayScore } = args;
   const matchup = `${homeTeam} vs ${awayTeam}`;
@@ -38,7 +35,7 @@ export function episodeNotes(args: {
   });
   const hasScore = homeScore !== null && awayScore !== null;
   const scoreline = hasScore ? `${homeTeam} ${homeScore}-${awayScore} ${awayTeam}` : matchup;
-  const signoff = ` Recorded live on ${brand.name}, the matchday room for Arsenal fans. ${brand.domain}`;
+  const signoff = ` Hosted by ${HOSTS}. Recorded live on ${brand.domain}. Follow us on Bluesky.`;
 
   return {
     pregame: {
@@ -46,7 +43,6 @@ export function episodeNotes(args: {
       description:
         `Live fan commentary before ${matchup} (${date}). ` +
         `Team news, form, and predictions, plus questions and call-ins from the room.` +
-        hostLine(args.hosts) +
         signoff,
     },
     // the Full match blend: first half + halftime show + second half in one
@@ -55,7 +51,6 @@ export function episodeNotes(args: {
       description:
         `Live fan commentary through ${matchup} (${date})${hasScore ? `, final score ${homeScore}-${awayScore}` : ""}. ` +
         `The full first half, the halftime show, and the second half in one file, as the room lived it.` +
-        hostLine(args.hosts) +
         signoff,
     },
     postgame: {
@@ -63,7 +58,6 @@ export function episodeNotes(args: {
       description:
         `Full-time reaction to ${matchup} (${date})${hasScore ? `, final score ${homeScore}-${awayScore}` : ""}. ` +
         `The result, the performances, and what it means, with call-ins and questions from the room.` +
-        hostLine(args.hosts) +
         signoff,
     },
   };

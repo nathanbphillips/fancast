@@ -233,22 +233,12 @@ export async function GET(request: NextRequest) {
   // and .txt download next to the audio. Hosts feed the byline.
   let notes: ReturnType<typeof episodeNotes> | null = null;
   if (fx && (rec.status === "ready" || rec.status === "damaged")) {
-    const { data: hostRows } = await service
-      .from("room_hosts")
-      .select("user_id")
-      .eq("room_id", roomId)
-      .eq("status", "accepted");
-    const ids = (hostRows ?? []).map((h) => h.user_id);
-    const { data: profs } = ids.length
-      ? await service.from("profiles").select("username").in("user_id", ids)
-      : { data: [] as { username: string }[] };
     notes = episodeNotes({
       homeTeam: fx.home_team,
       awayTeam: fx.away_team,
       kickoffIso: fx.kickoff_utc,
       homeScore: fx.home_score,
       awayScore: fx.away_score,
-      hosts: (profs ?? []).map((p) => p.username),
     });
   }
 

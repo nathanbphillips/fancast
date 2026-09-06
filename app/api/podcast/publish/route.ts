@@ -124,22 +124,12 @@ export async function POST(request: NextRequest) {
   }
 
   // notes come from the same generator the recordings page shows
-  const { data: hostRows } = await service
-    .from("room_hosts")
-    .select("user_id")
-    .eq("room_id", roomId)
-    .eq("status", "accepted");
-  const ids = (hostRows ?? []).map((h) => h.user_id);
-  const { data: profs } = ids.length
-    ? await service.from("profiles").select("username").in("user_id", ids)
-    : { data: [] as { username: string }[] };
   const notes = episodeNotes({
     homeTeam: fx.home_team,
     awayTeam: fx.away_team,
     kickoffIso: fx.kickoff_utc,
     homeScore: fx.home_score,
     awayScore: fx.away_score,
-    hosts: (profs ?? []).map((p) => p.username),
   }).postgame;
 
   // one episode per room: a republish refreshes audio + notes, keeps identity
