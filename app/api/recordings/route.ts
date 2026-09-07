@@ -11,7 +11,6 @@ import {
 } from "@/lib/recording";
 import { ET_KINDS } from "@/lib/markers";
 import { episodeNotes } from "@/lib/episodeNotes";
-import { EPISODE_KINDS, KIND_TO_LABEL } from "@/lib/podcast";
 import { ensureRecordingsPrivate } from "@/lib/egress";
 import { PAUSE_KINDS, pauseIntervals, pausedTotal } from "@/lib/markers";
 import { isAdmin } from "@/lib/roles";
@@ -244,32 +243,6 @@ export async function GET(request: NextRequest) {
   }
 
   // podcast state: the publish button and its aftermath
-  // per-kind podcast state (founder 2026-09-06): pre-game, the full-match
-  // blend, and post-game each publish separately; longest-by-label matches
-  // the publish route (legacy recordings can carry pre-recut slivers)
-  const { data: episodeRows } = await service
-    .from("podcast_episodes")
-    .select("kind, published_at")
-    .eq("room_id", roomId);
-  const kindState = (kind: string) => {
-    const seg = files
-      .filter((f) => f.label === KIND_TO_LABEL[kind as keyof typeof KIND_TO_LABEL])
-      .sort((x, y) => (y.durationSeconds ?? 0) - (x.durationSeconds ?? 0))[0];
-    const ep = (episodeRows ?? []).find((e) => e.kind === kind);
-    return {
-      // publishing is admin-only (one platform-branded feed); hide the
-      // button from hosts who would only meet a 403
-      canPublish:
-        callerIsAdmin &&
-        !!fx &&
-        (rec.status === "ready" || rec.status === "damaged") &&
-        !!seg &&
-        (seg.durationSeconds ?? 0) >= 60,
-      publishedAt: ep?.published_at ?? null,
-      canRemove: callerIsAdmin && !!ep,
-    };
-  };
-
   // recording pauses (founder 2026-08-22) are exclusions, not boundaries:
   // never adjustable, summarised for the host instead
   const pauseSpans = pauseIntervals(
@@ -307,7 +280,6 @@ export async function GET(request: NextRequest) {
           postgame: { ...notes.postgame, txtName: `${brand.name} - ${fixtureLabel} - ${dateLabel} - Post-game show notes.txt` },
         }
       : null,
-    podcast: Object.fromEntries(EPISODE_KINDS.map((k) => [k, kindState(k)])),
     fullNote:
       rec.status === "ready" && !rec.full_mp3_path
         ? "This show is longer than the single-file size cap, so it ships as parts. Together they carry the whole broadcast."

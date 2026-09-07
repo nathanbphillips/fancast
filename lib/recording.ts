@@ -3,11 +3,11 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { crc32 } from "node:zlib";
 import ffmpegPath from "ffmpeg-static";
 import { EgressClient, EgressStatus } from "livekit-server-sdk";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceClient } from "@/lib/db/server";
+import { buildZipStore } from "@/lib/zipStore";
 import { deleteBroadcastRoom } from "@/lib/egress";
 import {
   deriveSegments,
@@ -880,7 +880,7 @@ export async function processRecording(
         );
         throw new Error("zip skipped (too large)");
       }
-      const zipBuf = buildZipStore(zipEntries);
+      const zipBuf = Buffer.from(buildZipStore(zipEntries));
       zipPath = `${roomId}/all.zip`;
       // The full and segment uploads above check .error and this one did not,
       // so a rejected upload still wrote zip_path and the host got a "Download
@@ -954,59 +954,4 @@ async function markEmpty(service: SupabaseClient, recId: string) {
  * compressed). Dependency-free: archiver's CJS export fought every Next
  * bundler interop, and a stored zip is a few dozen lines. ASCII filenames.
  */
-function buildZipStore(entries: { name: string; data: Buffer }[]): Buffer {
-  const locals: Buffer[] = [];
-  const centrals: Buffer[] = [];
-  let offset = 0;
-  for (const e of entries) {
-    const name = Buffer.from(e.name, "utf8");
-    const crc = crc32(e.data) >>> 0;
-    const size = e.data.length;
 
-    const local = Buffer.alloc(30);
-    local.writeUInt32LE(0x04034b50, 0); // local file header sig
-    local.writeUInt16LE(20, 4); // version needed
-    local.writeUInt16LE(0x0800, 6); // flags: UTF-8 names
-    local.writeUInt16LE(0, 8); // method: store
-    local.writeUInt16LE(0, 10); // mod time
-    local.writeUInt16LE(0x21, 12); // mod date (1980-01-01)
-    local.writeUInt32LE(crc, 14);
-    local.writeUInt32LE(size, 18); // compressed size
-    local.writeUInt32LE(size, 22); // uncompressed size
-    local.writeUInt16LE(name.length, 26);
-    local.writeUInt16LE(0, 28); // extra len
-    locals.push(local, name, e.data);
-
-    const central = Buffer.alloc(46);
-    central.writeUInt32LE(0x02014b50, 0); // central dir sig
-    central.writeUInt16LE(20, 4); // version made by
-    central.writeUInt16LE(20, 6); // version needed
-    central.writeUInt16LE(0x0800, 8); // flags
-    central.writeUInt16LE(0, 10); // method
-    central.writeUInt16LE(0, 12);
-    central.writeUInt16LE(0x21, 14);
-    central.writeUInt32LE(crc, 16);
-    central.writeUInt32LE(size, 20);
-    central.writeUInt32LE(size, 24);
-    central.writeUInt16LE(name.length, 28);
-    central.writeUInt16LE(0, 30); // extra
-    central.writeUInt16LE(0, 32); // comment
-    central.writeUInt16LE(0, 34); // disk
-    central.writeUInt16LE(0, 36); // internal attrs
-    central.writeUInt32LE(0, 38); // external attrs
-    central.writeUInt32LE(offset, 42); // local header offset
-    centrals.push(central, name);
-
-    offset += local.length + name.length + e.data.length;
-  }
-
-  const centralStart = offset;
-  const centralBuf = Buffer.concat(centrals);
-  const end = Buffer.alloc(22);
-  end.writeUInt32LE(0x06054b50, 0); // end of central dir sig
-  end.writeUInt16LE(entries.length, 8); // entries this disk
-  end.writeUInt16LE(entries.length, 10); // total entries
-  end.writeUInt32LE(centralBuf.length, 12); // central dir size
-  end.writeUInt32LE(centralStart, 16); // central dir offset
-  return Buffer.concat([...locals, centralBuf, end]);
-}

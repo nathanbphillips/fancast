@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { brand } from "@/lib/brand";
+import { buildZipStore } from "@/lib/zipStore";
 
 /**
  * Commentator downloads panel (FR-13.5/13.6), shown when the room is
@@ -46,10 +47,6 @@ type RecData = {
     match?: { title: string; description: string; txtName: string };
     postgame: { title: string; description: string; txtName: string };
   } | null;
-  podcast?: Record<
-    "pregame" | "match" | "postgame",
-    { canPublish: boolean; publishedAt: string | null; canRemove?: boolean }
-  >;
   courtesyLine: string;
 };
 
@@ -130,9 +127,8 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
   const [data, setData] = useState<RecData | null>(null);
   const [pending, setPending] = useState<Record<string, number>>({});
   const [recutting, setRecutting] = useState(false);
-  const [publishing, setPublishing] = useState<string | null>(null); // kind in flight
-  const [podcastError, setPodcastError] = useState<string | null>(null);
-  const [schedule, setSchedule] = useState<Record<string, string>>({}); // kind -> datetime-local
+  const [backingUp, setBackingUp] = useState(false);
+  const [backupError, setBackupError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
@@ -170,25 +166,33 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     );
   }
 
-  async function publishPodcast(kind: string, remove = false) {
-    setPublishing(kind);
-    setPodcastError(null);
+  /** One-click local backup (founder 2026-09-07): pre-game + Full match +
+   *  post-game fetched in the browser and zipped client-side (store-only, so
+   *  no server round-trip and no function size limits; MP3 does not compress). */
+  async function downloadBackup() {
+    setBackingUp(true);
+    setBackupError(null);
     try {
-      // datetime-local is the host's local wall clock; send it as an instant
-      const when = schedule[kind] ? new Date(schedule[kind]).toISOString() : undefined;
-      const res = await fetch("/api/podcast/publish", {
-        method: remove ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(remove ? { roomId, kind } : { roomId, kind, publishAt: when }),
-      });
-      const body = (await res.json().catch(() => null)) as { error?: string } | null;
-      if (!res.ok) setPodcastError(body?.error ?? "Publish failed. Try again.");
-      else setSchedule((s) => ({ ...s, [kind]: "" }));
-      await load();
+      const wanted = ["Pre-game show", "Full match", "Post-game show"];
+      const files = wanted.map((l) => data!.files.find((f) => f.label === l && f.url));
+      if (files.some((f) => !f)) throw new Error("missing file");
+      const entries: { name: string; data: Uint8Array }[] = [];
+      for (const f of files) {
+        const res = await fetch(f!.url!);
+        if (!res.ok) throw new Error(String(res.status));
+        entries.push({ name: f!.filename, data: new Uint8Array(await res.arrayBuffer()) });
+      }
+      const zip = buildZipStore(entries);
+      const blob = new Blob([zip as BlobPart], { type: "application/zip" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = files[0]!.filename.replace(/ - \d\d .*\.mp3$/, "") + " - backup.zip";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
     } catch {
-      setPodcastError("Publish failed. Try again.");
+      setBackupError("Backup download failed. Try again.");
     } finally {
-      setPublishing(null);
+      setBackingUp(false);
     }
   }
 
@@ -353,6 +357,24 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
             </a>
           )}
 
+          {["Pre-game show", "Full match", "Post-game show"].every((l) =>
+            data.files.some((f) => f.label === l && f.url),
+          ) && (
+            <div>
+              <button
+                type="button"
+                disabled={backingUp}
+                onClick={() => void downloadBackup()}
+                className="flex h-11 w-full items-center justify-center rounded-lg border border-line text-sm font-semibold hover:bg-raised disabled:opacity-60"
+              >
+                {backingUp
+                  ? "Preparing backup… this takes a minute"
+                  : "Download backup (pre-game + full match + post-game)"}
+              </button>
+              {backupError && <p className="mt-1 text-xs text-red">{backupError}</p>}
+            </div>
+          )}
+
           <ul className="space-y-2">
             {data.files.map((f, i) => (
               <li
@@ -393,90 +415,6 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                 )}
                 <NotesBlock heading="Post-game show" note={data.episodeNotes.postgame} />
               </div>
-            </section>
-          )}
-
-          {data.podcast &&
-            Object.values(data.podcast).some((k) => k.canPublish || k.publishedAt) && (
-            <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">
-              <h3 className="text-sm font-bold">Podcast</h3>
-              <p className="mt-0.5 text-sm text-secondary">
-                Each show publishes to the {brand.name} podcast feed with its
-                episode notes; Spotify ingests changes automatically, usually
-                within the hour. Leave the date empty to publish now, or set
-                one to schedule the release. Publishing again replaces the
-                audio and notes.
-              </p>
-              {podcastError && <p className="mt-2 text-xs text-red">{podcastError}</p>}
-              <ul className="mt-3 space-y-2">
-                {(
-                  [
-                    ["pregame", "Pre-game show"],
-                    ["match", "Full match"],
-                    ["postgame", "Post-game show"],
-                  ] as const
-                ).map(([kind, label]) => {
-                  const st = data.podcast![kind];
-                  if (!st || (!st.canPublish && !st.publishedAt)) return null;
-                  const scheduled =
-                    st.publishedAt && new Date(st.publishedAt).getTime() > Date.now();
-                  return (
-                    <li
-                      key={kind}
-                      className="flex flex-wrap items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised p-3"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{label}</p>
-                        <p className="text-xs text-secondary">
-                          {st.publishedAt
-                            ? scheduled
-                              ? `Scheduled for ${new Date(st.publishedAt).toLocaleString()}`
-                              : `On the feed since ${new Date(st.publishedAt).toLocaleDateString()}`
-                            : "Not on the feed yet"}
-                        </p>
-                      </div>
-                      <input
-                        type="datetime-local"
-                        aria-label={`Schedule the ${label} release`}
-                        value={schedule[kind] ?? ""}
-                        onChange={(e) => setSchedule((s) => ({ ...s, [kind]: e.target.value }))}
-                        className="h-9 rounded-md border border-line bg-inset px-2 text-xs text-secondary"
-                      />
-                      <button
-                        type="button"
-                        disabled={publishing !== null || !st.canPublish}
-                        onClick={() => void publishPodcast(kind)}
-                        className="h-9 rounded-md bg-red px-3 text-xs font-bold text-white disabled:opacity-60"
-                      >
-                        {publishing === kind
-                          ? "Publishing…"
-                          : st.publishedAt
-                            ? "Publish again"
-                            : schedule[kind]
-                              ? "Schedule"
-                              : "Publish now"}
-                      </button>
-                      {st.publishedAt && st.canRemove && (
-                        <button
-                          type="button"
-                          disabled={publishing !== null}
-                          onClick={() => void publishPodcast(kind, true)}
-                          className="h-9 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-              <p className="mt-3 flex items-center gap-1.5 font-mono text-[11px] text-secondary">
-                {typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
-                <CopyBtn
-                  text={typeof window !== "undefined" ? `${window.location.origin}/podcast.xml` : "/podcast.xml"}
-                  label="Copy the podcast feed address"
-                />
-              </p>
             </section>
           )}
 

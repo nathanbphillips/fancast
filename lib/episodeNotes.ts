@@ -3,8 +3,9 @@ import { brand } from "@/lib/brand";
 /**
  * Podcast-style episode notes for the pre-game and post-game shows
  * (founder 2026-09-01): short title + description, simple and direct, offered
- * on the recordings page for copy/paste and .txt download, and reused verbatim
- * by the podcast feed when the post-game show is published.
+ * on the recordings page for copy/paste and .txt download, ready to paste
+ * into Spotify for Creators when uploading the shows (hosting moved back to
+ * Spotify, founder 2026-09-07; the in-app feed is gone).
  *
  * Copy compliance (load-bearing): the notes describe fan commentary recorded
  * in the room. They never imply the platform shows the match or carries
