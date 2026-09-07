@@ -36,7 +36,7 @@ export function episodeNotes(args: {
   });
   const hasScore = homeScore !== null && awayScore !== null;
   const scoreline = hasScore ? `${homeTeam} ${homeScore}-${awayScore} ${awayTeam}` : matchup;
-  const signoff = ` Hosted by ${HOSTS}. Recorded live on ${brand.domain}. Follow us on Bluesky: @arseradio.com`;
+  const signoff = ` Hosted by ${HOSTS}. Recorded live on ${brand.domain}. Follow us on Bluesky: https://bsky.app/profile/arseradio.com`;
 
   return {
     pregame: {
