@@ -880,7 +880,7 @@ export async function processRecording(
         );
         throw new Error("zip skipped (too large)");
       }
-      const zipBuf = Buffer.from(buildZipStore(zipEntries));
+      const zipBuf = buildZipStore(zipEntries); // Uint8Array uploads as-is
       zipPath = `${roomId}/all.zip`;
       // The full and segment uploads above check .error and this one did not,
       // so a rejected upload still wrote zip_path and the host got a "Download

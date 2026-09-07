@@ -173,8 +173,13 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     setBackingUp(true);
     setBackupError(null);
     try {
+      // signed URLs live 60 minutes; a tab left open longer holds dead links,
+      // so mint a fresh set at click time instead of trusting state
+      const freshRes = await fetch(`/api/recordings?room=${roomId}`);
+      if (!freshRes.ok) throw new Error(String(freshRes.status));
+      const fresh = (await freshRes.json()) as RecData;
       const wanted = ["Pre-game show", "Full match", "Post-game show"];
-      const files = wanted.map((l) => data!.files.find((f) => f.label === l && f.url));
+      const files = wanted.map((l) => fresh.files.find((f) => f.label === l && f.url));
       if (files.some((f) => !f)) throw new Error("missing file");
       const entries: { name: string; data: Uint8Array }[] = [];
       for (const f of files) {

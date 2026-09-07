@@ -242,7 +242,6 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // podcast state: the publish button and its aftermath
   // recording pauses (founder 2026-08-22) are exclusions, not boundaries:
   // never adjustable, summarised for the host instead
   const pauseSpans = pauseIntervals(
