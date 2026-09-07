@@ -949,9 +949,4 @@ async function markEmpty(service: SupabaseClient, recId: string) {
   return { status: "empty", segments: 0 };
 }
 
-/**
- * Minimal ZIP writer, STORE method (no compression — MP3/AAC are already
- * compressed). Dependency-free: archiver's CJS export fought every Next
- * bundler interop, and a stored zip is a few dozen lines. ASCII filenames.
- */
 
