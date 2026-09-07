@@ -266,6 +266,7 @@ export async function GET(request: NextRequest) {
         !!seg &&
         (seg.durationSeconds ?? 0) >= 60,
       publishedAt: ep?.published_at ?? null,
+      canRemove: callerIsAdmin && !!ep,
     };
   };
 

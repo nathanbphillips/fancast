@@ -171,7 +171,8 @@ async function main() {
       published_at: new Date(pubDate).toISOString(),
       created_by: null,
     };
-    const { data: existing } = await s.from("podcast_episodes").select("id").eq("guid", guid).maybeSingle();
+    const { data: existing, error: exErr } = await s.from("podcast_episodes").select("id").eq("guid", guid).maybeSingle();
+    if (exErr) throw new Error(`existence check: ${exErr.message}`); // never risk a duplicate insert
     const write = existing
       ? await s.from("podcast_episodes").update(row).eq("id", existing.id)
       : await s.from("podcast_episodes").insert(row);

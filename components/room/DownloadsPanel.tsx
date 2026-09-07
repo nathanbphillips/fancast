@@ -46,7 +46,10 @@ type RecData = {
     match?: { title: string; description: string; txtName: string };
     postgame: { title: string; description: string; txtName: string };
   } | null;
-  podcast?: Record<"pregame" | "match" | "postgame", { canPublish: boolean; publishedAt: string | null }>;
+  podcast?: Record<
+    "pregame" | "match" | "postgame",
+    { canPublish: boolean; publishedAt: string | null; canRemove?: boolean }
+  >;
   courtesyLine: string;
 };
 
@@ -453,7 +456,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                               ? "Schedule"
                               : "Publish now"}
                       </button>
-                      {st.publishedAt && (
+                      {st.publishedAt && st.canRemove && (
                         <button
                           type="button"
                           disabled={publishing !== null}

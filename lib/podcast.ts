@@ -29,8 +29,9 @@ export const podcastConfig = {
   ownerName: brand.name,
   /** Spotify sends its claim/verification email here (must be receivable). */
   ownerEmail: process.env.PODCAST_OWNER_EMAIL || `team@${brand.domain}`,
-  /** live call-ins from fans during football: assume strong language */
-  explicit: (process.env.PODCAST_EXPLICIT ?? "true") !== "false",
+  /** matches the existing Spotify show, which is marked NOT explicit
+   *  (founder set that when uploading); override via env if that changes */
+  explicit: (process.env.PODCAST_EXPLICIT ?? "false") === "true",
   category: "Sports",
   subcategory: "Soccer",
 } as const;
@@ -90,7 +91,7 @@ export function buildFeedXml(args: {
       <title>${esc(e.title)}</title>
       <description>${esc(e.description)}</description>
       <enclosure url="${esc(url)}" length="${e.audio_bytes}" type="audio/mpeg"/>
-      <guid isPermaLink="false">${e.guid}</guid>
+      <guid isPermaLink="false">${esc(e.guid)}</guid>
       <pubDate>${new Date(e.published_at).toUTCString()}</pubDate>
       <itunes:duration>${itunesDuration(Number(e.duration_seconds))}</itunes:duration>
       <itunes:explicit>${c.explicit ? "true" : "false"}</itunes:explicit>

@@ -155,7 +155,10 @@ export async function POST(request: NextRequest) {
     .eq("room_id", roomId)
     .eq("kind", kind)
     .maybeSingle();
-  const publishedAt = publishAt ?? existing?.published_at ?? new Date().toISOString();
+  // a past publishAt means "now" (the schedule only ever delays)
+  const requestedAt =
+    publishAt && Date.parse(publishAt) > Date.now() ? publishAt : publishAt ? new Date().toISOString() : null;
+  const publishedAt = requestedAt ?? existing?.published_at ?? new Date().toISOString();
   const row = {
     room_id: roomId,
     kind,
