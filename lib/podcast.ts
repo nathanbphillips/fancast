@@ -16,14 +16,16 @@ import { brand } from "@/lib/brand";
 export const PODCAST_BUCKET = "podcast";
 
 export const podcastConfig = {
-  // the show now carries pre-game, full-match, and post-game episodes, so
-  // the channel identity is the brand itself (founder 2026-09-06)
-  title: process.env.PODCAST_TITLE || brand.name,
+  // the channel matches the EXISTING Spotify show it now feeds (founder
+  // 2026-09-07): same title and byline, so the host migration changes nothing
+  // a listener sees. Description is keyword-rich for discovery (Arsenal,
+  // Gooners, Premier League) and stays copy-compliant (unofficial, no footage).
+  title: process.env.PODCAST_TITLE || `${brand.name} but it's a podcast`,
   description:
     process.env.PODCAST_DESCRIPTION ||
-    `Live fan commentary from the ${brand.name} matchday room: the pre-game show, the full match, and the post-game reaction, with call-ins and questions from the room. No pundits, just supporters. We never carry match footage or broadcast audio; this is our own conversation.`,
+    `The unofficial Arsenal fan podcast from the ${brand.name} matchday room. Live fan commentary on every Arsenal match: the pre-game show, the full match as the room lived it, and the post-game reaction, with call-ins and questions from Gooners in the room. Arsenal talk, team news, and Premier League matchday reaction from real supporters, not pundits. Hosted by Nathan and Christopher. We never carry match footage or broadcast audio; this is our own conversation. ${brand.domain}`,
   language: "en",
-  author: brand.name,
+  author: process.env.PODCAST_AUTHOR || "Nathan and Christopher",
   ownerName: brand.name,
   /** Spotify sends its claim/verification email here (must be receivable). */
   ownerEmail: process.env.PODCAST_OWNER_EMAIL || `team@${brand.domain}`,
@@ -44,7 +46,8 @@ export const KIND_TO_LABEL: Record<EpisodeKind, string> = {
 
 export type PodcastEpisodeRow = {
   id: string;
-  kind: EpisodeKind;
+  /** "import" = a legacy episode carried over from Spotify hosting */
+  kind: EpisodeKind | "import";
   title: string;
   description: string;
   audio_path: string;
@@ -78,7 +81,8 @@ export function buildFeedXml(args: {
 }): string {
   const c = podcastConfig;
   const feedUrl = `${args.siteUrl}/podcast.xml`;
-  const coverUrl = `${args.siteUrl}/podcast-cover.png`;
+  // the show's existing neon-AR artwork, carried over from Spotify hosting
+  const coverUrl = `${args.siteUrl}${process.env.PODCAST_COVER_PATH || "/podcast-cover.jpg"}`;
   const items = args.episodes
     .map((e) => {
       const url = `${args.audioBaseUrl}/${e.audio_path}`;
