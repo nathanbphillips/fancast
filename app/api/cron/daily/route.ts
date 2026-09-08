@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { MAX_AUTO_ATTEMPTS, STALE_PROCESSING_MS, ffmpegProbe, triggerProcessing } from "@/lib/recording";
+import { MAX_AUTO_ATTEMPTS, RECORDING_RETENTION_DAYS, STALE_PROCESSING_MS, ffmpegProbe, triggerProcessing } from "@/lib/recording";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
 import { createServiceClient } from "@/lib/db/server";
@@ -186,16 +186,22 @@ async function sweepRadio(service: ReturnType<typeof createServiceClient>) {
 
 /** Delete recordings + telemetry older than the retention window. */
 async function pruneOldData(service: ReturnType<typeof createServiceClient>) {
-  const cutoff = new Date(
-    Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  // Recording FILES purge RECORDING_RETENTION_DAYS after the match (founder
+  // 2026-09-14: 60 days of files blows the free cap in a congested run; the
+  // backup zip is downloaded the same day). The recordings ROW is kept so the
+  // page still renders episode notes, and its file paths are nulled so no
+  // dead download links are ever minted. Only terminal states are touched: a
+  // stuck recording keeps its saga (and the panel's auto-retry) intact.
+  const recCutoff = new Date(
+    Date.now() - RECORDING_RETENTION_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
-
-  // --- recordings: storage objects first, then the rows ---
   const { data: old } = await service
     .from("recordings")
     .select("id, room_id, full_mp3_path, zip_path, source_path")
-    .lt("started_at", cutoff);
+    .lt("ended_at", recCutoff)
+    .in("status", ["ready", "damaged", "failed", "empty"]);
   let filesDeleted = 0;
+  let recordingsPurged = 0;
   for (const rec of old ?? []) {
     const { data: segs } = await service
       .from("recording_segments")
@@ -207,28 +213,34 @@ async function pruneOldData(service: ReturnType<typeof createServiceClient>) {
       rec.source_path,
       ...(segs ?? []).map((s) => s.storage_path),
     ].filter(Boolean) as string[];
-    if (paths.length > 0) {
-      const { error } = await service.storage.from("recordings").remove(paths);
-      if (!error) filesDeleted += paths.length;
+    if (paths.length === 0) continue; // already purged on a prior run
+    const { error } = await service.storage.from("recordings").remove(paths);
+    if (error) {
+      console.error(`retention: remove failed for recording ${rec.id}: ${error.message}`);
+      continue; // keep rows/paths so the next run retries
     }
-  }
-  const oldIds = (old ?? []).map((r) => r.id as string);
-  if (oldIds.length > 0) {
-    // segments cascade via recording_id FK, but be explicit
-    await service.from("recording_segments").delete().in("recording_id", oldIds);
-    await service.from("recordings").delete().in("id", oldIds);
+    filesDeleted += paths.length;
+    await service.from("recording_segments").delete().eq("recording_id", rec.id as string);
+    await service
+      .from("recordings")
+      .update({ full_mp3_path: null, zip_path: null, source_path: null })
+      .eq("id", rec.id as string);
+    recordingsPurged++;
   }
 
-  // --- telemetry ---
+  // --- telemetry (events keep the long window) ---
+  const eventsCutoff = new Date(
+    Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const { count: eventsDeleted } = await service
     .from("events")
     .delete({ count: "exact" })
-    .lt("created_at", cutoff);
+    .lt("created_at", eventsCutoff);
 
   return {
     ok: true,
-    cutoff,
-    recordingsDeleted: oldIds.length,
+    recordingFilesCutoff: recCutoff,
+    recordingsPurged,
     filesDeleted,
     eventsDeleted: eventsDeleted ?? 0,
   };

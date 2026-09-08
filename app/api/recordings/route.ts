@@ -5,6 +5,7 @@ import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import {
   MAX_AUTO_ATTEMPTS,
+  RECORDING_RETENTION_DAYS,
   STALE_PROCESSING_MS,
   ffmpegProbe,
   triggerProcessing,
@@ -280,11 +281,17 @@ export async function GET(request: NextRequest) {
         }
       : null,
     fullNote:
-      rec.status === "ready" && !rec.full_mp3_path
+      files.length > 0 && rec.status === "ready" && !rec.full_mp3_path
         ? "This show is longer than the single-file size cap, so it ships as parts. Together they carry the whole broadcast."
-        : rec.status === "damaged" && !rec.full_mp3_path
+        : files.length > 0 && rec.status === "damaged" && !rec.full_mp3_path
           ? "This show is longer than the single-file size cap, so it ships as parts."
           : null,
+    retentionNote:
+      rec.status === "ready" || rec.status === "damaged"
+        ? files.length > 0
+          ? `Files stay available for ${RECORDING_RETENTION_DAYS} days after the match. Download the backup below to keep the show.`
+          : `The files were removed after the ${RECORDING_RETENTION_DAYS}-day retention window. Your downloaded backup is the archive.`
+        : null,
     courtesyLine: `Recorded live on ${brand.name} during ${fixtureLabel}.`,
   });
 }

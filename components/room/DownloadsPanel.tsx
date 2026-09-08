@@ -41,6 +41,8 @@ type RecData = {
   attempts?: number;
   /** why there is no Full broadcast file, when that is by design */
   fullNote?: string | null;
+  /** how long files live, or that they already aged out (founder 2026-09-14) */
+  retentionNote?: string | null;
   /** podcast-style notes for the pre/post-game shows (match rooms only) */
   episodeNotes?: {
     pregame: { title: string; description: string; txtName: string };
@@ -269,13 +271,17 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
               ? `A long show can take several passes. It retries by itself while this page is open (attempt ${Math.max(1, data.attempts ?? 1)}).`
               : "Cutting your segments — this can take a few minutes.")}
           {rec.status === "ready" &&
-            (data.files[0]?.label === "Full broadcast"
-              ? `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.durationSeconds)} total`
-              : `${data.files.length} part ${data.files.length === 1 ? "file" : "files"} · ${fmtDuration(rec.durationSeconds)} total`)}
+            (data.files.length === 0
+              ? `Processed · ${fmtDuration(rec.durationSeconds)} total`
+              : data.files[0]?.label === "Full broadcast"
+                ? `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.durationSeconds)} total`
+                : `${data.files.length} part ${data.files.length === 1 ? "file" : "files"} · ${fmtDuration(rec.durationSeconds)} total`)}
           {rec.status === "damaged" &&
-            (data.files[0]?.label === "Full broadcast"
-              ? `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`
-              : `${data.files.length} part ${data.files.length === 1 ? "file" : "files"} · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`)}
+            (data.files.length === 0
+              ? `Processed · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`
+              : data.files[0]?.label === "Full broadcast"
+                ? `Full broadcast plus ${data.files.length - 1} segments · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`
+                : `${data.files.length} part ${data.files.length === 1 ? "file" : "files"} · ${fmtDuration(rec.audioSeconds ?? rec.durationSeconds)} captured`)}
           {rec.status === "failed" && `Processing failed: ${rec.error ?? "unknown error"}`}
           {rec.status === "empty" && "No audio was captured for this session."}
           {rec.status === "recording" &&
@@ -283,6 +289,9 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
         </p>
         {data.fullNote && (rec.status === "ready" || rec.status === "damaged") && (
           <p className="mt-0.5 text-xs text-secondary">{data.fullNote}</p>
+        )}
+        {data.retentionNote && (
+          <p className="mt-0.5 text-xs text-secondary">{data.retentionNote}</p>
         )}
         {data.pauses && data.pauses.count > 0 && (
           <p className="mt-0.5 text-xs text-secondary tabular-nums">

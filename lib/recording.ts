@@ -72,6 +72,11 @@ export const STALE_PROCESSING_MS = 10 * 60 * 1000;
 // auto-retries stop here so an impossible job ends honestly instead of
 // looping forever; a manual Retry resets the counter (2026-09-01)
 export const MAX_AUTO_ATTEMPTS = 8;
+// Recording FILES live this long after the match (founder 2026-09-14: a
+// congested run is up to 5 matches in 14 days at ~110MB each, and the 60-day
+// window would blow the free storage cap; the founder downloads the backup
+// zip the same day). Rows are kept forever so episode notes keep rendering.
+export const RECORDING_RETENTION_DAYS = Number(process.env.RECORDING_RETENTION_DAYS) || 7;
 // Supabase Free rejects objects over 50MB; skip a doomed upload outright
 const STORAGE_CAP_BYTES = 49 * 1024 * 1024;
 // the streamed encode spans the downloads too; local rescues override this
