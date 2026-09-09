@@ -8,6 +8,7 @@ import {
   RECORDING_RETENTION_DAYS,
   STALE_PROCESSING_MS,
   ffmpegProbe,
+  processingLooksDead,
   triggerProcessing,
 } from "@/lib/recording";
 import { ET_KINDS } from "@/lib/markers";
@@ -196,7 +197,9 @@ export async function GET(request: NextRequest) {
   const attempts = (rec as { attempts?: number }).attempts ?? 0;
   const staleSince = (ts: string | null) =>
     ts !== null && Date.now() - new Date(ts).getTime() > STALE_PROCESSING_MS;
-  const processingStale = rec.status === "processing" && staleSince(rec.processing_started_at);
+  // heartbeat-aware (founder 2026-09-09): a dead run is reclaimed ~90s after
+  // its last beat instead of 10 minutes after its claim
+  const processingStale = rec.status === "processing" && processingLooksDead(rec);
   // "recording" with the show long over = the end-of-broadcast trigger never
   // ran (deploy restart, crashed after()); kick it the same way
   const neverStarted = rec.status === "recording" && staleSince(rec.ended_at);

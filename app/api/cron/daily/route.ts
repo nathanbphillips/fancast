@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { MAX_AUTO_ATTEMPTS, RECORDING_RETENTION_DAYS, STALE_PROCESSING_MS, ffmpegProbe, triggerProcessing } from "@/lib/recording";
+import { MAX_AUTO_ATTEMPTS, RECORDING_RETENTION_DAYS, STALE_PROCESSING_MS, ffmpegProbe, processingLooksDead, triggerProcessing } from "@/lib/recording";
 import { getCurrentUserAndProfile } from "@/lib/db/server";
 import { isAdmin } from "@/lib/roles";
 import { createServiceClient } from "@/lib/db/server";
@@ -124,7 +124,7 @@ async function sweepStuckProcessing(service: ReturnType<typeof createServiceClie
   const staleBefore = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
   const { data: stuck, error } = await service
     .from("recordings")
-    .select("room_id, status, attempts, processing_started_at, ended_at")
+    .select("room_id, status, attempts, processing_started_at, processing_heartbeat_at, ended_at")
     .in("status", ["recording", "processing"])
     .not("ended_at", "is", null)
     .lt("ended_at", staleBefore)
@@ -135,12 +135,8 @@ async function sweepStuckProcessing(service: ReturnType<typeof createServiceClie
   if (error) return { ok: false, reason: error.message };
   let kicked = 0;
   for (const r of stuck ?? []) {
-    // a processing run younger than the stale window still owns its claim
-    if (
-      r.status === "processing" &&
-      r.processing_started_at &&
-      Date.now() - new Date(r.processing_started_at).getTime() <= STALE_PROCESSING_MS
-    ) {
+    // a run that is still beating owns its claim; only the dead are kicked
+    if (r.status === "processing" && !processingLooksDead(r)) {
       continue;
     }
     triggerProcessing(r.room_id);

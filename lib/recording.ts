@@ -69,6 +69,28 @@ export async function ffmpegProbe(): Promise<{
 // a processing run older than this is presumed dead (crash/timeout) and
 // may be reclaimed
 export const STALE_PROCESSING_MS = 10 * 60 * 1000;
+// Liveness heartbeat (founder 2026-09-09): the processor updates
+// processing_heartbeat_at every ~15s; silence past 90s = the run is dead and
+// may be reclaimed. Retries now start ~1.5 min after a kill instead of 10,
+// and a healthy run (which beats constantly) can never be hijacked. The old
+// 10-minute window survives only as the fallback for null-heartbeat rows.
+export const HEARTBEAT_EVERY_MS = 15 * 1000;
+export const STALE_HEARTBEAT_MS = 90 * 1000;
+
+/** Is this processing run dead? Heartbeat silence when we have one; claim
+ *  age as the legacy fallback when we do not. */
+export function processingLooksDead(rec: {
+  processing_heartbeat_at?: string | null;
+  processing_started_at?: string | null;
+}): boolean {
+  if (rec.processing_heartbeat_at) {
+    return Date.now() - new Date(rec.processing_heartbeat_at).getTime() > STALE_HEARTBEAT_MS;
+  }
+  return (
+    !!rec.processing_started_at &&
+    Date.now() - new Date(rec.processing_started_at).getTime() > STALE_PROCESSING_MS
+  );
+}
 // auto-retries stop here so an impossible job ends honestly instead of
 // looping forever; a manual Retry resets the counter (2026-09-01)
 export const MAX_AUTO_ATTEMPTS = 8;
@@ -335,6 +357,7 @@ export async function processRecording(
   // atomic claim: flip to 'processing' only if not already being processed
   // (or the prior run is stale). A failed claim means another run owns it.
   const staleBefore = new Date(Date.now() - STALE_PROCESSING_MS).toISOString();
+  const heartbeatDeadBefore = new Date(Date.now() - STALE_HEARTBEAT_MS).toISOString();
   // The status BEFORE the claim: the claim's returned row is post-update, so
   // its status is always "processing" - reading it for the recut-restore
   // guard below made that guard dead code (found 2026-09-01; the read is
@@ -350,10 +373,13 @@ export async function processRecording(
     .update({
       status: "processing",
       processing_started_at: new Date().toISOString(),
+      processing_heartbeat_at: new Date().toISOString(),
       error: null,
     })
     .eq("room_id", roomId)
-    .or(`status.neq.processing,processing_started_at.lt.${staleBefore}`)
+    .or(
+      `status.neq.processing,processing_heartbeat_at.lt.${heartbeatDeadBefore},and(processing_heartbeat_at.is.null,processing_started_at.lt.${staleBefore})`,
+    )
     .select("*")
     .maybeSingle();
   // count the attempt (claims are serialized, so read-then-write is safe);
@@ -427,6 +453,21 @@ export async function processRecording(
   // the egress-ok path above so the recording is never aborted. Idempotent, so
   // a recut re-entering here is harmless.
   await deleteBroadcastRoom(roomId);
+
+  // liveness beat: cheap throttled write; a killed function simply stops
+  // beating, which IS the death signal the reclaim looks for
+  let lastBeat = Date.now();
+  const beat = () => {
+    if (Date.now() - lastBeat < HEARTBEAT_EVERY_MS) return;
+    lastBeat = Date.now();
+    void service
+      .from("recordings")
+      .update({ processing_heartbeat_at: new Date().toISOString() })
+      .eq("id", rec.id)
+      .then(({ error: hbErr }) => {
+        if (hbErr) console.warn(`recording ${rec.id}: heartbeat write failed: ${hbErr.message}`);
+      });
+  };
 
   // per-run unique temp dir so concurrent/sequential runs never share files
   const work = await mkdtemp(join(tmpdir(), `fc-rec-${roomId}-`));
@@ -602,6 +643,7 @@ export async function processRecording(
             return null;
           }),
         );
+        beat();
         for (let j = 0; j < bufs.length; j++) {
           const b = bufs[j];
           if (b) {
@@ -634,6 +676,7 @@ export async function processRecording(
         throw e;
       }
       if (enc.stdin!.writable) enc.stdin!.end();
+      beat();
       const settled = await encodeSettled;
       if (settled.ok) {
         encodeStderr = settled.stderr;
@@ -793,6 +836,7 @@ export async function processRecording(
       duration_seconds: number;
     }[] = [];
     for (const seg of segments) {
+      beat();
       // remap wall offsets into gap-aware audio offsets (identity for legacy)
       const aStart = presentBefore(seg.startOffset);
       const aEnd = presentBefore(seg.endOffset);
