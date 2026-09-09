@@ -237,7 +237,7 @@ async function measureAudio(
  *  measurement filters, so long shows only decode once. */
 function parseMeasure(
   stderr: string,
-): { seconds: number; audible: number; meanDb: number | null } | null {
+): { seconds: number; audible: number; meanDb: number | null; silenceSpans: Array<[number, number]> } | null {
   if (!stderr) return null;
   const hms = (h: string, m: string, s: string) => Number(h) * 3600 + Number(m) * 60 + Number(s);
   const times = [...stderr.matchAll(/time=(\d+):(\d+):([\d.]+)/g)];
@@ -246,7 +246,36 @@ function parseMeasure(
   const seconds = hms(last[1], last[2], last[3]);
   const silent = [...stderr.matchAll(/silence_duration:\s*([\d.]+)/g)].reduce((a, m) => a + Number(m[1]), 0);
   const meanRaw = stderr.match(/mean_volume:\s*(-?[\d.]+) dB/)?.[1];
-  return { seconds, audible: Math.max(0, seconds - silent), meanDb: meanRaw ? Number(meanRaw) : null };
+  // spans in AUDIO seconds; an unclosed final silence closes at the end
+  const spans: Array<[number, number]> = [];
+  const starts = [...stderr.matchAll(/silence_start:\s*(-?[\d.]+)/g)].map((m) => Number(m[1]));
+  const ends = [...stderr.matchAll(/silence_end:\s*([\d.]+)/g)].map((m) => Number(m[1]));
+  for (let i = 0; i < starts.length; i++) {
+    spans.push([Math.max(0, starts[i]), ends[i] ?? seconds]);
+  }
+  return { seconds, audible: Math.max(0, seconds - silent), meanDb: meanRaw ? Number(meanRaw) : null, silenceSpans: spans };
+}
+
+/** Which of these cuts are essentially dead air? A period is called silent
+ *  when under 10% of its span is audible (and it is long enough to matter).
+ *  The whole-show integrity check cannot see this: a live first half AVERAGES
+ *  AWAY a dead second half (the 2026-09-09 Napoli show shipped "ready" with
+ *  silence from the halftime whistle onward). */
+export function silentCuts(
+  cuts: Array<{ label: string; aStart: number; aEnd: number }>,
+  silenceSpans: Array<[number, number]>,
+): string[] {
+  const dead: string[] = [];
+  for (const c of cuts) {
+    const span = c.aEnd - c.aStart;
+    if (span < 120) continue; // slivers cannot be judged
+    let silent = 0;
+    for (const [s, e] of silenceSpans) {
+      silent += Math.max(0, Math.min(e, c.aEnd) - Math.max(s, c.aStart));
+    }
+    if (span - silent < span * 0.1) dead.push(c.label);
+  }
+  return dead;
 }
 
 /**
@@ -835,12 +864,14 @@ export async function processRecording(
       size_bytes: number;
       duration_seconds: number;
     }[] = [];
+    const cutRanges: Array<{ label: string; aStart: number; aEnd: number }> = [];
     for (const seg of segments) {
       beat();
       // remap wall offsets into gap-aware audio offsets (identity for legacy)
       const aStart = presentBefore(seg.startOffset);
       const aEnd = presentBefore(seg.endOffset);
       if (aEnd - aStart < 3) continue; // the audio for this span is gone
+      if (seg.label !== FULL_MATCH_LABEL) cutRanges.push({ label: seg.label, aStart, aEnd });
       const local = join(work, `seg-${seg.idx}.mp3`);
       await run(FFMPEG, [
         "-y",
@@ -954,7 +985,13 @@ export async function processRecording(
     // paused stretches are deliberately absent, not lost
     const expectedSeconds = Math.max(0, (endMs - startMs) / 1000 - (legacySource ? 0 : pausedSeconds));
     const measured = parseMeasure(encodeStderr) ?? (await measureAudio(fullLocal));
-    const problem = integrityProblem(measured, expectedSeconds);
+    let problem = integrityProblem(measured, expectedSeconds);
+    if (!problem && "silenceSpans" in measured) {
+      const dead = silentCuts(cutRanges, (measured as { silenceSpans: Array<[number, number]> }).silenceSpans);
+      if (dead.length > 0) {
+        problem = `${dead.join(", ")} ${dead.length === 1 ? "is" : "are"} almost entirely silent - the microphone was not reaching the recorder for ${dead.length === 1 ? "that stretch" : "those stretches"}`;
+      }
+    }
     const status = problem ? "damaged" : "ready";
     if (problem) {
       console.error(`recording ${rec.id}: DAMAGED - ${problem}`);

@@ -125,6 +125,8 @@ Next.js (App Router) + TypeScript strict + Tailwind on Vercel. Supabase (Postgre
 
 | **Processing liveness heartbeat** (founder 2026-09-09: retry after ~a minute, not ten). The processor stamps `recordings.processing_heartbeat_at` (migration **0053**) at claim and every ~15s through downloads/encode-drain/cuts (`beat()` in processRecording, fire-and-forget); `processingLooksDead()` = heartbeat silence > `STALE_HEARTBEAT_MS` 90s (null-heartbeat legacy rows fall back to the old 10-min claim age). Claim reclaim, the panel GET auto-heal, and the cron sweep all use it, so a wall-killed run is retried ~1.5 min after death while a healthy run (which never stops beating) can never be hijacked - the reason a flat 1-minute window was refused: legitimate runs take up to ~5 min and two concurrent processors would race the same files. | Founder decision 2026-09-09 | Final |
 
+| **Per-period silence check** (2026-09-09, the Napoli lesson): the whole-show integrity check AVERAGES AWAY a dead half (Napoli shipped "ready" with pure silence from the halftime whistle onward - clipped-hot mic through 1H, then nothing reached the recorder). `parseMeasure` now returns the silence SPANS from the same encode pass and `silentCuts()` (unit-tested) names any non-sliver cut under 10% audible; processing marks the recording **damaged** with those period names in the host-facing error. No extra decode cost. | 2026-09-09 | Assumed |
+
 ## Where things are specified
 
 - Requirements and acceptance criteria: `docs/PRD.md`

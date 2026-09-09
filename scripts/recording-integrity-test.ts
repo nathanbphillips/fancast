@@ -4,7 +4,7 @@
  * The cases are taken from real measurements of the 2026-08-05 recordings, so
  * a regression here is a regression against broadcasts we actually lost.
  */
-import { integrityProblem } from "@/lib/recording";
+import { integrityProblem, silentCuts } from "@/lib/recording";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -70,6 +70,24 @@ check(
   "just below the 50% cutoff is flagged",
   integrityProblem({ seconds: 3500, audible: 3000, meanDb: -25 }, 7200) !== null,
 );
+
+// per-period audibility (the Napoli lesson 2026-09-09)
+{
+  const cuts = [
+    { label: "Pre-game show", aStart: 0, aEnd: 2220 },
+    { label: "First half", aStart: 2220, aEnd: 5340 },
+    { label: "Second half", aStart: 6060, aEnd: 9060 },
+  ];
+  // second half fully inside one long silence
+  let dead = silentCuts(cuts, [[6000, 9200]]);
+  check("a dead second half is named", dead.length === 1 && dead[0] === "Second half", dead.join(","));
+  // normal chatter with pauses under 10% flags nothing
+  dead = silentCuts(cuts, [[100, 150], [3000, 3100], [7000, 7050]]);
+  check("normal pauses do not flag", dead.length === 0, dead.join(","));
+  // a 60s sliver is never judged
+  dead = silentCuts([{ label: "Post-game show", aStart: 0, aEnd: 60 }], [[0, 60]]);
+  check("slivers are not judged", dead.length === 0, dead.join(","));
+}
 
 console.log(failures === 0 ? "\nALL PASSED" : `\n${failures} FAILED`);
 process.exit(failures === 0 ? 0 : 1);
