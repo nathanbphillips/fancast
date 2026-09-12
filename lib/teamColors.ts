@@ -1,10 +1,11 @@
 /**
- * Club colours for the line-up discs (founder 2026-09-06): Arsenal are ALWAYS
- * the red circles, home or away. The opponent wears their own club colour,
- * except when that colour is in the same family as the other side's (a
- * red-shirted visitor like Liverpool or United next to Arsenal red), in which
- * case they drop to their secondary colour. Plain coloured discs only, no
- * crests or kit imagery (copy-compliance: nothing club-official is implied).
+ * Club colours for the line-up discs (founder 2026-09-06) and the stat bars
+ * (founder 2026-09-12): Arsenal are ALWAYS red, home or away. The opponent
+ * wears their own club colour, except when that colour is in the same family
+ * as the other side's (a red-shirted visitor like Liverpool or United next to
+ * Arsenal red), in which case they drop to their secondary colour. Plain
+ * coloured fills only, no crests or kit imagery (copy-compliance: nothing
+ * club-official is implied).
  *
  * Keys are matched against the fixture team names Sportmonks stores
  * (normalised to lowercase); unknown teams (custom rooms, cup sides we have
@@ -101,4 +102,13 @@ export function lineupDiscColors(
     else away = away === WHITE ? BLACK : WHITE;
   }
   return { home, away };
+}
+
+/** Inline style for a club-coloured stat-bar segment, momentum bar, or side
+ *  dot: the club colour plus a hairline ring, because a white kit (Spurs,
+ *  Fulham) vanishes on the light theme's surfaces and a black one (Newcastle)
+ *  on the dark theme's without it. The discs never needed this - they sit on
+ *  the pitch green. */
+export function barFillStyle(c: DiscColor): { backgroundColor: string; boxShadow: string } {
+  return { backgroundColor: c.bg, boxShadow: "inset 0 0 0 1px rgb(var(--hair) / 0.25)" };
 }

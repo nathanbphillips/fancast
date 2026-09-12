@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { StatBars } from "./StatBars";
 import type { DeepStats, MomentumBucket, StatBar } from "@/lib/stats";
+import { barFillStyle, type DiscColor } from "@/lib/teamColors";
 
 /**
  * Deeper stats (Phase 7 expand): xG, momentum, ratings, goalkeepers, per-half,
@@ -12,6 +13,11 @@ import type { DeepStats, MomentumBucket, StatBar } from "@/lib/stats";
  */
 
 type Size = "compact" | "radio";
+type SideColors = { home: DiscColor; away: DiscColor };
+
+/** club colour for a side, or undefined to keep the red/navy fallback class */
+const fill = (colors: SideColors | undefined, side: "home" | "away") =>
+  colors ? barFillStyle(colors[side]) : undefined;
 
 function Caret({ open }: { open: boolean }) {
   return (
@@ -71,12 +77,14 @@ function Bar({
   away,
   fmt = (n) => `${n}`,
   big,
+  colors,
 }: {
   label: string;
   home: number;
   away: number;
   fmt?: (n: number) => string;
   big: boolean;
+  colors?: SideColors;
 }) {
   const total = home + away;
   const hp = total === 0 ? 50 : (home / total) * 100;
@@ -88,14 +96,14 @@ function Bar({
         <span className="font-semibold tabular-nums">{fmt(away)}</span>
       </div>
       <div className={`mt-1 flex overflow-hidden rounded-full bg-raised ${big ? "h-2.5" : "h-1.5"}`}>
-        <span className="bg-red" style={{ width: `${hp}%` }} />
-        <span className="bg-navy" style={{ width: `${100 - hp}%` }} />
+        <span className={colors ? undefined : "bg-red"} style={{ width: `${hp}%`, ...fill(colors, "home") }} />
+        <span className={colors ? undefined : "bg-navy"} style={{ width: `${100 - hp}%`, ...fill(colors, "away") }} />
       </div>
     </div>
   );
 }
 
-function Momentum({ buckets, big }: { buckets: MomentumBucket[]; big: boolean }) {
+function Momentum({ buckets, big, colors }: { buckets: MomentumBucket[]; big: boolean; colors?: SideColors }) {
   const max = Math.max(1, ...buckets.map((b) => Math.abs(b.home - b.away)));
   return (
     <>
@@ -113,10 +121,16 @@ function Momentum({ buckets, big }: { buckets: MomentumBucket[]; big: boolean })
               title={`${b.minute}′: ${b.home}–${b.away}`}
             >
               <div className="flex flex-1 items-end">
-                <span className="w-full rounded-sm bg-red" style={{ height: net > 0 ? `${h}%` : "0" }} />
+                <span
+                  className={`w-full rounded-sm ${colors ? "" : "bg-red"}`}
+                  style={{ height: net > 0 ? `${h}%` : "0", ...fill(colors, "home") }}
+                />
               </div>
               <div className="flex flex-1 items-start">
-                <span className="w-full rounded-sm bg-navy" style={{ height: net < 0 ? `${h}%` : "0" }} />
+                <span
+                  className={`w-full rounded-sm ${colors ? "" : "bg-navy"}`}
+                  style={{ height: net < 0 ? `${h}%` : "0", ...fill(colors, "away") }}
+                />
               </div>
             </div>
           );
@@ -150,6 +164,7 @@ export function DeeperStats({
   awayName,
   size = "compact",
   openSignal,
+  colors,
 }: {
   deep: DeepStats | null;
   extended: StatBar[];
@@ -158,6 +173,8 @@ export function DeeperStats({
   size?: Size;
   /** bump to force the searchable "Extended team stats" section open */
   openSignal?: number;
+  /** club colours shared with the line-up discs (Arsenal always red) */
+  colors?: SideColors;
 }) {
   const big = size === "radio";
   if (!deep) {
@@ -183,13 +200,16 @@ export function DeeperStats({
   return (
     <div className="space-y-2">
       <Section title="Expected goals (xG)" defaultOpen big>
-        <Bar label="Team xG" home={deep.xg.home} away={deep.xg.away} fmt={(n) => n.toFixed(2)} big />
+        <Bar label="Team xG" home={deep.xg.home} away={deep.xg.away} fmt={(n) => n.toFixed(2)} big colors={colors} />
         {deep.xg.top.length > 0 && (
           <ul className="mt-1 space-y-0.5">
             {deep.xg.top.slice(0, 5).map((p, i) => (
               <li key={`${p.side}-${p.name}-${i}`} className={`flex items-center justify-between ${big ? "text-sm" : "text-[13px]"}`}>
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${p.side === "home" ? "bg-red" : "bg-navy"}`} />
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors ? "" : p.side === "home" ? "bg-red" : "bg-navy"}`}
+                    style={fill(colors, p.side)}
+                  />
                   <span className="truncate">{p.name}</span>
                 </span>
                 <span className="ml-2 shrink-0 font-semibold tabular-nums">{p.xg.toFixed(2)}</span>
@@ -201,7 +221,7 @@ export function DeeperStats({
 
       {deep.momentum.length > 0 && (
         <Section title="Momentum" defaultOpen big>
-          <Momentum buckets={deep.momentum} big={big} />
+          <Momentum buckets={deep.momentum} big={big} colors={colors} />
         </Section>
       )}
 
@@ -220,7 +240,10 @@ export function DeeperStats({
             g ? (
               <div key={side} className={`flex items-center justify-between ${big ? "text-sm" : "text-[13px]"} py-0.5`}>
                 <span className="flex min-w-0 items-center gap-1.5">
-                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${side === "home" ? "bg-red" : "bg-navy"}`} />
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors ? "" : side === "home" ? "bg-red" : "bg-navy"}`}
+                    style={fill(colors, side)}
+                  />
                   <span className="truncate">{g.name}</span>
                 </span>
                 <span className="ml-2 shrink-0 text-secondary tabular-nums">
@@ -237,8 +260,8 @@ export function DeeperStats({
           {deep.perHalf.map((h) => (
             <div key={h.code} className="mb-2 last:mb-0">
               <p className={`mb-0.5 text-secondary ${big ? "text-xs" : "text-[11px]"}`}>{h.label}</p>
-              <Bar label="1st half" home={h.first.home} away={h.first.away} big={big} />
-              <Bar label="2nd half" home={h.second.home} away={h.second.away} big={big} />
+              <Bar label="1st half" home={h.first.home} away={h.first.away} big={big} colors={colors} />
+              <Bar label="2nd half" home={h.second.home} away={h.second.away} big={big} colors={colors} />
             </div>
           ))}
         </Section>
@@ -247,9 +270,15 @@ export function DeeperStats({
       {gs && (
         <Section title="Game state" big>
           <div className="flex h-2 overflow-hidden rounded-full bg-raised">
-            <span className="bg-red" style={{ width: `${(gs.homeLed / gsTotal) * 100}%` }} />
+            <span
+              className={colors ? undefined : "bg-red"}
+              style={{ width: `${(gs.homeLed / gsTotal) * 100}%`, ...fill(colors, "home") }}
+            />
             <span className="bg-line" style={{ width: `${(gs.level / gsTotal) * 100}%` }} />
-            <span className="bg-navy" style={{ width: `${(gs.awayLed / gsTotal) * 100}%` }} />
+            <span
+              className={colors ? undefined : "bg-navy"}
+              style={{ width: `${(gs.awayLed / gsTotal) * 100}%`, ...fill(colors, "away") }}
+            />
           </div>
           <div className={`mt-2 space-y-0.5 ${big ? "text-sm" : "text-[13px]"}`}>
             <div className="flex justify-between"><span className="text-secondary">{homeName} led</span><span className="font-semibold tabular-nums">{gs.homeLed}′</span></div>
@@ -264,7 +293,7 @@ export function DeeperStats({
           {exGroups.map((g, i) => (
             <div key={g.name} className={i === 0 ? "" : "mt-3"}>
               <p className={`mb-2 font-semibold text-secondary ${big ? "text-xs" : "text-[11px]"}`}>{g.name}</p>
-              <StatBars stats={g.items} size={size} />
+              <StatBars stats={g.items} size={size} colors={colors} />
             </div>
           ))}
         </Section>

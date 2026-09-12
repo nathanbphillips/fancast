@@ -11,6 +11,7 @@ import { PitchLineup } from "@/components/stats/PitchLineup";
 import { StatsEditor } from "@/components/stats/StatsEditor";
 import { placeholderStats } from "@/lib/stats";
 import type { FixtureStats, StatBar, StatTab } from "@/lib/stats";
+import { lineupDiscColors, type DiscColor } from "@/lib/teamColors";
 import type { MatchHistory } from "@/lib/history";
 import type { StatOverrides } from "@/lib/statOverrides";
 
@@ -163,7 +164,15 @@ function StatSearch({
 }
 
 /** Render stat bars grouped by their `group`, with a subheader per group. */
-function StatGroups({ bars, size }: { bars: StatBar[]; size: "compact" | "radio" }) {
+function StatGroups({
+  bars,
+  size,
+  colors,
+}: {
+  bars: StatBar[];
+  size: "compact" | "radio";
+  colors?: { home: DiscColor; away: DiscColor };
+}) {
   const groups: { name: string; items: StatBar[] }[] = [];
   for (const b of bars) {
     let g = groups.find((x) => x.name === b.group);
@@ -180,7 +189,7 @@ function StatGroups({ bars, size }: { bars: StatBar[]; size: "compact" | "radio"
           <p className="mb-2.5 font-mono text-[13px] font-bold tracking-[0.08em] text-secondary uppercase">
             {g.name}
           </p>
-          <StatBars stats={g.items} size={size} />
+          <StatBars stats={g.items} size={size} colors={colors} />
         </div>
       ))}
     </>
@@ -369,6 +378,9 @@ export function StatsPanel({
   const followingPush = pushedTab !== null && pushedTab === effectiveTab && override === null;
   const activeLabel = tabs.find((t) => t.id === effectiveTab)?.label ?? "Stats";
   const hasStats = (data?.stats?.length ?? 0) > 0;
+  // stat bars wear the same club colours as the line-up discs (Arsenal always
+  // red, founder 2026-09-12); no fixture data keeps the red/navy placeholder
+  const barColors = data ? lineupDiscColors(data.home.name, data.away.name) : undefined;
 
   return (
     <div className="p-3">
@@ -486,7 +498,7 @@ export function StatsPanel({
               if (!hasStats) {
                 return (
                   <>
-                    <StatGroups bars={placeholderStats()} size={size} />
+                    <StatGroups bars={placeholderStats()} size={size} colors={barColors} />
                     <p className={`mt-3 text-secondary ${big ? "text-sm" : "text-xs"}`}>
                       {outage
                         ? "Live stats are temporarily unavailable."
@@ -497,7 +509,7 @@ export function StatsPanel({
               }
               const def = data!.stats.filter((b) => b.tier === "default");
               const more = data!.stats.filter((b) => b.tier === "more");
-              const thirteen = <StatGroups bars={def} size={size} />;
+              const thirteen = <StatGroups bars={def} size={size} colors={barColors} />;
               const deeper = (
                 <DeeperStats
                   deep={data!.deep}
@@ -506,6 +518,7 @@ export function StatsPanel({
                   awayName={data!.away.name}
                   size={size}
                   openSignal={reveal?.nonce}
+                  colors={barColors}
                 />
               );
               // KEY EVENTS digest (Cloud Design, founder 2026-07-02): the latest

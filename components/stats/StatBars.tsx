@@ -1,18 +1,23 @@
 import type { StatBar } from "@/lib/stats";
+import { barFillStyle, type DiscColor } from "@/lib/teamColors";
 
 /**
  * Compact stacked home-vs-away stat bars. pct stats (possession, pass
  * accuracy) use the raw home value as the bar width; count stats split
  * proportionally by total. The colored segments carry no text, so AA contrast
  * holds in both themes. `size="radio"` enlarges everything for background
- * listening.
+ * listening. With `colors` the segments wear the same club colours as the
+ * line-up discs (Arsenal always red, founder 2026-09-12); without them
+ * (no fixture data) they keep the red-home / navy-away placeholder look.
  */
 export function StatBars({
   stats,
   size = "compact",
+  colors,
 }: {
   stats: StatBar[];
   size?: "compact" | "radio";
+  colors?: { home: DiscColor; away: DiscColor };
 }) {
   const big = size === "radio";
   return (
@@ -40,8 +45,14 @@ export function StatBars({
               role="img"
               aria-label={`${s.label}: ${fmt(s.home)} home, ${fmt(s.away)} away`}
             >
-              <span className="bg-red" style={{ width: `${homePct}%` }} />
-              <span className="bg-navy" style={{ width: `${100 - homePct}%` }} />
+              <span
+                className={colors ? undefined : "bg-red"}
+                style={{ width: `${homePct}%`, ...(colors ? barFillStyle(colors.home) : null) }}
+              />
+              <span
+                className={colors ? undefined : "bg-navy"}
+                style={{ width: `${100 - homePct}%`, ...(colors ? barFillStyle(colors.away) : null) }}
+              />
             </div>
           </div>
         );
