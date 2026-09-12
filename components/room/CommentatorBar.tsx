@@ -223,7 +223,7 @@ export function CommentatorBar({
                 type="button"
                 disabled={!startDraft}
                 onClick={() => saveBroadcastStart(startDraft)}
-                className="h-8 rounded-md bg-red px-2.5 font-bold text-white disabled:opacity-60"
+                className="h-8 rounded-md bg-red-fill px-2.5 font-bold text-white disabled:opacity-60"
               >
                 Set
               </button>
@@ -286,7 +286,7 @@ export function CommentatorBar({
                   {r.author?.username}
                   {(r.caller_flags?.count ?? 0) > 0 && (
                     <span
-                      className="ml-1.5 rounded-sm bg-red px-1 py-0.5 text-[10px] font-bold text-white"
+                      className="ml-1.5 rounded-sm bg-red-fill px-1 py-0.5 text-[10px] font-bold text-white"
                       title={r.caller_flags!.notes
                         .map((n) => `${n.by}: ${n.note ?? "(no note)"}`)
                         .join("\n")}
@@ -345,7 +345,7 @@ export function CommentatorBar({
                 ? "Start your mic first — the broadcast needs a live mic (FR-3.3)"
                 : "Opens chat, links, and questions for everyone"
             }
-            className="h-11 rounded-lg bg-red px-5 text-sm font-bold text-white disabled:opacity-60"
+            className="h-11 rounded-lg bg-red-fill px-5 text-sm font-bold text-white disabled:opacity-60"
           >
             Start Broadcast
           </button>
@@ -357,7 +357,7 @@ export function CommentatorBar({
                 type="button"
                 disabled={busy}
                 onClick={() => transition("end")}
-                className="h-11 rounded-lg bg-red px-4 text-sm font-bold text-white disabled:opacity-60"
+                className="h-11 rounded-lg bg-red-fill px-4 text-sm font-bold text-white disabled:opacity-60"
               >
                 Confirm end
               </button>

@@ -251,7 +251,7 @@ export function InteractionButtons({
               <button
                 type="submit"
                 disabled={busy || !question.trim()}
-                className="h-11 w-full rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
+                className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
               >
                 Send question
               </button>
@@ -292,7 +292,7 @@ export function InteractionButtons({
           <button
             type="submit"
             disabled={busy || (!consentGiven && !consent)}
-            className="h-11 w-full rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
+            className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
           >
             Send request
           </button>

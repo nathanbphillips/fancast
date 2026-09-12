@@ -42,7 +42,7 @@ export function FollowButton({
       className={`h-11 rounded-lg px-5 text-sm font-semibold disabled:opacity-60 ${
         following
           ? "border border-line bg-surface hover:bg-raised"
-          : "bg-red text-white"
+          : "bg-red-fill text-white"
       }`}
     >
       {following ? "Following" : "Follow"}

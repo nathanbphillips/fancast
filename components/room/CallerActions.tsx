@@ -84,7 +84,7 @@ export function CallerActions({
                   type="button"
                   disabled={busy}
                   onClick={() => act("flag")}
-                  className="h-9 flex-1 rounded-md bg-red text-xs font-bold text-white disabled:opacity-60"
+                  className="h-9 flex-1 rounded-md bg-red-fill text-xs font-bold text-white disabled:opacity-60"
                 >
                   Flag caller
                 </button>
@@ -93,7 +93,7 @@ export function CallerActions({
                     type="button"
                     disabled={busy}
                     onClick={() => act("block")}
-                    className="h-9 flex-1 rounded-md bg-red text-xs font-bold text-white disabled:opacity-60"
+                    className="h-9 flex-1 rounded-md bg-red-fill text-xs font-bold text-white disabled:opacity-60"
                   >
                     Confirm block
                   </button>

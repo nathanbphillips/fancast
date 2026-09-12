@@ -1570,7 +1570,7 @@ export function RealtimeRoom(props: Props) {
       {showAudioGate && (
         <div className="absolute inset-0 z-[70] flex items-center justify-center bg-canvas/90 p-6 backdrop-blur-md">
           <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-7 text-center shadow-[var(--shadow-raised)]">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red text-white">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-fill text-white">
               <svg aria-hidden="true" viewBox="0 0 16 16" className="ml-1 h-7 w-7 fill-current">
                 <path d="M4 2.5v11l9-5.5-9-5.5z" />
               </svg>
@@ -1653,7 +1653,7 @@ export function RealtimeRoom(props: Props) {
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-red px-3 text-xs font-bold text-white transition-[filter] hover:brightness-110"
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-red-fill px-3 text-xs font-bold text-white transition-[filter] hover:brightness-110"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -1779,7 +1779,7 @@ export function RealtimeRoom(props: Props) {
               >
                 {t.label}
                 {t.badge > 0 && (
-                  <span className="absolute top-0.5 right-0 flex h-4 min-w-[1rem] animate-fcpulse items-center justify-center rounded-full bg-red px-1 font-mono text-[9px] font-bold text-white tabular-nums">
+                  <span className="absolute top-0.5 right-0 flex h-4 min-w-[1rem] animate-fcpulse items-center justify-center rounded-full bg-red-fill px-1 font-mono text-[9px] font-bold text-white tabular-nums">
                     {t.badge}
                   </span>
                 )}
@@ -1892,7 +1892,7 @@ export function RealtimeRoom(props: Props) {
                   className="rounded-[16px] border-2 border-red bg-red/10 p-6 text-center"
                   style={{ boxShadow: "0 0 22px rgba(239,1,7,0.35)" }}
                 >
-                  <span className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-red text-white">
+                  <span className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-red-fill text-white">
                     <svg
                       viewBox="0 0 24 24"
                       aria-hidden="true"
@@ -1911,7 +1911,7 @@ export function RealtimeRoom(props: Props) {
                   <p className="display flex items-center justify-center gap-2 text-[30px] leading-none text-red">
                     <span
                       aria-hidden="true"
-                      className="h-2.5 w-2.5 animate-live-pulse rounded-full bg-red"
+                      className="h-2.5 w-2.5 animate-live-pulse rounded-full bg-red-fill"
                     />
                     YOU ARE LIVE
                   </p>
@@ -1923,7 +1923,7 @@ export function RealtimeRoom(props: Props) {
                   <button
                     type="button"
                     onClick={() => void leaveAir()}
-                    className="mt-5 h-14 w-full rounded-xl bg-red text-base font-bold text-white"
+                    className="mt-5 h-14 w-full rounded-xl bg-red-fill text-base font-bold text-white"
                   >
                     Leave the air
                   </button>
@@ -1946,7 +1946,7 @@ export function RealtimeRoom(props: Props) {
                   </p>
                   <a
                     href={signinHref}
-                    className="mt-3 inline-flex h-11 items-center rounded-lg bg-red px-5 text-sm font-semibold text-white"
+                    className="mt-3 inline-flex h-11 items-center rounded-lg bg-red-fill px-5 text-sm font-semibold text-white"
                   >
                     Sign in
                   </a>
@@ -2071,7 +2071,7 @@ export function RealtimeRoom(props: Props) {
               {t.label}
             </span>
             {t.badge > 0 && (
-              <span className="absolute top-0 right-[22%] flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red px-1 font-mono text-[9px] font-bold text-white tabular-nums">
+              <span className="absolute top-0 right-[22%] flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-fill px-1 font-mono text-[9px] font-bold text-white tabular-nums">
                 {t.badge}
               </span>
             )}
@@ -2887,7 +2887,7 @@ function LiveChat({
             <button
               type="submit"
               disabled={replyBusy || !replyDraft.trim()}
-              className="h-9 shrink-0 rounded-lg bg-red px-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="h-9 shrink-0 rounded-lg bg-red-fill px-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               Reply
             </button>
@@ -3045,7 +3045,7 @@ function LiveChat({
         <button
           type="button"
           onClick={scrollChatToBottom}
-          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-red px-3 py-1 text-xs font-semibold text-white shadow tabular-nums"
+          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-red-fill px-3 py-1 text-xs font-semibold text-white shadow tabular-nums"
         >
           {unread} new {unread === 1 ? "message" : "messages"} ↓
         </button>
@@ -3078,7 +3078,7 @@ function LiveChat({
             </p>
             <a
               href={signinHref}
-              className="mt-3 inline-flex h-11 items-center rounded-lg bg-red px-5 text-sm font-semibold text-white"
+              className="mt-3 inline-flex h-11 items-center rounded-lg bg-red-fill px-5 text-sm font-semibold text-white"
             >
               Sign in to join
             </a>
@@ -3168,7 +3168,7 @@ function LiveChat({
               type="submit"
               disabled={sending || !draft.trim()}
               aria-label="Send message"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-red text-white transition-colors hover:bg-red-hover disabled:opacity-60"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-red-fill text-white transition-colors hover:bg-red-hover disabled:opacity-60"
             >
               <span aria-hidden="true" className="text-lg leading-none">
                 ↑

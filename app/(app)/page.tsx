@@ -101,7 +101,7 @@ export default async function HomePage() {
           {/* LEFT — copy (1/3) */}
           <div className="text-center lg:text-left">
             <span className="inline-flex animate-fc-rise items-center gap-2 rounded-full border border-line bg-surface/40 px-[15px] py-2 font-mono text-[12px] text-secondary">
-              <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red" />
+              <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red-fill" />
               The matchday room for Arsenal fans
             </span>
             <h1 className="display mt-6 t-h2 text-primary">
@@ -186,7 +186,7 @@ export default async function HomePage() {
         <div className="relative z-[2] mx-auto grid max-w-[1010px] items-center gap-12 lg:grid-cols-[.92fr_1.08fr]">
           <div>
             <div className="mb-4 flex items-center gap-2">
-              <span className="h-px w-[22px] bg-red" />
+              <span className="h-px w-[22px] bg-red-fill" />
               <span className={eyebrow}>THE BIT NOBODY ELSE DOES</span>
             </div>
             <h2 className="display t-h2">Your stream lags. We fix that in one tap.</h2>
@@ -334,7 +334,7 @@ export default async function HomePage() {
           <div className="grid items-center gap-6 rounded-[18px] border border-line bg-raised p-8 md:grid-cols-2">
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-4 shadow-glow">
-                <span className="h-[11px] w-[11px] shrink-0 animate-fcpulse rounded-full bg-red" />
+                <span className="h-[11px] w-[11px] shrink-0 animate-fcpulse rounded-full bg-red-fill" />
                 <span className="flex-1">
                   <span className="block text-[13px] font-bold text-primary">A room you follow is live</span>
                   <span className="block text-[12px] text-secondary">tap to jump in</span>
@@ -455,7 +455,7 @@ export default async function HomePage() {
             >
               <div className="relative z-[2] min-w-[280px] flex-1">
                 <div className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] text-red">
-                  <span className="h-[7px] w-[7px] animate-fc-blink rounded-full bg-red" />
+                  <span className="h-[7px] w-[7px] animate-fc-blink rounded-full bg-red-fill" />
                   {liveRoom ? "LIVE NOW" : "NEXT UP"}
                 </div>
                 <div className="display text-[34px]">

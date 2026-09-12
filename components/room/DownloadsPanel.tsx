@@ -328,7 +328,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
 
       {rec.status === "recording" && (
         <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
-          <span className="h-3 w-3 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
+          <span className="h-3 w-3 animate-live-pulse rounded-full bg-red-fill" aria-hidden="true" />
           <span className="flex-1 text-sm">
             Wrapping up the session…
           </span>
@@ -346,7 +346,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
 
       {rec.status === "processing" && (
         <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
-          <span className="h-3 w-3 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
+          <span className="h-3 w-3 animate-live-pulse rounded-full bg-red-fill" aria-hidden="true" />
           <span className="flex-1 text-sm">Processing…</span>
           {/* a crashed/timed-out run is reclaimable after a stale window;
               this lets the commentator nudge it without a DB edit */}
@@ -365,7 +365,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           {data.zipUrl && (
             <a
               href={data.zipUrl}
-              className="flex h-11 w-full items-center justify-center rounded-lg bg-red text-sm font-semibold text-white"
+              className="flex h-11 w-full items-center justify-center rounded-lg bg-red-fill text-sm font-semibold text-white"
             >
               Download everything (zip)
             </a>

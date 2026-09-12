@@ -30,7 +30,7 @@ function PlayStopButton({
       aria-label={listening ? "Stop listening" : "Tap to listen"}
       onClick={listening ? onStop : onStart}
       disabled={status === "connecting"}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red text-white disabled:opacity-60"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-white disabled:opacity-60"
     >
       {status === "connecting" ? (
         <span className="h-4 w-4 animate-live-pulse rounded-full bg-white/70" aria-hidden="true" />
@@ -184,7 +184,7 @@ function SyncControls({
         >
           <span
             aria-hidden="true"
-            className="h-[5px] w-[5px] animate-fcpulse rounded-full bg-red"
+            className="h-[5px] w-[5px] animate-fcpulse rounded-full bg-red-fill"
           />
           LIVE
         </button>
@@ -205,7 +205,7 @@ function EqTicks({ h = 14 }: { h?: number }) {
       {[0, 0.18, 0.36].map((d) => (
         <span
           key={d}
-          className="animate-fceq w-[3px] rounded-[1px] bg-red"
+          className="animate-fceq w-[3px] rounded-[1px] bg-red-fill"
           style={{ height: h, transformOrigin: "bottom", animationDelay: `${d}s` }}
         />
       ))}
@@ -363,7 +363,7 @@ export function ListenerBar({
           </div>
         )}
         <div className="flex items-center gap-3 rounded-lg border-2 border-red px-4 py-2 shadow-[0_0_12px_rgba(239,1,7,0.35)]">
-        <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
+        <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 text-xs font-bold text-white">
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
           ON AIR
         </span>
@@ -380,7 +380,7 @@ export function ListenerBar({
         <button
           type="button"
           onClick={onLeaveAir}
-          className="h-11 shrink-0 rounded-lg bg-red px-5 text-sm font-bold text-white"
+          className="h-11 shrink-0 rounded-lg bg-red-fill px-5 text-sm font-bold text-white"
         >
           Leave Air
         </button>
@@ -394,7 +394,7 @@ export function ListenerBar({
       type="button"
       aria-label="Stop radio"
       onClick={() => onRadioToggle(false)}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red text-white"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-white"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
         <rect x="3" y="3" width="4" height="10" rx="1" />
@@ -431,7 +431,7 @@ export function ListenerBar({
         <span className="flex shrink-0 items-center gap-2 rounded-lg border border-red/40 px-3 py-2 text-sm font-bold text-red">
           <span
             aria-hidden="true"
-            className="h-2 w-2 animate-live-pulse rounded-full bg-red"
+            className="h-2 w-2 animate-live-pulse rounded-full bg-red-fill"
           />
           Putting you on air…
         </span>
@@ -448,7 +448,7 @@ export function ListenerBar({
 
   const liveBadge =
     live && !techDifficulties ? (
-      <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 text-xs font-bold text-white">
+      <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 text-xs font-bold text-white">
         <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
         LIVE
       </span>
@@ -547,7 +547,7 @@ export function ListenerBar({
                 <span className="flex items-center gap-1.5 font-mono text-[11px] tracking-[0.06em] text-red">
                   <span
                     aria-hidden="true"
-                    className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red"
+                    className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red-fill"
                     style={{ boxShadow: "0 0 8px #ef0107" }}
                   />
                   LIVE
@@ -693,7 +693,7 @@ export function ListenerBar({
               {live && !techDifficulties && (
                 <span
                   aria-hidden="true"
-                  className="h-1.5 w-1.5 shrink-0 animate-fcpulse rounded-full bg-red"
+                  className="h-1.5 w-1.5 shrink-0 animate-fcpulse rounded-full bg-red-fill"
                 />
               )}
               {!discussion && (
@@ -877,7 +877,7 @@ export function SpeakerChips({
           key={s.identity}
           className="flex items-center gap-1.5 rounded-full border border-red/40 bg-raised px-2.5 py-1 text-xs font-semibold"
         >
-          <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red" aria-hidden="true" />
+          <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red-fill" aria-hidden="true" />
           <span className="font-mono text-[9px] tracking-[0.08em] text-red uppercase">
             Live
           </span>

@@ -71,7 +71,7 @@ export function SyncDiagram() {
             </div>
             <div className="relative h-4 w-4">
               <span
-                className="absolute inset-0 rounded-full bg-red"
+                className="absolute inset-0 rounded-full bg-red-fill"
                 style={{ boxShadow: "0 0 12px rgba(239,1,7,.8)" }}
               />
               <span className="animate-fc-ring absolute inset-0 rounded-full border-2 border-red" />

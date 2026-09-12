@@ -221,7 +221,7 @@ export function PollComposer({ roomId }: { roomId: string }) {
         <button
           type="submit"
           disabled={!valid || busy}
-          className="h-9 flex-1 rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
+          className="h-9 flex-1 rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
         >
           {busy ? "…" : "Start poll"}
         </button>

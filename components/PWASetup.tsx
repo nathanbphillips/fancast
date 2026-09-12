@@ -54,7 +54,7 @@ export function PWASetup() {
               setShow(false);
               await installEvent.prompt();
             }}
-            className="h-11 flex-1 rounded-lg bg-red text-sm font-semibold text-white"
+            className="h-11 flex-1 rounded-lg bg-red-fill text-sm font-semibold text-white"
           >
             Add to home screen
           </button>

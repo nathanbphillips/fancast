@@ -170,7 +170,7 @@ export function HowThisWorks({
           <ol className="list-none space-y-5 pl-0">
             {SECTIONS.map((s, i) => (
               <li key={s.title} className="flex gap-3.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red font-mono text-xs font-bold text-white tabular-nums">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-fill font-mono text-xs font-bold text-white tabular-nums">
                   {i + 1}
                 </span>
                 <div className="min-w-0">

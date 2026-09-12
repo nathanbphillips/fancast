@@ -50,7 +50,7 @@ export function CohostInvites({ invites }: { invites: CohostInvite[] }) {
               type="button"
               disabled={busy === i.roomId}
               onClick={() => void respond(i.roomId, "accept")}
-              className="rounded-md bg-red px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+              className="rounded-md bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
             >
               Accept
             </button>

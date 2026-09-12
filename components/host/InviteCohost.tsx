@@ -64,7 +64,7 @@ export function InviteCohost({
             <button
               type="submit"
               disabled={busy || !username.trim()}
-              className="rounded bg-red px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-60"
+              className="rounded bg-red-fill px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-60"
             >
               Invite
             </button>

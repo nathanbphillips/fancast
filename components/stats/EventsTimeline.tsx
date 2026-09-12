@@ -26,7 +26,7 @@ function KindIcon({ kind }: { kind: EventKind }) {
       />
     );
   if (kind === "redcard")
-    return <span aria-hidden className="inline-block h-4 w-2.5 rounded-[2px] bg-red" />;
+    return <span aria-hidden className="inline-block h-4 w-2.5 rounded-[2px] bg-red-fill" />;
   if (kind === "substitution")
     return <span aria-hidden className="text-green">⇄</span>;
   if (kind === "var")

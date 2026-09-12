@@ -470,7 +470,7 @@ export function CustomRoomForm() {
       <button
         type="submit"
         disabled={busy}
-        className="rounded-lg bg-red px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-hover disabled:opacity-60"
+        className="rounded-lg bg-red-fill px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-hover disabled:opacity-60"
       >
         {busy ? "Creating…" : "Create room"}
       </button>

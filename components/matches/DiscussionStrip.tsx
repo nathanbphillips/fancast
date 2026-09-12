@@ -26,7 +26,7 @@ export function DiscussionStrip({
     <div className="mb-9">
       <div className="mb-3.5 flex items-center gap-2.5">
         <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red">
-          <span className="h-2 w-2 animate-fc-blink rounded-full bg-red" />
+          <span className="h-2 w-2 animate-fc-blink rounded-full bg-red-fill" />
           ROOMS RIGHT NOW
         </span>
         <span className="font-mono text-[12px] text-tertiary">
@@ -43,7 +43,7 @@ export function DiscussionStrip({
             <div className="mb-3 flex items-center justify-between gap-2">
               {r.live ? (
                 <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.06em] text-red uppercase">
-                  <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red" />
+                  <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red-fill" />
                   Live now
                 </span>
               ) : (

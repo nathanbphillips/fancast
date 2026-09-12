@@ -117,7 +117,7 @@ export default async function SignInPage({
           className="relative z-[2] inline-flex w-fit items-center gap-3 rounded-[13px] border bg-surface px-4 py-3"
           style={{ borderColor: "rgba(239,1,7,.28)" }}
         >
-          <span className="h-2.5 w-2.5 shrink-0 animate-fcpulse rounded-full bg-red" />
+          <span className="h-2.5 w-2.5 shrink-0 animate-fcpulse rounded-full bg-red-fill" />
           <div>
             <div className="text-[13px] font-semibold">
               Rooms go live on matchday

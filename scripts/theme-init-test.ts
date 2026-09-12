@@ -24,9 +24,9 @@ for (const [label, s] of [["dark", dark], ["null", none]] as const) {
   ok(`${label}: localStorage checked before account pref`, lsIdx >= 0 && lsIdx < acctIdx, `ls@${lsIdx} acct@${acctIdx}`);
 }
 
-// Cloud Design (2026-07-01): the final fallback is DARK, not the system
-// preference — precedence is localStorage > account pref > dark default.
-ok("falls back to dark default", dark.includes('var d=t?t==="dark":true'));
+// Programme redesign (2026-09-12): the final fallback is LIGHT (paper), not
+// the system preference — precedence is localStorage > account pref > light.
+ok("falls back to light default", dark.includes('var d=t?t==="dark":false'));
 ok(
   "prefers-color-scheme fallback removed",
   !dark.includes("prefers-color-scheme"),

@@ -88,7 +88,7 @@ export function MatchHeader({
       {/* center: discussion → LIVE pill only; match → live · clock · score */}
       <div className="flex shrink-0 items-center gap-3">
         {(discussion ? live : isLive) && (
-          <span className="hidden items-center gap-1.5 rounded-md bg-red px-2 py-1 font-mono text-[11px] tracking-[0.1em] text-white sm:flex">
+          <span className="hidden items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 font-mono text-[11px] tracking-[0.1em] text-white sm:flex">
             <span
               aria-hidden="true"
               className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white"

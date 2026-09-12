@@ -101,7 +101,7 @@ export function ReportProfile({ userId }: { userId: string }) {
         <button
           type="submit"
           disabled={busy || !reason}
-          className="rounded-lg bg-red px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="rounded-lg bg-red-fill px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
           {busy ? "Sending…" : "Send report"}
         </button>

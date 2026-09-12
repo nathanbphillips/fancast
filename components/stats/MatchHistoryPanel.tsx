@@ -9,7 +9,7 @@ import type { MatchHistory, TeamStanding } from "@/lib/history";
 function FormChips({ form }: { form: ("W" | "D" | "L")[] }) {
   if (form.length === 0) return <span className="text-secondary">—</span>;
   const tone = (r: string) =>
-    r === "W" ? "bg-green text-canvas" : r === "L" ? "bg-red text-white" : "bg-raised text-secondary";
+    r === "W" ? "bg-green text-canvas" : r === "L" ? "bg-red-fill text-white" : "bg-raised text-secondary";
   return (
     <span className="flex gap-0.5">
       {form.map((r, i) => (

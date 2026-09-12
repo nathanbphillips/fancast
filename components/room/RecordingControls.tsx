@@ -79,7 +79,7 @@ export function RecordingControls({
       >
         <span
           aria-hidden="true"
-          className={`h-[6px] w-[6px] rounded-full ${paused ? "bg-inverted-fg" : "animate-fcpulse bg-red"}`}
+          className={`h-[6px] w-[6px] rounded-full ${paused ? "bg-inverted-fg" : "animate-fcpulse bg-red-fill"}`}
         />
         {/* the state change is announced once; the ticking clock is not */}
         <span className="sr-only" aria-live="polite">
@@ -98,7 +98,7 @@ export function RecordingControls({
         }
         className={`h-9 rounded-md px-3 text-xs font-semibold disabled:opacity-60 ${
           paused
-            ? "bg-red text-white"
+            ? "bg-red-fill text-white"
             : "border border-line text-secondary hover:text-primary"
         }`}
       >

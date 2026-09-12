@@ -18,7 +18,7 @@ export function OnAirCard() {
         <span className="flex items-center gap-2 font-mono text-[11px] font-bold tracking-[0.14em] text-red">
           <span
             aria-hidden="true"
-            className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red"
+            className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red-fill"
             style={{ boxShadow: "0 0 10px #f1232b" }}
           />
           ON AIR
@@ -87,7 +87,7 @@ export function OnAirCard() {
       <div className="flex items-center gap-2.5">
         <span
           aria-hidden="true"
-          className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-red text-white"
+          className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-red-fill text-white"
           style={{ boxShadow: "0 8px 24px -6px rgba(241,35,43,0.7)" }}
         >
           <svg viewBox="0 0 24 24" className="ml-0.5 h-4 w-4 fill-current">

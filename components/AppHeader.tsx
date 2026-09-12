@@ -201,7 +201,7 @@ export function AppHeader({
           <span className="hidden items-center gap-1.5 font-mono text-[10px] font-bold tracking-[0.1em] text-red uppercase sm:inline-flex">
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red"
+              className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red-fill"
             />
             Early access
           </span>
@@ -403,7 +403,7 @@ export function AppHeader({
                 >
                   <span
                     aria-hidden="true"
-                    className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red"
+                    className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red-fill"
                   />
                   {liveCount} live now
                 </Link>

@@ -149,7 +149,7 @@ export default function HowItWorksPage() {
                 <div className="flex flex-col gap-3 p-4">
                   <div className="flex items-center justify-between rounded-[11px] border border-line bg-canvas px-4 py-3">
                     <span className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-red font-mono text-[9px] font-bold text-white">ARS</span>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-red-fill font-mono text-[9px] font-bold text-white">ARS</span>
                       <span className="display text-[26px] tabular-nums">2</span>
                     </span>
                     <span className="font-mono text-[12px] text-red tabular-nums">1H 23:14</span>
@@ -166,7 +166,7 @@ export default function HowItWorksPage() {
                     </span>
                     <span className="flex h-[18px] items-end gap-[2px]">
                       {[0.1, 0.45, 0.25].map((d, i) => (
-                        <span key={i} className="animate-fceq w-[3px] rounded-[2px] bg-red" style={{ height: "18px", animationDelay: `-${d}s` }} />
+                        <span key={i} className="animate-fceq w-[3px] rounded-[2px] bg-red-fill" style={{ height: "18px", animationDelay: `-${d}s` }} />
                       ))}
                     </span>
                   </div>
@@ -218,7 +218,7 @@ export default function HowItWorksPage() {
         <div className="relative z-[2] mx-auto grid max-w-[1010px] items-center gap-12 lg:grid-cols-[1.08fr_.92fr]">
           <div>
             <div className="mb-4 flex items-center gap-2">
-              <span className="h-px w-[22px] bg-red" />
+              <span className="h-px w-[22px] bg-red-fill" />
               <span className={eyebrow}>THE SYNC, EXPLAINED</span>
             </div>
             <h2 className="display t-h2">A reference clock ticks. You tap Now. It locks.</h2>
@@ -306,7 +306,7 @@ export default function HowItWorksPage() {
                 className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-3.5"
               >
                 <span
-                  className={`h-[11px] w-[11px] shrink-0 rounded-full ${r.live ? "animate-fcpulse bg-red" : "bg-tertiary"}`}
+                  className={`h-[11px] w-[11px] shrink-0 rounded-full ${r.live ? "animate-fcpulse bg-red-fill" : "bg-tertiary"}`}
                 />
                 <span className="min-w-0 flex-1 truncate text-[13px] font-bold">
                   {r.t}
@@ -341,7 +341,7 @@ export default function HowItWorksPage() {
           </div>
           <div className="flex flex-col gap-2.5">
             <div className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-3.5 shadow-glow">
-              <span className="h-[11px] w-[11px] shrink-0 animate-fcpulse rounded-full bg-red" />
+              <span className="h-[11px] w-[11px] shrink-0 animate-fcpulse rounded-full bg-red-fill" />
               <span className="flex-1">
                 <span className="block text-[13px] font-bold">A room you follow is live</span>
                 <span className="block text-[12px] text-secondary">tap to jump in</span>

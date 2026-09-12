@@ -78,7 +78,7 @@ export function UsernameForm({
       <button
         type="submit"
         disabled={busy}
-        className="h-11 w-full rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
+        className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
       >
         {busy
           ? "Saving…"

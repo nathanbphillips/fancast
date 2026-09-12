@@ -126,7 +126,7 @@ export function BugReporter({
                 <button
                   type="button"
                   onClick={close}
-                  className="rounded-lg bg-red px-3 py-1.5 text-xs font-semibold text-white"
+                  className="rounded-lg bg-red-fill px-3 py-1.5 text-xs font-semibold text-white"
                 >
                   Done
                 </button>
@@ -171,7 +171,7 @@ export function BugReporter({
               <button
                 type="submit"
                 disabled={busy || description.trim().length < 3}
-                className="h-10 w-full rounded-lg bg-red text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+                className="h-10 w-full rounded-lg bg-red-fill text-sm font-semibold text-white transition-opacity disabled:opacity-60"
               >
                 {busy ? "Sending…" : "Send report"}
               </button>

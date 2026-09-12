@@ -122,7 +122,7 @@ export default async function HostRecordingsPage() {
                 {r.zipUrl && (
                   <a
                     href={r.zipUrl}
-                    className="h-10 rounded-lg bg-red px-4 text-sm font-bold leading-10 text-white"
+                    className="h-10 rounded-lg bg-red-fill px-4 text-sm font-bold leading-10 text-white"
                   >
                     Download all (zip)
                   </a>

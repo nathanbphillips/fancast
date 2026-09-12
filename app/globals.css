@@ -3,75 +3,89 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Design tokens (Matchday redesign — Schibsted Grotesk / JetBrains Mono system).
- * Defined once, both themes. DARK is the default: the pre-paint script in
- * app/layout.tsx adds `.dark` when there's no explicit device/account choice.
+ * Design tokens (Matchday Programme redesign, founder 2026-09-12 - Anton /
+ * Newsreader system). A classic British matchday programme: cream paper,
+ * letterpress ink, ONE deep red, hairline + double rules, square corners,
+ * no shadows, no gradients. LIGHT (paper) is the default; dark is the same
+ * programme "printed in negative" (ink page, cream text; ink-fills become
+ * cream fills; red TEXT brightens for contrast, red FILLS never change).
  * `--fg`/`--hair` are raw RGB channels consumed at variable opacity, e.g.
- * rgb(var(--fg) / .6). Gold is retired to focus-rings only; brand accent is the
- * true-Arsenal red #EF0107 with a gradient/shine for high-emphasis buttons.
+ * rgb(var(--fg) / .75). Secondary/tertiary/line are defined ONCE here as
+ * formulas and re-resolve against each theme's channels.
  */
 :root {
-  /* raw channels (light) */
-  --fg: 34 30 26;
-  --hair: 34 30 26;
-  /* derived text + hairline — resolve per-theme; dark overrides secondary/tertiary
-     with fixed cool-grays to match the mock's hierarchy */
-  --text-secondary: rgb(var(--fg) / 0.62);
-  --text-tertiary: rgb(var(--fg) / 0.45);
-  --line: rgb(var(--hair) / 0.12);
-  /* surfaces (light) */
-  --bg-base: #f7f5f0;
-  --bg-surface: #ffffff;
-  --bg-raised: #f3f1ea;
-  --bg2: #efede6;
-  --footer: #eeece4;
-  --text-primary: #191510;
-  /* accents */
-  --red: #ef0107;
-  --red-hover: #ff4a47;
-  --red-grad: linear-gradient(180deg, #f5211f, #d40206);
-  --red-grad-border: #ff4a47;
-  --gold: #9a7714; /* RETAINED for focus rings only (AA on white) */
-  --gold-bright: #e8b54a; /* legacy decorative — being retired, kept so untouched pages don't break */
-  --navy: #023474;
-  --green: #137a42;
-  /* inverted high-emphasis buttons (Sign in) */
-  --inverted-bg: #191510;
-  --inverted-fg: #f7f5f0;
-  /* elevation + brand glow */
-  --elev-card: 0 1px 2px rgba(16, 18, 29, 0.05), 0 1px 3px rgba(16, 18, 29, 0.07);
-  --elev-raised: 0 24px 60px -28px rgba(0, 0, 0, 0.35),
-    0 0 40px -18px rgba(239, 1, 7, 0.16);
-  --shadow-glow: 0 12px 30px -10px rgba(239, 1, 7, 0.4);
+  /* raw channels (light = ink #1B1A15) */
+  --fg: 27 26 21;
+  --hair: 27 26 21;
+  --text-secondary: rgb(var(--fg) / 0.75);
+  --text-tertiary: rgb(var(--fg) / 0.55);
+  --line: rgb(var(--hair) / 0.3);
+  /* surfaces (light): everything sits on the same paper; panels are
+     border-boxed, not tinted. "raised" is deliberately the handoff's TINT
+     (#F2E9D5, the visible hover/selected fill) and "inset" its PAPER-RAISED
+     (#FBF7EC, coupon/pitch wells) - our raised is overwhelmingly a hover
+     state, and the 4-point paper-raised is invisible as one. */
+  --bg-base: #f7f1e2;
+  --bg-surface: #f7f1e2;
+  --bg-raised: #f2e9d5;
+  --bg2: #fbf7ec;
+  --footer: #f7f1e2;
+  --text-primary: #1b1a15;
+  /* accents. --red is the CONTEXTUAL red (text/borders/underlines): deep on
+     paper, brightened in dark. --red-fill is the red that NEVER brightens
+     (live lamps, ON AIR, Sync now, selection, filled chips) with --on-red as
+     its fixed paper text. */
+  --red: #a8241a;
+  --red-hover: #8e1d14;
+  --red-fill: #a8241a;
+  --on-red: #f7f1e2;
+  --red-grad: #a8241a; /* legacy token, now solid; retire once grep-clean */
+  --red-grad-border: #a8241a;
+  --gold: #e8c400; /* sparse: countdown numerals + the hero "v" on ink fills */
+  --gold-bright: #e8c400; /* legacy alias */
+  --navy: #023474; /* away-team signal + unknown-club fallback - NOT brand */
+  --green: #2e6b3c; /* printers' green: positive/sync-confirmed states */
+  --placeholder: #9a927e;
+  /* inverted high-emphasis fills = the Programme primary button (ink on paper;
+     cream-filled with ink text in dark = the exact "negative" inversion) */
+  --inverted-bg: #1b1a15;
+  --inverted-fg: #f7f1e2;
+  /* elevation is retired: the Programme has no shadows, panels are ruled */
+  --elev-card: none;
+  --elev-raised: none;
+  --shadow-glow: none;
 }
 
 .dark {
-  /* raw channels (dark) */
-  --fg: 242 242 244;
-  --hair: 255 255 255;
-  /* the mock's 4-tier dark text hierarchy: primary #f2f2f4, secondary #a2a2ab,
-     tertiary #6c6c76 (fixed cool-grays, not fg-at-opacity) */
-  --text-secondary: #a2a2ab;
-  --text-tertiary: #6c6c76;
-  /* surfaces (dark): page < inset < card < raised */
-  --bg-base: #08080a;
-  --bg-surface: #141417;
-  --bg-raised: #17171b;
-  --bg2: #0c0c0e;
-  --footer: #08080a;
-  --text-primary: #f2f2f4;
-  --red: #ef0107;
-  --red-hover: #ff4a47;
-  --gold: #e8b54a;
-  --gold-bright: #e8b54a;
+  /* raw channels (dark = cream #F7F1E2); secondary/tertiary/line re-resolve */
+  --fg: 247 241 226;
+  --hair: 247 241 226;
+  /* surfaces (dark): same ink everywhere, panels border-boxed */
+  --bg-base: #1b1a15;
+  --bg-surface: #1b1a15;
+  --bg-raised: #2a251d;
+  --bg2: #242019;
+  --footer: #1b1a15;
+  --text-primary: #f7f1e2;
+  /* red-as-text brightens for contrast; fills stay deep */
+  --red: #d8593f;
+  --red-hover: #8e1d14;
+  --red-fill: #a8241a;
+  --on-red: #f7f1e2;
+  --red-grad: #a8241a;
+  --red-grad-border: #a8241a;
+  /* gold sits on cream fills in dark mode, where it fails contrast - the
+     handoff swaps it for the deep red there */
+  --gold: #a8241a;
+  --gold-bright: #a8241a;
   --navy: #6e9fe0;
-  --green: #34d17a;
-  --inverted-bg: #f2f2f4;
-  --inverted-fg: #08080a;
-  --elev-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.6);
-  --elev-raised: 0 40px 90px -30px rgba(0, 0, 0, 0.9),
-    0 0 60px -20px rgba(239, 1, 7, 0.35);
-  --shadow-glow: 0 12px 30px -10px rgba(239, 1, 7, 0.55);
+  --green: #96b489;
+  --placeholder: #9a927e;
+  --inverted-bg: #f7f1e2;
+  --inverted-fg: #1b1a15;
+  --elev-card: none;
+  --elev-raised: none;
+  --shadow-glow: none;
 }
 
 /* Tailwind reads the variables; components use bg-canvas, text-primary, etc. */
@@ -88,20 +102,38 @@
   --color-line: var(--line);
   --color-red: var(--red);
   --color-red-hover: var(--red-hover);
+  --color-red-fill: var(--red-fill);
+  --color-on-red: var(--on-red);
   --color-gold: var(--gold);
   --color-gold-bright: var(--gold-bright);
   --color-navy: var(--navy);
   --color-green: var(--green);
+  --color-placeholder: var(--placeholder);
   --color-inverted: var(--inverted-bg);
   --color-inverted-fg: var(--inverted-fg);
-  /* Schibsted Grotesk = display AND body (heavy weights for headlines, regular
-     for text); JetBrains Mono = labels/meta + tabular numbers via font-mono */
-  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SFMono-Regular", Menlo,
-    monospace;
-  /* card elevation + brand glow utilities (shadow-card/raised/glow) */
+  /* NOTE: the "sans" utility now serves the Programme SERIF (Newsreader) -
+     the utility name is load-bearing across ~120 files, the face is not.
+     Anton is display-only; font-mono is the small-caps label + tabular
+     numeral treatment (Newsreader has tabular lining figures - verified). */
+  --font-sans: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-anton), "Arial Narrow", "Franklin Gothic Medium",
+    sans-serif;
+  --font-mono: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  /* the Programme never exceeds weight 600 (Anton is 400) - cap the heavy
+     utilities so font-bold/extrabold/black all land on Newsreader 600 */
+  --font-weight-bold: 600;
+  --font-weight-extrabold: 600;
+  --font-weight-black: 600;
+  /* square corners everywhere (rounded-full stays for dots/avatars/discs) */
+  --radius-xs: 0;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
+  /* shadow tokens kept for compatibility; they resolve to none */
   --shadow-card: var(--elev-card);
   --shadow-raised: var(--elev-raised);
   --shadow-glow: var(--shadow-glow);
@@ -119,49 +151,57 @@ body {
   color: var(--text-primary);
 }
 
-/* Display treatment — Schibsted Grotesk, heavy (800), MIXED CASE (the redesign
-   dropped Anton's forced uppercase; the wordmark is "Arseradio" (ARSE red / RADIO fg), headlines are
-   sentence case). Use `display` for headings/scores/wordmark; card titles use
-   `font-extrabold` on the body font. NEVER use `.display` on ticking/tabular
-   numbers — those use font-mono (JetBrains) so figures don't drift. Default
-   tight tracking; the type-scale classes tune it further per step. */
-.display {
-  font-family: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -0.025em;
+::selection {
+  background: var(--red-fill);
+  color: #f7f1e2;
 }
 
-/* Modular type scale — ONE source of truth for the display + text steps.
-   Responsive via clamp (fluid mobile→desktop). Unlayered like .display so these
-   beat Tailwind's text-size utilities; pair .t-hero/.t-h2/.t-h3 with .display,
-   and .t-title/.t-lead with the body font. Tracking is baked in per step to
-   match the mock (hero -.035em ... title -.01em); line-heights tuned for
-   Schibsted's mixed-case x-height. --section-y is the shared vertical rhythm. */
+::placeholder {
+  color: var(--placeholder);
+  font-style: italic;
+}
+
+/* Display treatment - Anton 400, UPPERCASE, tight leading: the Programme's
+   masthead/section-head/scoreline voice. Pair with .t-hero/.t-h2/.t-h3 for
+   sizing. Anton's figures are tabular by construction, but ticking clocks
+   stay on font-mono (Newsreader tabular) per the type rules. */
+.display {
+  font-family: var(--font-anton), "Arial Narrow", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+
+/* Modular type scale - ONE source of truth for the display + text steps.
+   Responsive via clamp. Unlayered like .display so these beat Tailwind's
+   text-size utilities; .t-hero/.t-h2/.t-h3 pair with .display (Anton),
+   .t-title/.t-lead with the body serif. --section-y is shared rhythm. */
 :root {
   --section-y: clamp(3.25rem, 6vw, 4.5rem);
 }
 .t-hero {
   font-size: clamp(2.625rem, 1.4rem + 5.1vw, 4.25rem); /* ~42 -> 68 */
-  line-height: 1;
-  letter-spacing: -0.035em;
+  line-height: 0.92;
+  letter-spacing: 0.01em;
 }
 .t-h2 {
   font-size: clamp(2.25rem, 1.75rem + 2.1vw, 3.25rem); /* ~36 -> 52 */
-  line-height: 1.04;
-  letter-spacing: -0.025em;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
 }
 .t-h3 {
   font-size: clamp(1.625rem, 1.35rem + 1.2vw, 2rem); /* ~26 -> 32 */
-  line-height: 1.08;
-  letter-spacing: -0.02em;
+  line-height: 1;
+  letter-spacing: 0.01em;
 }
 .t-title {
-  font-size: 1.1875rem; /* 19 — card/list titles (use with font-extrabold) */
+  font-size: 1.1875rem; /* 19 - card/list titles (Newsreader 600) */
   line-height: 1.3;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .t-lead {
-  font-size: 1.125rem; /* 18 — hero subheads (body font) */
+  font-size: 1.125rem; /* 18 - standfirsts; pairs well with italic */
   line-height: 1.55;
 }
 .section-y {
@@ -169,63 +209,69 @@ body {
   padding-bottom: var(--section-y);
 }
 
-/* High-emphasis gradient red button (the mock's primary CTA): vertical red
-   gradient + light border + inset top highlight + red glow, with a hover lift.
-   Pair with an inner `.btn-shine` span for the sweeping specular highlight. */
+/* Primary CTA (was the Matchday gradient button; the class name is kept so
+   all call sites reskin without edits). Programme primary = ink fill, paper
+   text, square, small caps; in dark it inverts to cream fill + ink text via
+   the inverted tokens. No gradient, no glow, no lift. */
 .btn-grad-red {
   position: relative;
   overflow: hidden;
-  color: #fff;
-  background: var(--red-grad);
-  border: 1px solid var(--red-grad-border);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 14px 30px -12px rgba(239, 1, 7, 0.85);
-  transition: transform 0.2s, box-shadow 0.2s;
+  color: var(--inverted-fg);
+  background: var(--inverted-bg);
+  border: 1px solid transparent;
+  box-shadow: none;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.08em;
+  transition: opacity 0.15s;
 }
 .btn-grad-red:hover {
-  transform: translateY(-1px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 20px 40px -12px rgba(239, 1, 7, 0.95);
+  transform: none;
+  opacity: 0.92;
+  box-shadow: none;
 }
+/* the specular sweep is retired; the span no-ops in place at its call sites */
 .btn-shine {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 40%;
-  height: 100%;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.4),
-    transparent
-  );
-  transform: translateX(-120%);
-  animation: fc-shine 4.5s 1.5s ease-in-out infinite;
+  display: none;
+  animation: none;
 }
 
-/* Visible focus everywhere (WCAG); gold ring reads in both themes. */
+/* Small-caps label + tabular numeral treatment. The font-mono UTILITY NAME is
+   the app's label/meta/clock contract (232 uses); the Programme renders those
+   as Newsreader small caps with tabular lining figures. Letter-spacing stays
+   with the per-site tracking-* utilities. `.fv-normal` is the escape hatch
+   for verbatim user data (emails, file names) that must not read as caps. */
+.font-mono {
+  font-variant-caps: small-caps;
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+.fv-normal {
+  font-variant-caps: normal;
+}
+
+/* Visible focus everywhere (WCAG); the contextual red reads in both themes
+   (deep red on paper, brightened red on ink). */
 :focus-visible {
-  outline: 2px solid var(--gold);
+  outline: 2px solid var(--red);
   outline-offset: 2px;
 }
 
-/* LIVE indicator pulse — motion only on state changes, <200ms feel, calm loop. */
+/* LIVE indicator pulse - the programme's "lamp": opacity 1 -> .35, calm loop. */
 @keyframes live-pulse {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.45;
+    opacity: 0.35;
   }
 }
 .animate-live-pulse {
   animation: live-pulse 2s ease-in-out infinite;
 }
 
-/* ------- Matchday marketing animation set. The reduced-motion wildcard below
-   neutralizes ALL of these (durations/iterations collapsed) → a11y-safe. ------- */
+/* ------- Marketing animation set. The reduced-motion wildcard below
+   neutralizes ALL of these (durations/iterations collapsed) -> a11y-safe. ------- */
 
 /* section reveal (staggered via inline animation-delay) */
 @keyframes fc-rise {
@@ -248,7 +294,8 @@ body {
     opacity: 0.28;
   }
 }
-/* breathing hero glow */
+/* breathing glow - legacy Matchday, unused after the marketing reskin;
+   removed in the cleanup phase once call sites are gone */
 @keyframes fc-glow {
   0%,
   100% {
@@ -256,16 +303,6 @@ body {
   }
   50% {
     opacity: 0.85;
-  }
-}
-/* button specular sweep */
-@keyframes fc-shine {
-  0% {
-    transform: translateX(-120%);
-  }
-  60%,
-  100% {
-    transform: translateX(320%);
   }
 }
 .animate-fc-rise {
@@ -279,14 +316,6 @@ body {
 }
 
 /* sync-timeline + product-shot motion (home + how-it-works differentiator) */
-@keyframes fc-scan {
-  0% {
-    left: 2%;
-  }
-  100% {
-    left: 98%;
-  }
-}
 @keyframes fc-grow {
   0%,
   100% {
@@ -348,17 +377,6 @@ body {
     opacity: 0;
   }
 }
-@keyframes fc-marq {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.animate-fc-scan {
-  animation: fc-scan 4s linear infinite;
-}
 .animate-fc-grow {
   animation: fc-grow 4s ease-in-out infinite;
 }
@@ -374,11 +392,8 @@ body {
 .animate-fc-ring {
   animation: fc-ring 2s ease-out infinite;
 }
-.animate-fc-marq {
-  animation: fc-marq 42s linear infinite;
-}
 
-/* ------- Existing Cloud Design set (still used by the room + reusable). ------- */
+/* ------- Room set. ------- */
 @keyframes fcpulse {
   0%,
   100% {
@@ -386,39 +401,39 @@ body {
     transform: scale(1);
   }
   50% {
-    opacity: 0.3;
+    opacity: 0.35;
     transform: scale(0.78);
   }
 }
-/* stat-search "ping": a light-gold flash on the stat you jumped to. The
+/* stat-search "ping": a light red-tint flash on the stat you jumped to. The
    padding + negative margin give the highlight breathing room without shifting
    surrounding rows; JS removes the class after ~1.7s. Under reduced motion the
    animation is neutralized and the base tint simply shows until removal. */
 .stat-ping {
-  border-radius: 8px;
+  border-radius: 0;
   padding: 4px 6px;
   margin: -4px -6px;
-  background-color: rgba(232, 181, 74, 0.28);
+  background-color: rgba(168, 36, 26, 0.16);
   animation: fc-statping 3s ease-in-out;
 }
 @keyframes fc-statping {
   0% {
-    background-color: rgba(232, 181, 74, 0.4);
+    background-color: rgba(168, 36, 26, 0.24);
   }
   20% {
-    background-color: rgba(232, 181, 74, 0.06);
+    background-color: rgba(168, 36, 26, 0.04);
   }
   40% {
-    background-color: rgba(232, 181, 74, 0.4);
+    background-color: rgba(168, 36, 26, 0.24);
   }
   60% {
-    background-color: rgba(232, 181, 74, 0.06);
+    background-color: rgba(168, 36, 26, 0.04);
   }
   80% {
-    background-color: rgba(232, 181, 74, 0.4);
+    background-color: rgba(168, 36, 26, 0.24);
   }
   100% {
-    background-color: rgba(232, 181, 74, 0);
+    background-color: rgba(168, 36, 26, 0);
   }
 }
 @keyframes fceq {

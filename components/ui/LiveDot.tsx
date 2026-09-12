@@ -9,7 +9,7 @@ export function LiveDot({
   return (
     <span
       aria-hidden="true"
-      className={`inline-block shrink-0 animate-fcpulse rounded-full bg-red ${className}`}
+      className={`inline-block shrink-0 animate-fcpulse rounded-full bg-red-fill ${className}`}
       style={{
         width: size,
         height: size,

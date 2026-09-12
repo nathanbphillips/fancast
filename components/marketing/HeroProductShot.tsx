@@ -33,7 +33,7 @@ export function HeroProductShot() {
           <span className="block text-[12px] font-bold text-primary">A host is live</span>
           <span className="block font-mono text-[10px] text-secondary">tap in to the room</span>
         </span>
-        <span className="h-2.5 w-2.5 animate-fc-blink rounded-full bg-red" />
+        <span className="h-2.5 w-2.5 animate-fc-blink rounded-full bg-red-fill" />
       </div>
       <div className="animate-fcbob absolute top-40 -right-4 z-10 hidden items-center gap-2.5 rounded-[13px] border border-line bg-raised/90 px-[15px] py-3 shadow-raised backdrop-blur-sm md:flex" style={{ animationDelay: "-2.4s" }}>
         <span className="flex h-[30px] w-[30px] items-center justify-center rounded-full text-[15px] font-extrabold text-green" style={{ background: "rgba(52,209,122,.16)" }}>
@@ -69,7 +69,7 @@ export function HeroProductShot() {
             {/* player */}
             <div className="flex flex-col gap-3 rounded-[13px] border border-line bg-canvas p-4">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-red px-2 py-1 font-mono text-[10px] font-bold text-white">
+                <span className="inline-flex items-center gap-1.5 rounded-[6px] bg-red-fill px-2 py-1 font-mono text-[10px] font-bold text-white">
                   <span className="h-[5px] w-[5px] animate-fc-blink rounded-full bg-white" />
                   ON AIR
                 </span>
@@ -77,7 +77,7 @@ export function HeroProductShot() {
               </div>
               <div className="flex items-center justify-between rounded-[11px] bg-surface px-4 py-3">
                 <span className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-red font-mono text-[9px] font-bold text-white">ARS</span>
+                  <span className="flex h-6 w-6 items-center justify-center rounded-[7px] bg-red-fill font-mono text-[9px] font-bold text-white">ARS</span>
                   <span className="display text-[26px] tabular-nums">2</span>
                 </span>
                 <span className="font-mono text-[10px] text-tertiary">1H</span>
@@ -94,7 +94,7 @@ export function HeroProductShot() {
                 </span>
                 <span className="flex h-[18px] items-end gap-[2px]">
                   {[0.6, 1, 0.5, 0.8].map((d, i) => (
-                    <span key={i} className="animate-fceq w-[3px] rounded-[2px] bg-red" style={{ height: "18px", animationDelay: `-${d}s` }} />
+                    <span key={i} className="animate-fceq w-[3px] rounded-[2px] bg-red-fill" style={{ height: "18px", animationDelay: `-${d}s` }} />
                   ))}
                 </span>
               </div>
@@ -114,7 +114,7 @@ export function HeroProductShot() {
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] tracking-[0.06em] text-tertiary">THE ROOM</span>
                 <span className="flex gap-1">
-                  <span className="rounded-[11px] bg-red px-2 py-1 text-[9px] font-bold text-white">Top</span>
+                  <span className="rounded-[11px] bg-red-fill px-2 py-1 text-[9px] font-bold text-white">Top</span>
                   <span className="rounded-[11px] bg-surface px-2 py-1 text-[9px] font-semibold text-secondary">New</span>
                 </span>
               </div>

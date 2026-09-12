@@ -20,7 +20,7 @@ export function Eyebrow({
       ) : dot === "gold" ? (
         <span
           aria-hidden="true"
-          className="inline-block h-1.5 w-1.5 rounded-full bg-red"
+          className="inline-block h-1.5 w-1.5 rounded-full bg-red-fill"
         />
       ) : null}
       {children}

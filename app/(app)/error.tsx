@@ -17,7 +17,7 @@ export default function AppError({ reset }: { error: Error & { digest?: string }
       <button
         type="button"
         onClick={reset}
-        className="mt-4 h-11 rounded-lg bg-red px-5 text-sm font-semibold text-white"
+        className="mt-4 h-11 rounded-lg bg-red-fill px-5 text-sm font-semibold text-white"
       >
         Try again
       </button>

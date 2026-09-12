@@ -136,7 +136,7 @@ export function FeaturedRoom({
       <div className="mb-3.5 flex items-center gap-2.5">
         <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red">
           <span
-            className={`h-2 w-2 rounded-full bg-red ${live ? "animate-fcpulse" : "animate-fc-blink"}`}
+            className={`h-2 w-2 rounded-full bg-red-fill ${live ? "animate-fcpulse" : "animate-fc-blink"}`}
           />
           {live ? "LIVE NOW" : "NEXT UP"}
         </span>
@@ -245,7 +245,7 @@ export function FeaturedRoom({
             <div className="mb-3 flex items-center justify-between">
               <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red">
                 <span
-                  className={`h-1.5 w-1.5 rounded-full bg-red ${live ? "animate-fc-blink" : ""}`}
+                  className={`h-1.5 w-1.5 rounded-full bg-red-fill ${live ? "animate-fc-blink" : ""}`}
                 />
                 IN THE ROOM
               </span>

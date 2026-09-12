@@ -1,24 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Schibsted_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Anton, Newsreader } from "next/font/google";
 import { cookies } from "next/headers";
 import { brand } from "@/lib/brand";
 import { THEME_COOKIE, themeInitScript, type ThemeChoice } from "@/lib/theme";
 import { ClientErrorReporter } from "@/components/ClientErrorReporter";
 import "./globals.css";
 
-// Matchday redesign type system: Schibsted Grotesk (display + body/UI — heavy
-// weights 700-900 for headlines/scores/wordmark, 400-600 for text), JetBrains
-// Mono (labels/eyebrows/meta + ALL tabular numbers: clocks, scores, counts).
-// NEVER put Schibsted on tabular numbers — use font-mono there so figures don't
-// drift on every tick. Both are variable fonts (weight axis omitted = full range).
-const schibsted = Schibsted_Grotesk({
+// Matchday Programme type system (founder 2026-09-12): Anton 400 is the
+// display face (masthead, section heads, scorelines - always uppercase via
+// .display); Newsreader carries EVERYTHING else - body, italic captions, and
+// the small-caps label + tabular-numeral treatment behind the font-mono
+// utility (Newsreader's figures are tabular lining - verified, so clocks
+// don't drift on ticks). Nothing renders above weight 600.
+const anton = Anton({
+  weight: "400",
   subsets: ["latin"],
-  variable: "--font-schibsted",
+  variable: "--font-anton",
   display: "swap",
 });
-const jetbrainsMono = JetBrains_Mono({
+const newsreader = Newsreader({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  style: ["normal", "italic"],
+  variable: "--font-newsreader",
   display: "swap",
 });
 
@@ -51,11 +54,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Single dark value: the app is dark by default regardless of OS scheme (see
-  // the pre-paint theme script), so keying themeColor off prefers-color-scheme
-  // framed the dark page with a beige status bar on light-OS phones. Matchday
-  // redesign dark base is #08080a (keep the manifest in sync).
-  themeColor: "#08080a",
+  // Single value: the app is PAPER by default regardless of OS scheme (see the
+  // pre-paint theme script), so themeColor matches the Programme's cream page.
+  // Keep the manifest in sync.
+  themeColor: "#F7F1E2",
   // let the page paint under the notch / home-indicator so the room's bottom
   // tab bar's env(safe-area-inset-bottom) padding actually engages on notched
   // iPhones (founder 2026-08-05)
@@ -100,7 +102,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${schibsted.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${anton.variable} ${newsreader.variable} font-sans antialiased`}
       >
         {children}
         <ClientErrorReporter />

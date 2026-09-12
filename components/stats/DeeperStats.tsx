@@ -96,7 +96,7 @@ function Bar({
         <span className="font-semibold tabular-nums">{fmt(away)}</span>
       </div>
       <div className={`mt-1 flex overflow-hidden rounded-full bg-raised ${big ? "h-2.5" : "h-1.5"}`}>
-        <span className={colors ? undefined : "bg-red"} style={{ width: `${hp}%`, ...fill(colors, "home") }} />
+        <span className={colors ? undefined : "bg-red-fill"} style={{ width: `${hp}%`, ...fill(colors, "home") }} />
         <span className={colors ? undefined : "bg-navy"} style={{ width: `${100 - hp}%`, ...fill(colors, "away") }} />
       </div>
     </div>
@@ -122,7 +122,7 @@ function Momentum({ buckets, big, colors }: { buckets: MomentumBucket[]; big: bo
             >
               <div className="flex flex-1 items-end">
                 <span
-                  className={`w-full rounded-sm ${colors ? "" : "bg-red"}`}
+                  className={`w-full rounded-sm ${colors ? "" : "bg-red-fill"}`}
                   style={{ height: net > 0 ? `${h}%` : "0", ...fill(colors, "home") }}
                 />
               </div>
@@ -207,7 +207,7 @@ export function DeeperStats({
               <li key={`${p.side}-${p.name}-${i}`} className={`flex items-center justify-between ${big ? "text-sm" : "text-[13px]"}`}>
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors ? "" : p.side === "home" ? "bg-red" : "bg-navy"}`}
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors ? "" : p.side === "home" ? "bg-red-fill" : "bg-navy"}`}
                     style={fill(colors, p.side)}
                   />
                   <span className="truncate">{p.name}</span>
@@ -241,7 +241,7 @@ export function DeeperStats({
               <div key={side} className={`flex items-center justify-between ${big ? "text-sm" : "text-[13px]"} py-0.5`}>
                 <span className="flex min-w-0 items-center gap-1.5">
                   <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors ? "" : side === "home" ? "bg-red" : "bg-navy"}`}
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${colors ? "" : side === "home" ? "bg-red-fill" : "bg-navy"}`}
                     style={fill(colors, side)}
                   />
                   <span className="truncate">{g.name}</span>
@@ -271,7 +271,7 @@ export function DeeperStats({
         <Section title="Game state" big>
           <div className="flex h-2 overflow-hidden rounded-full bg-raised">
             <span
-              className={colors ? undefined : "bg-red"}
+              className={colors ? undefined : "bg-red-fill"}
               style={{ width: `${(gs.homeLed / gsTotal) * 100}%`, ...fill(colors, "home") }}
             />
             <span className="bg-line" style={{ width: `${(gs.level / gsTotal) * 100}%` }} />

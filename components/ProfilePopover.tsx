@@ -219,7 +219,7 @@ export function ProfilePopover({
                 {!card.signedIn ? (
                   <Link
                     href="/signin"
-                    className="flex-1 rounded-lg bg-red px-3 py-1.5 text-center text-xs font-bold text-white"
+                    className="flex-1 rounded-lg bg-red-fill px-3 py-1.5 text-center text-xs font-bold text-white"
                   >
                     {card.isHost ? "Sign in to follow" : "Sign in to add"}
                   </Link>
@@ -228,7 +228,7 @@ export function ProfilePopover({
                     type="button"
                     disabled={busy || card.following}
                     onClick={() => void follow()}
-                    className="flex-1 rounded-lg bg-red px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
                   >
                     {card.following ? "Following" : "Follow"}
                   </button>
@@ -237,7 +237,7 @@ export function ProfilePopover({
                     type="button"
                     disabled={busy || card.friend !== "none"}
                     onClick={() => void addFriend()}
-                    className="flex-1 rounded-lg bg-red px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                    className="flex-1 rounded-lg bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
                   >
                     {card.friend === "friends"
                       ? "Friends"

@@ -87,7 +87,7 @@ export default function HostGuidePage() {
           <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-red uppercase">
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 rounded-full bg-red"
+              className="h-1.5 w-1.5 rounded-full bg-red-fill"
             />
             Host handbook
           </p>
@@ -353,7 +353,7 @@ export default function HostGuidePage() {
               <p className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-red uppercase">
                 <span
                   aria-hidden="true"
-                  className="h-1.5 w-1.5 rounded-full bg-red"
+                  className="h-1.5 w-1.5 rounded-full bg-red-fill"
                 />
                 Audio only, always
               </p>
@@ -408,7 +408,7 @@ export default function HostGuidePage() {
             <div className="mt-8 flex flex-wrap items-center gap-3.5 border-t border-line pt-8">
               <Link
                 href="/settings"
-                className="inline-flex items-center gap-2 rounded-[11px] bg-red px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
+                className="inline-flex items-center gap-2 rounded-[11px] bg-red-fill px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
               >
                 Become a commentator <span aria-hidden="true">→</span>
               </Link>

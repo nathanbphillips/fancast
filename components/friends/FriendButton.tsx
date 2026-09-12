@@ -85,7 +85,7 @@ export function FriendButton({
           type="button"
           onClick={() => void add()}
           disabled={busy}
-          className="rounded-lg bg-red px-4 py-2 text-sm font-bold text-white hover:bg-red-hover disabled:opacity-60"
+          className="rounded-lg bg-red-fill px-4 py-2 text-sm font-bold text-white hover:bg-red-hover disabled:opacity-60"
         >
           Add friend
         </button>
@@ -106,7 +106,7 @@ export function FriendButton({
             type="button"
             onClick={() => void respond("accept")}
             disabled={busy}
-            className="rounded-lg bg-red px-4 py-2 text-sm font-bold text-white hover:bg-red-hover disabled:opacity-60"
+            className="rounded-lg bg-red-fill px-4 py-2 text-sm font-bold text-white hover:bg-red-hover disabled:opacity-60"
           >
             Accept
           </button>

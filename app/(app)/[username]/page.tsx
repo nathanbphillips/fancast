@@ -204,7 +204,7 @@ export default async function ProfilePage({
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-secondary">
             {isCommentator && (
-              <span className="rounded-sm bg-red px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-sm bg-red-fill px-1.5 py-0.5 text-[10px] font-bold text-white">
                 COMMENTATOR
               </span>
             )}
@@ -310,7 +310,7 @@ export default async function ProfilePage({
                     )}
                   </span>
                   {enterable ? (
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
+                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
                       <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white" aria-hidden="true" />
                       Live
                     </span>

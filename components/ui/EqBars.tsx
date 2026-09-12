@@ -1,7 +1,7 @@
 /** 3 staggered equalizer bars (host "speaking" indicator). Decorative. */
 export function EqBars({
   className = "",
-  color = "bg-red",
+  color = "bg-red-fill",
   height = 12,
 }: {
   className?: string;

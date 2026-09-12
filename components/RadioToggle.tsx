@@ -32,7 +32,7 @@ export function RadioToggle({
     >
       <span
         aria-hidden="true"
-        className={`h-2 w-2 rounded-full ${active ? "animate-live-pulse bg-red" : "bg-line"}`}
+        className={`h-2 w-2 rounded-full ${active ? "animate-live-pulse bg-red-fill" : "bg-line"}`}
       />
       Radio
     </button>

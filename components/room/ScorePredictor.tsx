@@ -106,7 +106,7 @@ export function ScorePredictor({
             type="button"
             onClick={submit}
             disabled={busy}
-            className="mt-4 h-9 shrink-0 rounded-lg bg-red px-4 text-sm font-semibold text-white disabled:opacity-60"
+            className="mt-4 h-9 shrink-0 rounded-lg bg-red-fill px-4 text-sm font-semibold text-white disabled:opacity-60"
           >
             {mine ? "Update" : "Predict"}
           </button>
@@ -128,7 +128,7 @@ export function ScorePredictor({
                 </span>
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-raised">
                   <span
-                    className={`block h-full rounded-full ${isMine ? "bg-green" : "bg-red"}`}
+                    className={`block h-full rounded-full ${isMine ? "bg-green" : "bg-red-fill"}`}
                     style={{ width: `${(t.count / max) * 100}%` }}
                   />
                 </span>

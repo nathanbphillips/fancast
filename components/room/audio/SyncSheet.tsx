@@ -136,7 +136,7 @@ export function SyncSheet({
                 <button
                   type="button"
                   onClick={tapNow}
-                  className="h-14 rounded-xl bg-red px-10 text-lg font-bold text-white"
+                  className="h-14 rounded-xl bg-red-fill px-10 text-lg font-bold text-white"
                 >
                   Now
                 </button>

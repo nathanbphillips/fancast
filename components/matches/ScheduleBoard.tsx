@@ -123,7 +123,7 @@ export function ScheduleBoard({
                       {liveRoom ? (
                         <>
                           <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red">
-                            <span className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red" />
+                            <span className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red-fill" />
                             LIVE
                           </span>
                           <Link

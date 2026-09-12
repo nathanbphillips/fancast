@@ -144,7 +144,7 @@ export function AdminTools() {
         <button
           type="submit"
           disabled={busy || !home.trim() || !away.trim() || !kickoff}
-          className="h-11 w-full rounded-lg bg-red text-sm font-semibold text-white disabled:opacity-60"
+          className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
         >
           {busy ? "Creating…" : "Create room"}
         </button>

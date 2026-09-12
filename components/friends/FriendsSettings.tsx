@@ -81,7 +81,7 @@ export function FriendsSettings({
                         action: "accept",
                       })
                     }
-                    className="rounded-md bg-red px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                    className="rounded-md bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
                   >
                     Accept
                   </button>

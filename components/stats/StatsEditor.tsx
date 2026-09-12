@@ -200,7 +200,7 @@ function EditorActions({
       <button type="button" className={`${btnCls} border border-line text-secondary`} onClick={onClose} disabled={saving}>
         Cancel
       </button>
-      <button type="button" className={`${btnCls} bg-red text-white`} onClick={onSave} disabled={saving}>
+      <button type="button" className={`${btnCls} bg-red-fill text-white`} onClick={onSave} disabled={saving}>
         {saving ? "Saving…" : "Save & push live"}
       </button>
     </div>

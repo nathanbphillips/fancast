@@ -323,7 +323,7 @@ export function HostRoomsDashboard({
                     )}
                   </span>
                   {enterable ? (
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
+                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
                       <span
                         aria-hidden="true"
                         className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"

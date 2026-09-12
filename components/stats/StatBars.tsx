@@ -46,7 +46,7 @@ export function StatBars({
               aria-label={`${s.label}: ${fmt(s.home)} home, ${fmt(s.away)} away`}
             >
               <span
-                className={colors ? undefined : "bg-red"}
+                className={colors ? undefined : "bg-red-fill"}
                 style={{ width: `${homePct}%`, ...(colors ? barFillStyle(colors.home) : null) }}
               />
               <span

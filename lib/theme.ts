@@ -24,8 +24,10 @@ export const themeCookieOptions = {
 /**
  * Pre-paint theme script. Precedence (per CLAUDE.md): an explicit device
  * choice in localStorage wins, else the server-baked account preference, else
- * DARK (the redesign's default). The localStorage branch MUST stay before the
- * account branch — that ordering is the device-beats-account contract.
+ * LIGHT - the Programme's paper identity (founder 2026-09-12; dark is the
+ * same programme "printed in negative", one tap away). The localStorage
+ * branch MUST stay before the account branch - that ordering is the
+ * device-beats-account contract.
  */
 export function themeInitScript(accountPref: ThemeChoice | null): string {
   const pref =
@@ -35,7 +37,7 @@ export function themeInitScript(accountPref: ThemeChoice | null): string {
     `var ls=localStorage.getItem("theme");` +
     `var acct=${JSON.stringify(pref)};` +
     `var t=ls?ls:(acct?acct:null);` +
-    `var d=t?t==="dark":true;` +
+    `var d=t?t==="dark":false;` +
     `document.documentElement.classList.toggle("dark",d);` +
     `}catch(e){}})();`
   );

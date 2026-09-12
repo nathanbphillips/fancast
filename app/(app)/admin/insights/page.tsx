@@ -123,7 +123,7 @@ export default async function AdminInsightsPage() {
                 title={`${g.date}: ${g.signups} signup${g.signups === 1 ? "" : "s"} · ${g.cumulative} total`}
               >
                 <div
-                  className="w-full rounded-t-sm bg-red/70 transition-colors group-hover:bg-red"
+                  className="w-full rounded-t-sm bg-red/70 transition-colors group-hover:bg-red-fill"
                   style={{
                     height: `${Math.max(g.signups === 0 ? 2 : 6, (g.signups / maxSignups) * 100)}%`,
                   }}
