@@ -15,7 +15,7 @@ export function Pill({
 }) {
   const styles =
     variant === "red"
-      ? "bg-red-fill text-white"
+      ? "bg-red-fill text-on-red"
       : variant === "gold"
         ? "border border-line text-secondary"
         : "border border-line text-secondary";
@@ -26,7 +26,7 @@ export function Pill({
       {live && (
         <span
           aria-hidden="true"
-          className={`inline-block h-1.5 w-1.5 animate-fcpulse rounded-full ${variant === "red" ? "bg-white" : "bg-red-fill"}`}
+          className={`inline-block h-1.5 w-1.5 animate-fcpulse rounded-full ${variant === "red" ? "bg-on-red" : "bg-red-fill"}`}
         />
       )}
       {children}

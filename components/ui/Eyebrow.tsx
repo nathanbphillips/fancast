@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { LiveDot } from "./LiveDot";
 
-/** Space-Mono uppercase eyebrow label with a leading dot (gold or live-red). */
+/** The Programme kicker: red small-caps tracked label with a leading lamp dot
+ *  ("gold" is the legacy prop name for the static dot; both dots are red). */
 export function Eyebrow({
   children,
   dot = "gold",

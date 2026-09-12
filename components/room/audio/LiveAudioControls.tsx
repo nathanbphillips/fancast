@@ -560,7 +560,7 @@ export function ListenerBar({
                 aria-label="Collapse audio controls"
                 className="flex h-[30px] items-center gap-1.5 rounded-lg border border-line px-2.5 text-secondary"
               >
-                <span className="animate-fcpulse font-mono text-[10px] font-bold tracking-[0.04em] text-gold-bright uppercase">
+                <span className="animate-fcpulse font-mono text-[10px] font-bold tracking-[0.04em] text-red uppercase">
                   Shrink
                 </span>
                 <span aria-hidden="true" className="text-xs leading-none">

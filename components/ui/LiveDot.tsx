@@ -1,4 +1,4 @@
-/** Pulsing brand-red "live" dot with a soft glow (Cloud Design). Decorative. */
+/** Pulsing deep-red "lamp" dot (Programme). Flat fill, no glow. Decorative. */
 export function LiveDot({
   size = 6,
   className = "",
@@ -10,11 +10,7 @@ export function LiveDot({
     <span
       aria-hidden="true"
       className={`inline-block shrink-0 animate-fcpulse rounded-full bg-red-fill ${className}`}
-      style={{
-        width: size,
-        height: size,
-        boxShadow: "0 0 8px rgba(241, 35, 43, 0.85)",
-      }}
+      style={{ width: size, height: size }}
     />
   );
 }

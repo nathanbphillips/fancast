@@ -18,7 +18,7 @@ export function SiteFooter() {
     "font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase";
 
   return (
-    <footer className="border-t border-line bg-footer">
+    <footer className="border-t-[3px] border-double border-primary bg-footer">
       <div className="mx-auto max-w-[1180px] px-5 py-14 sm:px-10">
         <div className="flex flex-col gap-10 sm:flex-row sm:justify-between">
           <div className="max-w-sm">
@@ -76,11 +76,13 @@ export function SiteFooter() {
             </nav>
           </div>
         </div>
-        <div className="mt-10 flex flex-col gap-2 border-t border-line pt-6 font-mono text-[11px] tracking-wider text-secondary uppercase sm:flex-row sm:items-center sm:justify-between">
-          <p>
+        <div className="mt-10 flex flex-col gap-2 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-mono text-[11px] tracking-wider text-secondary uppercase">
             © {new Date().getFullYear()} {brand.name}
           </p>
-          <p>No pundits · No fluff · Just football</p>
+          <p className="text-[15px] text-secondary italic">
+            No pundits · No fluff · Just football
+          </p>
         </div>
       </div>
     </footer>

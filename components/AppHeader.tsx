@@ -80,8 +80,8 @@ function NavDropdown({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`flex items-center gap-1 text-[13.5px] font-semibold transition-colors ${
-          anyActive ? "text-primary" : "text-secondary hover:text-primary"
+        className={`flex items-center gap-1 font-mono text-[13.5px] font-semibold tracking-[0.08em] transition-colors ${
+          anyActive ? "text-primary" : "text-secondary hover:text-red"
         }`}
       >
         {label}
@@ -100,14 +100,14 @@ function NavDropdown({
       </button>
       {open && (
         <div role="menu" className="absolute top-full left-0 z-50 pt-2">
-          <div className="min-w-[168px] rounded-xl border border-line bg-surface p-1.5 shadow-raised">
+          <div className="min-w-[168px] border-2 border-primary bg-canvas p-1.5">
             {items.map((i) => (
               <Link
                 key={i.href}
                 href={i.href}
                 role="menuitem"
                 aria-current={pathname?.startsWith(i.href) ? "page" : undefined}
-                className={`block rounded-lg px-3 py-2 text-[13.5px] font-semibold transition-colors ${
+                className={`block px-3 py-2 font-mono text-[13.5px] font-semibold tracking-[0.08em] transition-colors ${
                   pathname?.startsWith(i.href)
                     ? "bg-raised text-primary"
                     : "text-secondary hover:bg-raised hover:text-primary"
@@ -183,21 +183,17 @@ export function AppHeader({
     }
   }
 
+  // programme nav voice: Newsreader small caps, gently tracked (font-mono is
+  // the small-caps utility since the Programme redesign)
   const navLink =
-    "text-[13.5px] font-semibold text-secondary transition-colors hover:text-primary";
+    "font-mono text-[13.5px] font-semibold tracking-[0.08em] text-secondary transition-colors hover:text-red";
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname?.startsWith(href);
 
   return (
     <>
       {!announceDismissed && (
-        <div
-          className="relative flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-line px-10 py-2 text-center text-[12px] font-semibold text-secondary"
-          style={{
-            background:
-              "linear-gradient(90deg, rgba(239,1,7,.14), rgba(239,1,7,.05), rgba(239,1,7,.14))",
-          }}
-        >
+        <div className="relative flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-line bg-raised px-10 py-2 text-center text-[12px] font-semibold text-secondary">
           <span className="hidden items-center gap-1.5 font-mono text-[10px] font-bold tracking-[0.1em] text-red uppercase sm:inline-flex">
             <span
               aria-hidden="true"
@@ -245,7 +241,9 @@ export function AppHeader({
         </div>
       )}
 
-      <header className="sticky top-0 z-40 border-b border-line bg-canvas/80 backdrop-blur-md">
+      {/* masthead rules: 3px solid top, 1px solid bottom (the programme's
+          page-top treatment); solid paper, no blur, no shadow */}
+      <header className="sticky top-0 z-40 border-t-[3px] border-t-primary border-b border-b-primary bg-canvas">
         <div className="mx-auto flex h-[61px] max-w-[1180px] items-center justify-between px-5 sm:px-10">
           <div className="flex items-center">
             <Link href="/" aria-label={brand.name} className="flex items-center">
@@ -272,7 +270,7 @@ export function AppHeader({
                     aria-current={isActive(n.href) ? "page" : undefined}
                     className={
                       isActive(n.href)
-                        ? "text-[13.5px] font-semibold text-primary"
+                        ? "font-mono text-[13.5px] font-semibold tracking-[0.08em] text-primary"
                         : navLink
                     }
                   >

@@ -38,8 +38,8 @@ function kindOf(r: DiagRow): string {
 }
 
 const CHIP: Record<string, string> = {
-  api_error: "text-gold-bright border-gold-bright/50",
-  api_unreachable: "text-gold-bright border-gold-bright/50",
+  api_error: "text-red border-red/50",
+  api_unreachable: "text-red border-red/50",
   error: "text-red border-red/50",
   unhandledrejection: "text-red border-red/50",
   callin_mic_timeout: "text-red border-red/50",

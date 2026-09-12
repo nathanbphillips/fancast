@@ -71,7 +71,7 @@ export function OnAirCard() {
         <div className="flex-1">
           <p className="flex items-center gap-2 text-[15px] font-bold">
             Your host
-            <span className="rounded border border-gold/50 px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-gold uppercase">
+            <span className="rounded border border-red/50 px-1.5 py-0.5 font-mono text-[9.5px] tracking-[0.1em] text-red uppercase">
               Host
             </span>
           </p>

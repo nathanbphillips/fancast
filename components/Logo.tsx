@@ -1,21 +1,20 @@
-import Image from "next/image";
 import { brand } from "@/lib/brand";
 import { LiveDot } from "@/components/ui/LiveDot";
 
 /**
  * Brand mark: a pulsing red live-dot + the wordmark.
  *
- * Theme-aware (founder 2026-07-17): the neon logo image on the DARK theme (the
- * default everyone sees first), and the two-tone CSS wordmark from
- * `brand.logoParts` on the LIGHT theme — where the neon glow would wash out and
- * "RADIO" (a faint outline in the artwork) would vanish. Exactly one variant is
- * ever in the DOM/a11y tree per theme (the other is `display:none`); both carry
- * `brand.name`. Pass `withWordmark={false}` for the dot alone; `priority` for
- * the above-the-fold nav mark.
+ * Programme redesign (founder 2026-09-12): one wordmark for both themes - the
+ * two-tone lockup from `brand.logoParts` (ARSE in red, RADIO in the text
+ * colour) set in Anton via `.display`. The dark-theme neon PNG is retired;
+ * the programme is type, not glow. Pass `withWordmark={false}` for the dot
+ * alone. `priority` is kept for call-site compatibility (nothing to preload
+ * now that the mark is text).
  */
 export function Logo({
   withWordmark = true,
   className = "",
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   priority = false,
 }: {
   withWordmark?: boolean;
@@ -26,22 +25,10 @@ export function Logo({
     <span className={`flex items-center gap-2.5 ${className}`}>
       <LiveDot size={9} />
       {withWordmark && (
-        <>
-          {/* light theme: legible two-tone wordmark (ARSE red / RADIO foreground) */}
-          <span className="display text-[21px] tracking-[0.04em] uppercase dark:hidden">
-            <span className="text-red">{brand.logoParts.accent}</span>
-            <span className="text-primary">{brand.logoParts.base}</span>
-          </span>
-          {/* dark theme (default): the neon logo artwork */}
-          <Image
-            src="/brand/arseradio-neon.png"
-            alt={brand.name}
-            width={1440}
-            height={300}
-            priority={priority}
-            className="hidden h-[30px] w-auto dark:block"
-          />
-        </>
+        <span className="display text-[21px] tracking-[0.04em]">
+          <span className="text-red">{brand.logoParts.accent}</span>
+          <span className="text-primary">{brand.logoParts.base}</span>
+        </span>
       )}
     </span>
   );

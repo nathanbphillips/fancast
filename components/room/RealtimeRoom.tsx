@@ -2063,7 +2063,7 @@ export function RealtimeRoom(props: Props) {
             }}
             aria-current={tab === t.id ? "page" : undefined}
             className={`relative flex flex-1 flex-col items-center gap-1 py-1 transition-colors ${
-              tab === t.id ? "text-gold-bright" : "text-red"
+              tab === t.id ? "text-primary" : "text-red"
             }`}
           >
             {t.icon}

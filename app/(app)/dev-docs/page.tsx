@@ -98,7 +98,7 @@ export default function DevDocsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <header className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gold">Internal handoff doc</p>
+        <p className="text-xs font-semibold uppercase tracking-widest text-red">Internal handoff doc</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-primary">
           {brand.name} - developer overview
         </h1>
@@ -166,7 +166,7 @@ export default function DevDocsPage() {
                 rejections → <C>/admin/diagnostics</C>), on top of{" "}
                 <C>listener_segments</C> (audio sessions). Still missing: APM/traces, a hosted error
                 service (Sentry), and web-vitals. See the{" "}
-                <a className="text-gold hover:underline" href="#telemetry">Telemetry section</a>.
+                <a className="text-red hover:underline" href="#telemetry">Telemetry section</a>.
               </li>
             </UL>
           </Section>
@@ -178,20 +178,20 @@ export default function DevDocsPage() {
             <UL>
               <li>
                 <b className="text-primary">15 minutes (what is this?):</b> the TL;DR above,{" "}
-                <a className="text-gold hover:underline" href="#golden">Non-negotiables</a>,{" "}
-                <a className="text-gold hover:underline" href="#model">Architecture model</a>, then
-                skim the <a className="text-gold hover:underline" href="#features">Feature tour</a>.
+                <a className="text-red hover:underline" href="#golden">Non-negotiables</a>,{" "}
+                <a className="text-red hover:underline" href="#model">Architecture model</a>, then
+                skim the <a className="text-red hover:underline" href="#features">Feature tour</a>.
                 You&apos;ll understand the product and how data flows.
               </li>
               <li>
                 <b className="text-primary">45 minutes (could I review a PR?):</b> add the{" "}
-                <a className="text-gold hover:underline" href="#data">Data model</a>,{" "}
-                <a className="text-gold hover:underline" href="#realtime">Realtime channels</a>, and{" "}
-                <a className="text-gold hover:underline" href="#security">Auth &amp; security</a>.
+                <a className="text-red hover:underline" href="#data">Data model</a>,{" "}
+                <a className="text-red hover:underline" href="#realtime">Realtime channels</a>, and{" "}
+                <a className="text-red hover:underline" href="#security">Auth &amp; security</a>.
               </li>
               <li>
                 <b className="text-primary">Hands-on:</b> the quickstart in{" "}
-                <a className="text-gold hover:underline" href="#env">Env &amp; deployment</a>, then
+                <a className="text-red hover:underline" href="#env">Env &amp; deployment</a>, then
                 open <C>components/room/RealtimeRoom.tsx</C> (the room), <C>lib/clock.ts</C>, and{" "}
                 <C>lib/stats.ts</C> - those three files are most of the product.
               </li>
@@ -715,10 +715,10 @@ export default function DevDocsPage() {
                 ["Cloud Design visual overhaul: dark-default token system, Anton/Hanken/Space Mono, marketing pages, room restructure (desktop + mobile), reactions, call-in queue, locked type scale + gold split", <span key="c" className="font-semibold text-green">Done</span>],
                 ["Commentator Platform Epic PRDs 01–09 (self-serve commentators, root profiles, slugs + co-hosts, season subscriptions, notifications, RSVPs, friends/blocks, fan score, profile cards) - migrations 0026–0035", <span key="d" className="font-semibold text-green">Done + deployed</span>],
                 ["Avatar image uploads (sharp pipeline) + front-end review pass (honest trust signals, funnel, mobile nav, /host landing, SEO, waitlist, room sharing) - migration 0036", <span key="e" className="font-semibold text-green">Done + deployed (2026-07-05)</span>],
-                ["Notification SENDING (email + push)", <span key="f" className="font-semibold text-gold">Infra built; no-ops until RESEND_API_KEY / EMAIL_FROM / VAPID keys are set</span>],
-                ["Stripe tipping (Phase 9b/9c)", <span key="g" className="font-semibold text-gold">Deferred (no Stripe dep or routes yet)</span>],
-                ["iOS Safari audio certification (device matrix)", <span key="h" className="font-semibold text-gold">Pending founder devices</span>],
-                ["Favicon + final name (brand.ts rename)", <span key="i" className="font-semibold text-gold">Pending final branding</span>],
+                ["Notification SENDING (email + push)", <span key="f" className="font-semibold text-red">Infra built; no-ops until RESEND_API_KEY / EMAIL_FROM / VAPID keys are set</span>],
+                ["Stripe tipping (Phase 9b/9c)", <span key="g" className="font-semibold text-red">Deferred (no Stripe dep or routes yet)</span>],
+                ["iOS Safari audio certification (device matrix)", <span key="h" className="font-semibold text-red">Pending founder devices</span>],
+                ["Favicon + final name (brand.ts rename)", <span key="i" className="font-semibold text-red">Pending final branding</span>],
               ]}
             />
             <p className="text-[13px]">
