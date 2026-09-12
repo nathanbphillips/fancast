@@ -8,6 +8,7 @@ import { NotifyForm } from "@/components/marketing/NotifyForm";
 import { HeroProductShot } from "@/components/marketing/HeroProductShot";
 import { SyncDiagram } from "@/components/marketing/SyncDiagram";
 import { Countdown } from "@/components/marketing/Countdown";
+import { MastheadStrip } from "@/components/marketing/MastheadStrip";
 
 /**
  * Home (Matchday redesign): centred hero + product-shot preview → honest stat
@@ -33,17 +34,17 @@ const VOICES = [
   {
     t: "The lifelong Gooner",
     d: "Lives and dies with every result. Never on the fence, never neutral.",
-    grad: "linear-gradient(135deg,#ef0107,#7a0a12)",
+    grad: "#a8241a",
   },
   {
     t: "The tactics head",
     d: "The xG and the press triggers, then forgets it all when we score a wonder goal.",
-    grad: "linear-gradient(135deg,#1f6f4a,#0c3a26)",
+    grad: "#2e6b3c",
   },
   {
     t: "The call-in host",
     d: "Runs the half-time poll and the call-in mic, so the whole room gets a say.",
-    grad: "linear-gradient(135deg,#2a4a8a,#12224a)",
+    grad: "#2a4a8a",
   },
 ];
 
@@ -74,65 +75,37 @@ export default async function HomePage() {
   return (
     <>
       {/* ===================== HERO ===================== */}
-      <section className="relative overflow-hidden px-5 pt-16 pb-10 sm:px-10">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div
-            className="animate-fc-glow absolute -top-44 left-1/2 h-[640px] w-[1000px] -translate-x-1/2"
-            style={{
-              background:
-                "radial-gradient(58% 58% at 50% 38%, rgba(239,1,7,.22), transparent 72%)",
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgb(var(--hair) / 0.05) 1px, transparent 1px)",
-              backgroundSize: "30px 30px",
-              opacity: 0.5,
-              maskImage: "radial-gradient(70% 60% at 50% 40%, black, transparent)",
-              WebkitMaskImage:
-                "radial-gradient(70% 60% at 50% 40%, black, transparent)",
-            }}
-          />
+      <section className="relative px-5 pt-6 pb-10 sm:px-10">
+        {/* the programme cover chrome: volume/season/price strip */}
+        <div className="mx-auto max-w-[1180px]">
+          <MastheadStrip className="mb-10" />
         </div>
 
         <div className="relative z-[2] mx-auto grid max-w-[1180px] items-center gap-10 lg:grid-cols-[1fr_2fr] lg:gap-12">
           {/* LEFT — copy (1/3) */}
           <div className="text-center lg:text-left">
-            <span className="inline-flex animate-fc-rise items-center gap-2 rounded-full border border-line bg-surface/40 px-[15px] py-2 font-mono text-[12px] text-secondary">
+            <span className="inline-flex items-center gap-2 font-mono text-[13px] tracking-[0.12em] text-red">
               <span className="h-[7px] w-[7px] animate-fcpulse rounded-full bg-red-fill" />
-              The matchday room for Arsenal fans
+              The matchday programme for Arsenal fans
             </span>
-            <h1 className="display mt-6 t-h2 text-primary">
-              Every match feels better in a{" "}
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206)",
-                }}
-              >
-                full room
-              </span>
-              .
+            <h1 className="display mt-5 t-hero text-primary">
+              Every match feels better in a <span className="text-red">full room</span>.
             </h1>
-            <p className="mx-auto mt-5 max-w-[440px] text-[17px] leading-[1.6] text-secondary lg:mx-0">
-              Keep your own stream. {brand.name} adds a real supporter in your
-              ear, a chat worth reading, and live stats, synced to your screen
-              with one tap. No game on? The room stays open.
+            <p className="mx-auto mt-5 max-w-[440px] text-[17px] leading-[1.6] text-secondary italic lg:mx-0">
+              Real supporters in your ear, never pundits. Keep your own stream:
+              {" "}{brand.name} adds a voice worth hearing, a chat worth reading,
+              and live stats, synced to your screen with one tap.
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-start">
               <Link
                 href={heroPrimary.href}
-                className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
+                className="btn-grad-red inline-flex items-center gap-2 px-7 py-4 text-[15px] font-semibold"
               >
                 {heroPrimary.label} <span aria-hidden="true">→</span>
-                <span aria-hidden="true" className="btn-shine" />
               </Link>
               <Link
                 href="/how-it-works"
-                className="inline-flex items-center gap-2 rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary transition-colors hover:bg-raised"
+                className="inline-flex items-center gap-2 border-2 border-primary px-[26px] py-[14px] font-mono text-[14px] font-semibold tracking-[0.08em] text-primary transition-colors hover:text-red"
               >
                 How it works
               </Link>
@@ -174,15 +147,7 @@ export default async function HomePage() {
       </section>
 
       {/* ===================== SIGNATURE SYNC ===================== */}
-      <section className="relative overflow-hidden px-5 py-[70px] sm:px-10">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/4 -right-24 h-[500px] w-[500px]"
-          style={{
-            background:
-              "radial-gradient(circle, rgba(239,1,7,.1), transparent 66%)",
-          }}
-        />
+      <section className="relative px-5 py-[70px] sm:px-10">
         <div className="relative z-[2] mx-auto grid max-w-[1010px] items-center gap-12 lg:grid-cols-[.92fr_1.08fr]">
           <div>
             <div className="mb-4 flex items-center gap-2">
@@ -201,17 +166,13 @@ export default async function HomePage() {
               {[
                 { n: "1", t: "Watch on whatever you already pay for", ok: false },
                 { n: "2", t: "Tap Now when the clock matches your screen", ok: false },
-                { n: "✓", t: "Locked — the room is in perfect sync with you", ok: true },
+                { n: "✓", t: "Locked · the room is in perfect sync with you", ok: true },
               ].map((s) => (
                 <div key={s.t} className="flex items-center gap-3">
                   <span
-                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] font-mono text-[13px] font-bold"
-                    style={{
-                      background: s.ok
-                        ? "rgba(52,209,122,.14)"
-                        : "rgba(239,1,7,.14)",
-                      color: s.ok ? "var(--green)" : "var(--red)",
-                    }}
+                    className={`flex h-[30px] w-[30px] shrink-0 items-center justify-center border font-mono text-[13px] font-bold ${
+                      s.ok ? "border-green text-green" : "border-red text-red"
+                    }`}
                   >
                     {s.n}
                   </span>
@@ -232,7 +193,7 @@ export default async function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:[grid-auto-rows:158px]">
           {/* chat — big */}
-          <div className="col-span-2 flex flex-col rounded-2xl border border-line bg-raised p-6 transition-transform hover:-translate-y-[3px] md:row-span-2">
+          <div className="col-span-2 flex flex-col border border-line bg-canvas p-6 md:row-span-2">
             <div className="t-title font-extrabold">A chat worth reading</div>
             <p className="mt-2 max-w-[330px] text-[14px] leading-[1.55] text-secondary">
               Threaded replies, up- and down-votes, sorted by New, Top or
@@ -245,7 +206,7 @@ export default async function HomePage() {
               ].map((c) => (
                 <div
                   key={c.n}
-                  className="flex items-center gap-2.5 rounded-[11px] border border-line bg-canvas p-2.5"
+                  className="flex items-center gap-2.5 border border-line bg-canvas p-2.5"
                 >
                   <span
                     className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
@@ -263,7 +224,7 @@ export default async function HomePage() {
             </div>
           </div>
           {/* stats */}
-          <div className="col-span-2 flex items-center gap-5 rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+          <div className="col-span-2 flex items-center gap-5 border border-line bg-canvas p-[22px]">
             <div className="flex-1">
               <div className="t-title font-extrabold">The stats that matter</div>
               <div className="mt-1 text-[13px] text-secondary">
@@ -276,15 +237,15 @@ export default async function HomePage() {
             </div>
           </div>
           {/* callin */}
-          <div className="flex flex-col justify-center rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+          <div className="flex flex-col justify-center border border-line bg-canvas p-[22px]">
             <div className="t-title font-extrabold">Ask · vote · call in</div>
             <div className="mt-1.5 text-[12px] leading-[1.5] text-secondary">
               Request the mic and the host brings you on air.
             </div>
           </div>
           {/* radio */}
-          <div className="flex flex-col justify-center gap-2.5 rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
-            <span className="flex h-[38px] w-[38px] items-center justify-center rounded-[11px] border border-line bg-canvas text-primary">
+          <div className="flex flex-col justify-center gap-2.5 border border-line bg-canvas p-[22px]">
+            <span className="flex h-[38px] w-[38px] items-center justify-center border border-line text-primary">
               ▸
             </span>
             <div>
@@ -303,7 +264,7 @@ export default async function HomePage() {
         </div>
         <div className="flex flex-col gap-4">
           {/* community */}
-          <div className="grid items-center gap-6 rounded-[18px] border border-line bg-raised p-8 md:grid-cols-2">
+          <div className="grid items-center gap-6 border-2 border-primary bg-canvas p-8 md:grid-cols-2">
             <div>
               <div className="t-h3 display">The room becomes your people</div>
               <p className="mt-2.5 text-[15px] leading-[1.6] text-secondary">
@@ -331,9 +292,9 @@ export default async function HomePage() {
             </div>
           </div>
           {/* follow */}
-          <div className="grid items-center gap-6 rounded-[18px] border border-line bg-raised p-8 md:grid-cols-2">
+          <div className="grid items-center gap-6 border-2 border-primary bg-canvas p-8 md:grid-cols-2">
             <div className="flex flex-col gap-2.5">
-              <div className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-4 shadow-glow">
+              <div className="flex items-center gap-3 border border-red bg-canvas p-4">
                 <span className="h-[11px] w-[11px] shrink-0 animate-fcpulse rounded-full bg-red-fill" />
                 <span className="flex-1">
                   <span className="block text-[13px] font-bold text-primary">A room you follow is live</span>
@@ -341,7 +302,7 @@ export default async function HomePage() {
                 </span>
                 <span className="font-mono text-[11px] text-tertiary">now</span>
               </div>
-              <div className="flex items-center gap-3 rounded-[14px] border border-line bg-canvas p-4">
+              <div className="flex items-center gap-3 border border-line bg-canvas p-4">
                 <span className="h-[11px] w-[11px] shrink-0 rounded-full bg-tertiary" />
                 <span className="flex-1">
                   <span className="block text-[13px] font-bold text-primary">A new room was scheduled</span>
@@ -359,7 +320,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/signin"
-                className="btn-grad-red mt-4 inline-flex items-center rounded-[11px] px-[18px] py-[11px] text-[13px] font-semibold text-white"
+                className="btn-grad-red mt-4 inline-flex items-center px-[18px] py-[11px] text-[13px] font-semibold"
               >
                 Follow a commentator
               </Link>
@@ -367,7 +328,7 @@ export default async function HomePage() {
           </div>
           {/* recordings + fan score */}
           <div className="grid gap-4 md:grid-cols-[1.25fr_1fr]">
-            <div className="rounded-[18px] border border-line bg-raised p-7">
+            <div className="border-2 border-primary bg-canvas p-7">
               <div className="t-h3 display">Miss it live? Keep every minute</div>
               <p className="mt-2 mb-4 text-[14px] leading-[1.6] text-secondary">
                 Every broadcast is cut into downloadable clips, owned 100% by the
@@ -375,28 +336,21 @@ export default async function HomePage() {
               </p>
               <div className="flex flex-col gap-2">
                 {["Pre-match build-up", "First half"].map((seg) => (
-                  <div key={seg} className="flex items-center gap-3 rounded-[10px] border border-line bg-canvas px-3.5 py-2.5">
+                  <div key={seg} className="flex items-center gap-3 border border-line bg-canvas px-3.5 py-2.5">
                     <span className="flex-1 text-[13px] font-bold text-primary">{seg}</span>
                     <span aria-hidden="true" className="font-bold text-red">↓</span>
                   </div>
                 ))}
               </div>
             </div>
-            <div
-              className="flex flex-col rounded-[18px] border p-7"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(239,1,7,0.06), var(--bg-inset))",
-                borderColor: "rgba(239,1,7,.24)",
-              }}
-            >
+            <div className="flex flex-col border-2 border-red bg-canvas p-7">
               <div className="mb-1.5 font-mono text-[11px] font-bold tracking-[0.08em] text-red">
                 YOUR FAN SCORE
               </div>
               <div className="t-h3 display">Show up, and it shows</div>
               <p className="mt-2.5 text-[13px] leading-[1.55] text-secondary">
                 Comments and good votes build a fan score for every match you
-                turn up to — the start of badges and standing to come.
+                turn up to · the start of badges and standing to come.
               </p>
             </div>
           </div>
@@ -416,13 +370,13 @@ export default async function HomePage() {
         </div>
         <div className="grid gap-3.5 md:grid-cols-3">
           {VOICES.map((v) => (
-            <div key={v.t} className="rounded-2xl border border-line bg-raised p-[22px] transition-transform hover:-translate-y-[3px]">
+            <div key={v.t} className="border border-line bg-canvas p-[22px]">
               <span className="mb-3.5 flex h-[50px] w-[50px] items-center justify-center rounded-full" style={{ background: v.grad }} />
               <div className="t-title font-extrabold">{v.t}</div>
               <p className="mt-[7px] mb-4 text-[13px] leading-[1.55] text-secondary">{v.d}</p>
               <Link
                 href="/signin"
-                className="inline-flex items-center rounded-[9px] border border-line px-4 py-2 text-[12px] font-semibold text-primary transition-colors hover:bg-canvas"
+                className="inline-flex items-center border border-line px-4 py-2 text-[12px] font-semibold text-primary transition-colors hover:bg-canvas"
               >
                 Follow
               </Link>
@@ -438,32 +392,34 @@ export default async function HomePage() {
             <div className={`${eyebrow} mb-2.5`}>SAVE YOUR SEAT</div>
             <h2 className="display t-h2">Coming up</h2>
           </div>
-          <Link href="/matches" className="rounded-[10px] border border-line px-[18px] py-[11px] text-[13px] font-semibold text-secondary hover:text-primary">
+          <Link href="/matches" className="border border-line px-[18px] py-[11px] font-mono text-[13px] font-semibold tracking-[0.08em] text-secondary hover:text-red">
             Full schedule →
           </Link>
         </div>
 
         {scheduleFeatured ? (
           <>
+            {/* the programme's hero slot: State A (live) = the red ON AIR
+                block; State B (next up) = the ink block with a gold countdown.
+                Same data, same links - the mock's loudest component. */}
             <div
-              className="relative mb-3 flex flex-wrap items-center gap-6 overflow-hidden rounded-[18px] border p-7"
-              style={{
-                background:
-                  "linear-gradient(110deg, rgba(239,1,7,.16), transparent 58%), var(--bg-surface)",
-                borderColor: "rgba(239,1,7,.3)",
-              }}
+              className={`relative mb-3 flex flex-wrap items-center gap-6 p-7 ${
+                liveRoom ? "bg-red-fill text-on-red" : "bg-inverted text-inverted-fg"
+              }`}
             >
               <div className="relative z-[2] min-w-[280px] flex-1">
-                <div className="mb-3 inline-flex items-center gap-2 font-mono text-[11px] text-red">
-                  <span className="h-[7px] w-[7px] animate-fc-blink rounded-full bg-red-fill" />
-                  {liveRoom ? "LIVE NOW" : "NEXT UP"}
+                <div className="mb-3 inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.16em]">
+                  <span
+                    className={`h-[8px] w-[8px] animate-fcpulse rounded-full ${liveRoom ? "bg-on-red" : "bg-red-fill"}`}
+                  />
+                  {liveRoom ? "ON AIR NOW" : "NEXT BROADCAST"}
                 </div>
-                <div className="display text-[34px]">
+                <div className="display text-[38px]">
                   {scheduleFeatured.card.home}{" "}
-                  <span className="text-secondary">v</span>{" "}
+                  <span className={liveRoom ? "text-on-red/70" : "text-gold"}>v</span>{" "}
                   {scheduleFeatured.card.away}
                 </div>
-                <div className="mt-1.5 text-[13px] text-secondary">
+                <div className="mt-1.5 text-[14px] italic opacity-80">
                   {scheduleFeatured.card.competition}
                   {scheduleFeatured.card.commentator
                     ? ` · with ${scheduleFeatured.card.commentator}`
@@ -472,20 +428,24 @@ export default async function HomePage() {
               </div>
               <div className="relative z-[2] flex min-w-[240px] flex-col gap-3">
                 {!liveRoom && (
-                  <div className="rounded-xl border border-line bg-canvas p-3.5 text-center">
-                    <div className="mb-1 font-mono text-[10px] tracking-[0.08em] text-tertiary">
+                  <div className="p-3.5 text-center">
+                    <div className="mb-1 font-mono text-[11px] tracking-[0.08em] opacity-70">
                       KICKS OFF IN
                     </div>
-                    <div className="display text-[30px] text-primary">
+                    <div className="display text-[30px] text-gold">
                       <Countdown iso={scheduleFeatured.card.kickoffUtc} />
                     </div>
                   </div>
                 )}
                 <Link
                   href={scheduleFeatured.card.roomHref ?? "/matches"}
-                  className="btn-grad-red rounded-[11px] px-5 py-3.5 text-center text-[14px] font-semibold text-white"
+                  className={`border-2 px-6 py-3.5 text-center font-mono text-[15px] font-semibold tracking-[0.12em] transition-opacity hover:opacity-85 ${
+                    liveRoom
+                      ? "border-on-red text-on-red"
+                      : "border-inverted-fg text-inverted-fg"
+                  }`}
                 >
-                  {liveRoom ? "Join live" : "Count me in"}
+                  {liveRoom ? "Listen in →" : "Count me in →"}
                 </Link>
               </div>
             </div>
@@ -496,7 +456,7 @@ export default async function HomePage() {
                   <Link
                     key={w.card.id}
                     href={w.card.roomHref ?? "/matches"}
-                    className="flex items-center gap-4 rounded-xl border border-line bg-raised px-[18px] py-[15px] transition-colors hover:border-red/40"
+                    className="flex items-center gap-4 border border-line bg-canvas px-[18px] py-[15px] transition-colors hover:bg-raised"
                   >
                     <span className="w-[130px] shrink-0 font-mono text-[12px] text-secondary">
                       <KickoffTime iso={w.card.kickoffUtc} />
@@ -514,7 +474,7 @@ export default async function HomePage() {
             )}
           </>
         ) : (
-          <div className="rounded-[18px] border border-line bg-raised p-8">
+          <div className="border-2 border-primary bg-canvas p-8">
             <div className="t-title font-extrabold">No rooms scheduled yet</div>
             <p className="mt-2 mb-4 max-w-md text-[14px] text-secondary">
               Get an email the moment the first Arsenal rooms open, and be there
@@ -527,7 +487,7 @@ export default async function HomePage() {
 
       {/* ===================== HOST CTA ===================== */}
       <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
-        <div className="flex flex-wrap items-center justify-between gap-5 rounded-[18px] border border-line bg-raised p-8">
+        <div className="flex flex-wrap items-center justify-between gap-5 border-2 border-primary bg-canvas p-8">
           <div>
             <div className={`${eyebrow} mb-2.5`}>FOR COMMENTATORS</div>
             <div className="display t-h3">Rather run the show?</div>
@@ -538,10 +498,10 @@ export default async function HomePage() {
             </p>
           </div>
           <div className="flex flex-col gap-2.5">
-            <Link href="/host" className="btn-grad-red rounded-[11px] px-6 py-3.5 text-center text-[14px] font-semibold text-white">
+            <Link href="/host" className="btn-grad-red px-6 py-3.5 text-center text-[14px] font-semibold">
               Start a room →
             </Link>
-            <Link href="/host/guide" className="rounded-[11px] border border-line px-6 py-3.5 text-center text-[14px] font-semibold text-primary hover:bg-canvas">
+            <Link href="/host/guide" className="border-2 border-primary px-6 py-3.5 text-center font-mono text-[13px] font-semibold tracking-[0.08em] text-primary hover:text-red">
               Host handbook
             </Link>
           </div>
@@ -549,15 +509,7 @@ export default async function HomePage() {
       </section>
 
       {/* ===================== CLOSING CTA ===================== */}
-      <section className="relative overflow-hidden border-t border-line px-5 py-20 text-center sm:px-10">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/2"
-          style={{
-            background:
-              "radial-gradient(50% 60% at 50% 50%, rgba(239,1,7,.2), transparent 70%)",
-          }}
-        />
+      <section className="relative border-t-[3px] border-double border-primary px-5 py-20 text-center sm:px-10">
         <div className="relative z-[2]">
           <h2 className="display mx-auto t-hero">The room&apos;s open. Pull up a seat.</h2>
           <p className="mx-auto mt-[18px] max-w-[500px] text-[17px] leading-[1.6] text-secondary">
@@ -568,14 +520,13 @@ export default async function HomePage() {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
               href="/matches"
-              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-[30px] py-4 text-[15px] font-semibold text-white"
+              className="btn-grad-red inline-flex items-center gap-2 px-[30px] py-4 text-[15px] font-semibold"
             >
               Find your next room <span aria-hidden="true">→</span>
-              <span aria-hidden="true" className="btn-shine" />
             </Link>
             <Link
               href="/signin"
-              className="inline-flex items-center rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary hover:bg-raised"
+              className="inline-flex items-center border-2 border-primary px-[26px] py-[14px] font-mono text-[14px] font-semibold tracking-[0.08em] text-primary hover:text-red"
             >
               Get matchday alerts
             </Link>
