@@ -36,7 +36,7 @@ const hostsOf = (r: ScheduleRoom) =>
   r.hostUsernames.length > 0 ? r.hostUsernames : [r.hostUsername];
 
 export default async function MatchesPage() {
-  const [groups, { user }, discussionRooms] = await Promise.all([
+  const [groups, { user, profile }, discussionRooms] = await Promise.all([
     loadMatchesSchedule(),
     getCurrentUserAndProfile(),
     loadDiscussionRooms(),
@@ -74,6 +74,14 @@ export default async function MatchesPage() {
     hero?.live && hero.room
       ? await loadLiveRoomPreview(hero.room.id, hero.f.sportmonksFixtureId)
       : null;
+
+  // listener count is host-only (founder 2026-09-12): shown on the hero only
+  // to that room's own hosts (or an admin); everyone else sees no audience size
+  const showListeners =
+    !!hero &&
+    !!profile &&
+    (profile.role === "admin" ||
+      (!!profile.username && hostsOf(hero.room).includes(profile.username)));
 
   // up next · Arsenal: Arsenal fixtures with a scheduled room, excluding the hero
   const upNext = flat
@@ -123,6 +131,7 @@ export default async function MatchesPage() {
             live={hero.live}
             preview={preview}
             signedIn={signedIn}
+            showListeners={showListeners}
           />
         ) : (
           /* honest empty state: no live/scheduled room in-window yet. Keeps the

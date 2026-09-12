@@ -1636,7 +1636,11 @@ export function RealtimeRoom(props: Props) {
         awayScore={liveAway}
         state={roomState}
         clock={clockText}
-        listeners={watching ?? undefined}
+        listeners={
+          // host-only (founder 2026-09-12): the live audience size is the
+          // host's number, not a public one
+          isRoomCommentator ? (watching ?? undefined) : undefined
+        }
         competition={room.competition || undefined}
         showOnMobile={isRoomCommentator}
         discussion={isDiscussion}

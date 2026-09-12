@@ -93,6 +93,7 @@ export function FeaturedRoom({
   live,
   preview,
   signedIn,
+  showListeners = false,
 }: {
   fixture: ScheduleFixture;
   room: ScheduleRoom;
@@ -101,6 +102,9 @@ export function FeaturedRoom({
   /** real listener count + live stats; only meaningful when `live` */
   preview: LivePreview | null;
   signedIn: boolean;
+  /** listener count is host-only (founder 2026-09-12); the page passes true
+   *  only when the viewer hosts this room (or is an admin) */
+  showListeners?: boolean;
 }) {
   const comp = fixture.round
     ? `${fixture.competition ?? "Premier League"} · ${fixture.round}`
@@ -203,7 +207,7 @@ export function FeaturedRoom({
                   <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white" />
                   Join the room →
                 </span>
-                {listeners > 0 && (
+                {showListeners && listeners > 0 && (
                   <span className="font-mono text-[12px] text-tertiary tabular-nums">
                     {listeningLine(listeners)}
                   </span>
