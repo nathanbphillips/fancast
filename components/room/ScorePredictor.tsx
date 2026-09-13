@@ -31,7 +31,7 @@ function Stepper({
           aria-label={`Fewer ${label} goals`}
           disabled={disabled || value <= 0}
           onClick={() => onChange(Math.max(0, value - 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-line text-sm hover:bg-raised disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center border border-line text-sm hover:bg-raised disabled:opacity-40"
         >
           −
         </button>
@@ -41,7 +41,7 @@ function Stepper({
           aria-label={`More ${label} goals`}
           disabled={disabled || value >= 9}
           onClick={() => onChange(Math.min(9, value + 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-md border border-line text-sm hover:bg-raised disabled:opacity-40"
+          className="flex h-7 w-7 items-center justify-center border border-line text-sm hover:bg-raised disabled:opacity-40"
         >
           +
         </button>
@@ -89,10 +89,10 @@ export function ScorePredictor({
   const mineLabel = mine ? `${mine.home}-${mine.away}` : null;
 
   return (
-    <div className="mt-3 rounded-xl border-[0.75px] border-line bg-surface p-3">
+    <div className="mt-3 border border-line bg-canvas p-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">Score predictor</p>
-        <span className="text-[11px] tabular-nums text-secondary">
+        <p className="font-mono text-[11px] font-semibold tracking-[0.1em] uppercase">Score predictor</p>
+        <span className="font-mono text-[11px] tabular-nums text-secondary">
           {agg.total === 0 ? "be the first" : `${agg.total} predicted`}
         </span>
       </div>
@@ -106,7 +106,7 @@ export function ScorePredictor({
             type="button"
             onClick={submit}
             disabled={busy}
-            className="mt-4 h-9 shrink-0 rounded-lg bg-red-fill px-4 text-sm font-semibold text-white disabled:opacity-60"
+            className="mt-4 h-9 shrink-0 bg-red-fill px-4 text-sm font-semibold text-on-red disabled:opacity-60"
           >
             {mine ? "Update" : "Predict"}
           </button>
@@ -126,9 +126,9 @@ export function ScorePredictor({
                 <span className={`w-10 shrink-0 tabular-nums ${isMine ? "font-bold text-green" : ""}`}>
                   {t.label}
                 </span>
-                <span className="h-2 flex-1 overflow-hidden rounded-full bg-raised">
+                <span className="h-2 flex-1 overflow-hidden bg-raised">
                   <span
-                    className={`block h-full rounded-full ${isMine ? "bg-green" : "bg-red-fill"}`}
+                    className={`block h-full ${isMine ? "bg-green" : "bg-red-fill"}`}
                     style={{ width: `${(t.count / max) * 100}%` }}
                   />
                 </span>

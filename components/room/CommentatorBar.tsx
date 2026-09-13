@@ -22,12 +22,12 @@ const LIVE_STATES: RoomState[] = [
 
 const STATUS_LABEL: Partial<Record<RoomState, string>> = {
   waiting: "Waiting room open",
-  pregame: "On air — pre-game",
-  live_1h: "On air — first half",
-  halftime: "On air — halftime",
-  live_2h: "On air — second half",
-  extra_time: "On air — extra time",
-  postgame: "On air — post-game",
+  pregame: "On air - pre-game",
+  live_1h: "On air - first half",
+  halftime: "On air - halftime",
+  live_2h: "On air - second half",
+  extra_time: "On air - extra time",
+  postgame: "On air - post-game",
   wrapped: "Show ended",
 };
 
@@ -97,7 +97,7 @@ export function CommentatorBar({
         return;
       }
       if (parsed.getTime() < Date.now()) {
-        setStartError("That time is in the past — pick a future time.");
+        setStartError("That time is in the past - pick a future time.");
         setStartStatus("error");
         return;
       }
@@ -185,7 +185,7 @@ export function CommentatorBar({
   return (
     <div className="flex min-h-[70px] flex-wrap items-center gap-3 px-4 py-2">
       <div className="shrink-0">
-        <p className="font-display text-[11px] font-bold tracking-wider text-secondary uppercase">
+        <p className="font-mono text-[11px] font-bold tracking-[0.1em] text-secondary uppercase">
           Status
         </p>
         <p className="flex items-center gap-2 text-sm font-semibold">
@@ -207,7 +207,7 @@ export function CommentatorBar({
         {speakerChips}
         {state === "waiting" && (
           <>
-            <div className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5 text-xs">
+            <div className="flex shrink-0 items-center gap-2 border border-line bg-canvas px-3 py-1.5 text-xs">
               <label className="flex items-center gap-2">
                 <span className="font-semibold text-secondary">Start time</span>
                 <input
@@ -216,14 +216,14 @@ export function CommentatorBar({
                   min={toLocalInputValue(new Date().toISOString())}
                   onChange={(e) => setStartDraft(e.target.value)}
                   aria-label="Planned broadcast start time"
-                  className="h-8 rounded-md border border-line bg-surface px-2 text-xs tabular-nums"
+                  className="h-8 border border-line bg-canvas px-2 text-xs tabular-nums"
                 />
               </label>
               <button
                 type="button"
                 disabled={!startDraft}
                 onClick={() => saveBroadcastStart(startDraft)}
-                className="h-8 rounded-md bg-red-fill px-2.5 font-bold text-white disabled:opacity-60"
+                className="h-8 bg-red-fill px-2.5 font-bold text-on-red disabled:opacity-60"
               >
                 Set
               </button>
@@ -231,7 +231,7 @@ export function CommentatorBar({
                 <button
                   type="button"
                   onClick={() => saveBroadcastStart(null)}
-                  className="h-8 rounded-md border border-line px-2 text-secondary hover:text-primary"
+                  className="h-8 border border-line px-2 text-secondary hover:text-primary"
                 >
                   Clear
                 </button>
@@ -250,10 +250,10 @@ export function CommentatorBar({
               role="switch"
               aria-checked={chatOpen}
               onClick={() => toggleFeature("chatOpen", !chatOpen)}
-              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold ${
+              className={`flex h-9 shrink-0 items-center gap-1.5 border px-3 text-xs font-semibold ${
                 chatOpen
                   ? "border-green text-green"
-                  : "border-line bg-raised text-secondary hover:text-primary"
+                  : "border-line bg-canvas text-secondary hover:text-primary"
               }`}
             >
               <span aria-hidden="true" className={`h-2 w-2 rounded-full ${chatOpen ? "bg-green" : "bg-line"}`} />
@@ -264,10 +264,10 @@ export function CommentatorBar({
               role="switch"
               aria-checked={linksOpen}
               onClick={() => toggleFeature("linksOpen", !linksOpen)}
-              className={`flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold ${
+              className={`flex h-9 shrink-0 items-center gap-1.5 border px-3 text-xs font-semibold ${
                 linksOpen
                   ? "border-green text-green"
-                  : "border-line bg-raised text-secondary hover:text-primary"
+                  : "border-line bg-canvas text-secondary hover:text-primary"
               }`}
             >
               <span aria-hidden="true" className={`h-2 w-2 rounded-full ${linksOpen ? "bg-green" : "bg-line"}`} />
@@ -279,14 +279,14 @@ export function CommentatorBar({
           requests.map((r) => (
             <div
               key={r.id}
-              className="flex shrink-0 items-center gap-2 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5"
+              className="flex shrink-0 items-center gap-2 border border-line bg-canvas px-3 py-1.5"
             >
               <div className="max-w-[200px]">
                 <p className="truncate text-xs font-semibold">
                   {r.author?.username}
                   {(r.caller_flags?.count ?? 0) > 0 && (
                     <span
-                      className="ml-1.5 rounded-sm bg-red-fill px-1 py-0.5 text-[10px] font-bold text-white"
+                      className="ml-1.5 bg-red-fill px-1 py-0.5 text-[10px] font-bold text-on-red"
                       title={r.caller_flags!.notes
                         .map((n) => `${n.by}: ${n.note ?? "(no note)"}`)
                         .join("\n")}
@@ -298,7 +298,7 @@ export function CommentatorBar({
                 <p className="truncate text-xs text-secondary">{r.topic}</p>
                 {(r.caller_flags?.count ?? 0) > 0 && r.caller_flags!.notes[0] && (
                   <p className="truncate text-[10px] text-red">
-                    “{r.caller_flags!.notes[0].note ?? "flagged"}” —{" "}
+                    “{r.caller_flags!.notes[0].note ?? "flagged"}” ·{" "}
                     {r.caller_flags!.notes[0].by}
                   </p>
                 )}
@@ -307,7 +307,7 @@ export function CommentatorBar({
                 type="button"
                 disabled={busyReqId === r.id}
                 onClick={() => handleRequest(r.id, "accepted")}
-                className="h-9 rounded-md bg-green px-2.5 text-xs font-bold text-white disabled:opacity-60"
+                className="h-9 bg-green px-2.5 text-xs font-bold text-canvas disabled:opacity-60"
               >
                 Accept
               </button>
@@ -316,7 +316,7 @@ export function CommentatorBar({
                 disabled={busyReqId === r.id}
                 onClick={() => handleRequest(r.id, "dismissed")}
                 aria-label={`Dismiss request from ${r.author?.username}`}
-                className="h-9 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
+                className="h-9 border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
               >
                 Dismiss
               </button>
@@ -342,10 +342,10 @@ export function CommentatorBar({
             onClick={() => transition("start")}
             title={
               startDisabled
-                ? "Start your mic first — the broadcast needs a live mic (FR-3.3)"
+                ? "Start your mic first - the broadcast needs a live mic (FR-3.3)"
                 : "Opens chat, links, and questions for everyone"
             }
-            className="h-11 rounded-lg bg-red-fill px-5 text-sm font-bold text-white disabled:opacity-60"
+            className="h-11 bg-red-fill px-5 text-sm font-bold text-on-red disabled:opacity-60"
           >
             Start Broadcast
           </button>
@@ -357,14 +357,14 @@ export function CommentatorBar({
                 type="button"
                 disabled={busy}
                 onClick={() => transition("end")}
-                className="h-11 rounded-lg bg-red-fill px-4 text-sm font-bold text-white disabled:opacity-60"
+                className="h-11 bg-red-fill px-4 text-sm font-bold text-on-red disabled:opacity-60"
               >
                 Confirm end
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmEnd(false)}
-                className="h-11 rounded-lg border border-line px-3 text-sm"
+                className="h-11 border border-line px-3 text-sm"
               >
                 Keep going
               </button>
@@ -373,7 +373,7 @@ export function CommentatorBar({
             <button
               type="button"
               onClick={() => setConfirmEnd(true)}
-              className="h-11 rounded-lg border border-line px-5 text-sm font-semibold hover:bg-raised"
+              className="h-11 border border-line px-5 text-sm font-semibold hover:bg-raised"
             >
               End Broadcast
             </button>

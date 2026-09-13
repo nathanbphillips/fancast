@@ -33,7 +33,7 @@ export function OpenWaitingButton({ fixtureId }: { fixtureId: number }) {
         type="button"
         disabled={busy}
         onClick={open}
-        className="flex h-11 items-center rounded-lg border border-line px-4 text-sm font-semibold text-primary hover:bg-raised disabled:opacity-60"
+        className="flex h-11 items-center border-2 border-primary px-4 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red disabled:opacity-60"
       >
         {busy ? "Opening…" : "Open waiting room"}
       </button>

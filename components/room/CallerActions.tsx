@@ -64,7 +64,7 @@ export function CallerActions({
         ⚑
       </button>
       {open && (
-        <div className="absolute right-0 bottom-full z-50 mb-1 w-64 rounded-xl border-[0.75px] border-line bg-surface p-3 shadow-lg">
+        <div className="absolute right-0 bottom-full z-50 mb-1 w-64 border-2 border-primary bg-canvas p-3">
           {done ? (
             <p className="text-sm font-semibold text-green">✓ {done}</p>
           ) : (
@@ -75,16 +75,16 @@ export function CallerActions({
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 maxLength={200}
-                placeholder="Note (optional) — other commentators see it"
+                placeholder="Note (optional) - other commentators see it"
                 aria-label="Flag note"
-                className="mt-2 h-9 w-full rounded-md border border-line bg-raised px-2 text-xs placeholder:text-secondary"
+                className="mt-2 h-9 w-full border border-line bg-canvas px-2 text-xs placeholder:text-secondary"
               />
               <div className="mt-2 flex gap-2">
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => act("flag")}
-                  className="h-9 flex-1 rounded-md bg-red-fill text-xs font-bold text-white disabled:opacity-60"
+                  className="h-9 flex-1 bg-red-fill text-xs font-bold text-on-red disabled:opacity-60"
                 >
                   Flag caller
                 </button>
@@ -93,7 +93,7 @@ export function CallerActions({
                     type="button"
                     disabled={busy}
                     onClick={() => act("block")}
-                    className="h-9 flex-1 rounded-md bg-red-fill text-xs font-bold text-white disabled:opacity-60"
+                    className="h-9 flex-1 bg-red-fill text-xs font-bold text-on-red disabled:opacity-60"
                   >
                     Confirm block
                   </button>
@@ -101,7 +101,7 @@ export function CallerActions({
                   <button
                     type="button"
                     onClick={() => setConfirmBlock(true)}
-                    className="h-9 flex-1 rounded-md border border-red text-xs font-semibold text-red"
+                    className="h-9 flex-1 border-2 border-red text-xs font-semibold text-red"
                   >
                     Block call-ins
                   </button>

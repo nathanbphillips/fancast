@@ -68,7 +68,7 @@ export function RecordingControls({
       <span
         // paused = inverted pill: unmistakable next to the red REC chip and AA
         // in both themes (the yellow-card amber is 1.9:1 on the light surface)
-        className={`flex h-9 items-center gap-1.5 rounded-md border px-2 font-mono text-[10px] tracking-[0.06em] tabular-nums ${
+        className={`flex h-9 items-center gap-1.5 border px-2 font-mono text-[10px] tracking-[0.06em] tabular-nums ${
           paused ? "border-inverted bg-inverted text-inverted-fg" : "border-line text-secondary"
         }`}
         title={
@@ -96,9 +96,9 @@ export function RecordingControls({
             ? "Recording picks up again from here"
             : "Listeners keep hearing you; the recording skips until you resume"
         }
-        className={`h-9 rounded-md px-3 text-xs font-semibold disabled:opacity-60 ${
+        className={`h-9 px-3 text-xs font-semibold disabled:opacity-60 ${
           paused
-            ? "bg-red-fill text-white"
+            ? "bg-red-fill text-on-red"
             : "border border-line text-secondary hover:text-primary"
         }`}
       >

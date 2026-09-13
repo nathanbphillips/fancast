@@ -91,7 +91,7 @@ export function BugReporter({
     // safe-area inset so it tracks the tab bar on notched phones.
     <div className="fixed right-3 bottom-[calc(11rem+env(safe-area-inset-bottom))] z-50 lg:right-5 lg:bottom-24">
       {open ? (
-        <div className="w-[min(92vw,340px)] overflow-hidden rounded-2xl border border-line bg-surface shadow-raised">
+        <div className="w-[min(92vw,340px)] overflow-hidden border-2 border-primary bg-canvas">
           <div className="flex items-center justify-between border-b border-line px-4 py-2.5">
             <span className="flex items-center gap-2 text-sm font-bold">
               <BugIcon /> Report a bug
@@ -100,7 +100,7 @@ export function BugReporter({
               type="button"
               onClick={close}
               aria-label="Close"
-              className="rounded p-1 text-secondary transition-colors hover:text-primary"
+              className="p-1 text-secondary transition-colors hover:text-primary"
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" aria-hidden="true">
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -111,7 +111,7 @@ export function BugReporter({
 
           {sent ? (
             <div className="p-5 text-center">
-              <p className="text-sm font-semibold">Thanks — logged it.</p>
+              <p className="text-sm font-semibold">Thanks - logged it.</p>
               <p className="mt-1 text-xs text-secondary">
                 We read every report during testing.
               </p>
@@ -119,14 +119,14 @@ export function BugReporter({
                 <button
                   type="button"
                   onClick={() => setSent(false)}
-                  className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-raised"
+                  className="border border-line px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-raised"
                 >
                   Report another
                 </button>
                 <button
                   type="button"
                   onClick={close}
-                  className="rounded-lg bg-red-fill px-3 py-1.5 text-xs font-semibold text-white"
+                  className="bg-red-fill px-3 py-1.5 text-xs font-semibold text-on-red"
                 >
                   Done
                 </button>
@@ -140,9 +140,9 @@ export function BugReporter({
                     key={c}
                     type="button"
                     onClick={() => setCategory(category === c ? "" : c)}
-                    className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    className={`border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
                       category === c
-                        ? "border-red bg-red/10 text-red"
+                        ? "border-red text-red"
                         : "border-line text-secondary hover:text-primary"
                     }`}
                   >
@@ -157,7 +157,7 @@ export function BugReporter({
                 rows={4}
                 placeholder="What happened? What were you doing when it broke?"
                 aria-label="Bug description"
-                className="w-full resize-none rounded-lg border border-line bg-inset px-3 py-2 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+                className="w-full resize-none border border-line bg-inset px-3 py-2 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
               />
               {error && (
                 <p role="alert" className="text-xs text-red">
@@ -171,7 +171,7 @@ export function BugReporter({
               <button
                 type="submit"
                 disabled={busy || description.trim().length < 3}
-                className="h-10 w-full rounded-lg bg-red-fill text-sm font-semibold text-white transition-opacity disabled:opacity-60"
+                className="h-10 w-full bg-red-fill text-sm font-semibold text-on-red transition-opacity disabled:opacity-60"
               >
                 {busy ? "Sending…" : "Send report"}
               </button>
@@ -182,7 +182,7 @@ export function BugReporter({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="flex items-center gap-1.5 rounded-full border border-line bg-surface/95 px-3.5 py-2 text-xs font-semibold text-secondary shadow-raised backdrop-blur-sm transition-colors hover:text-primary"
+          className="flex items-center gap-1.5 border border-line bg-canvas px-3.5 py-2 text-xs font-semibold text-secondary transition-colors hover:text-primary"
         >
           <BugIcon /> Report a bug
         </button>

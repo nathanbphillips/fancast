@@ -40,7 +40,7 @@ export function ClockControls({
       type="button"
       disabled={busy}
       onClick={() => send(action)}
-      className="h-9 rounded-md bg-red-fill px-3 text-xs font-bold text-white disabled:opacity-60"
+      className="h-9 bg-red-fill px-3 text-xs font-bold text-on-red disabled:opacity-60"
     >
       {label}
     </button>
@@ -53,7 +53,7 @@ export function ClockControls({
         disabled={busy}
         onClick={() => send("adjust", -1)}
         aria-label="Clock back one second"
-        className="h-9 w-9 rounded-md border border-line text-xs font-bold tabular-nums hover:bg-raised disabled:opacity-60"
+        className="h-9 w-9 border border-line text-xs font-bold tabular-nums hover:bg-raised disabled:opacity-60"
       >
         −1s
       </button>
@@ -62,7 +62,7 @@ export function ClockControls({
         disabled={busy}
         onClick={() => send("adjust", 1)}
         aria-label="Clock forward one second"
-        className="h-9 w-9 rounded-md border border-line text-xs font-bold tabular-nums hover:bg-raised disabled:opacity-60"
+        className="h-9 w-9 border border-line text-xs font-bold tabular-nums hover:bg-raised disabled:opacity-60"
       >
         +1s
       </button>

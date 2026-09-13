@@ -14,7 +14,7 @@ import { useEffect, type ReactNode } from "react";
 /** A control name as it appears in the room, so steps point at real buttons. */
 function K({ children }: { children: ReactNode }) {
   return (
-    <span className="rounded-[5px] border border-line bg-inset px-1.5 py-0.5 font-mono text-[11px] font-semibold tracking-[0.02em] text-primary">
+    <span className="border border-line bg-inset px-1.5 py-0.5 font-mono text-[11px] font-semibold tracking-[0.02em] text-primary">
       {children}
     </span>
   );
@@ -140,11 +140,11 @@ export function HowThisWorks({
       aria-modal="true"
       aria-label="How this works"
       onClick={onClose}
-      className="fixed inset-0 z-[60] flex bg-canvas/75 backdrop-blur-sm sm:items-center sm:justify-center sm:p-6"
+      className="fixed inset-0 z-[60] flex bg-canvas/90 sm:items-center sm:justify-center sm:p-6"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative flex h-full w-full flex-col bg-surface shadow-[var(--shadow-raised)] sm:h-auto sm:max-h-[86vh] sm:max-w-2xl sm:rounded-2xl sm:border sm:border-line"
+        className="relative flex h-full w-full flex-col bg-canvas sm:h-auto sm:max-h-[86vh] sm:max-w-2xl sm:border-2 sm:border-primary"
       >
         <header className="flex shrink-0 items-center justify-between border-b border-line px-5 py-3.5">
           <div>
@@ -157,7 +157,7 @@ export function HowThisWorks({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-lg text-secondary transition-colors hover:bg-raised hover:text-primary"
+            className="flex h-10 w-10 shrink-0 items-center justify-center text-lg text-secondary transition-colors hover:bg-raised hover:text-primary"
           >
             ✕
           </button>
@@ -170,7 +170,7 @@ export function HowThisWorks({
           <ol className="list-none space-y-5 pl-0">
             {SECTIONS.map((s, i) => (
               <li key={s.title} className="flex gap-3.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-fill font-mono text-xs font-bold text-white tabular-nums">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-fill font-mono text-xs font-bold text-on-red tabular-nums">
                   {i + 1}
                 </span>
                 <div className="min-w-0">
@@ -183,7 +183,7 @@ export function HowThisWorks({
             ))}
           </ol>
 
-          <div className="mt-6 rounded-xl border border-line bg-raised px-4 py-3 text-[13px] leading-relaxed text-secondary">
+          <div className="mt-6 border border-line bg-canvas px-4 py-3 text-[13px] leading-relaxed text-secondary">
             <span className="font-semibold text-primary">On your phone:</span>{" "}
             the bottom bar moves you between FAQ, Chat, Polls, Stats and Call in.
             Tap the audio bar at the top to open the full sync and volume
@@ -193,7 +193,7 @@ export function HowThisWorks({
           <button
             type="button"
             onClick={onClose}
-            className="btn-grad-red mt-6 flex h-11 w-full items-center justify-center rounded-lg text-sm font-bold text-white"
+            className="btn-grad-red mt-6 flex h-11 w-full items-center justify-center text-sm font-bold"
           >
             Got it, let&apos;s go
           </button>

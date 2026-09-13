@@ -66,7 +66,7 @@ export function RosterPanel({ roomId }: { roomId: string }) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex h-9 items-center gap-1.5 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary"
+        className="flex h-9 items-center gap-1.5 border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary"
       >
         <svg
           viewBox="0 0 24 24"
@@ -88,7 +88,7 @@ export function RosterPanel({ roomId }: { roomId: string }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 bottom-full z-50 mb-2 w-64 rounded-xl border border-line bg-surface p-2 shadow-[var(--shadow-raised)]">
+        <div className="absolute right-0 bottom-full z-50 mb-2 w-64 border-2 border-primary bg-canvas p-2">
           <div className="flex items-center justify-between px-2 py-1">
             <p className="font-mono text-[10px] tracking-[0.08em] text-secondary uppercase">
               In the room
@@ -106,7 +106,7 @@ export function RosterPanel({ roomId }: { roomId: string }) {
             {roster?.members.map((m) => (
               <li
                 key={m.userId}
-                className="flex items-center gap-2 rounded-md px-2 py-1.5"
+                className="flex items-center gap-2 px-2 py-1.5"
               >
                 <Avatar src={m.avatarUrl} name={m.username} size={26} />
                 <span className="truncate text-sm font-semibold">

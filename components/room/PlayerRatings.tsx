@@ -63,7 +63,7 @@ export function PlayerRatings({
             <span className="ml-0.5 text-[10px] text-secondary">({a.count})</span>
           </span>
         ) : (
-          <span className="shrink-0 text-[10px] text-secondary">—</span>
+          <span className="shrink-0 text-[10px] text-secondary">·</span>
         )}
         {open && (
           <select
@@ -71,7 +71,7 @@ export function PlayerRatings({
             disabled={busy === p.playerId}
             onChange={(e) => rate(p.playerId, Number(e.target.value))}
             aria-label={`Rate ${p.name}`}
-            className="h-7 shrink-0 rounded-md border border-line bg-surface text-xs tabular-nums disabled:opacity-60"
+            className="h-7 shrink-0 border border-line bg-canvas text-xs tabular-nums disabled:opacity-60"
           >
             <option value="" disabled>
               rate
@@ -115,8 +115,8 @@ export function PlayerRatings({
   };
 
   return (
-    <div className="mt-3 rounded-xl border-[0.75px] border-line bg-surface p-3">
-      <p className="text-sm font-semibold">Player ratings</p>
+    <div className="mt-3 border border-line bg-canvas p-3">
+      <p className="font-mono text-[11px] font-semibold tracking-[0.1em] uppercase">Player ratings</p>
       {hint && <p className="mt-0.5 text-[11px] text-secondary">{hint}</p>}
       <div className="mt-2 space-y-3">
         {sideBlock("home", homeName)}

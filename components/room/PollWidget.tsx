@@ -78,10 +78,10 @@ export function PollWidget({
   }
 
   return (
-    <div className="mt-3 rounded-xl border-[0.75px] border-line bg-surface p-3">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold">{poll.question}</p>
-        <span className="shrink-0 text-[11px] tabular-nums text-secondary">
+    <div className="mt-3 border-2 border-primary bg-canvas p-3">
+      <div className="flex items-start justify-between gap-2 border-b-[3px] border-double border-primary pb-2">
+        <p className="display text-sm">{poll.question}</p>
+        <span className="shrink-0 font-mono text-[11px] tabular-nums text-secondary">
           {open ? "live" : "closed"} · {total}
         </span>
       </div>
@@ -98,18 +98,18 @@ export function PollWidget({
                 disabled={!tappable || busy}
                 onClick={() => vote(i)}
                 aria-pressed={isMine}
-                className={`relative block w-full overflow-hidden rounded-lg border px-3 py-1.5 text-left text-xs ${
-                  isMine ? "border-red" : "border-line"
-                } ${tappable ? "hover:bg-raised" : "cursor-default"}`}
+                className={`relative block w-full overflow-hidden border px-3 py-1.5 text-left text-xs ${
+                  isMine ? "border-primary bg-inverted text-inverted-fg" : "border-line"
+                } ${tappable && !isMine ? "hover:bg-raised" : ""} ${tappable ? "" : "cursor-default"}`}
               >
                 <span
                   aria-hidden
-                  className="absolute inset-y-0 left-0 bg-raised"
+                  className={`absolute inset-y-0 left-0 ${isMine ? "bg-inverted-fg/20" : "bg-raised"}`}
                   style={{ width: `${pct}%` }}
                 />
                 <span className="relative flex justify-between">
-                  <span className={`truncate ${isMine ? "font-semibold text-red" : ""}`}>{opt}</span>
-                  <span className="ml-2 shrink-0 tabular-nums text-secondary">{pct}%</span>
+                  <span className={`truncate ${isMine ? "font-semibold" : ""}`}>{opt}</span>
+                  <span className={`ml-2 shrink-0 tabular-nums ${isMine ? "" : "text-secondary"}`}>{pct}%</span>
                 </span>
               </button>
             </li>
@@ -121,7 +121,7 @@ export function PollWidget({
           type="button"
           onClick={close}
           disabled={busy}
-          className="mt-2 w-full rounded-lg border border-line py-1.5 text-xs font-semibold text-secondary hover:bg-raised disabled:opacity-60"
+          className="mt-2 w-full border border-line py-1.5 text-xs font-semibold text-secondary hover:bg-raised disabled:opacity-60"
         >
           Close poll
         </button>
@@ -173,7 +173,7 @@ export function PollComposer({ roomId }: { roomId: string }) {
       <button
         type="button"
         onClick={() => setOpenForm(true)}
-        className="mt-3 w-full rounded-lg border border-line py-1.5 text-xs font-semibold text-secondary hover:bg-raised"
+        className="mt-3 w-full border border-line py-1.5 text-xs font-semibold text-secondary hover:bg-raised"
       >
         + New poll
       </button>
@@ -181,7 +181,7 @@ export function PollComposer({ roomId }: { roomId: string }) {
   }
 
   return (
-    <form onSubmit={create} className="mt-3 space-y-2 rounded-xl border-[0.75px] border-line bg-surface p-3">
+    <form onSubmit={create} className="mt-3 space-y-2 border border-line bg-canvas p-3">
       <input
         type="text"
         value={question}
@@ -189,7 +189,7 @@ export function PollComposer({ roomId }: { roomId: string }) {
         maxLength={140}
         placeholder="Poll question"
         aria-label="Poll question"
-        className="h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+        className="h-9 w-full border border-line bg-canvas px-3 text-sm placeholder:text-secondary"
       />
       {options.map((opt, i) => (
         <input
@@ -200,7 +200,7 @@ export function PollComposer({ roomId }: { roomId: string }) {
           maxLength={60}
           placeholder={`Option ${i + 1}`}
           aria-label={`Option ${i + 1}`}
-          className="h-9 w-full rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+          className="h-9 w-full border border-line bg-canvas px-3 text-sm placeholder:text-secondary"
         />
       ))}
       {options.length < 4 && (
@@ -221,14 +221,14 @@ export function PollComposer({ roomId }: { roomId: string }) {
         <button
           type="submit"
           disabled={!valid || busy}
-          className="h-9 flex-1 rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
+          className="h-9 flex-1 bg-red-fill text-sm font-semibold text-on-red disabled:opacity-60"
         >
           {busy ? "…" : "Start poll"}
         </button>
         <button
           type="button"
           onClick={() => setOpenForm(false)}
-          className="h-9 rounded-lg border border-line px-3 text-sm text-secondary hover:bg-raised"
+          className="h-9 border border-line px-3 text-sm text-secondary hover:bg-raised"
         >
           Cancel
         </button>

@@ -19,26 +19,26 @@ function RoomSkeleton() {
     >
       {/* faux match header */}
       <div className="flex h-14 items-center justify-between border-b border-line px-5">
-        <div className="h-5 w-32 rounded bg-line" />
-        <div className="h-7 w-28 rounded-full bg-line" />
-        <div className="h-5 w-24 rounded bg-line" />
+        <div className="h-5 w-32 bg-line" />
+        <div className="h-7 w-28 bg-line" />
+        <div className="h-5 w-24 bg-line" />
       </div>
 
       {/* faux body: stats | chat */}
       <div className="grid gap-4 p-5 lg:grid-cols-[1fr_2fr]">
-        <div className="space-y-3 rounded-xl border border-line p-4">
-          <div className="h-4 w-24 rounded bg-line" />
+        <div className="space-y-3 border border-line p-4">
+          <div className="h-4 w-24 bg-line" />
           {["w-full", "w-11/12", "w-5/6", "w-full", "w-3/4", "w-full"].map((w, i) => (
-            <div key={i} className={`h-2.5 rounded bg-line ${w}`} />
+            <div key={i} className={`h-2.5 bg-line ${w}`} />
           ))}
         </div>
-        <div className="space-y-4 rounded-xl border border-line p-4">
+        <div className="space-y-4 border border-line p-4">
           {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="flex gap-3">
               <div className="h-8 w-8 shrink-0 rounded-full bg-line" />
               <div className="flex-1 space-y-1.5">
-                <div className="h-2.5 w-24 rounded bg-line" />
-                <div className={`h-2.5 rounded bg-line ${i % 2 ? "w-4/5" : "w-3/5"}`} />
+                <div className="h-2.5 w-24 bg-line" />
+                <div className={`h-2.5 bg-line ${i % 2 ? "w-4/5" : "w-3/5"}`} />
               </div>
             </div>
           ))}
@@ -48,8 +48,8 @@ function RoomSkeleton() {
       {/* faux audio dock */}
       <div className="absolute inset-x-0 bottom-0 flex h-16 items-center gap-3 border-t border-line px-5">
         <div className="h-9 w-9 rounded-full bg-line" />
-        <div className="h-8 flex-1 rounded bg-line" />
-        <div className="h-9 w-24 rounded bg-line" />
+        <div className="h-8 flex-1 bg-line" />
+        <div className="h-9 w-24 bg-line" />
       </div>
     </div>
   );
@@ -93,26 +93,20 @@ export function WaitingRoomScreen({
         <Logo />
       </Link>
 
-      <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-white/10 p-8 text-center text-white"
-        style={{
-          background: "#0a0a0c",
-          boxShadow: "0 40px 90px -30px rgba(0,0,0,.85)",
-        }}
-      >
+      <div className="relative z-10 w-full max-w-md border-2 border-primary bg-canvas p-8 text-center">
         <div className="font-mono text-[11px] tracking-[0.12em] text-red uppercase">
           Doors open soon
         </div>
         <h1 className="display mt-3 t-h3">
           {away ? (
             <>
-              {home} <span className="text-white/45">v</span> {away}
+              {home} <span className="text-tertiary">v</span> {away}
             </>
           ) : (
             home
           )}
         </h1>
-        <p className="mx-auto mt-2.5 max-w-[320px] text-sm text-white/60">
+        <p className="mx-auto mt-2.5 max-w-[320px] text-sm text-secondary">
           The room isn&apos;t open yet. This page updates on its own the moment
           {hostUsername ? ` @${hostUsername}` : " the host"} goes live.
         </p>
@@ -130,7 +124,7 @@ export function WaitingRoomScreen({
             variant="primary"
             label="RSVP for notifications"
           />
-          <span className="font-mono text-[11px] text-white/45">
+          <span className="font-mono text-[11px] text-tertiary">
             {initialRsvped
               ? "You're on the list."
               : "We'll ping you when it opens."}

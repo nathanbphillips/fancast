@@ -75,7 +75,7 @@ export function MatchFactsPanel({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search the facts"
           aria-label="Search match facts"
-          className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-inset px-2.5 text-sm outline-none focus:border-red"
+          className="h-8 min-w-0 flex-1 border border-line bg-inset px-2.5 text-sm outline-none focus:border-red"
         />
         <span
           className="shrink-0 font-mono text-[11px] text-secondary tabular-nums"
@@ -87,7 +87,7 @@ export function MatchFactsPanel({
           type="button"
           onClick={() => void load()}
           disabled={loading}
-          className="h-8 shrink-0 rounded-lg border border-line px-2.5 text-xs font-semibold hover:bg-raised disabled:opacity-50"
+          className="h-8 shrink-0 border border-line px-2.5 text-xs font-semibold hover:bg-raised disabled:opacity-50"
         >
           {loading ? "Loading" : "Refresh"}
         </button>
@@ -100,12 +100,12 @@ export function MatchFactsPanel({
         )}
 
         {state === "error" && (
-          <div className="rounded-lg border border-line bg-raised p-3">
+          <div className="border border-line bg-canvas p-3">
             <p className="text-sm text-primary">Couldn&apos;t load the match facts.</p>
             <button
               type="button"
               onClick={() => void load()}
-              className="mt-2 h-8 rounded-lg border border-line px-3 text-xs font-semibold hover:bg-surface"
+              className="mt-2 h-8 border border-line px-3 text-xs font-semibold hover:bg-raised"
             >
               Try again
             </button>
@@ -114,7 +114,7 @@ export function MatchFactsPanel({
 
 
         {data?.stale && (
-          <p className="mb-3 rounded-lg border border-line bg-raised px-3 py-2 text-xs text-secondary">
+          <p className="mb-3 border border-line bg-canvas px-3 py-2 text-xs text-secondary">
             Showing the last set we loaded: the live fetch didn&apos;t come back.
           </p>
         )}

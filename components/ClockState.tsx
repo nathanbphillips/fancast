@@ -48,7 +48,7 @@ export function ClockState({
 
   if (period && clock) {
     return (
-      <span className={`font-bold tabular-nums ${className}`}>
+      <span className={`font-mono font-bold tabular-nums ${className}`}>
         <span className="mr-1.5 text-secondary">{period}</span>
         {clock}
       </span>
@@ -56,7 +56,7 @@ export function ClockState({
   }
 
   return (
-    <span className={`font-bold tracking-wide ${className}`}>
+    <span className={`font-mono font-bold tracking-wide ${className}`}>
       {STATE_WORD[state] ?? ""}
     </span>
   );

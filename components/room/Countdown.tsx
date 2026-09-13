@@ -49,14 +49,14 @@ export function Countdown({
           <p className="text-lg font-bold">Any moment now…</p>
         ) : (
           <>
-            <p className="text-[11px] font-bold tracking-[0.12em] uppercase opacity-60">
+            <p className="font-mono text-[11px] font-bold tracking-[0.12em] uppercase opacity-60">
               {heading}
             </p>
             <p
               className="mt-1.5 text-[44px] leading-none font-bold tabular-nums"
               suppressHydrationWarning
             >
-              {msLeft === null ? "—" : label(msLeft)}
+              {msLeft === null ? "·" : label(msLeft)}
             </p>
           </>
         )}
@@ -65,7 +65,7 @@ export function Countdown({
   }
 
   return (
-    <div className="m-2 rounded-xl border-[0.75px] border-line bg-surface p-4 text-center">
+    <div className="m-2 border border-line bg-canvas p-4 text-center">
       {target === null ? (
         <>
           <p className="text-lg font-bold">Show starts soon.</p>
@@ -80,14 +80,14 @@ export function Countdown({
         </>
       ) : (
         <>
-          <p className="text-xs font-bold tracking-wide text-secondary uppercase">
+          <p className="font-mono text-xs font-bold tracking-wide text-secondary uppercase">
             {heading}
           </p>
           <p
             className="mt-1 text-3xl font-bold tabular-nums"
             suppressHydrationWarning
           >
-            {msLeft === null ? "—" : label(msLeft)}
+            {msLeft === null ? "·" : label(msLeft)}
           </p>
           <p className="mt-1 text-sm text-secondary">Show starts soon.</p>
         </>

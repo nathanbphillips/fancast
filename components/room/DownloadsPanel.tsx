@@ -65,7 +65,7 @@ function CopyBtn({ text, label }: { text: string; label: string }) {
           setTimeout(() => setCopied(false), 1500);
         });
       }}
-      className="h-8 shrink-0 rounded-md border border-line px-2 text-[11px] font-semibold text-secondary hover:text-primary"
+      className="h-8 shrink-0 border border-line px-2 text-[11px] font-semibold text-secondary hover:text-primary"
     >
       {copied ? "Copied" : "Copy"}
     </button>
@@ -82,7 +82,7 @@ function NotesBlock({
 }) {
   const txt = `${note.title}\n\n${note.description}\n`;
   return (
-    <div className="rounded-lg border-[0.75px] border-line bg-raised p-3">
+    <div className="border border-line bg-canvas p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="font-mono text-[10px] tracking-[0.08em] text-secondary uppercase">{heading}</p>
         <button
@@ -95,7 +95,7 @@ function NotesBlock({
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 5000);
           }}
-          className="h-8 shrink-0 rounded-md border border-line px-2 text-[11px] font-semibold text-secondary hover:text-primary"
+          className="h-8 shrink-0 border border-line px-2 text-[11px] font-semibold text-secondary hover:text-primary"
         >
           Download .txt
         </button>
@@ -113,13 +113,13 @@ function NotesBlock({
 }
 
 function fmtDuration(s: number | null): string {
-  if (s == null) return "—";
+  if (s == null) return "·";
   const m = Math.floor(s / 60);
   const sec = Math.round(s % 60);
   return `${m}:${String(sec).padStart(2, "0")}`;
 }
 function fmtSize(b: number | null): string {
-  if (b == null) return "—";
+  if (b == null) return "·";
   return b > 1024 * 1024
     ? `${(b / 1024 / 1024).toFixed(1)} MB`
     : `${Math.max(1, Math.round(b / 1024))} KB`;
@@ -256,7 +256,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
     <div className="mx-auto max-w-2xl space-y-5 p-4">
       <div>
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-lg font-bold">Your recording</h2>
+          <h2 className="display text-lg">Your recording</h2>
           {/* these files outlive the room — point the host at the library */}
           <a
             href="/host/recordings"
@@ -269,7 +269,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           {rec.status === "processing" &&
             ((data.attempts ?? 0) > 1 || data.stalled
               ? `A long show can take several passes. It retries by itself while this page is open (attempt ${Math.max(1, data.attempts ?? 1)}).`
-              : "Cutting your segments — this can take a few minutes.")}
+              : "Cutting your segments - this can take a few minutes.")}
           {rec.status === "ready" &&
             (data.files.length === 0
               ? `Processed · ${fmtDuration(rec.durationSeconds)} total`
@@ -285,7 +285,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           {rec.status === "failed" && `Processing failed: ${rec.error ?? "unknown error"}`}
           {rec.status === "empty" && "No audio was captured for this session."}
           {rec.status === "recording" &&
-            "Finishing up — your files appear here automatically."}
+            "Finishing up - your files appear here automatically."}
         </p>
         {data.fullNote && (rec.status === "ready" || rec.status === "damaged") && (
           <p className="mt-0.5 text-xs text-secondary">{data.fullNote}</p>
@@ -306,7 +306,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
       {/* A damaged recording downloads perfectly well, which is exactly the
           problem: without this the host finds out by pressing play. */}
       {rec.status === "damaged" && (
-        <div className="rounded-xl border border-red/50 bg-red/10 p-4">
+        <div className="border-2 border-red bg-canvas p-4">
           <p className="text-sm font-bold text-red">
             This recording does not match your broadcast
           </p>
@@ -327,7 +327,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
       )}
 
       {rec.status === "recording" && (
-        <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
+        <div className="flex items-center gap-3 border border-line bg-canvas p-4">
           <span className="h-3 w-3 animate-live-pulse rounded-full bg-red-fill" aria-hidden="true" />
           <span className="flex-1 text-sm">
             Wrapping up the session…
@@ -337,7 +337,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           <button
             type="button"
             onClick={triggerProcess}
-            className="h-9 shrink-0 rounded-md border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
+            className="h-9 shrink-0 border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
           >
             Process now
           </button>
@@ -345,7 +345,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
       )}
 
       {rec.status === "processing" && (
-        <div className="flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
+        <div className="flex items-center gap-3 border border-line bg-canvas p-4">
           <span className="h-3 w-3 animate-live-pulse rounded-full bg-red-fill" aria-hidden="true" />
           <span className="flex-1 text-sm">Processing…</span>
           {/* a crashed/timed-out run is reclaimable after a stale window;
@@ -353,7 +353,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           <button
             type="button"
             onClick={triggerProcess}
-            className="h-9 shrink-0 rounded-md border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
+            className="h-9 shrink-0 border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
           >
             Retry if stuck
           </button>
@@ -365,7 +365,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           {data.zipUrl && (
             <a
               href={data.zipUrl}
-              className="flex h-11 w-full items-center justify-center rounded-lg bg-red-fill text-sm font-semibold text-white"
+              className="btn-grad-red flex h-11 w-full items-center justify-center text-sm font-semibold"
             >
               Download everything (zip)
             </a>
@@ -379,7 +379,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                 type="button"
                 disabled={backingUp}
                 onClick={() => void downloadBackup()}
-                className="flex h-11 w-full items-center justify-center rounded-lg border border-line text-sm font-semibold hover:bg-raised disabled:opacity-60"
+                className="flex h-11 w-full items-center justify-center border border-line text-sm font-semibold hover:bg-raised disabled:opacity-60"
               >
                 {backingUp
                   ? "Preparing backup… this takes a minute"
@@ -393,7 +393,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
             {data.files.map((f, i) => (
               <li
                 key={f.filename}
-                className={`flex items-center gap-3 rounded-xl border-[0.75px] border-line bg-surface p-3 ${
+                className={`flex items-center gap-3 border border-line bg-canvas p-3 ${
                   i === 0 && f.label === "Full broadcast" ? "border-l-4 border-l-red" : ""
                 }`}
               >
@@ -406,7 +406,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                 {f.url && (
                   <a
                     href={f.url}
-                    className="h-9 shrink-0 rounded-md border border-line px-3 text-xs font-semibold leading-9 hover:bg-raised"
+                    className="h-9 shrink-0 border border-line px-3 text-xs font-semibold leading-9 hover:bg-raised"
                   >
                     Download
                   </a>
@@ -416,8 +416,8 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           </ul>
 
           {data.episodeNotes && (
-            <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">
-              <h3 className="text-sm font-bold">Episode notes</h3>
+            <section className="border border-line bg-canvas p-4">
+              <h3 className="font-mono text-[11px] font-semibold tracking-[0.1em] uppercase">Episode notes</h3>
               <p className="mt-0.5 text-xs text-secondary">
                 Ready-made title and description for each show. Copy them, or
                 download as .txt.
@@ -433,8 +433,8 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           )}
 
           {data.markers.length > 0 && (
-            <section className="rounded-xl border-[0.75px] border-line bg-surface p-4">
-              <h3 className="text-sm font-bold">Adjust segment boundaries</h3>
+            <section className="border border-line bg-canvas p-4">
+              <h3 className="font-mono text-[11px] font-semibold tracking-[0.1em] uppercase">Adjust segment boundaries</h3>
               <p className="mt-0.5 text-xs text-secondary">
                 Nudge any boundary up to ±2 minutes, then recut.
               </p>
@@ -454,7 +454,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                         type="button"
                         onClick={() => nudge(m.id, m.server_ts, m.adjusted_ts, -15)}
                         aria-label={`Move ${m.label} 15 seconds earlier`}
-                        className="h-9 w-12 rounded-md border border-line text-xs font-bold tabular-nums hover:bg-raised"
+                        className="h-9 w-12 border border-line text-xs font-bold tabular-nums hover:bg-raised"
                       >
                         −15s
                       </button>
@@ -466,7 +466,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                         type="button"
                         onClick={() => nudge(m.id, m.server_ts, m.adjusted_ts, 15)}
                         aria-label={`Move ${m.label} 15 seconds later`}
-                        className="h-9 w-12 rounded-md border border-line text-xs font-bold tabular-nums hover:bg-raised"
+                        className="h-9 w-12 border border-line text-xs font-bold tabular-nums hover:bg-raised"
                       >
                         +15s
                       </button>
@@ -478,7 +478,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                 type="button"
                 disabled={recutting || Object.keys(pending).length === 0}
                 onClick={recut}
-                className="mt-3 h-11 w-full rounded-lg border border-line text-sm font-semibold text-red hover:bg-raised disabled:opacity-50"
+                className="mt-3 h-11 w-full border-2 border-red text-sm font-semibold text-red hover:bg-raised disabled:opacity-50"
               >
                 {recutting ? "Recutting…" : "Apply changes & recut"}
               </button>
@@ -492,21 +492,21 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
           type="button"
           onClick={recut}
           disabled={recutting}
-          className="h-11 w-full rounded-lg border border-line text-sm font-semibold hover:bg-raised disabled:opacity-50"
+          className="h-11 w-full border border-line text-sm font-semibold hover:bg-raised disabled:opacity-50"
         >
           {recutting ? "Retrying…" : "Retry processing"}
         </button>
       )}
 
       {/* rights notice + courtesy line (FR-13.6; copy from LEGAL_PAGES.md) */}
-      <section className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-sm">
+      <section className="border border-line bg-canvas p-4 text-sm">
         <p className="font-semibold">These recordings are yours.</p>
         <p className="mt-1 text-secondary">
           {brand.name} claims no rights and requires nothing. If you&apos;d like
           to credit the show, you can copy:
         </p>
         <div className="mt-2 flex items-center gap-2">
-          <code className="min-w-0 flex-1 truncate rounded-md bg-surface px-2 py-1.5 text-xs">
+          <code className="fv-normal min-w-0 flex-1 truncate border border-line bg-inset px-2 py-1.5 text-xs">
             {data.courtesyLine}
           </code>
           <button
@@ -518,7 +518,7 @@ export function DownloadsPanel({ roomId }: { roomId: string }) {
                 setTimeout(() => setCopied(false), 1500);
               } catch {}
             }}
-            className="h-9 shrink-0 rounded-md border border-line px-3 text-xs font-semibold hover:bg-raised"
+            className="h-9 shrink-0 border border-line px-3 text-xs font-semibold hover:bg-raised"
           >
             {copied ? "Copied" : "Copy"}
           </button>

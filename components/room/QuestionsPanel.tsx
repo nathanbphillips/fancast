@@ -28,7 +28,7 @@ export function QuestionsPanel({
       {visible.map((q) => (
         <li
           key={q.id}
-          className={`rounded-xl border-[0.75px] border-line bg-surface p-3 ${
+          className={`border border-line bg-canvas p-3 ${
             q.status === "acknowledged" ? "opacity-60" : "border-l-4 border-l-red"
           }`}
         >
@@ -41,7 +41,7 @@ export function QuestionsPanel({
               <button
                 type="button"
                 onClick={() => update(q.id, "acknowledged")}
-                className="h-9 rounded-md bg-green px-3 text-xs font-bold text-white"
+                className="h-9 bg-green px-3 text-xs font-bold text-canvas"
               >
                 Acknowledge
               </button>
@@ -53,7 +53,7 @@ export function QuestionsPanel({
             <button
               type="button"
               onClick={() => update(q.id, "dismissed")}
-              className="h-9 rounded-md border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
+              className="h-9 border border-line px-3 text-xs font-semibold text-secondary hover:text-primary"
             >
               Dismiss
             </button>

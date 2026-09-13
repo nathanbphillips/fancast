@@ -143,7 +143,7 @@ export function InteractionButtons({
       if (!ok) {
         setBusy(false);
         setNote(
-          "Allow microphone access to call in, then try again — your browser blocked it.",
+          "Allow microphone access to call in, then try again - your browser blocked it.",
         );
         return;
       }
@@ -185,10 +185,10 @@ export function InteractionButtons({
             setOpen(open === "question" ? "none" : "question");
           }}
           aria-expanded={open === "question"}
-          className={`h-11 flex-1 rounded-lg border text-sm ${
+          className={`h-11 flex-1 border text-sm ${
             open === "question"
               ? "border-line font-semibold"
-              : "border-line bg-surface hover:bg-raised"
+              : "border-line bg-canvas hover:bg-raised"
           }`}
         >
           Ask Question
@@ -207,12 +207,12 @@ export function InteractionButtons({
           }}
           aria-expanded={open === "talk"}
           title={talkPending ? "Tap to leave the queue" : undefined}
-          className={`h-11 flex-1 rounded-lg border text-sm disabled:opacity-60 ${
+          className={`h-11 flex-1 border text-sm disabled:opacity-60 ${
             open === "talk"
               ? "border-line font-semibold"
               : talkPending
-                ? "border-red/40 font-semibold text-red hover:bg-red/10"
-                : "border-line bg-surface hover:bg-raised"
+                ? "border-red font-semibold text-red hover:bg-raised"
+                : "border-line bg-canvas hover:bg-raised"
           }`}
         >
           {talkPending
@@ -225,7 +225,7 @@ export function InteractionButtons({
       )}
 
       {note && (
-        <p role="alert" className="mt-2 rounded-lg border border-line bg-raised px-3 py-2 text-xs text-secondary">
+        <p role="alert" className="mt-2 border border-line bg-canvas px-3 py-2 text-xs text-secondary">
           {note}
         </p>
       )}
@@ -233,7 +233,7 @@ export function InteractionButtons({
       {open === "question" && (
         <form onSubmit={submitQuestion} className="mt-2 space-y-2">
           {questionSent ? (
-            <p className="rounded-lg border border-line bg-raised px-3 py-2 text-sm text-green">
+            <p className="border border-line bg-canvas px-3 py-2 text-sm text-green">
               Sent to the commentator.
             </p>
           ) : (
@@ -244,14 +244,14 @@ export function InteractionButtons({
                 maxLength={280}
                 rows={2}
                 required
-                placeholder="Your question — only the commentator sees it"
+                placeholder="Your question - only the commentator sees it"
                 aria-label="Your question"
-                className="w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm placeholder:text-secondary"
+                className="w-full border border-line bg-canvas px-3 py-2 text-sm placeholder:text-secondary"
               />
               <button
                 type="submit"
                 disabled={busy || !question.trim()}
-                className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
+                className="h-11 w-full bg-red-fill text-sm font-semibold text-on-red disabled:opacity-60"
               >
                 Send question
               </button>
@@ -270,10 +270,10 @@ export function InteractionButtons({
             maxLength={120}
             placeholder="What do you want to talk about? (optional)"
             aria-label="Call-in topic (optional)"
-            className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+            className="h-11 w-full border border-line bg-canvas px-3 text-sm placeholder:text-secondary"
           />
           {!consentGiven && (
-            <label className="flex items-start gap-2 rounded-lg border-[0.75px] border-line bg-raised p-3 text-xs leading-relaxed text-secondary">
+            <label className="flex items-start gap-2 border border-line bg-canvas p-3 text-xs leading-relaxed text-secondary">
               <input
                 type="checkbox"
                 checked={consent}
@@ -292,7 +292,7 @@ export function InteractionButtons({
           <button
             type="submit"
             disabled={busy || (!consentGiven && !consent)}
-            className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
+            className="h-11 w-full bg-red-fill text-sm font-semibold text-on-red disabled:opacity-60"
           >
             Send request
           </button>

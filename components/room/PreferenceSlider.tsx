@@ -24,7 +24,7 @@ export function AggregateMeter({ agg }: { agg: SliderAggregate }) {
       <div
         role="img"
         aria-label={`Room preference: ${agg.avg} of 100 toward discussion`}
-        className="relative mt-1 h-1.5 rounded-full bg-raised"
+        className="relative mt-1 h-1.5 bg-raised"
       >
         <span
           className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-canvas bg-red-fill transition-[left] duration-200"

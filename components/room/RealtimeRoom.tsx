@@ -1116,7 +1116,7 @@ export function RealtimeRoom(props: Props) {
   const mobileTabs: { id: TabId; label: string; badge: number; icon: React.ReactNode }[] = [
     {
       id: "chat",
-      label: "Chat",
+      label: "Stands",
       badge: 0,
       icon: tabIcon(
         <path d="M21 11.5a8.5 8.5 0 01-8.5 8.5 8.4 8.4 0 01-3.6-.8L3 21l1.8-5.1A8.5 8.5 0 1121 11.5z" />,
@@ -1138,7 +1138,7 @@ export function RealtimeRoom(props: Props) {
       ? [
           {
             id: "questions" as const,
-            label: "Questions",
+            label: "Gantry",
             badge: newQuestionCount,
             icon: tabIcon(
               <>
@@ -1171,7 +1171,7 @@ export function RealtimeRoom(props: Props) {
       ? [
           {
             id: "stats" as const,
-            label: "Stats",
+            label: "Numbers",
             badge: 0,
             icon: tabIcon(
               <>
@@ -1568,9 +1568,9 @@ export function RealtimeRoom(props: Props) {
           audio that starts without a tap, and listening is the whole product, so
           there is no dismiss: the only way in is to tap (founder 2026-08-05). */}
       {showAudioGate && (
-        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-canvas/90 p-6 backdrop-blur-md">
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-surface p-7 text-center shadow-[var(--shadow-raised)]">
-            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-fill text-white">
+        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-canvas/90 p-6">
+          <div className="w-full max-w-sm border-2 border-primary bg-canvas p-7 text-center">
+            <span className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-fill text-on-red">
               <svg aria-hidden="true" viewBox="0 0 16 16" className="ml-1 h-7 w-7 fill-current">
                 <path d="M4 2.5v11l9-5.5-9-5.5z" />
               </svg>
@@ -1601,7 +1601,7 @@ export function RealtimeRoom(props: Props) {
               autoFocus
               onClick={() => void audio.startListening()}
               disabled={audio.listenStatus === "connecting"}
-              className="btn-grad-red mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-lg text-base font-bold text-white disabled:opacity-70"
+              className="btn-grad-red mt-5 flex h-14 w-full items-center justify-center gap-2 text-base font-bold disabled:opacity-70"
             >
               <span aria-hidden="true">▶</span>
               {audio.listenStatus === "connecting"
@@ -1618,7 +1618,7 @@ export function RealtimeRoom(props: Props) {
                 onClick={() => setGateOverridden(true)}
                 className="mt-3 font-mono text-xs tracking-wide text-secondary underline hover:text-primary"
               >
-                Audio won&apos;t start — continue without it
+                Audio won&apos;t start - continue without it
               </button>
             )}
           </div>
@@ -1653,7 +1653,7 @@ export function RealtimeRoom(props: Props) {
             <button
               type="button"
               onClick={() => setHelpOpen(true)}
-              className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg bg-red-fill px-3 text-xs font-bold text-white transition-[filter] hover:brightness-110"
+              className="flex h-9 shrink-0 items-center gap-1.5 bg-red-fill px-3 text-xs font-bold text-on-red transition-opacity hover:opacity-90"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -1695,7 +1695,7 @@ export function RealtimeRoom(props: Props) {
           is lg-only). The listener transport paints its own surface; the
           commentator bar keeps the plain strip. */}
       <div
-        className={`lg:hidden shrink-0 ${isRoomCommentator ? "border-b border-line bg-surface" : ""}`}
+        className={`lg:hidden shrink-0 ${isRoomCommentator ? "border-b border-line bg-canvas" : ""}`}
       >
         {bar}
       </div>
@@ -1745,15 +1745,15 @@ export function RealtimeRoom(props: Props) {
           aria-label="Chat"
           className={`${tab === "chat" || tab === "questions" || tab === "facts" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex ${showStats ? "lg:border-r lg:border-line" : ""}`}
         >
-          <div className="hidden border-b border-line bg-surface lg:flex">
+          <div className="hidden border-b border-line bg-canvas lg:flex">
             {[
-              { id: "chat" as const, label: "Room chat", badge: 0 },
-              { id: "polls" as const, label: "Polls", badge: pollsBadge },
+              { id: "chat" as const, label: "From the stands", badge: 0 },
+              { id: "polls" as const, label: "The polls", badge: pollsBadge },
               ...(isRoomCommentator
                 ? [
                     {
                       id: "questions" as const,
-                      label: "Questions",
+                      label: "Ask the gantry",
                       badge: newQuestionCount,
                     },
                   ]
@@ -1771,15 +1771,15 @@ export function RealtimeRoom(props: Props) {
                 type="button"
                 onClick={() => setCenterTab(t.id)}
                 aria-current={centerTab === t.id ? "page" : undefined}
-                className={`relative h-10 px-4 text-sm font-extrabold ${
+                className={`display relative h-10 px-4 text-[15px] ${
                   centerTab === t.id
-                    ? "border-b-2 border-red text-primary"
+                    ? "border-b-[3px] border-red text-primary"
                     : "text-secondary hover:text-primary"
                 }`}
               >
                 {t.label}
                 {t.badge > 0 && (
-                  <span className="absolute top-0.5 right-0 flex h-4 min-w-[1rem] animate-fcpulse items-center justify-center rounded-full bg-red-fill px-1 font-mono text-[9px] font-bold text-white tabular-nums">
+                  <span className="absolute top-0.5 right-0 flex h-4 min-w-[1rem] animate-fcpulse items-center justify-center rounded-full bg-red-fill px-1 font-mono text-[9px] font-bold text-on-red tabular-nums">
                     {t.badge}
                   </span>
                 )}
@@ -1866,10 +1866,12 @@ export function RealtimeRoom(props: Props) {
                     <line x1="12" y1="18" x2="12" y2="21" />
                   </svg>
                 </span>
-                <h2 className="display mb-2 text-[26px] leading-none">Go on air</h2>
+                <h2 className="display mb-2 text-[26px] leading-none">
+                  Call the gantry
+                </h2>
                 <p className="mx-auto max-w-[280px] text-[13.5px] leading-normal text-secondary">
-                  Request the mic and {room.commentatorUsername} can bring you
-                  into the show live during a break in play.
+                  Request the mic and {room.commentatorUsername} brings you on
+                  air. Leave any time with one tap.
                 </p>
               </div>
 
@@ -1888,11 +1890,8 @@ export function RealtimeRoom(props: Props) {
                    control that ends the call. Previously the only Leave Air
                    lived in the top transport, so a caller had no obvious way
                    off the air from this screen (founder 2026-08-05). */
-                <div
-                  className="rounded-[16px] border-2 border-red bg-red/10 p-6 text-center"
-                  style={{ boxShadow: "0 0 22px rgba(239,1,7,0.35)" }}
-                >
-                  <span className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-red-fill text-white">
+                <div className="border-2 border-red bg-red/10 p-6 text-center">
+                  <span className="mx-auto mb-3.5 flex h-16 w-16 items-center justify-center rounded-full bg-red-fill text-on-red">
                     <svg
                       viewBox="0 0 24 24"
                       aria-hidden="true"
@@ -1923,7 +1922,7 @@ export function RealtimeRoom(props: Props) {
                   <button
                     type="button"
                     onClick={() => void leaveAir()}
-                    className="mt-5 h-14 w-full rounded-xl bg-red-fill text-base font-bold text-white"
+                    className="mt-5 h-14 w-full bg-red-fill text-base font-bold text-on-red"
                   >
                     Leave the air
                   </button>
@@ -1946,13 +1945,13 @@ export function RealtimeRoom(props: Props) {
                   </p>
                   <a
                     href={signinHref}
-                    className="mt-3 inline-flex h-11 items-center rounded-lg bg-red-fill px-5 text-sm font-semibold text-white"
+                    className="mt-3 inline-flex h-11 items-center bg-red-fill px-5 text-sm font-semibold text-on-red"
                   >
                     Sign in
                   </a>
                 </div>
               ) : queuePosition != null ? (
-                <div className="rounded-[14px] border border-red/40 bg-surface p-5 text-center">
+                <div className="border-2 border-red/40 bg-canvas p-5 text-center">
                   <p className="mb-2 font-mono text-[9.5px] tracking-[0.12em] text-red uppercase">
                     You&apos;re in the queue
                   </p>
@@ -1967,7 +1966,7 @@ export function RealtimeRoom(props: Props) {
                     type="button"
                     onClick={() => void leaveQueue()}
                     disabled={leavingQueue}
-                    className="mt-3.5 inline-block rounded-[9px] border border-line px-4 py-2 text-[12.5px] font-bold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
+                    className="mt-3.5 inline-block border border-line px-4 py-2 text-[12.5px] font-bold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
                   >
                     {leavingQueue ? "Leaving…" : "Leave queue"}
                   </button>
@@ -1996,7 +1995,7 @@ export function RealtimeRoom(props: Props) {
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
                         <span className="truncate">{h.username}</span>
-                        <span className="shrink-0 rounded-[3px] border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
+                        <span className="shrink-0 border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
                           Host
                         </span>
                       </p>
@@ -2031,7 +2030,7 @@ export function RealtimeRoom(props: Props) {
         aria-label="Room sections"
         /* z-65 floats the bar ABOVE the FAQ overlay (z-60) so it stays usable
            there, while the mandatory listen gate (z-70) still covers it */
-        className={`${composerFocused ? "hidden" : "flex"} relative z-[65] flex-none items-stretch border-t border-line bg-canvas/90 px-2 pt-2 backdrop-blur-md lg:hidden`}
+        className={`${composerFocused ? "hidden" : "flex"} relative z-[65] flex-none items-stretch border-t border-primary bg-canvas px-2 pt-2 lg:hidden`}
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {!isRoomCommentator && (
@@ -2071,7 +2070,7 @@ export function RealtimeRoom(props: Props) {
               {t.label}
             </span>
             {t.badge > 0 && (
-              <span className="absolute top-0 right-[22%] flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-fill px-1 font-mono text-[9px] font-bold text-white tabular-nums">
+              <span className="absolute top-0 right-[22%] flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-red-fill px-1 font-mono text-[9px] font-bold text-on-red tabular-nums">
                 {t.badge}
               </span>
             )}
@@ -2080,7 +2079,7 @@ export function RealtimeRoom(props: Props) {
       </nav>
 
       {/* desktop: in-flow audio dock at the base of the h-dvh flex column */}
-      <div className="hidden flex-none border-t border-line bg-surface lg:block">
+      <div className="hidden flex-none border-t border-primary bg-canvas lg:block">
         {bar}
       </div>
 
@@ -2764,7 +2763,7 @@ function LiveChat({
                     {m.author?.username ?? "…"}
                   </span>
                   {isCommentator && (
-                    <span className="rounded-[3px] border border-red/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-red uppercase">
+                    <span className="border border-red/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-red uppercase">
                       Host
                     </span>
                   )}
@@ -2807,7 +2806,7 @@ function LiveChat({
                     href={m.link_url}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="mt-2 flex gap-2 rounded-lg border-[0.75px] border-line bg-surface/70 p-1.5 shadow-card hover:bg-surface"
+                    className="mt-2 flex gap-2 border border-line bg-canvas p-1.5 hover:bg-raised"
                   >
                     <span className="flex min-w-0 flex-1 flex-col justify-center">
                       <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
@@ -2882,12 +2881,12 @@ function LiveChat({
               placeholder="Reply…"
               aria-label="Reply"
               autoFocus
-              className="h-9 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+              className="h-9 min-w-0 flex-1 border border-line bg-canvas px-3 text-sm placeholder:text-secondary"
             />
             <button
               type="submit"
               disabled={replyBusy || !replyDraft.trim()}
-              className="h-9 shrink-0 rounded-lg bg-red-fill px-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="h-9 shrink-0 bg-red-fill px-3 text-sm font-semibold text-on-red disabled:opacity-60"
             >
               Reply
             </button>
@@ -3045,7 +3044,7 @@ function LiveChat({
         <button
           type="button"
           onClick={scrollChatToBottom}
-          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-red-fill px-3 py-1 text-xs font-semibold text-white shadow tabular-nums"
+          className="z-10 mx-auto -mt-9 mb-1 block rounded-full bg-red-fill px-3 py-1 text-xs font-semibold text-on-red tabular-nums"
         >
           {unread} new {unread === 1 ? "message" : "messages"} ↓
         </button>
@@ -3066,7 +3065,7 @@ function LiveChat({
             disabled
             placeholder="Chat disabled for the demo room."
             aria-label="Chat disabled for the demo room"
-            className="h-11 w-full cursor-not-allowed rounded-[10px] border border-line bg-inset px-3.5 text-sm opacity-70 placeholder:text-secondary"
+            className="h-11 w-full cursor-not-allowed border border-line bg-inset px-3.5 text-sm opacity-70 placeholder:text-secondary"
           />
         </div>
       ) : !viewer ? (
@@ -3078,7 +3077,7 @@ function LiveChat({
             </p>
             <a
               href={signinHref}
-              className="mt-3 inline-flex h-11 items-center rounded-lg bg-red-fill px-5 text-sm font-semibold text-white"
+              className="mt-3 inline-flex h-11 items-center bg-red-fill px-5 text-sm font-semibold text-on-red"
             >
               Sign in to join
             </a>
@@ -3162,13 +3161,13 @@ function LiveChat({
               // delayed so a tap on Send (which blurs first) still lands before
               // the tab bar comes back and shifts the layout
               onBlur={() => setTimeout(() => onComposerFocus?.(false), 150)}
-              className="h-11 min-w-0 flex-1 rounded-[10px] border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+              className="h-11 min-w-0 flex-1 border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
             />
             <button
               type="submit"
               disabled={sending || !draft.trim()}
               aria-label="Send message"
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-red-fill text-white transition-colors hover:bg-red-hover disabled:opacity-60"
+              className="flex h-11 w-11 shrink-0 items-center justify-center bg-red-fill text-on-red transition-colors hover:bg-red-hover disabled:opacity-60"
             >
               <span aria-hidden="true" className="text-lg leading-none">
                 ↑
@@ -3210,7 +3209,7 @@ function LiveChat({
           if (!root) return null;
           return (
             <div
-              className="fixed inset-0 z-50 flex flex-col bg-canvas/95 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex flex-col bg-canvas/95"
               role="dialog"
               aria-modal="true"
               aria-label="Thread"
@@ -3255,7 +3254,7 @@ function LinkCard({
   // wide-image decision): title + domain + votes on the left, a small square
   // thumbnail on the right — keeps link cards from dwarfing the chat.
   return (
-    <li className="rounded-xl border-[0.75px] border-line bg-surface p-3">
+    <li className="border border-line bg-canvas p-3">
       <div className="flex gap-3">
         <div className="flex min-w-0 flex-1 flex-col">
           <a
