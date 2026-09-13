@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { WireEpisode } from "@/lib/podcastWire";
+import { SPOTIFY_SHOW_URL, type WireEpisode } from "@/lib/podcastWire";
 
 /**
  * FROM THE WIRE (Programme front page, right column): the @arseradio.com
@@ -15,7 +15,7 @@ import type { WireEpisode } from "@/lib/podcastWire";
 
 const ACTOR = "arseradio.com";
 const PROFILE_URL = `https://bsky.app/profile/${ACTOR}`;
-const SPOTIFY_URL = "https://open.spotify.com/show/7x7GsDW1BezdO8hgi2KssE";
+const SPOTIFY_URL = SPOTIFY_SHOW_URL;
 const FEED_URL = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${ACTOR}&limit=8&filter=posts_no_replies`;
 
 type WireImage = { thumb: string; alt: string };

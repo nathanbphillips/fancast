@@ -8,6 +8,13 @@
 
 const FEED_URL = "https://anchor.fm/s/11650b1a0/podcast/rss";
 
+/** The show's public pages, shared by the cover line and the wire column
+ *  (founder 2026-09-13); more platforms join as they are added. */
+export const SPOTIFY_SHOW_URL =
+  "https://open.spotify.com/show/7x7GsDW1BezdO8hgi2KssE";
+export const AMAZON_MUSIC_SHOW_URL =
+  "https://music.amazon.com/podcasts/299e8201-de9f-4b78-8fdd-93689144bad8/arseradio-but-it's-a-podcast";
+
 export type WireEpisode = {
   title: string;
   /** ISO publish time - the wire interleaves by this */

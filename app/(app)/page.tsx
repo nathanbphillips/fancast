@@ -7,7 +7,11 @@ import { NotifyForm } from "@/components/marketing/NotifyForm";
 import { Countdown } from "@/components/marketing/Countdown";
 import { MastheadStrip } from "@/components/marketing/MastheadStrip";
 import { TheWire } from "@/components/marketing/TheWire";
-import { loadWireEpisodes } from "@/lib/podcastWire";
+import {
+  AMAZON_MUSIC_SHOW_URL,
+  SPOTIFY_SHOW_URL,
+  loadWireEpisodes,
+} from "@/lib/podcastWire";
 
 /**
  * The front page (Programme redesign, founder 2026-09-13: the mock's layout
@@ -74,9 +78,10 @@ export default async function HomePage() {
     loadWireEpisodes(),
   ]);
   const liveFixture = live[0] ?? null;
-  // State B features the next BROADCAST (a fixture with a scheduled room and
-  // a future kickoff); with no room anywhere, the next future fixture stands
-  // in, honestly labelled. In-play fixtures without a live room never lead.
+  // The loader returns ONLY fixtures with an active room (rooms-only page,
+  // founder 2026-09-13), so State B features the next broadcast with a future
+  // kickoff. The room-less branches below it are defensive dead ends: with no
+  // broadcast on the books at all, the quiet cover renders instead.
   const now = Date.now();
   const future = upcoming.filter(
     (f) => new Date(f.card.kickoffUtc).getTime() > now,
@@ -103,6 +108,26 @@ export default async function HomePage() {
         </div>
         <p className="mt-3.5 text-[19px] text-secondary italic">
           The matchday programme - real supporters in your ear, never pundits.
+        </p>
+        <p className="mt-3 font-mono text-[13px] tracking-[0.08em] text-secondary">
+          Catch up on previous episodes on{" "}
+          <a
+            href={SPOTIFY_SHOW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border-b border-red text-primary hover:text-red"
+          >
+            Spotify
+          </a>{" "}
+          or{" "}
+          <a
+            href={AMAZON_MUSIC_SHOW_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="border-b border-red text-primary hover:text-red"
+          >
+            Amazon Music
+          </a>
         </p>
       </div>
 
@@ -171,10 +196,11 @@ export default async function HomePage() {
           </p>
         </div>
       ) : (
-        /* no fixtures in the window: an honest quiet cover */
+        /* no broadcasts on the books (fixtures may still exist - the page is
+           rooms-only now): an honest quiet cover */
         <div className="mt-6 bg-inverted p-7 text-inverted-fg sm:px-9">
           <div className="font-mono text-[13px] tracking-[0.16em]">
-            Between fixtures
+            Between broadcasts
           </div>
           <div className="display mt-3 text-[clamp(30px,4.5vw,48px)] leading-[0.95]">
             The next issue is at the printers.
@@ -193,7 +219,7 @@ export default async function HomePage() {
       <div className="mt-9 grid items-start gap-y-10 md:grid-cols-2 md:gap-0">
         <div className="md:border-r md:border-line md:pr-7">
           <div className="flex flex-wrap items-baseline justify-between gap-2.5 border-b-[3px] border-double border-primary pb-2.5">
-            <span className="display text-[26px]">The week&apos;s fixtures</span>
+            <span className="display text-[26px]">Scheduled broadcasts</span>
             <Link
               href="/matches"
               className="border-b border-red font-mono text-[13px] tracking-[0.08em] whitespace-nowrap text-primary hover:text-red"
@@ -220,8 +246,8 @@ export default async function HomePage() {
           ) : (
             <div className="mt-5">
               <p className="text-[15px] leading-[1.6] text-secondary italic">
-                No upcoming fixtures on the books yet. The schedule fills in as
-                soon as the next round is confirmed.
+                No rooms on the books yet. This list fills in as soon as a
+                host schedules the next broadcast.
               </p>
               <div className="mt-4 max-w-sm">
                 <NotifyForm source="home_fixtures_empty" />

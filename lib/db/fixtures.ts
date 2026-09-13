@@ -31,6 +31,7 @@ type FixtureWithRooms = Fixture & {
     slug: string | null;
     state: RoomState;
     postponed: boolean;
+    broadcast_start: string | null;
     commentator_id: string;
     commentator: { username: string } | null;
   }[];
@@ -54,8 +55,6 @@ function cardState(roomState: RoomState | undefined): FixtureCardState {
 
 export type HomeFixture = {
   card: FixtureCardData;
-  /** commentator's own open-waiting affordance for this fixture */
-  canOpen: boolean;
   followed: boolean;
 };
 
@@ -65,31 +64,21 @@ export async function loadFixtures(): Promise<{
 }> {
   const supabase = await createSupabaseServerClient();
 
-  // include fixtures from the last 3h so an in-play match stays on top
+  // Programme front page (founder 2026-09-13): ONLY fixtures somebody is
+  // broadcasting - a game with no room does not make the page, whoever is
+  // playing - and EVERY scheduled broadcast on the books shows (the founder
+  // rooms the whole season; hiding one behind a page cap is what this change
+  // exists to stop). The 3h look-back keeps an in-play room on top; the inner
+  // join, state list and postponed filter keep dead rooms from reviving a
+  // fixture OR eating a row of the cap. The cap is a sanity backstop, far
+  // above the fixture sync's ~120-day horizon, not a paging device.
   const windowStart = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const { data: fixtures, error } = await supabase
     .from("fixtures")
     .select(
-      "*, rooms(id, slug, state, postponed, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
+      "*, rooms!inner(id, slug, state, postponed, broadcast_start, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
-    .order("kickoff_utc", { ascending: true })
-    .limit(10)
-    .returns<FixtureWithRooms[]>();
-  // surface a real DB failure to the error boundary (vs a genuinely empty
-  // schedule, which must read as "no fixtures yet")
-  if (error) throw error;
-
-  // Programme front page (founder 2026-09-13): scheduled broadcasts must
-  // always surface, even when they sit beyond the 10-fixture week window -
-  // pull every future fixture that HAS an active room and merge. Same shape,
-  // same card-building below; deduped by fixture id, kickoff order kept.
-  const { data: roomedFixtures } = await supabase
-    .from("fixtures")
-    .select(
-      "*, rooms!inner(id, slug, state, postponed, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
-    )
-    .gte("kickoff_utc", new Date().toISOString())
     .in("rooms.state", [
       "scheduled",
       "waiting",
@@ -100,16 +89,16 @@ export async function loadFixtures(): Promise<{
       "extra_time",
       "postgame",
     ])
+    .eq("rooms.postponed", false)
     .order("kickoff_utc", { ascending: true })
-    .limit(12)
+    .limit(50)
     .returns<FixtureWithRooms[]>();
-  const merged: FixtureWithRooms[] = [...(fixtures ?? [])];
-  for (const rf of roomedFixtures ?? []) {
-    if (!merged.some((f) => f.id === rf.id)) merged.push(rf);
-  }
-  merged.sort((a, b) => a.kickoff_utc.localeCompare(b.kickoff_utc));
+  // surface a real DB failure to the error boundary (vs a genuinely empty
+  // schedule, which must read as "no broadcasts yet")
+  if (error) throw error;
+  const merged: FixtureWithRooms[] = fixtures ?? [];
 
-  const { user, profile } = await getCurrentUserAndProfile();
+  const { user } = await getCurrentUserAndProfile();
   const followedIds = new Set<string>();
   if (user) {
     const { data: follows } = await supabase
@@ -119,21 +108,25 @@ export async function loadFixtures(): Promise<{
     follows?.forEach((f) => followedIds.add(f.commentator_id));
   }
 
-  const viewerIsCommentator = profile?.role === "commentator";
-
   const withFollowed: HomeFixture[] = merged.map((f) => {
     // multiple rooms per fixture are possible now (FR-19); until PRD-05's
-    // multi-room cards land, the card carries the most-advanced ACTIVE room:
-    // live-ish beats scheduled; canceled/postponed/no-show (unopened 15 min
-    // past kickoff, FR-19.7) never render
-    const kickoffCutoff =
-      new Date(f.kickoff_utc).getTime() + 15 * 60 * 1000 < Date.now();
+    // multi-room cards land, the card carries the most-advanced ACTIVE room.
+    // A scheduled room only counts as a no-show by the platform's own rule
+    // (the sweep in lib/fixtures.ts): kickoff AND broadcast start both 2h
+    // gone - so a late-opening host, or a deliberate post-game-only show
+    // whose start sits after kickoff, stays on the books here exactly as
+    // long as it does on /matches and in the sweep.
+    const twoH = 2 * 60 * 60 * 1000;
+    const kickoffMs = new Date(f.kickoff_utc).getTime();
+    const noShow = (start: string | null) =>
+      Date.now() > kickoffMs + twoH &&
+      Date.now() > (start ? new Date(start).getTime() : kickoffMs) + twoH;
     const activeRooms = f.rooms.filter(
       (r) =>
         r.state !== "canceled" &&
         r.state !== "wrapped" &&
         !r.postponed &&
-        !(r.state === "scheduled" && kickoffCutoff),
+        !(r.state === "scheduled" && noShow(r.broadcast_start)),
     );
     const room =
       activeRooms.find((r) => r.state !== "scheduled") ?? activeRooms[0];
@@ -148,25 +141,23 @@ export async function loadFixtures(): Promise<{
       // canonical slug URL (FR-19.3); id fallback covers any pre-0027 cache
       roomHref: room ? `/room/${room.slug ?? room.id}` : undefined,
     };
-    const ownRoom = f.rooms.find((r) => r.commentator_id === user?.id);
-    const canOpen =
-      viewerIsCommentator &&
-      (!ownRoom ||
-        ownRoom.state === "scheduled" ||
-        ownRoom.state === "canceled");
     return {
       card,
-      canOpen,
       followed: room ? followedIds.has(room.commentator_id) : false,
     };
   });
 
+  // rooms-only page: a fixture whose every room fell to the active filter
+  // above (postponed, or a scheduled room that no-showed past kickoff) has
+  // nothing to broadcast and drops off with the rest
+  const broadcasts = withFollowed.filter((w) => w.card.roomHref);
+
   // followed commentators first (FR-1.3); stable sort keeps kickoff order
-  withFollowed.sort((a, b) => Number(b.followed) - Number(a.followed));
+  broadcasts.sort((a, b) => Number(b.followed) - Number(a.followed));
 
   return {
-    live: withFollowed.filter((w) => w.card.state !== "scheduled"),
-    upcoming: withFollowed.filter((w) => w.card.state === "scheduled"),
+    live: broadcasts.filter((w) => w.card.state !== "scheduled"),
+    upcoming: broadcasts.filter((w) => w.card.state === "scheduled"),
   };
 }
 
