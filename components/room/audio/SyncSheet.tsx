@@ -103,15 +103,15 @@ export function SyncSheet({
         role="dialog"
         aria-label="Sync to my TV"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-t-2xl border-[0.75px] border-line bg-surface p-5 lg:rounded-2xl"
+        className="w-full max-w-md border-2 border-primary bg-canvas p-5"
       >
         <div className="flex items-start justify-between">
-          <h2 className="text-lg font-bold">Sync to my TV</h2>
+          <h2 className="text-lg font-bold">Get in step</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close sync sheet"
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-secondary hover:bg-raised hover:text-primary"
+            className="flex h-11 w-11 items-center justify-center text-secondary hover:bg-raised hover:text-primary"
           >
             ✕
           </button>
@@ -136,7 +136,7 @@ export function SyncSheet({
                 <button
                   type="button"
                   onClick={tapNow}
-                  className="h-14 rounded-xl bg-red-fill px-10 text-lg font-bold text-white"
+                  className="h-14 bg-red-fill px-10 text-lg font-bold text-on-red"
                 >
                   Now
                 </button>
@@ -144,30 +144,30 @@ export function SyncSheet({
                   type="button"
                   onClick={refreshTarget}
                   disabled={!clockRunning}
-                  className="h-14 rounded-xl border border-line px-4 text-sm text-secondary hover:text-primary disabled:opacity-50"
+                  className="h-14 border border-line px-4 text-sm text-secondary hover:text-primary disabled:opacity-50"
                 >
                   New moment
                 </button>
               </div>
             ) : (
               <p className="mt-4 text-sm font-semibold text-green">
-                ✓ Synced — you&apos;re {justSynced.toFixed(1)}s behind live
+                ✓ In step - you&apos;re {justSynced.toFixed(1)}s behind live
               </p>
             )}
           </div>
         ) : (
-          <p className="mt-3 rounded-lg border-[0.75px] border-line bg-raised p-3 text-sm text-secondary">
+          <p className="mt-3 border border-line bg-canvas p-3 text-sm text-secondary">
             One-tap calibration uses the match clock, so it&apos;s available
             during live play. The steppers below work any time.
           </p>
         )}
 
-        <div className="mt-5 flex items-center justify-between rounded-xl border-[0.75px] border-line bg-raised p-3">
+        <div className="mt-5 flex items-center justify-between border border-line bg-canvas p-3">
           <button
             type="button"
             onClick={() => onAdjust(-0.5)}
             aria-label="Half a second less delay"
-            className="h-11 w-14 rounded-lg border border-line bg-surface text-sm font-bold tabular-nums hover:bg-raised"
+            className="h-11 w-14 border border-line font-mono text-sm font-bold tabular-nums hover:bg-raised"
           >
             −0.5s
           </button>
@@ -177,7 +177,7 @@ export function SyncSheet({
             </p>
             {buffering && (
               <p className="text-[11px] text-red tabular-nums">
-                at +{effective.toFixed(1)}s — filling toward your setting
+                at +{effective.toFixed(1)}s - filling toward your setting
               </p>
             )}
             <p className="text-[11px] text-secondary tabular-nums">
@@ -188,7 +188,7 @@ export function SyncSheet({
             type="button"
             onClick={() => onAdjust(0.5)}
             aria-label="Half a second more delay"
-            className="h-11 w-14 rounded-lg border border-line bg-surface text-sm font-bold tabular-nums hover:bg-raised"
+            className="h-11 w-14 border border-line font-mono text-sm font-bold tabular-nums hover:bg-raised"
           >
             +0.5s
           </button>
@@ -200,7 +200,7 @@ export function SyncSheet({
             onApply(0);
             setJustSynced(null);
           }}
-          className="mt-3 h-11 w-full rounded-lg border border-line text-sm font-semibold hover:bg-raised"
+          className="mt-3 h-11 w-full border border-line text-sm font-semibold hover:bg-raised"
         >
           Back to live edge
         </button>

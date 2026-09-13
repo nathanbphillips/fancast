@@ -30,10 +30,10 @@ function PlayStopButton({
       aria-label={listening ? "Stop listening" : "Tap to listen"}
       onClick={listening ? onStop : onStart}
       disabled={status === "connecting"}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-white disabled:opacity-60"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-on-red disabled:opacity-60"
     >
       {status === "connecting" ? (
-        <span className="h-4 w-4 animate-live-pulse rounded-full bg-white/70" aria-hidden="true" />
+        <span className="h-4 w-4 animate-live-pulse rounded-full bg-on-red/70" aria-hidden="true" />
       ) : listening ? (
         <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
           <rect x="3" y="3" width="4" height="10" rx="1" />
@@ -52,7 +52,7 @@ function PlayStopButton({
  *  muted (founder 2026-08-22): a deliberate break, not a fault. */
 export function BackShortlyCard() {
   return (
-    <div className="flex-1 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5">
+    <div className="flex-1 border border-line bg-canvas px-3 py-1.5">
       <p className="text-sm font-semibold">Back shortly. The commentator is taking a break.</p>
     </div>
   );
@@ -67,7 +67,7 @@ export function TechDifficultiesCard({ since }: { since: number | null }) {
   const prolonged = since !== null && now - since > 15 * 60 * 1000;
 
   return (
-    <div className="flex-1 rounded-lg border-[0.75px] border-line bg-raised px-3 py-1.5">
+    <div className="flex-1 border border-line bg-canvas px-3 py-1.5">
       <p className="text-sm font-semibold">
         Technical difficulties. The commentator will be right back.
       </p>
@@ -147,7 +147,7 @@ function SyncControls({
         type="button"
         onClick={() => onSyncAdjust(-0.5)}
         aria-label="Half a second less delay"
-        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
+        className="h-11 shrink-0 border border-line px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
       >
         −0.5s
       </button>
@@ -156,21 +156,21 @@ function SyncControls({
         onClick={onOpenSync}
         aria-label="Sync to my TV"
         title="Sync to my TV"
-        className="flex h-11 flex-1 items-center justify-center gap-1.5 rounded-lg btn-grad-red px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-white"
+        className="flex h-11 flex-1 items-center justify-center gap-1.5 btn-grad-red px-4 font-mono text-[10px] font-bold tracking-[0.06em]"
       >
-        SYNC NOW
+        ◎ Sync now
         {syncRequested > 0 && (
           <span className="tabular-nums opacity-80">+{syncRequested.toFixed(1)}s</span>
         )}
         {listenStatus === "live" && syncRequested > syncEffective + 0.5 && (
-          <span className="text-red tabular-nums">⏳{syncEffective.toFixed(0)}s</span>
+          <span className="text-red tabular-nums">▸{syncEffective.toFixed(0)}s</span>
         )}
       </button>
       <button
         type="button"
         onClick={() => onSyncAdjust(0.5)}
         aria-label="Half a second more delay"
-        className="h-11 shrink-0 rounded-lg border border-line bg-inset px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
+        className="h-11 shrink-0 border border-line px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
       >
         +0.5s
       </button>
@@ -180,7 +180,7 @@ function SyncControls({
           onClick={() => onSyncAdjust(-syncRequested)}
           aria-label="Jump back to live"
           title="Drop the delay and jump to the live edge"
-          className="flex h-11 shrink-0 items-center gap-1.5 rounded-lg border border-red/40 px-2.5 font-mono text-[10px] tracking-[0.06em] text-red transition-colors hover:bg-red/10"
+          className="flex h-11 shrink-0 items-center gap-1.5 border border-red px-2.5 font-mono text-[10px] tracking-[0.06em] text-red transition-colors hover:bg-raised"
         >
           <span
             aria-hidden="true"
@@ -205,7 +205,7 @@ function EqTicks({ h = 14 }: { h?: number }) {
       {[0, 0.18, 0.36].map((d) => (
         <span
           key={d}
-          className="animate-fceq w-[3px] rounded-[1px] bg-red-fill"
+          className="animate-fceq w-[3px] bg-red-fill"
           style={{ height: h, transformOrigin: "bottom", animationDelay: `${d}s` }}
         />
       ))}
@@ -347,7 +347,7 @@ export function ListenerBar({
     return (
       <div>
         {!discussion && (
-          <div className="flex items-center justify-center gap-2.5 border-b border-line bg-inset px-3 py-1.5 lg:hidden">
+          <div className="flex items-center justify-center gap-2.5 border-b border-line bg-canvas px-3 py-1.5 lg:hidden">
             <span className="display text-[14px] tracking-[0.03em]">{abbr3(home)}</span>
             <span className="text-[14px] font-bold tabular-nums">
               {homeScore ?? 0}
@@ -362,9 +362,9 @@ export function ListenerBar({
             )}
           </div>
         )}
-        <div className="flex items-center gap-3 rounded-lg border-2 border-red px-4 py-2 shadow-[0_0_12px_rgba(239,1,7,0.35)]">
-        <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 text-xs font-bold text-white">
-          <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
+        <div className="flex items-center gap-3 border-2 border-red bg-canvas px-4 py-2">
+        <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-xs font-bold tracking-[0.08em] text-on-red">
+          <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-on-red" />
           ON AIR
         </span>
         <p className="min-w-0 flex-1 truncate text-sm">
@@ -373,14 +373,14 @@ export function ListenerBar({
         <button
           type="button"
           onClick={onToggleMute}
-          className="h-11 shrink-0 rounded-lg border border-line px-3 text-sm font-semibold hover:bg-raised"
+          className="h-11 shrink-0 border border-line px-3 text-sm font-semibold hover:bg-raised"
         >
           {micMuted ? "Unmute" : "Mute"}
         </button>
         <button
           type="button"
           onClick={onLeaveAir}
-          className="h-11 shrink-0 rounded-lg bg-red-fill px-5 text-sm font-bold text-white"
+          className="h-11 shrink-0 bg-red-fill px-5 text-sm font-bold text-on-red"
         >
           Leave Air
         </button>
@@ -394,7 +394,7 @@ export function ListenerBar({
       type="button"
       aria-label="Stop radio"
       onClick={() => onRadioToggle(false)}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-white"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-on-red"
     >
       <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
         <rect x="3" y="3" width="4" height="10" rx="1" />
@@ -419,7 +419,7 @@ export function ListenerBar({
           <button
             type="button"
             onClick={onGoOnAir}
-            className="btn-grad-red h-11 shrink-0 rounded-lg px-4 text-sm font-bold text-white"
+            className="btn-grad-red h-11 shrink-0 px-4 text-sm font-bold"
           >
             Tap to go on air
           </button>
@@ -428,7 +428,7 @@ export function ListenerBar({
           </p>
         </div>
       ) : micStatus === "starting" || autoOnAir ? (
-        <span className="flex shrink-0 items-center gap-2 rounded-lg border border-red/40 px-3 py-2 text-sm font-bold text-red">
+        <span className="flex shrink-0 items-center gap-2 border border-red px-3 py-2 text-sm font-bold text-red">
           <span
             aria-hidden="true"
             className="h-2 w-2 animate-live-pulse rounded-full bg-red-fill"
@@ -439,7 +439,7 @@ export function ListenerBar({
         <button
           type="button"
           onClick={onGoOnAir}
-          className="btn-grad-red h-11 shrink-0 rounded-lg px-4 text-sm font-bold text-white"
+          className="btn-grad-red h-11 shrink-0 px-4 text-sm font-bold"
         >
           Go on air
         </button>
@@ -448,8 +448,8 @@ export function ListenerBar({
 
   const liveBadge =
     live && !techDifficulties ? (
-      <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 text-xs font-bold text-white">
-        <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white" />
+      <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-xs font-bold tracking-[0.08em] text-on-red">
+        <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-on-red" />
         LIVE
       </span>
     ) : null;
@@ -483,7 +483,7 @@ export function ListenerBar({
           /* on-air card (Cloud Design, founder 2026-07-02): who's speaking —
              host avatar with a red ring, HOST badge, EQ while playing, and the
              on-air guests/co-hosts on the second line */
-          <div className="flex min-w-0 shrink-0 items-center gap-2.5 rounded-xl border border-red/30 bg-raised py-1.5 pr-3.5 pl-1.5">
+          <div className="flex min-w-0 shrink-0 items-center gap-2.5 border border-line bg-canvas py-1.5 pr-3.5 pl-1.5">
             <Avatar
               name={commentator}
               size={32}
@@ -492,7 +492,7 @@ export function ListenerBar({
             <div className="min-w-0">
               <p className="flex items-center gap-1.5 text-[12.5px] font-extrabold">
                 <span className="truncate">{commentator}</span>
-                <span className="shrink-0 rounded-[3px] border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
+                <span className="shrink-0 border border-red px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
                   Host
                 </span>
               </p>
@@ -524,13 +524,7 @@ export function ListenerBar({
           drawer used. */}
       <div className="lg:hidden">
         {expanded ? (
-          <div
-            className="border-b border-line px-4 pt-3 pb-3.5"
-            style={{
-              background:
-                "radial-gradient(120% 110% at 80% 0%, rgba(241,35,43,0.16), transparent 60%), var(--bg2)",
-            }}
-          >
+          <div className="border-b border-line bg-canvas px-4 pt-3 pb-3.5">
             {/* leave · LIVE · collapse — the bottom hint ALSO collapses
                 (founder 2026-07-02: both affordances) */}
             <div className="mb-3 flex items-center justify-between">
@@ -548,7 +542,6 @@ export function ListenerBar({
                   <span
                     aria-hidden="true"
                     className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-red-fill"
-                    style={{ boxShadow: "0 0 8px #ef0107" }}
                   />
                   LIVE
                 </span>
@@ -558,7 +551,7 @@ export function ListenerBar({
                 onClick={() => setExpanded(false)}
                 aria-expanded={true}
                 aria-label="Collapse audio controls"
-                className="flex h-[30px] items-center gap-1.5 rounded-lg border border-line px-2.5 text-secondary"
+                className="flex h-[30px] items-center gap-1.5 border border-line px-2.5 text-secondary"
               >
                 <span className="animate-fcpulse font-mono text-[10px] font-bold tracking-[0.04em] text-red uppercase">
                   Shrink
@@ -576,7 +569,7 @@ export function ListenerBar({
                 digit stays body-font tabular-nums. */}
             {!discussion && (
             <div className="mb-3 grid grid-cols-2 items-center">
-              <div className="flex items-center justify-center gap-2.5 border-r border-line/60">
+              <div className="flex items-center justify-center gap-2.5 border-r border-line">
                 <span className="display text-[17px] tracking-[0.03em]">{abbr3(home)}</span>
                 <span className="text-[28px] leading-none font-bold whitespace-nowrap tabular-nums">
                   {homeScore ?? 0} <span className="font-normal text-secondary">–</span>{" "}
@@ -595,7 +588,7 @@ export function ListenerBar({
                 <span className="mt-1 font-mono text-[9px] tracking-[0.08em] text-secondary uppercase">
                   {syncedClock
                     ? syncRequested > 0
-                      ? `Synced · −${
+                      ? `In step · −${
                           Number.isInteger(syncRequested)
                             ? syncRequested.toFixed(0)
                             : syncRequested.toFixed(1)
@@ -619,12 +612,12 @@ export function ListenerBar({
                 <TechDifficultiesCard since={techSince} />
               </div>
             ) : (
-              <div className="mb-3 flex items-center gap-2.5 rounded-xl border border-line bg-raised px-3 py-2">
+              <div className="mb-3 flex items-center gap-2.5 border border-line bg-canvas px-3 py-2">
                 {playButton}
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1.5 text-[13px] font-extrabold">
                     <span className="truncate">{commentator}</span>
-                    <span className="shrink-0 rounded-[3px] border border-red/50 px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
+                    <span className="shrink-0 border border-red px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
                       Host
                     </span>
                   </p>
@@ -669,11 +662,11 @@ export function ListenerBar({
             >
               {discussion
                 ? "Tap here to collapse the controls."
-                : "Tap SYNC NOW when your screen matches the game time. Click here to collapse."}
+                : "Tap Sync now when your screen matches the game time. Click here to collapse."}
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 border-b border-line bg-inset px-3 py-2">
+          <div className="flex items-center gap-2 border-b border-line bg-canvas px-3 py-2">
             <a
               href={leaveHref}
               aria-label="Leave room"
@@ -730,7 +723,7 @@ export function ListenerBar({
                     : listenStatus === "live"
                       ? syncSupported
                         ? syncRequested > 0
-                          ? "Synced · tap to nudge ▼"
+                          ? "In step · tap to nudge ▼"
                           : "Live · tap to sync ▼"
                         : "Live ▼"
                       : listenStatus === "error"
@@ -779,14 +772,14 @@ export function MicControls({
           <button
             type="button"
             onClick={onToggleMute}
-            className={`h-9 rounded-md border px-2.5 text-xs font-semibold ${micMuted ? "border-red text-red" : "border-line text-secondary hover:text-primary"}`}
+            className={`h-9 border px-2.5 text-xs font-semibold ${micMuted ? "border-red text-red" : "border-line text-secondary hover:text-primary"}`}
           >
             {micMuted ? "Muted" : "Mute"}
           </button>
           <button
             type="button"
             onClick={onStop}
-            className="h-9 rounded-md border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary"
+            className="h-9 border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary"
           >
             Mic off
           </button>
@@ -797,7 +790,7 @@ export function MicControls({
             type="button"
             onClick={onStart}
             disabled={micStatus === "starting"}
-            className={`h-11 rounded-lg border px-4 text-sm font-bold text-primary hover:bg-raised disabled:opacity-60 ${
+            className={`h-11 border px-4 text-sm font-bold text-primary hover:bg-raised disabled:opacity-60 ${
               micError ? "border-red" : "border-line"
             }`}
           >
@@ -820,7 +813,7 @@ export function MicControls({
           value={selfDelay}
           onChange={(e) => onDelayChange(Number(e.target.value))}
           aria-label="Self-delay in seconds"
-          className="h-9 rounded-md border border-line bg-surface px-1 text-xs tabular-nums"
+          className="h-9 border border-line bg-canvas px-1 text-xs tabular-nums"
         >
           <option value={0}>Off</option>
           {[1, 2, 3, 4, 5].map((s) => (
@@ -875,7 +868,7 @@ export function SpeakerChips({
       {guests.map((s) => (
         <span
           key={s.identity}
-          className="flex items-center gap-1.5 rounded-full border border-red/40 bg-raised px-2.5 py-1 text-xs font-semibold"
+          className="flex items-center gap-1.5 border border-red bg-canvas px-2.5 py-1 text-xs font-semibold"
         >
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-red-fill" aria-hidden="true" />
           <span className="font-mono text-[9px] tracking-[0.08em] text-red uppercase">
@@ -889,7 +882,7 @@ export function SpeakerChips({
             aria-label={`${s.muted ? "Unmute" : "Mute"} ${s.name}`}
             title={s.muted ? "Unmute this caller" : "Mute this caller"}
             onClick={() => void toggleMute(s.identity, s.muted)}
-            className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-60 ${
+            className={`border px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-60 ${
               s.muted
                 ? "border-red text-red"
                 : "border-line text-secondary hover:text-primary"
