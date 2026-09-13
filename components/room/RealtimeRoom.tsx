@@ -1916,7 +1916,7 @@ export function RealtimeRoom(props: Props) {
                   </p>
                   <p className="mt-2.5 text-[13.5px] text-secondary">
                     {audio.micMuted
-                      ? "You're muted — the room can't hear you."
+                      ? "You're muted - the room can't hear you."
                       : "The room can hear you. Talk to the host."}
                   </p>
                   <button
@@ -2553,7 +2553,7 @@ function LiveChat({
       setDraft("");
     } else {
       const body = await res.json().catch(() => ({}));
-      setNotice(body.error ?? "Couldn't send — try again.");
+      setNotice(body.error ?? "Couldn't send - try again.");
     }
   }
 
@@ -2938,7 +2938,7 @@ function LiveChat({
         <div className="flex min-w-0 items-center gap-2">
           {conn !== "connected" && (
             <span
-              title={conn === "broken" ? "Live updates unavailable — refresh to retry" : "Connecting…"}
+              title={conn === "broken" ? "Live updates unavailable - refresh to retry" : "Connecting…"}
               className={`shrink-0 text-[11px] ${conn === "broken" ? "text-red" : "text-secondary"}`}
             >
               {conn === "broken" ? "⚠ offline" : "…"}
@@ -3003,7 +3003,7 @@ function LiveChat({
           onClick={refreshSort}
           className="block w-full border-b border-line bg-red/15 py-1 text-center text-xs font-semibold text-red tabular-nums"
         >
-          {pendingCount} new — tap to refresh
+          {pendingCount} new · tap to refresh
         </button>
       )}
 
@@ -3033,7 +3033,7 @@ function LiveChat({
           <li className="px-3 py-6 text-center text-sm text-secondary">
             {roomState === "waiting"
               ? "The commentator will be along shortly."
-              : "Nothing here yet — say hello."}
+              : "Nothing here yet - say hello."}
           </li>
         )}
       </ul>
@@ -3127,7 +3127,7 @@ function LiveChat({
       ) : !canType ? (
         <div className="border-t border-line p-3">
           <p className="rounded-xl border-[0.75px] border-line bg-raised p-4 text-center text-sm text-secondary">
-            Waiting room — the commentator opens chat when the show starts.
+            Waiting room - the commentator opens chat when the show starts.
           </p>
         </div>
       ) : (

@@ -42,7 +42,7 @@ export function RsvpIntent({
         method: "POST",
       }).catch(() => null);
       if (res?.ok) {
-        toast("You're in — we'll notify you when the room opens.");
+        toast("You're in - we'll notify you when the room opens.");
         router.refresh(); // reflect the RSVP in the on-screen button/count
       }
     })();

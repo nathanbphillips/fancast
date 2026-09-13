@@ -39,8 +39,6 @@
   --red-hover: #8e1d14;
   --red-fill: #a8241a;
   --on-red: #f7f1e2;
-  --red-grad: #a8241a; /* legacy token, now solid; retire once grep-clean */
-  --red-grad-border: #a8241a;
   --gold: #e8c400; /* sparse: countdown numerals + the hero "v" on ink fills */
   --gold-bright: #e8c400; /* legacy alias */
   --navy: #023474; /* away-team signal + unknown-club fallback - NOT brand */
@@ -72,8 +70,6 @@
   --red-hover: #8e1d14;
   --red-fill: #a8241a;
   --on-red: #f7f1e2;
-  --red-grad: #a8241a;
-  --red-grad-border: #a8241a;
   /* gold sits on cream fills in dark mode, where it fails contrast - the
      handoff swaps it for the deep red there */
   --gold: #a8241a;
@@ -229,11 +225,6 @@ body {
   opacity: 0.92;
   box-shadow: none;
 }
-/* the specular sweep is retired; the span no-ops in place at its call sites */
-.btn-shine {
-  display: none;
-  animation: none;
-}
 
 /* Small-caps label + tabular numeral treatment. The font-mono UTILITY NAME is
    the app's label/meta/clock contract (232 uses); the Programme renders those
@@ -273,17 +264,6 @@ body {
 /* ------- Marketing animation set. The reduced-motion wildcard below
    neutralizes ALL of these (durations/iterations collapsed) -> a11y-safe. ------- */
 
-/* section reveal (staggered via inline animation-delay) */
-@keyframes fc-rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 /* live dot blink */
 @keyframes fc-blink {
   0%,
@@ -294,25 +274,8 @@ body {
     opacity: 0.28;
   }
 }
-/* breathing glow - legacy Matchday, unused after the marketing reskin;
-   removed in the cleanup phase once call sites are gone */
-@keyframes fc-glow {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-.animate-fc-rise {
-  animation: fc-rise 0.6s both;
-}
 .animate-fc-blink {
   animation: fc-blink 1.4s infinite;
-}
-.animate-fc-glow {
-  animation: fc-glow 7s ease-in-out infinite;
 }
 
 /* sync-timeline + product-shot motion (home + how-it-works differentiator) */
@@ -323,20 +286,6 @@ body {
   }
   50% {
     transform: scaleX(1);
-  }
-}
-@keyframes fc-snap {
-  0%,
-  18% {
-    left: 87%;
-  }
-  30%,
-  82% {
-    left: 33%;
-  }
-  94%,
-  100% {
-    left: 87%;
   }
 }
 @keyframes fc-lockin {
@@ -367,30 +316,14 @@ body {
     opacity: 1;
   }
 }
-@keyframes fc-ring {
-  0% {
-    transform: scale(0.6);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
 .animate-fc-grow {
   animation: fc-grow 4s ease-in-out infinite;
-}
-.animate-fc-snap {
-  animation: fc-snap 6s ease-in-out infinite;
 }
 .animate-fc-lockin {
   animation: fc-lockin 6s ease-in-out infinite;
 }
 .animate-fc-lockout {
   animation: fc-lockout 6s ease-in-out infinite;
-}
-.animate-fc-ring {
-  animation: fc-ring 2s ease-out infinite;
 }
 
 /* ------- Room set. ------- */

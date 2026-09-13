@@ -56,7 +56,7 @@ async function previewForBody(
     return {
       ok: false,
       error:
-        "Links to that site aren't allowed here — see the community guidelines (no piracy, no unsafe downloads).",
+        "Links to that site aren't allowed here - see the community guidelines (no piracy, no unsafe downloads).",
     };
   }
 
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     .gte("created_at", windowStart);
   if ((recent ?? 0) >= 5) {
     return NextResponse.json(
-      { error: "Easy — you're sending too fast." },
+      { error: "Easy - you're sending too fast." },
       { status: 429 },
     );
   }

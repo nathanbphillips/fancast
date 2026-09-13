@@ -46,7 +46,7 @@ export default function MatchesHeroPreview() {
   return (
     <div className="mx-auto max-w-[1120px] px-5 py-9 sm:px-10">
       <p className="mb-6 font-mono text-[12px] text-tertiary">
-        DESIGN PREVIEW — not the live page. The real /matches renders these
+        DESIGN PREVIEW - not the live page. The real /matches renders these
         states from live room data.
       </p>
 

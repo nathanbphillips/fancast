@@ -18,8 +18,8 @@ export default function GuidelinesPage() {
         <li>
           <Strong>Football arguments yes, personal attacks no.</Strong> Call a
           performance a disgrace; don&apos;t call a person one. Abuse,
-          harassment, hate speech, slurs, or threats directed at anyone —
-          players, refs, other fans — get messages hidden and accounts removed.
+          harassment, hate speech, slurs, or threats directed at anyone -
+          players, refs, other fans - get messages hidden and accounts removed.
         </li>
         <li>
           <Strong>No links to unauthorized streams.</Strong> One strike. Links

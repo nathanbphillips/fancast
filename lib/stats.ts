@@ -351,7 +351,7 @@ function normalizeDeep(raw: SmFixtureDetail, home: SideTeam, away: SideTeam): De
     const d = (l.details ?? []).find((x) => x.type?.code === code);
     return d ? num(d.data?.value) : null;
   };
-  const nameOf = (l: SmLineup) => l.player?.display_name ?? l.player_name ?? "—";
+  const nameOf = (l: SmLineup) => l.player?.display_name ?? l.player_name ?? "·";
 
   let xgHome = 0, xgAway = 0;
   const xgTop: XgPlayer[] = [];
@@ -610,7 +610,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
     if (rows.length === 0) return null;
     const toPlayer = (l: SmLineup, starting: boolean): LineupPlayer => ({
       playerId: l.player_id,
-      name: l.player?.display_name ?? l.player_name ?? "—",
+      name: l.player?.display_name ?? l.player_name ?? "·",
       jersey: l.jersey_number ?? null,
       line: l.formation_field ? Number(l.formation_field.split(":")[0]) || null : null,
       slot: l.formation_field ? Number(l.formation_field.split(":")[1]) || null : null,
@@ -650,7 +650,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
       const onBase = byId.get(s.onId);
       const incoming: LineupPlayer = {
         playerId: s.onId,
-        name: onBase?.name ?? s.onName ?? "—",
+        name: onBase?.name ?? s.onName ?? "·",
         jersey: onBase?.jersey ?? null,
         line: off.line,
         slot: off.slot,

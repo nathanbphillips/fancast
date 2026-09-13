@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   // user who posts a handful of links.
   if (!rateLimit(`link:${caller.userId}`, 10, 60_000)) {
     return NextResponse.json(
-      { error: "You're posting links too fast — give it a moment." },
+      { error: "You're posting links too fast - give it a moment." },
       { status: 429 },
     );
   }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Links to that site aren't allowed here — see the community guidelines (no piracy, no unsafe downloads).",
+          "Links to that site aren't allowed here - see the community guidelines (no piracy, no unsafe downloads).",
       },
       { status: 422 },
     );

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
   // so the host's X looked like it worked while the caller stayed live.
   if (!revoked) {
     return NextResponse.json(
-      { error: "Couldn't cut them off — audio service didn't respond. Try again." },
+      { error: "Couldn't cut them off - audio service didn't respond. Try again." },
       { status: 502 },
     );
   }

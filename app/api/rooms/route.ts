@@ -823,7 +823,7 @@ export async function POST(request: NextRequest) {
       new Date(body.broadcastStart).getTime() < Date.now() - 60_000
     ) {
       return NextResponse.json(
-        { error: "That start time is in the past — pick a future time." },
+        { error: "That start time is in the past - pick a future time." },
         { status: 400 },
       );
     }

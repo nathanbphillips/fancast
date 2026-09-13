@@ -50,14 +50,10 @@ export function Button({
   "aria-label"?: string;
 }) {
   const cls = `inline-flex items-center justify-center gap-1.5 font-semibold transition-colors disabled:opacity-60 ${SIZES[size]} ${VARIANTS[variant]} ${className}`;
-  const inner = (
-    <>
-      {children}
-      {shine && variant === "red" ? (
-        <span aria-hidden="true" className="btn-shine" />
-      ) : null}
-    </>
-  );
+  // `shine` is retired (Programme has no specular sweep); the prop is kept so
+  // call sites keep compiling, and renders nothing.
+  void shine;
+  const inner = <>{children}</>;
   if (href) {
     return (
       <Link href={href} className={cls} aria-label={ariaLabel}>

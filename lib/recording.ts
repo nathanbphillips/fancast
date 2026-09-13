@@ -181,7 +181,7 @@ async function waitForEgress(
     ok: false,
     reason: lastErr
       ? `egress status unknown (${lastErr})`
-      : "egress still finalizing — try again shortly",
+      : "egress still finalizing - try again shortly",
   };
 }
 
