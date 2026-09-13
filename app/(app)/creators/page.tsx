@@ -30,7 +30,7 @@ const FACTS = [
 const BENEFITS = [
   {
     t: "Live call-in shows",
-    d: "Turn listeners into guests with one tap. A moderated queue, a host-plus-two-guests cap, private caller positions, and instant on-air — the phone-in, without the switchboard.",
+    d: "Turn listeners into guests with one tap. A moderated queue, a host-plus-two-guests cap, private caller positions, and instant on-air - the phone-in, without the switchboard.",
   },
   {
     t: "Instant, downloadable episodes",
@@ -49,7 +49,7 @@ const FORMATS = [
   },
   {
     t: "Listener call-in specials",
-    d: "Open the lines for a phone-in — transfer window, big signings, post-match hot takes.",
+    d: "Open the lines for a phone-in - transfer window, big signings, post-match hot takes.",
   },
   {
     t: "Matchday watch-alongs",
@@ -64,7 +64,7 @@ const FORMATS = [
 const FAQ = [
   {
     q: "What do I need to start?",
-    a: "A phone or laptop and a reasonably quiet room. A cheap USB mic helps but isn't required. The whole thing runs in the browser, including iOS Safari — no app, no studio.",
+    a: "A phone or laptop and a reasonably quiet room. A cheap USB mic helps but isn't required. The whole thing runs in the browser, including iOS Safari - no app, no studio.",
   },
   {
     q: "Do my listeners have to pay?",
@@ -72,7 +72,7 @@ const FAQ = [
   },
   {
     q: "Do I really keep my recordings?",
-    a: "Yes — 100%. Every broadcast is recorded and cut into a full MP3 plus per-segment files you can download and republish anywhere. We take no license and no rights. Files stay available to download for 90 days (you can pin ones you want to keep longer).",
+    a: "Yes - 100%. Every broadcast is recorded and cut into a full MP3 plus per-segment files you can download and republish anywhere. We take no license and no rights. Files stay available to download for 90 days (you can pin ones you want to keep longer).",
   },
   {
     q: "Can I run it under my own name and brand?",
@@ -80,11 +80,11 @@ const FAQ = [
   },
   {
     q: "Can I host a regular show?",
-    a: "You can schedule a room for any time and share the link. Recurring shows and standing call-in slots are on the roadmap — the goal is a place your listeners know to find you, week in, week out.",
+    a: "You can schedule a room for any time and share the link. Recurring shows and standing call-in slots are on the roadmap - the goal is a place your listeners know to find you, week in, week out.",
   },
   {
     q: "Is it only for match commentary?",
-    a: `${brand.name} is built Arsenal-first and matchday is the heart of it, but a room is just a live audio space — bring whatever show you want to run.`,
+    a: `${brand.name} is built Arsenal-first and matchday is the heart of it, but a room is just a live audio space - bring whatever show you want to run.`,
   },
 ];
 
@@ -92,15 +92,7 @@ export default function CreatorsPage() {
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden px-5 pt-16 pb-10 sm:px-10">
-        <div
-          aria-hidden="true"
-          className="animate-fc-glow pointer-events-none absolute -top-40 right-0 h-[560px] w-[760px]"
-          style={{
-            background:
-              "radial-gradient(54% 56% at 60% 40%, rgba(239,1,7,.16), transparent 72%)",
-          }}
-        />
+      <section className="relative px-5 pt-16 pb-10 sm:px-10">
         <div className="relative z-[2] mx-auto max-w-[780px] text-center">
           <div className={`${eyebrow} justify-center`}>
             FOR PODCASTERS &amp; CREATORS
@@ -108,22 +100,22 @@ export default function CreatorsPage() {
           <h1 className="display mt-4 t-hero text-primary">
             Your show, live. Then <span className="text-red">downloadable.</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-[600px] text-[18px] leading-[1.6] text-secondary">
+          <p className="mx-auto mt-5 max-w-[600px] text-[18px] leading-[1.6] text-secondary italic">
             Bring your listeners into the room with live call-ins, then walk away
             with the whole episode cut and ready to download. Your voice, your
-            guests, your show — {brand.name} just runs the room and hands you the
+            guests, your show - {brand.name} just runs the room and hands you the
             files.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Link
               href="/host"
-              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
+              className="btn-grad-red inline-flex items-center gap-2 px-7 py-4 text-[15px] font-semibold"
             >
               Start your first show <span aria-hidden="true">→</span>
             </Link>
             <Link
               href="/host/guide"
-              className="inline-flex items-center gap-2 rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary transition-colors hover:bg-raised"
+              className="inline-flex items-center gap-2 border-2 border-primary px-[26px] py-4 font-mono text-[14px] font-semibold tracking-[0.08em] text-primary transition-colors hover:text-red"
             >
               Read the handbook
             </Link>
@@ -153,14 +145,14 @@ export default function CreatorsPage() {
       {/* CORE BENEFITS */}
       <section className="mx-auto max-w-[1010px] px-5 pt-14 pb-2 sm:px-10">
         <div className={`${eyebrow} mb-3`}>WHY CREATORS HOST HERE</div>
-        <h2 className="display max-w-[680px] t-h2">
+        <h2 className="display max-w-[680px] border-b-[3px] border-double border-primary pb-4 t-h2">
           More than a mic. A live audience and a finished episode.
         </h2>
         <div className="mt-9 grid gap-3 sm:grid-cols-3">
           {BENEFITS.map((b) => (
             <div
               key={b.t}
-              className="rounded-2xl border border-line bg-raised px-6 pt-[26px] pb-7 shadow-card"
+              className="border border-line bg-canvas px-6 pt-[26px] pb-7"
             >
               <h3 className="t-title font-extrabold">{b.t}</h3>
               <p className="mt-2.5 text-[13.5px] leading-[1.55] text-secondary">
@@ -174,18 +166,18 @@ export default function CreatorsPage() {
       {/* FORMATS / DIVERSIFY */}
       <section className="mx-auto max-w-[1010px] px-5 pt-14 pb-2 sm:px-10">
         <div className={`${eyebrow} mb-3`}>NEW FORMATS</div>
-        <h2 className="display max-w-[680px] t-h2">
+        <h2 className="display max-w-[680px] border-b-[3px] border-double border-primary pb-4 t-h2">
           A live dimension your feed can&apos;t offer.
         </h2>
-        <p className="mt-4 max-w-[620px] text-[15px] leading-[1.6] text-secondary">
+        <p className="mt-4 max-w-[620px] text-[15px] leading-[1.6] text-secondary italic">
           The same show you already make, plus a room that talks back. Give
-          listeners a reason to show up live — and a reason to come back.
+          listeners a reason to show up live - and a reason to come back.
         </p>
         <div className="mt-8 grid gap-[18px] sm:grid-cols-2">
           {FORMATS.map((f) => (
             <div
               key={f.t}
-              className="rounded-2xl border border-line bg-surface px-6 py-6"
+              className="border border-line bg-canvas px-6 py-6"
             >
               <h3 className="t-title font-extrabold">{f.t}</h3>
               <p className="mt-2 text-sm leading-[1.55] text-secondary">{f.d}</p>
@@ -196,35 +188,23 @@ export default function CreatorsPage() {
 
       {/* THE ONE RULE — audio only (load-bearing compliance) */}
       <section className="mx-auto max-w-[1010px] px-5 pt-12 pb-5 sm:px-10">
-        <div className="rounded-2xl border border-red/30 bg-inset px-6 py-7">
+        <div className="border-2 border-red bg-canvas px-6 py-7">
           <div className={`${eyebrow} mb-3`}>THE ONE RULE</div>
           <h3 className="display t-h3">Audio only, always</h3>
           <p className="mt-2 mb-5 max-w-[680px] text-sm leading-[1.6] text-secondary">
             Your show is your voice and your guests. Never play match video or
             broadcast audio through it, even in the background. That rule is what
-            keeps you — and the platform — on the right side of the line, and it
+            keeps you, and the platform, on the right side of the line, and it
             is the one thing we can&apos;t bend.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div
-              className="flex items-center gap-3 rounded-xl border px-4 py-3.5"
-              style={{
-                background: "rgba(52,209,122,.08)",
-                borderColor: "rgba(52,209,122,.3)",
-              }}
-            >
+            <div className="flex items-center gap-3 border border-green bg-canvas px-4 py-3.5">
               <span className="text-lg font-extrabold text-green">✓</span>
               <span className="text-[13.5px] font-semibold text-primary">
                 Your voice, your guests, your takes
               </span>
             </div>
-            <div
-              className="flex items-center gap-3 rounded-xl border px-4 py-3.5"
-              style={{
-                background: "rgba(239,1,7,.06)",
-                borderColor: "rgba(239,1,7,.3)",
-              }}
-            >
+            <div className="flex items-center gap-3 border border-red bg-canvas px-4 py-3.5">
               <span className="text-lg font-extrabold text-red">✗</span>
               <span className="text-[13.5px] font-semibold text-primary">
                 Match video or broadcast audio, ever
@@ -237,20 +217,14 @@ export default function CreatorsPage() {
       {/* FAQ */}
       <section className="mx-auto max-w-[760px] px-5 pt-8 pb-4 sm:px-10">
         <div className={`${eyebrow} mb-3.5`}>QUICK ANSWERS</div>
-        <h2 className="display t-h2">What creators ask</h2>
+        <h2 className="display border-b-[3px] border-double border-primary pb-4 t-h2">
+          What creators ask
+        </h2>
         <Faq items={FAQ} />
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-line px-5 py-16 text-center sm:px-10">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-1/2 h-[460px] w-[860px] -translate-x-1/2 -translate-y-1/2"
-          style={{
-            background:
-              "radial-gradient(50% 60% at 50% 50%, rgba(239,1,7,.18), transparent 70%)",
-          }}
-        />
+      <section className="relative border-t-[3px] border-double border-primary px-5 py-16 text-center sm:px-10">
         <div className="relative z-[2]">
           <h2 className="display mx-auto t-h2">Put your listeners on air.</h2>
           <p className="mx-auto mt-4 max-w-[480px] text-[16px] text-secondary">
@@ -260,10 +234,9 @@ export default function CreatorsPage() {
           <div className="mt-7 flex justify-center">
             <Link
               href="/host"
-              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-7 py-4 text-[15px] font-semibold text-white"
+              className="btn-grad-red inline-flex items-center gap-2 px-7 py-4 text-[15px] font-semibold"
             >
               Start your first show <span aria-hidden="true">→</span>
-              <span aria-hidden="true" className="btn-shine" />
             </Link>
           </div>
         </div>

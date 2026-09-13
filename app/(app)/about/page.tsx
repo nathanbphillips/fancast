@@ -3,10 +3,11 @@ import Link from "next/link";
 import { brand } from "@/lib/brand";
 
 /**
- * About / Voices (Matchday design): manifesto hero → problem/idea/promise cards
- * → stat band → four principles → founder → the voices (archetypes) → FAQ grid
- * → CTA. Copy verbatim (no em-dashes). The compliance FAQ stays prominent.
- * Voices are illustrative archetypes; no photos, no fabricated follower counts.
+ * About / Voices (Programme design): manifesto hero, problem/idea/promise ruled
+ * cards, stat band, four principles, founder boxed panel, the voices
+ * (archetypes), FAQ as ruled rows, CTA. Copy verbatim (no em dashes). The
+ * compliance FAQ stays prominent. Voices are illustrative archetypes; no
+ * photos, no fabricated follower counts.
  */
 
 export const metadata: Metadata = {
@@ -61,19 +62,19 @@ const PRINCIPLES = [
 const VOICES = [
   {
     i: "DG",
-    grad: "linear-gradient(135deg,#ef0107,#7a0a12)",
+    grad: "var(--red-fill)",
     t: "The lifelong Gooner",
     d: "Lives and dies with every result and calls it exactly as they see it. Never neutral, never on the fence.",
   },
   {
     i: "TH",
-    grad: "linear-gradient(135deg,#1f6f4a,#0c3a26)",
+    grad: "#1f6f4a",
     t: "The tactics head",
     d: "Will talk you through the xG and the press triggers, then happily ignore all of it the second we score a wonder goal.",
   },
   {
     i: "CH",
-    grad: "linear-gradient(135deg,#2a4a8a,#12224a)",
+    grad: "#2a4a8a",
     t: "The call-in host",
     d: "Runs the half-time poll and the call-in mic on the big nights, so the whole room gets a say.",
   },
@@ -114,35 +115,18 @@ export default function AboutPage() {
   return (
     <>
       {/* MANIFESTO HERO */}
-      <section className="relative overflow-hidden px-5 pt-[70px] pb-12 text-center sm:px-10">
-        <div
-          aria-hidden="true"
-          className="animate-fc-glow pointer-events-none absolute -top-40 left-1/2 h-[600px] w-[1000px] -translate-x-1/2"
-          style={{
-            background:
-              "radial-gradient(56% 56% at 50% 40%, rgba(239,1,7,.2), transparent 72%)",
-          }}
-        />
+      <section className="relative px-5 pt-[70px] pb-12 text-center sm:px-10">
         <div className="relative z-[2] mx-auto max-w-[820px]">
-          <span className="inline-flex items-center gap-2 rounded-full border border-line bg-surface/40 px-[15px] py-2 font-mono text-[12px] text-secondary">
+          <span className={`${eyebrow} justify-center`}>
             About {brand.name}
           </span>
           <h1 className="display mt-6 t-hero">
             Not a broadcaster.
             <br />
             Fans &amp; friends,{" "}
-            <span
-              className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  "linear-gradient(120deg,#ff2e28,#ef0107 55%,#b00206)",
-              }}
-            >
-              hanging out
-            </span>
-            .
+            <span className="text-red">hanging out</span>.
           </h1>
-          <p className="mx-auto mt-[22px] max-w-[600px] text-[18px] leading-[1.62] text-secondary">
+          <p className="mx-auto mt-[22px] max-w-[600px] text-[18px] leading-[1.62] text-secondary italic">
             Match coverage got polished into something that forgot who it was
             for. We&apos;re setting out to build the opposite: a real supporter in
             your ear, the chat you&apos;d have at the pub, and the numbers that
@@ -158,10 +142,9 @@ export default function AboutPage() {
           {STORY.map((s) => (
             <div
               key={s.h}
-              className="rounded-2xl border border-line bg-surface p-[26px]"
-              style={{ borderTop: "2px solid #ef0107" }}
+              className="border border-line border-t-2 border-t-red bg-canvas p-[26px]"
             >
-              <div className="mb-3 font-mono text-[11px] tracking-[0.08em] text-tertiary">
+              <div className="mb-3 font-mono text-[11px] tracking-[0.08em] text-red">
                 {s.h}
               </div>
               <p className="text-[16px] leading-[1.6] text-primary/90">{s.p}</p>
@@ -192,12 +175,14 @@ export default function AboutPage() {
       {/* FOUR PRINCIPLES */}
       <section className="mx-auto max-w-[1010px] px-5 pt-16 pb-10 sm:px-10">
         <div className={`${eyebrow} mb-3`}>WHAT WE STAND FOR</div>
-        <h2 className="display t-h2">Four things we won&apos;t budge on.</h2>
+        <h2 className="display border-b-[3px] border-double border-primary pb-4 t-h2">
+          Four things we won&apos;t budge on.
+        </h2>
         <div className="mt-8 grid gap-3 md:grid-cols-2">
           {PRINCIPLES.map((p, i) => (
             <div
               key={p.k}
-              className="flex gap-[18px] rounded-2xl border border-line bg-surface p-[26px] transition-colors hover:border-line"
+              className="flex gap-[18px] border border-line bg-canvas p-[26px]"
             >
               <div className="display shrink-0 text-[30px] leading-none text-red">
                 0{i + 1}
@@ -217,26 +202,9 @@ export default function AboutPage() {
 
       {/* FOUNDER */}
       <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
-        <div
-          className="relative grid items-center gap-8 overflow-hidden rounded-[20px] border border-line p-9 sm:grid-cols-[auto_1fr]"
-          style={{ background: "linear-gradient(135deg,#161318,#0f0e11)" }}
-        >
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -top-16 -right-8 h-[280px] w-[280px]"
-            style={{
-              background:
-                "radial-gradient(circle, rgba(239,1,7,.14), transparent 68%)",
-            }}
-          />
+        <div className="relative grid items-center gap-8 border-2 border-primary bg-canvas p-9 sm:grid-cols-[auto_1fr]">
           <div className="relative z-[2] text-center">
-            <span
-              className="flex h-24 w-24 items-center justify-center rounded-[24px] font-mono text-[34px] font-extrabold text-white"
-              style={{
-                background: "linear-gradient(135deg,#ef0107,#7a0a12)",
-                boxShadow: "0 20px 40px -18px rgba(239,1,7,.7)",
-              }}
-            >
+            <span className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-fill font-mono text-[34px] font-extrabold text-on-red">
               NP
             </span>
             <div className="mt-3 text-[14px] font-bold">Nathan Phillips</div>
@@ -260,7 +228,7 @@ export default function AboutPage() {
               href="https://bsky.app/profile/nathanphillips.bsky.social"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-[10px] border border-line bg-surface/40 px-[18px] py-[11px] text-[13px] font-semibold text-primary transition-colors hover:bg-raised"
+              className="inline-flex items-center gap-2 border-2 border-primary px-[18px] py-[11px] font-mono text-[13px] font-semibold tracking-[0.08em] text-primary transition-colors hover:text-red"
             >
               Say hello on Bluesky →
             </a>
@@ -271,18 +239,20 @@ export default function AboutPage() {
       {/* THE VOICES */}
       <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
         <div className={`${eyebrow} mb-3`}>THE VOICES</div>
-        <h2 className="display t-h2">The kind of voice you&apos;ll hear.</h2>
-        <p className="mt-3 text-[15px] text-secondary">
+        <h2 className="display border-b-[3px] border-double border-primary pb-4 t-h2">
+          The kind of voice you&apos;ll hear.
+        </h2>
+        <p className="mt-3 text-[15px] text-secondary italic">
           Real supporters, not pundits. Named hosts show up here as rooms open.
         </p>
         <div className="mt-6 grid gap-3.5 md:grid-cols-3">
           {VOICES.map((v) => (
             <div
               key={v.t}
-              className="rounded-2xl border border-line bg-surface p-6 transition-transform hover:-translate-y-[3px]"
+              className="border border-line bg-canvas p-6"
             >
               <span
-                className="mb-3.5 flex h-[52px] w-[52px] items-center justify-center rounded-full font-bold text-white"
+                className="mb-3.5 flex h-[52px] w-[52px] items-center justify-center rounded-full font-bold text-on-red"
                 style={{ background: v.grad }}
               >
                 {v.i}
@@ -299,12 +269,14 @@ export default function AboutPage() {
       {/* FAQ */}
       <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
         <div className={`${eyebrow} mb-3`}>QUESTIONS, ANSWERED</div>
-        <h2 className="display t-h2">The bits people ask.</h2>
-        <div className="mt-6 grid gap-3 md:grid-cols-2">
+        <h2 className="display border-b-[3px] border-double border-primary pb-4 t-h2">
+          The bits people ask.
+        </h2>
+        <div className="mt-4 border-b border-line">
           {FAQ.map((f) => (
             <div
               key={f.q}
-              className="rounded-[14px] border border-line bg-surface p-[22px]"
+              className="border-t border-line py-5 first:border-t-0"
             >
               <div className="mb-[7px] text-[15px] font-bold">{f.q}</div>
               <p className="text-[13px] leading-[1.55] text-secondary">{f.a}</p>
@@ -316,13 +288,15 @@ export default function AboutPage() {
       {/* GET ON THE MIC — host + creators CTAs */}
       <section className="mx-auto max-w-[1010px] px-5 pb-14 sm:px-10">
         <div className={`${eyebrow} mb-3`}>WANT TO HOST?</div>
-        <h2 className="display t-h2">Two ways to get on the mic.</h2>
-        <p className="mt-3 max-w-[560px] text-[15px] text-secondary">
+        <h2 className="display border-b-[3px] border-double border-primary pb-4 t-h2">
+          Two ways to get on the mic.
+        </h2>
+        <p className="mt-3 max-w-[560px] text-[15px] text-secondary italic">
           We&apos;re looking for the fans and creators who want to build this
           with us. If that&apos;s you, there&apos;s a seat at the front.
         </p>
         <div className="mt-6 grid gap-3.5 md:grid-cols-2">
-          <div className="flex flex-col rounded-2xl border border-line bg-surface p-7">
+          <div className="flex flex-col border border-line bg-canvas p-7">
             <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
               Host a matchday room
             </h3>
@@ -337,7 +311,7 @@ export default function AboutPage() {
               For hosts →
             </Link>
           </div>
-          <div className="flex flex-col rounded-2xl border border-line bg-surface p-7">
+          <div className="flex flex-col border border-line bg-canvas p-7">
             <h3 className="text-[19px] font-extrabold tracking-[-0.01em]">
               Bring your podcast
             </h3>
@@ -357,15 +331,7 @@ export default function AboutPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section className="relative overflow-hidden border-t border-line px-5 py-20 text-center sm:px-10">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-1/2 h-[500px] w-[900px] -translate-x-1/2 -translate-y-1/2"
-          style={{
-            background:
-              "radial-gradient(50% 60% at 50% 50%, rgba(239,1,7,.2), transparent 70%)",
-          }}
-        />
+      <section className="relative border-t-[3px] border-double border-primary px-5 py-20 text-center sm:px-10">
         <div className="relative z-[2]">
           <h2 className="display mx-auto t-hero">Pull up a seat.</h2>
           <p className="mx-auto mt-[18px] max-w-[500px] text-[17px] leading-[1.6] text-secondary">
@@ -375,14 +341,13 @@ export default function AboutPage() {
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             <Link
               href="/matches"
-              className="btn-grad-red inline-flex items-center gap-2 rounded-[13px] px-[30px] py-4 text-[15px] font-semibold text-white"
+              className="btn-grad-red inline-flex items-center gap-2 px-[30px] py-4 text-[15px] font-semibold"
             >
               See what&apos;s on →
-              <span aria-hidden="true" className="btn-shine" />
             </Link>
             <Link
               href="/host"
-              className="inline-flex items-center rounded-[13px] border border-line bg-surface/40 px-[26px] py-4 text-[15px] font-semibold text-primary hover:bg-raised"
+              className="inline-flex items-center border-2 border-primary px-[26px] py-4 font-mono text-[14px] font-semibold tracking-[0.08em] text-primary hover:text-red"
             >
               Host a room
             </Link>
