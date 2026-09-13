@@ -61,7 +61,7 @@ export function MatchHeader({
       aria-label="Match status"
       // listeners: desktop-only (the mobile sync transport carries leave/LIVE/
       // clock/score itself). Commentators: all widths (no listener transport).
-      className={`${showOnMobile ? "flex" : "hidden"} h-[54px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-4 lg:flex`}
+      className={`${showOnMobile ? "flex" : "hidden"} h-[54px] shrink-0 items-center justify-between gap-3 border-b border-primary bg-canvas px-4 lg:flex`}
     >
       {/* left: leave · competition · title */}
       <div className="flex min-w-0 items-center gap-3">
@@ -76,7 +76,7 @@ export function MatchHeader({
         </Link>
         <span aria-hidden="true" className="h-5 w-px shrink-0 bg-line" />
         {competition && (
-          <span className="hidden shrink-0 rounded-[5px] border border-line px-1.5 py-[3px] font-mono text-[10px] tracking-[0.08em] text-secondary uppercase md:inline">
+          <span className="hidden shrink-0 border border-line px-1.5 py-[3px] font-mono text-[10px] tracking-[0.08em] text-secondary uppercase md:inline">
             {competition}
           </span>
         )}
@@ -88,10 +88,10 @@ export function MatchHeader({
       {/* center: discussion → LIVE pill only; match → live · clock · score */}
       <div className="flex shrink-0 items-center gap-3">
         {(discussion ? live : isLive) && (
-          <span className="hidden items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 font-mono text-[11px] tracking-[0.1em] text-white sm:flex">
+          <span className="hidden items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-[11px] tracking-[0.1em] text-on-red sm:flex">
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-white"
+              className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-on-red"
             />
             LIVE
           </span>
@@ -129,12 +129,8 @@ export function MatchHeader({
               {[0, 1, 2].map((i) => (
                 <span
                   key={i}
-                  className="h-[22px] w-[22px] rounded-full border-[1.5px] border-surface"
-                  style={{
-                    background:
-                      "radial-gradient(circle at 35% 30%, #3a3a40, #1b1b1f)",
-                    marginLeft: i ? -8 : 0,
-                  }}
+                  className="h-[22px] w-[22px] rounded-full border border-line bg-raised"
+                  style={{ marginLeft: i ? -8 : 0 }}
                 />
               ))}
             </span>

@@ -45,7 +45,7 @@ export function CommentatorUpgrade() {
     return (
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <p className="text-sm font-bold">Become a commentator</p>
+          <p className="display text-lg">Become a commentator</p>
           <p className="mt-0.5 text-[13px] text-secondary">
             Host live rooms for matches: your voice, your show, your recordings.
           </p>
@@ -60,7 +60,7 @@ export function CommentatorUpgrade() {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-sm font-bold">Become a commentator</p>
+        <p className="display text-lg">Become a commentator</p>
         <p className="mt-0.5 text-[13px] text-secondary">
           Hosting means you schedule rooms against real fixtures, go on air for
           the room, and own every recording. Read the terms, tick the box, and
@@ -68,7 +68,7 @@ export function CommentatorUpgrade() {
         </p>
       </div>
 
-      <div className="space-y-3 rounded-xl border-[0.75px] border-line bg-raised p-4">
+      <div className="space-y-3 border-2 border-primary bg-canvas p-4">
         {COMMENTATOR_TERMS.map((t) => (
           <div key={t.heading}>
             <p className="text-[13px] font-bold">{t.heading}</p>
@@ -85,7 +85,7 @@ export function CommentatorUpgrade() {
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-red/40 bg-inset px-3 py-2 text-sm text-red"
+          className="border border-red/40 bg-inset px-3 py-2 text-sm text-red"
         >
           {error}
         </p>

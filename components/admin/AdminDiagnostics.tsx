@@ -129,7 +129,7 @@ export function AdminDiagnostics({
             <li key={r.id} className="rounded-xl border border-line p-3">
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-secondary">
                 <span
-                  className={`rounded-full border bg-raised px-2 py-0.5 font-mono text-[10px] font-bold ${
+                  className={`fv-normal rounded-full border bg-raised px-2 py-0.5 font-mono text-[10px] font-bold ${
                     CHIP[kind] ?? "border-line text-secondary"
                   }`}
                 >
@@ -153,7 +153,7 @@ export function AdminDiagnostics({
                 </p>
               )}
 
-              <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px]">
+              <div className="fv-normal mt-2 flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px]">
                 {r.path && (
                   <span>
                     <span className="text-tertiary">page</span>{" "}
@@ -187,7 +187,7 @@ export function AdminDiagnostics({
               </div>
 
               {typeof p.source === "string" && (
-                <p className="mt-1 font-mono text-[10px] break-all text-tertiary">
+                <p className="fv-normal mt-1 font-mono text-[10px] break-all text-tertiary">
                   {p.source}
                 </p>
               )}
@@ -196,7 +196,7 @@ export function AdminDiagnostics({
                   <summary className="cursor-pointer font-mono text-[10px] text-tertiary hover:text-secondary">
                     raw user-agent
                   </summary>
-                  <p className="mt-1 font-mono text-[10px] break-all text-secondary">
+                  <p className="fv-normal mt-1 font-mono text-[10px] break-all text-secondary">
                     {p.ua}
                   </p>
                 </details>
@@ -206,7 +206,7 @@ export function AdminDiagnostics({
                   <summary className="cursor-pointer font-mono text-[10px] text-tertiary hover:text-secondary">
                     stack
                   </summary>
-                  <pre className="mt-1 max-h-40 overflow-auto rounded bg-inset p-2 font-mono text-[10px] whitespace-pre-wrap text-secondary">
+                  <pre className="fv-normal mt-1 max-h-40 overflow-auto bg-inset p-2 font-mono text-[10px] whitespace-pre-wrap text-secondary">
                     {p.stack}
                   </pre>
                 </details>

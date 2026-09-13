@@ -80,7 +80,7 @@ export function AdminTools() {
     if (body.status === "sent") {
       setTestMsg({ ok: true, text: `Resend accepted the send to ${body.to}${fromNote}. Check the inbox.` });
     } else if (body.status === "skipped") {
-      setTestMsg({ ok: false, text: `Skipped — ${body.detail}` });
+      setTestMsg({ ok: false, text: `Skipped - ${body.detail}` });
     } else {
       setTestMsg({ ok: false, text: `Resend rejected it${fromNote}: ${body.error}` });
     }
@@ -144,14 +144,14 @@ export function AdminTools() {
         <button
           type="submit"
           disabled={busy || !home.trim() || !away.trim() || !kickoff}
-          className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
+          className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-on-red disabled:opacity-60"
         >
           {busy ? "Creating…" : "Create room"}
         </button>
         <p className="text-[11px] text-secondary">
           Title shows only the teams. Venue, weather, referee, and live stats
           fill in automatically once Sportmonks has the game (covered
-          competitions only) — otherwise the room shows “Information coming soon”.
+          competitions only) - otherwise the room shows “Information coming soon”.
         </p>
       </form>
 
@@ -175,7 +175,7 @@ export function AdminTools() {
       <div className="rounded-xl border-[0.75px] border-line bg-surface p-4">
         <h2 className="text-sm font-bold">Send test email</h2>
         <p className="mt-1 text-xs text-secondary">
-          Fires one email through Resend and reports the raw result — use it to
+          Fires one email through Resend and reports the raw result - use it to
           verify the domain/key after any config change. Leave blank to send to
           your own account email.
         </p>

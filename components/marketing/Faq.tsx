@@ -7,7 +7,7 @@ export function Faq({ items }: { items: { q: string; a: ReactNode }[] }) {
       {items.map((it, i) => (
         <details
           key={i}
-          className="group rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-card"
+          className="group border border-line bg-canvas p-4"
         >
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-bold tracking-[-0.01em] [&::-webkit-details-marker]:hidden">
             {it.q}

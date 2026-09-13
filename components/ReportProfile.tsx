@@ -64,11 +64,11 @@ export function ReportProfile({ userId }: { userId: string }) {
   return (
     <form
       onSubmit={submit}
-      className="w-full max-w-sm space-y-2 rounded-xl border-[0.75px] border-line bg-surface p-3"
+      className="w-full max-w-sm space-y-2 border-2 border-primary bg-canvas p-3"
     >
       <p className="text-sm font-bold">Report this profile</p>
       {error && (
-        <p role="alert" className="rounded-lg border border-red/40 bg-inset px-3 py-1.5 text-xs text-red">
+        <p role="alert" className="border border-red/40 bg-inset px-3 py-1.5 text-xs text-red">
           {error}
         </p>
       )}
@@ -77,7 +77,7 @@ export function ReportProfile({ userId }: { userId: string }) {
         onChange={(e) => setReason(e.target.value)}
         required
         aria-label="Reason"
-        className="h-10 w-full rounded-lg border border-line bg-inset px-2.5 text-sm"
+        className="h-10 w-full border-2 border-primary bg-canvas px-2.5 text-sm"
       >
         <option value="" disabled>
           Pick a reason
@@ -95,13 +95,13 @@ export function ReportProfile({ userId }: { userId: string }) {
         rows={2}
         placeholder="Anything a moderator should know (optional)"
         aria-label="Report note"
-        className="w-full rounded-lg border border-line bg-inset px-2.5 py-2 text-sm placeholder:text-secondary"
+        className="w-full border-2 border-primary bg-canvas px-2.5 py-2 text-sm placeholder:text-secondary"
       />
       <div className="flex items-center gap-2">
         <button
           type="submit"
           disabled={busy || !reason}
-          className="rounded-lg bg-red-fill px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+          className="btn-grad-red px-3.5 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {busy ? "Sending…" : "Send report"}
         </button>

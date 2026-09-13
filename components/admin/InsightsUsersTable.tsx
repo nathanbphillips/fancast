@@ -24,7 +24,7 @@ const COLS: { key: SortKey; label: string; numeric?: boolean }[] = [
 ];
 
 function day(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "·";
   return iso.slice(0, 10);
 }
 function ago(iso: string | null): string {
@@ -119,7 +119,7 @@ export function InsightsUsersTable({ users }: { users: UserInsight[] }) {
                     )}
                   </div>
                   {u.email && (
-                    <div className="truncate font-mono text-[10px] text-tertiary">
+                    <div className="fv-normal truncate font-mono text-[10px] text-tertiary">
                       {u.email}
                     </div>
                   )}

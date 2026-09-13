@@ -83,7 +83,7 @@ export function AdminBugs({ initial }: { initial: BugRow[] }) {
               </button>
             </div>
             <p className="mt-2 text-sm whitespace-pre-wrap">{b.description}</p>
-            <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-tertiary">
+            <div className="fv-normal mt-2 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-[10px] text-tertiary">
               {b.path && <span>{b.path}</span>}
               {b.viewport && (
                 <span>
@@ -100,7 +100,7 @@ export function AdminBugs({ initial }: { initial: BugRow[] }) {
                 <summary className="cursor-pointer font-mono text-[10px] text-tertiary hover:text-secondary">
                   raw user-agent
                 </summary>
-                <p className="mt-1 font-mono text-[10px] break-all text-secondary">
+                <p className="fv-normal mt-1 font-mono text-[10px] break-all text-secondary">
                   {b.user_agent}
                 </p>
               </details>

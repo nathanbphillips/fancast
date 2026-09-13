@@ -220,7 +220,7 @@ export default async function AdminInsightsPage() {
           <h2 className="mb-3 text-sm font-bold">Events · last 30 days</h2>
           {events.length === 0 ? (
             <p className="text-sm text-secondary">
-              No events logged yet — telemetry starts recording from now.
+              No events logged yet - telemetry starts recording from now.
             </p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-line">
@@ -235,7 +235,7 @@ export default async function AdminInsightsPage() {
                 <tbody>
                   {events.map((e) => (
                     <tr key={e.event} className="border-b border-line/60 last:border-b-0">
-                      <td className="px-3 py-2 font-mono text-[12px]">{e.event}</td>
+                      <td className="fv-normal px-3 py-2 font-mono text-[12px]">{e.event}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{e.last7d}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{e.total}</td>
                     </tr>

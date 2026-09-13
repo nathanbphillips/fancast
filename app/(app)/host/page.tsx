@@ -196,7 +196,7 @@ export default async function HostDashboardPage() {
       <div className="mt-8">
         <CohostInvites invites={invites} />
         {rooms.length === 0 && subscriptions.length === 0 ? (
-          <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
+          <p className="border border-dashed border-line bg-canvas p-6 text-sm text-secondary">
             No upcoming rooms yet. Pick a fixture, create your own room for any
             game, or host a whole season in one click.
           </p>

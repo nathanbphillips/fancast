@@ -87,7 +87,7 @@ export default async function SettingsPage() {
           : ""}
       </p>
 
-      <div className="mt-8 rounded-2xl border border-line bg-surface p-6 shadow-card">
+      <div className="mt-8 border-2 border-primary bg-canvas p-6">
         <ProfileSettingsForm
           initialUsername={profile.username}
           initialAvatarUrl={profile.avatar_url}
@@ -101,12 +101,12 @@ export default async function SettingsPage() {
 
       {/* Hosting (FR-18.1): self-serve commentator upgrade; commentators see
           their standing instead */}
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card">
+      <div className="mt-6 border-2 border-primary bg-canvas p-6">
         {profile.role === "listener" ? (
           <CommentatorUpgrade />
         ) : (
           <div>
-            <p className="text-sm font-bold">
+            <p className="display text-lg">
               {profile.role === "admin" ? "Admin account" : "Commentator account"}
             </p>
             <p className="mt-0.5 text-[13px] text-secondary">
@@ -120,8 +120,8 @@ export default async function SettingsPage() {
       </div>
 
       {/* Friends (FR-23.5): requests, friends, blocked */}
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card">
-        <p className="mb-4 text-sm font-bold">Friends</p>
+      <div className="mt-6 border-2 border-primary bg-canvas p-6">
+        <p className="display mb-4 text-lg">Friends</p>
         <FriendsSettings
           incoming={friendLists.incoming}
           friends={friendLists.friends}
@@ -130,8 +130,8 @@ export default async function SettingsPage() {
       </div>
 
       {/* Notifications (FR-21.5): every type with its two toggles + push */}
-      <div className="mt-6 rounded-2xl border border-line bg-surface p-6 shadow-card">
-        <p className="mb-1 text-sm font-bold">Notifications</p>
+      <div className="mt-6 border-2 border-primary bg-canvas p-6">
+        <p className="display mb-1 text-lg">Notifications</p>
         <p className="mb-4 text-[13px] text-secondary">
           Choose what reaches you and how.
         </p>

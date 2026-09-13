@@ -28,7 +28,7 @@ export function FollowButton({
     setBusy(false);
     if (!res?.ok) {
       setFollowing(!next); // revert
-      toast(next ? "Couldn't follow — try again." : "Couldn't unfollow — try again.");
+      toast(next ? "Couldn't follow - try again." : "Couldn't unfollow - try again.");
       return;
     }
     router.refresh();
@@ -39,10 +39,10 @@ export function FollowButton({
       type="button"
       onClick={toggle}
       disabled={busy}
-      className={`h-11 rounded-lg px-5 text-sm font-semibold disabled:opacity-60 ${
+      className={`h-11 px-5 text-sm font-semibold disabled:opacity-60 ${
         following
-          ? "border border-line bg-surface hover:bg-raised"
-          : "bg-red-fill text-white"
+          ? "border-2 border-primary font-mono tracking-[0.08em] text-primary hover:text-red"
+          : "btn-grad-red"
       }`}
     >
       {following ? "Following" : "Follow"}

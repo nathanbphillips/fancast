@@ -60,12 +60,12 @@ export function NotifyForm({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@email.com"
           aria-label="Email address"
-          className="h-11 min-w-0 flex-1 rounded-lg border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+          className="h-11 min-w-0 flex-1 border-0 border-b-2 border-primary bg-transparent px-1 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
         />
         <button
           type="submit"
           disabled={state === "busy"}
-          className="h-11 shrink-0 rounded-lg bg-red-fill px-5 text-sm font-bold text-white transition-colors hover:bg-red-hover disabled:opacity-60"
+          className="btn-grad-red h-11 shrink-0 px-5 text-sm font-bold disabled:opacity-60"
         >
           {state === "busy" ? "…" : "Notify me"}
         </button>

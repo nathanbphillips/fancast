@@ -16,7 +16,7 @@ export default async function AdminPage() {
     <div className="mx-auto max-w-lg px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight">Admin</h1>
       <p className="mt-1 text-sm text-secondary">
-        Spin up a room for any game — a World Cup match, a friendly, anything.
+        Spin up a room for any game - a World Cup match, a friendly, anything.
       </p>
 
       <Link

@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 function C({ children }: { children: ReactNode }) {
   return (
-    <code className="rounded bg-raised px-1 py-0.5 font-mono text-[0.85em] text-primary">{children}</code>
+    <code className="fv-normal bg-raised px-1 py-0.5 font-mono text-[0.85em] text-primary">{children}</code>
   );
 }
 
@@ -925,7 +925,7 @@ export default function DevDocsPage() {
               <li>Every API route validates input with zod before the DB.</li>
               <li>
                 Design tokens are CSS variables in <C>app/globals.css</C> (Cloud Design system:{" "}
-                <C>--bg-base/surface/raised</C>, <C>--red</C> #F1232B, <C>--gold</C> (AA text gold, dark
+                <C>--bg-base/surface/raised</C>, <C>--red</C>, <C>--gold</C> (AA text gold, dark
                 olive in light) vs <C>--gold-bright</C> (vivid decorative fills only), <C>--line</C>,{" "}
                 <C>--text-primary/secondary</C>); Tailwind references them.{" "}
                 <b className="text-primary">Dark is the default theme</b>; light is first-class parity.

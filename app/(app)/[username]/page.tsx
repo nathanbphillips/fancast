@@ -198,13 +198,13 @@ export default async function ProfilePage({
         <Avatar src={profile.avatar_url} name={profile.username} size={72} />
         <div className="min-w-0 flex-1">
           <h1
-            className={`truncate text-2xl font-bold tracking-tight ${isCommentator ? "text-red" : ""}`}
+            className={`display truncate text-3xl sm:text-4xl ${isCommentator ? "text-red" : ""}`}
           >
             {profile.username}
           </h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-secondary">
             {isCommentator && (
-              <span className="rounded-sm bg-red-fill px-1.5 py-0.5 text-[10px] font-bold text-white">
+              <span className="bg-red-fill px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-[0.08em] text-on-red">
                 COMMENTATOR
               </span>
             )}
@@ -216,14 +216,14 @@ export default async function ProfilePage({
             )}
             <span>Member since {memberSince}</span>
           </p>
-          {/* fan score + matches attended (FR-24.4) */}
-          <div className="mt-2 flex items-center gap-5">
-            <span>
-              <span className="text-lg font-bold tabular-nums">{fanScore}</span>{" "}
+          {/* fan score + matches attended (FR-24.4): ruled stat cells */}
+          <div className="mt-3 flex items-center divide-x divide-line border-y border-line">
+            <span className="py-1.5 pr-5">
+              <span className="font-mono text-lg font-bold tabular-nums">{fanScore}</span>{" "}
               <span className="text-[13px] text-secondary">Fan score</span>
             </span>
-            <span>
-              <span className="text-lg font-bold tabular-nums">
+            <span className="py-1.5 pl-5">
+              <span className="font-mono text-lg font-bold tabular-nums">
                 {matchesAttended}
               </span>{" "}
               <span className="text-[13px] text-secondary">
@@ -242,7 +242,7 @@ export default async function ProfilePage({
             ) : (
               <Link
                 href="/signin"
-                className="flex h-11 items-center rounded-lg border border-line bg-surface px-5 text-sm font-semibold hover:bg-raised"
+                className="flex h-11 items-center border-2 border-primary bg-canvas px-5 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red"
               >
                 Sign in to follow
               </Link>
@@ -276,7 +276,7 @@ export default async function ProfilePage({
               rel="noopener noreferrer nofollow"
               aria-label={SOCIAL_META[platform].label}
               title={SOCIAL_META[platform].label}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-line text-secondary transition-colors hover:border-red hover:text-primary"
+              className="flex h-9 w-9 items-center justify-center border border-line text-secondary transition-colors hover:border-red hover:text-primary"
             >
               <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current" aria-hidden="true">
                 <path d={SOCIAL_META[platform].icon} />
@@ -288,10 +288,10 @@ export default async function ProfilePage({
 
       {isCommentator && upcoming.length > 0 && (
         <section aria-label="Upcoming rooms" className="mt-8">
-          <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
+          <h2 className="mb-2 border-b-[3px] border-double border-primary pb-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
             Upcoming rooms
           </h2>
-          <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
+          <div className="border-b border-line">
             {upcoming.map((r) => {
               const enterable = r.state !== "scheduled";
               const row = (
@@ -310,8 +310,8 @@ export default async function ProfilePage({
                     )}
                   </span>
                   {enterable ? (
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
-                      <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white" aria-hidden="true" />
+                    <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-[10px] tracking-wide text-on-red uppercase">
+                      <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-on-red" aria-hidden="true" />
                       Live
                     </span>
                   ) : (
@@ -350,15 +350,15 @@ export default async function ProfilePage({
       {/* matches attended (FR-24.3): recent 10, public in v1 */}
       {attended.length > 0 && (
         <section aria-label="Matches attended" className="mt-8">
-          <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
+          <h2 className="mb-2 border-b-[3px] border-double border-primary pb-1.5 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
             Recent matches
           </h2>
-          <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
+          <div className="border-b border-line">
             {attended.map((m) => (
               <Link
                 key={m.roomId}
                 href={`/room/${m.roomSlug ?? m.roomId}`}
-                className="flex items-center gap-3 border-t border-line/60 px-4 py-2.5 first:border-t-0 hover:bg-raised"
+                className="flex items-center gap-3 border-t border-line px-4 py-2.5 first:border-t-0 hover:bg-raised"
               >
                 <span className="w-20 shrink-0 font-mono text-[10px] text-secondary tabular-nums">
                   {m.kickoffUtc
@@ -382,16 +382,16 @@ export default async function ProfilePage({
 
       {/* own-profile entries */}
       {isOwn && profile.role === "listener" && (
-        <div className="mt-8 flex items-center justify-between gap-3 rounded-xl border-[0.75px] border-line bg-surface p-4">
+        <div className="mt-8 flex items-center justify-between gap-3 border-2 border-primary bg-canvas p-4">
           <div>
-            <p className="text-sm font-bold">Become a commentator</p>
+            <p className="display text-lg">Become a commentator</p>
             <p className="mt-0.5 text-[13px] text-secondary">
               Host live rooms for matches. Set up takes a minute.
             </p>
           </div>
           <Link
             href="/settings"
-            className="shrink-0 rounded-lg border border-line px-4 py-2 text-sm font-semibold text-primary hover:bg-raised"
+            className="shrink-0 border-2 border-primary px-4 py-2 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red"
           >
             Get started
           </Link>
@@ -401,9 +401,9 @@ export default async function ProfilePage({
       {isOwn && (
         <section
           aria-label="Account settings"
-          className="mt-8 rounded-xl border-[0.75px] border-line bg-surface p-4"
+          className="mt-8 border-2 border-primary bg-canvas p-4"
         >
-          <h2 className="mb-3 text-sm font-bold">Account</h2>
+          <h2 className="display mb-3 text-lg">Account</h2>
           <UsernameForm mode="change" currentUsername={profile.username} />
           <p className="mt-3 text-xs text-secondary">
             Photo{isCommentator ? ", about text, and social links" : ""} live in{" "}

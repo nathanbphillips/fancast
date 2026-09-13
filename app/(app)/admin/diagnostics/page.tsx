@@ -90,7 +90,7 @@ export default async function DiagnosticsPage() {
         <h2 className="text-sm font-bold">Faults</h2>
         <p className="text-xs text-secondary">
           Failed API calls (with the server&apos;s reason), uncaught errors,
-          promise rejections, and audio / call-in faults — each with the user,
+          promise rejections, and audio / call-in faults - each with the user,
           device, page and room it happened on.
         </p>
         <AdminDiagnostics initial={diagnostics} usernames={usernames} />

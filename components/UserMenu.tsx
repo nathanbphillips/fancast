@@ -69,7 +69,7 @@ export function UserMenu({
       {open && (
         <div
           role="menu"
-          className="absolute right-0 z-50 mt-1 w-44 overflow-hidden rounded-xl border border-line bg-surface py-1 shadow-raised"
+          className="absolute right-0 z-50 mt-1 w-44 border-2 border-primary bg-canvas py-1"
         >
           <p className="truncate border-b border-line px-3 py-2 text-sm font-semibold">
             {username}

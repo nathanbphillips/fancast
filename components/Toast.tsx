@@ -57,10 +57,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             role={t.tone === "error" ? "alert" : "status"}
-            className={`pointer-events-auto max-w-sm rounded-lg border px-4 py-2 text-sm shadow-lg ${
+            className={`pointer-events-auto max-w-sm border-2 px-4 py-2 text-sm ${
               t.tone === "error"
-                ? "border-red/40 bg-surface text-red"
-                : "border-line bg-surface text-primary"
+                ? "border-red bg-canvas text-red"
+                : "border-primary bg-canvas text-primary"
             }`}
           >
             {t.message}

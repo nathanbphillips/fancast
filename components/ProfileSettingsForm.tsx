@@ -148,13 +148,13 @@ export function ProfileSettingsForm({
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-red/40 bg-inset px-3 py-2 text-sm text-red"
+          className="border border-red/40 bg-inset px-3 py-2 text-sm text-red"
         >
           {error}
         </p>
       )}
       {saved && (
-        <p className="rounded-lg border border-green/40 bg-inset px-3 py-2 text-sm text-green">
+        <p className="border border-green/40 bg-inset px-3 py-2 text-sm text-green">
           Saved.
         </p>
       )}
@@ -226,7 +226,7 @@ export function ProfileSettingsForm({
           pattern="[A-Za-z0-9_]{3,20}"
           autoComplete="off"
           disabled={usernameLocked}
-          className="h-11 w-full rounded-lg border border-line bg-inset px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none disabled:opacity-60"
+          className="h-11 w-full border-2 border-primary bg-canvas px-3.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none disabled:opacity-60"
         />
         <p className="mt-1.5 text-xs text-secondary">
           {usernameLocked
@@ -252,7 +252,7 @@ export function ProfileSettingsForm({
               maxLength={280}
               rows={3}
               placeholder="Who you are on the mic. Plain text, 280 characters."
-              className="w-full rounded-lg border border-line bg-inset px-3.5 py-2.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+              className="w-full border-2 border-primary bg-canvas px-3.5 py-2.5 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
             />
             <p className="mt-1 text-right font-mono text-[10px] text-secondary tabular-nums">
               {about.length}/280
@@ -278,7 +278,7 @@ export function ProfileSettingsForm({
                     }
                     placeholder={f.placeholder}
                     aria-label={`${f.label} URL`}
-                    className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-inset px-3 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+                    className="h-10 min-w-0 flex-1 border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary focus:border-red focus:outline-none fv-normal"
                   />
                 </div>
               ))}

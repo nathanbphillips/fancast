@@ -25,14 +25,14 @@ export function MatchFactRow({ text }: { text: string }) {
   }
 
   return (
-    <li className="flex items-start gap-2 rounded-lg border border-line bg-surface px-3 py-2">
+    <li className="flex items-start gap-2 border border-line bg-canvas px-3 py-2">
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-primary">{text}</p>
       <button
         type="button"
         onClick={() => void copy()}
         aria-label={state === "failed" ? "Copy failed, select the text instead" : "Copy this fact"}
         title={state === "failed" ? "Couldn't copy: select the text instead" : "Copy"}
-        className={`-mr-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors ${
+        className={`-mr-1 flex h-7 w-7 shrink-0 items-center justify-center border transition-colors ${
           state === "copied"
             ? "border-green/50 text-green"
             : state === "failed"

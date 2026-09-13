@@ -47,7 +47,7 @@ export function InviteCohost({
   return (
     <div className="mt-1 flex flex-wrap items-center gap-1.5 font-mono text-[10px] uppercase">
       {coHosts.map((h) => (
-        <span key={h} className="rounded-sm bg-red/10 px-1 text-red normal-case">
+        <span key={h} className="border border-red px-1 text-red normal-case">
           with @{h}
         </span>
       ))}
@@ -59,12 +59,12 @@ export function InviteCohost({
               onChange={(e) => setUsername(e.target.value)}
               placeholder="username"
               aria-label="Co-host username"
-              className="h-6 w-24 rounded border border-line bg-inset px-1.5 text-[11px] normal-case"
+              className="fv-normal h-6 w-24 border border-primary bg-canvas px-1.5 text-[11px] normal-case"
             />
             <button
               type="submit"
               disabled={busy || !username.trim()}
-              className="rounded bg-red-fill px-1.5 py-0.5 text-[10px] font-bold text-white disabled:opacity-60"
+              className="btn-grad-red px-1.5 py-0.5 text-[10px] font-bold disabled:opacity-60"
             >
               Invite
             </button>

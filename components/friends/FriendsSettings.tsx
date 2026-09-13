@@ -47,7 +47,7 @@ export function FriendsSettings({
   const row = (p: PersonRow, actions: React.ReactNode) => (
     <div
       key={p.userId}
-      className="flex items-center gap-3 border-t border-line/60 px-3 py-2.5 first:border-t-0"
+      className="flex items-center gap-3 border-t border-line px-3 py-2.5 first:border-t-0"
     >
       <Avatar src={p.avatarUrl} name={p.username} size={30} />
       <Link
@@ -67,7 +67,7 @@ export function FriendsSettings({
           <p className="mb-2 font-mono text-[11px] font-bold tracking-wider text-secondary uppercase">
             Friend requests
           </p>
-          <div className="overflow-hidden rounded-xl border-[0.75px] border-line">
+          <div className="border border-line">
             {incoming.map((p) =>
               row(
                 p,
@@ -81,7 +81,7 @@ export function FriendsSettings({
                         action: "accept",
                       })
                     }
-                    className="rounded-md bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                    className="btn-grad-red px-3 py-1.5 text-xs font-bold disabled:opacity-60"
                   >
                     Accept
                   </button>
@@ -94,7 +94,7 @@ export function FriendsSettings({
                         action: "decline",
                       })
                     }
-                    className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary disabled:opacity-60"
+                    className="border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary disabled:opacity-60"
                   >
                     Decline
                   </button>
@@ -112,7 +112,7 @@ export function FriendsSettings({
         {friends.length === 0 ? (
           <p className="text-[13px] text-secondary">No friends yet.</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border-[0.75px] border-line">
+          <div className="border border-line">
             {friends.map((p) =>
               row(
                 p,
@@ -122,7 +122,7 @@ export function FriendsSettings({
                   onClick={() =>
                     void act(p.userId, `/api/friends/${p.userId}`, "DELETE")
                   }
-                  className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary hover:border-red/50 hover:text-red disabled:opacity-60"
+                  className="border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary hover:border-red/50 hover:text-red disabled:opacity-60"
                 >
                   Unfriend
                 </button>,
@@ -137,7 +137,7 @@ export function FriendsSettings({
           <p className="mb-2 font-mono text-[11px] font-bold tracking-wider text-secondary uppercase">
             Blocked
           </p>
-          <div className="overflow-hidden rounded-xl border-[0.75px] border-line">
+          <div className="border border-line">
             {blocked.map((p) =>
               row(
                 p,
@@ -147,7 +147,7 @@ export function FriendsSettings({
                   onClick={() =>
                     void act(p.userId, `/api/blocks/${p.userId}`, "DELETE")
                   }
-                  className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary hover:bg-raised disabled:opacity-60"
+                  className="border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary hover:bg-raised disabled:opacity-60"
                 >
                   Unblock
                 </button>,

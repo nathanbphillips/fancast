@@ -170,7 +170,7 @@ export function HostRoomsDashboard({
           a wrapped room to get their files (founder 2026-08-05) */}
       <a
         href="/host/recordings"
-        className="flex items-center justify-between rounded-xl border border-line bg-surface p-4 transition-colors hover:bg-raised"
+        className="flex items-center justify-between border-2 border-primary bg-canvas p-4 transition-colors hover:bg-raised"
       >
         <span>
           <span className="block text-sm font-bold">Your recordings →</span>
@@ -178,15 +178,15 @@ export function HostRoomsDashboard({
             Every show you&apos;ve hosted, ready to download.
           </span>
         </span>
-        <span aria-hidden="true" className="text-xl">
-          🎧
+        <span aria-hidden="true" className="text-xl text-red">
+          ◎
         </span>
       </a>
 
       {notice && (
         <p
           role="status"
-          className="rounded-lg border border-line bg-inset px-3 py-2 text-sm text-primary"
+          className="border border-line bg-inset px-3 py-2 text-sm text-primary"
         >
           {notice}
         </p>
@@ -198,7 +198,7 @@ export function HostRoomsDashboard({
           <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
             Season hosting
           </h2>
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <div className="border-y border-line">
             {subscriptions.map((s) => (
               <div
                 key={s.id}
@@ -216,7 +216,7 @@ export function HostRoomsDashboard({
                   type="button"
                   onClick={() => void unsubscribe(s.id, s.team_name)}
                   disabled={busy}
-                  className="shrink-0 rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
+                  className="shrink-0 border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
                 >
                   Unsubscribe
                 </button>
@@ -249,7 +249,7 @@ export function HostRoomsDashboard({
               type="button"
               onClick={() => void bulkCancel()}
               disabled={busy}
-              className="rounded-md border border-red/50 px-3 py-1.5 text-xs font-bold text-red transition-colors hover:bg-red/10 disabled:opacity-60"
+              className="border-2 border-red px-3 py-1.5 text-xs font-bold text-red transition-colors hover:bg-raised disabled:opacity-60"
             >
               Cancel {selected.size} selected
             </button>
@@ -260,10 +260,10 @@ export function HostRoomsDashboard({
       {/* rooms grouped by month */}
       {grouped.map(([month, monthRooms]) => (
         <section key={month} aria-label={month}>
-          <h2 className="mb-2 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase">
-            {month}
+          <h2 className="mb-2 text-center font-mono text-[11px] font-bold tracking-[0.16em] text-red uppercase">
+            - {month} -
           </h2>
-          <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+          <div className="border-y border-line">
             {monthRooms.map((r) => {
               const label = `${r.home_team} vs ${r.away_team}`;
               const enterable =
@@ -304,12 +304,12 @@ export function HostRoomsDashboard({
                         {r.blurb ? ` · ${r.blurb}` : ""}
                       </span>
                       {r.subscription_id && (
-                        <span className="rounded-sm bg-red/10 px-1 text-red">
+                        <span className="border border-red px-1 text-red">
                           Season
                         </span>
                       )}
                       {collides && (
-                        <span className="rounded-sm bg-red/20 px-1 text-red normal-case">
+                        <span className="border border-red px-1 text-red normal-case">
                           Overlaps another room
                         </span>
                       )}
@@ -323,10 +323,10 @@ export function HostRoomsDashboard({
                     )}
                   </span>
                   {enterable ? (
-                    <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-red-fill px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
+                    <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-[10px] tracking-wide text-on-red uppercase">
                       <span
                         aria-hidden="true"
-                        className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"
+                        className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-on-red"
                       />
                       Live
                     </span>
@@ -334,7 +334,7 @@ export function HostRoomsDashboard({
                     <span className="flex shrink-0 items-center gap-2">
                       <Link
                         href={`/room/${r.slug ?? r.id}`}
-                        className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-raised"
+                        className="border-2 border-primary px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:text-red"
                       >
                         Open
                       </Link>
@@ -342,7 +342,7 @@ export function HostRoomsDashboard({
                         type="button"
                         onClick={() => void cancelOne(r.id, label)}
                         disabled={busy}
-                        className="rounded-md border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
+                        className="border border-line px-2.5 py-1.5 text-xs font-semibold text-secondary transition-colors hover:border-red/50 hover:text-red disabled:opacity-60"
                       >
                         Cancel
                       </button>

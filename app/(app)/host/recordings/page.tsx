@@ -18,7 +18,7 @@ export const metadata: Metadata = {
  */
 
 function fmtDuration(s: number | null): string {
-  if (s == null) return "—";
+  if (s == null) return "·";
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
@@ -31,7 +31,7 @@ function statusChip(status: string) {
     recording: "border-red/50 text-red",
     failed: "border-red/50 text-red",
     empty: "border-line text-secondary",
-    damaged: "border-red/60 bg-red/10 text-red",
+    damaged: "border-red text-red",
   };
   const label: Record<string, string> = {
     ready: "Ready",
@@ -43,7 +43,7 @@ function statusChip(status: string) {
   };
   return (
     <span
-      className={`shrink-0 rounded-full border px-2 py-0.5 font-mono text-[10px] tracking-[0.06em] uppercase ${
+      className={`shrink-0 border px-2 py-0.5 font-mono text-[10px] tracking-[0.06em] uppercase ${
         map[status] ?? "border-line text-secondary"
       }`}
     >
@@ -66,14 +66,14 @@ export default async function HostRecordingsPage() {
       >
         ← Host
       </Link>
-      <h1 className="t-h2 mt-2">Your recordings</h1>
+      <h1 className="display t-h2 mt-2">Your recordings</h1>
       <p className="mt-1.5 text-[15px] text-secondary">
         Every show you&apos;ve hosted. {brand.name} claims no rights to any of
-        it — download whatever you like, whenever you like.
+        it - download whatever you like, whenever you like.
       </p>
 
       {recordings.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-line bg-surface p-6 text-center text-sm text-secondary">
+        <p className="mt-8 border border-dashed border-line bg-canvas p-6 text-center text-sm text-secondary">
           No recordings yet. They appear here automatically once you finish a
           broadcast.
         </p>
@@ -82,7 +82,7 @@ export default async function HostRecordingsPage() {
           {recordings.map((r) => (
             <li
               key={r.roomId}
-              className="rounded-xl border border-line bg-surface p-4"
+              className="border-2 border-primary bg-canvas p-4"
             >
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
                 <span className="font-mono text-[11px] text-secondary tabular-nums">
@@ -105,7 +105,7 @@ export default async function HostRecordingsPage() {
               {/* the whole point of the 'damaged' state: the files download
                   fine, so nothing else would tell the host they are wrong */}
               {r.status === "damaged" && (
-                <p className="mt-2 rounded-lg border border-red/40 bg-red/10 px-3 py-2 text-xs font-semibold text-primary">
+                <p className="mt-2 border-2 border-red px-3 py-2 text-xs font-semibold text-primary">
                   This recording does not match the broadcast:{" "}
                   <span className="font-normal">{r.error ?? "the captured audio is incomplete"}</span>
                   {r.durationSeconds != null && r.audioSeconds != null && (
@@ -122,7 +122,7 @@ export default async function HostRecordingsPage() {
                 {r.zipUrl && (
                   <a
                     href={r.zipUrl}
-                    className="h-10 rounded-lg bg-red-fill px-4 text-sm font-bold leading-10 text-white"
+                    className="btn-grad-red flex h-10 items-center px-4 text-sm font-bold"
                   >
                     Download all (zip)
                   </a>
@@ -130,14 +130,14 @@ export default async function HostRecordingsPage() {
                 {r.fullUrl && (
                   <a
                     href={r.fullUrl}
-                    className="h-10 rounded-lg border border-line px-4 text-sm font-semibold leading-10 hover:bg-raised"
+                    className="flex h-10 items-center border-2 border-primary px-4 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red"
                   >
                     Full show (MP3)
                   </a>
                 )}
                 <Link
                   href={`/host/recordings/${r.roomId}`}
-                  className="h-10 rounded-lg border border-line px-4 text-sm font-semibold leading-10 hover:bg-raised"
+                  className="flex h-10 items-center border-2 border-primary px-4 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red"
                 >
                   {r.status === "ready" ? "Segments & edit" : "Open"}
                 </Link>

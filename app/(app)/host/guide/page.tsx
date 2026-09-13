@@ -46,8 +46,8 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24 border-t border-line pt-8">
-      <h2 className="t-title font-extrabold tracking-[-0.01em] text-primary">
+    <section id={id} className="scroll-mt-24 pt-8">
+      <h2 className="display t-h3 border-b-[3px] border-double border-primary pb-2 text-primary">
         {title}
       </h2>
       <div className="mt-3 space-y-3 text-[15px] leading-[1.6] text-secondary">
@@ -76,13 +76,7 @@ export default function HostGuidePage() {
   return (
     <>
       {/* INTRO */}
-      <section
-        className="relative overflow-hidden border-b border-line"
-        style={{
-          background:
-            "radial-gradient(110% 90% at 85% -20%, rgba(241,35,43,0.12), transparent 56%), var(--bg-base)",
-        }}
-      >
+      <section className="relative border-t-[3px] border-b border-t-primary border-b-line bg-canvas">
         <div className="relative mx-auto max-w-[1180px] px-5 pt-14 pb-10 sm:px-10">
           <p className="mb-3 flex items-center gap-2 font-mono text-[11px] tracking-[0.16em] text-red uppercase">
             <span
@@ -349,7 +343,7 @@ export default function HostGuidePage() {
           </Section>
 
           <Section id="rule" title="The one rule">
-            <div className="rounded-2xl border border-red/30 bg-inset px-6 py-6">
+            <div className="border-2 border-red bg-canvas px-6 py-6">
               <p className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-[0.14em] text-red uppercase">
                 <span
                   aria-hidden="true"
@@ -408,13 +402,13 @@ export default function HostGuidePage() {
             <div className="mt-8 flex flex-wrap items-center gap-3.5 border-t border-line pt-8">
               <Link
                 href="/settings"
-                className="inline-flex items-center gap-2 rounded-[11px] bg-red-fill px-6 py-[15px] text-[15px] font-bold text-white transition-colors hover:bg-red-hover"
+                className="btn-grad-red inline-flex items-center gap-2 px-6 py-[15px] text-[15px] font-bold"
               >
                 Become a commentator <span aria-hidden="true">→</span>
               </Link>
               <Link
                 href="/host/new"
-                className="inline-flex items-center rounded-[11px] border border-line px-[22px] py-[15px] text-[15px] font-bold text-primary transition-colors hover:border-primary"
+                className="inline-flex items-center border-2 border-primary px-[22px] py-[15px] font-mono text-[15px] font-bold tracking-[0.08em] text-primary transition-colors hover:text-red"
               >
                 Create your first room
               </Link>

@@ -191,7 +191,7 @@ export function CustomRoomForm() {
 
   if (!open) {
     return (
-      <div className="mb-4 flex flex-col items-start justify-between gap-3 rounded-2xl border border-line bg-surface px-5 py-4 sm:flex-row sm:items-center">
+      <div className="mb-4 flex flex-col items-start justify-between gap-3 border-2 border-primary bg-canvas px-5 py-4 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm font-bold tracking-[-0.01em]">
             Want your own room?
@@ -204,7 +204,7 @@ export function CustomRoomForm() {
         <button
           type="button"
           onClick={openForm}
-          className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-raised"
+          className="shrink-0 border-2 border-primary px-3.5 py-2 font-mono text-sm font-semibold tracking-[0.08em] text-primary transition-colors hover:text-red"
         >
           Create your own room
         </button>
@@ -216,14 +216,14 @@ export function CustomRoomForm() {
     <ul
       role="listbox"
       aria-label="Matching fixtures"
-      className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-line bg-surface shadow-raised"
+      className="absolute z-20 mt-1 w-full border-2 border-primary bg-canvas"
     >
       {suggestions.map((s) => (
         <li key={s.sportmonksFixtureId}>
           <button
             type="button"
             onClick={() => pick(s)}
-            className="flex w-full items-center gap-3 border-t border-line/60 px-3 py-2.5 text-left first:border-t-0 hover:bg-raised"
+            className="flex w-full items-center gap-3 border-t border-line px-3 py-2.5 text-left first:border-t-0 hover:bg-raised"
           >
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold">
@@ -243,7 +243,7 @@ export function CustomRoomForm() {
   );
 
   const linkedChip = linked && (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-green/40 bg-inset px-3 py-2">
+    <div className="flex items-center justify-between gap-3 border border-green/40 bg-inset px-3 py-2">
       <p className="text-[12.5px] text-secondary">
         <span className="font-semibold text-green">
           {mode === "match" ? "Linked:" : "Stats for:"}
@@ -264,7 +264,7 @@ export function CustomRoomForm() {
   return (
     <form
       onSubmit={submit}
-      className="mb-4 space-y-3 rounded-2xl border border-line bg-surface px-5 py-4"
+      className="mb-4 space-y-3 border-2 border-primary bg-canvas px-5 py-4"
     >
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold tracking-[-0.01em]">
@@ -283,7 +283,7 @@ export function CustomRoomForm() {
       <div
         role="tablist"
         aria-label="Room type"
-        className="grid grid-cols-2 gap-1 rounded-lg bg-inset p-1"
+        className="grid grid-cols-2 border-2 border-primary"
       >
         {(["match", "discussion"] as Mode[]).map((m) => (
           <button
@@ -294,8 +294,8 @@ export function CustomRoomForm() {
             onClick={() => switchMode(m)}
             className={
               mode === m
-                ? "rounded-md bg-surface px-3 py-2 text-[13px] font-bold text-primary shadow-card"
-                : "rounded-md px-3 py-2 text-[13px] font-semibold text-secondary transition-colors hover:text-primary"
+                ? "bg-inverted px-3 py-2 text-[13px] font-bold text-inverted-fg"
+                : "px-3 py-2 text-[13px] font-semibold text-secondary transition-colors hover:text-primary"
             }
           >
             {m === "match" ? "Match room" : "Discussion room"}
@@ -306,7 +306,7 @@ export function CustomRoomForm() {
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-red/40 bg-inset px-3 py-2 text-sm text-red"
+          className="border border-red/40 bg-inset px-3 py-2 text-sm text-red"
         >
           {error}
         </p>
@@ -335,12 +335,12 @@ export function CustomRoomForm() {
             mode === "match" ? "Arsenal vs Chelsea" : "Transfer deadline phone-in"
           }
           autoComplete="off"
-          className="h-11 w-full rounded-lg border border-line bg-inset px-3 text-sm placeholder:text-secondary"
+          className="h-11 w-full border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary"
         />
         <p className="mt-1 text-xs text-secondary">
           {mode === "match"
             ? 'Use "Home vs Away". Start typing to search matches we cover and link live stats automatically.'
-            : "Give your room a name — anything goes."}
+            : "Give your room a name - anything goes."}
         </p>
         {mode === "match" && suggestList}
       </div>
@@ -350,7 +350,7 @@ export function CustomRoomForm() {
         (linked ? (
           linkedChip
         ) : (
-          <div className="space-y-2 rounded-lg border border-line bg-inset px-3.5 py-3">
+          <div className="space-y-2 border border-line bg-inset px-3.5 py-3">
             <p className="text-[12.5px] leading-relaxed text-secondary">
               <span className="font-semibold text-primary">
                 Not linked to our data feed yet.
@@ -378,13 +378,13 @@ export function CustomRoomForm() {
                   maxLength={80}
                   placeholder="Which league or competition should we add next?"
                   aria-label="League or competition to request"
-                  className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-[13px] placeholder:text-secondary"
+                  className="h-10 min-w-0 flex-1 border-2 border-primary bg-canvas px-3 text-[13px] placeholder:text-secondary"
                 />
                 <button
                   type="button"
                   onClick={() => void requestLeague()}
                   disabled={reqState === "busy"}
-                  className="h-10 shrink-0 rounded-lg border border-line px-3.5 text-[13px] font-semibold transition-colors hover:bg-raised disabled:opacity-60"
+                  className="h-10 shrink-0 border-2 border-primary px-3.5 text-[13px] font-semibold text-primary transition-colors hover:text-red disabled:opacity-60"
                 >
                   {reqState === "busy" ? "Sending…" : "Send request"}
                 </button>
@@ -406,7 +406,7 @@ export function CustomRoomForm() {
             >
               Talking about a game?{" "}
               <span className="font-normal normal-case">
-                (optional — pulls in live stats)
+                (optional - pulls in live stats)
               </span>
             </label>
             <input
@@ -417,7 +417,7 @@ export function CustomRoomForm() {
               maxLength={90}
               placeholder="Search a match, e.g. Man Utd vs Liverpool"
               autoComplete="off"
-              className="h-11 w-full rounded-lg border border-line bg-inset px-3 text-sm placeholder:text-secondary"
+              className="h-11 w-full border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary"
             />
             <p className="mt-1 text-xs text-secondary">
               Link the match you&apos;re watching and its stats show on the side.
@@ -440,7 +440,7 @@ export function CustomRoomForm() {
           value={start}
           onChange={(e) => setStart(e.target.value)}
           required
-          className="h-11 rounded-lg border border-line bg-inset px-3 text-sm tabular-nums"
+          className="h-11 border-2 border-primary bg-canvas px-3 text-sm tabular-nums"
         />
         <p className="mt-1 text-xs text-secondary">
           {start && new Date(start).getTime() > Date.now() + 10 * 60_000
@@ -463,14 +463,14 @@ export function CustomRoomForm() {
           onChange={(e) => setBlurb(e.target.value)}
           maxLength={140}
           placeholder="A line on what to expect"
-          className="h-11 w-full rounded-lg border border-line bg-inset px-3 text-sm placeholder:text-secondary"
+          className="h-11 w-full border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary"
         />
       </div>
 
       <button
         type="submit"
         disabled={busy}
-        className="rounded-lg bg-red-fill px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-hover disabled:opacity-60"
+        className="btn-grad-red px-5 py-2.5 text-sm font-bold disabled:opacity-60"
       >
         {busy ? "Creating…" : "Create room"}
       </button>

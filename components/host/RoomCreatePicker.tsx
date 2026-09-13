@@ -111,7 +111,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
     return (
       <div>
         <CustomRoomForm />
-        <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
+        <p className="border border-dashed border-line bg-canvas p-6 text-sm text-secondary">
           No upcoming fixtures you don&apos;t already host. New games appear
           here as the schedule fills in, or create your own room above.
         </p>
@@ -122,7 +122,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
   return (
     <div>
     <CustomRoomForm />
-    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+    <div className="border-y border-line">
       {fixtures.map((f) => (
         <div key={f.id} className="border-t border-line first:border-t-0">
           <button
@@ -155,10 +155,10 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
           {openId === f.id && (
             <form
               onSubmit={(e) => create(e, f.id)}
-              className="space-y-3 border-t border-line/60 bg-raised/50 px-4 py-4"
+              className="space-y-3 border-t border-line bg-raised px-4 py-4"
             >
               {error && (
-                <p role="alert" className="rounded-lg border border-red/40 bg-inset px-3 py-2 text-sm text-red">
+                <p role="alert" className="border border-red/40 bg-inset px-3 py-2 text-sm text-red">
                   {error}
                 </p>
               )}
@@ -175,7 +175,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                   value={start}
                   onChange={(e) => setStart(e.target.value)}
                   required
-                  className="h-11 rounded-lg border border-line bg-inset px-3 text-sm tabular-nums"
+                  className="h-11 border-2 border-primary bg-canvas px-3 text-sm tabular-nums"
                 />
                 <p className="mt-1 text-xs text-secondary">
                   Defaults to 15 minutes before kickoff, in your local time.
@@ -195,13 +195,13 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                   onChange={(e) => setBlurb(e.target.value)}
                   maxLength={140}
                   placeholder="Your angle on the game, one line"
-                  className="h-11 w-full rounded-lg border border-line bg-inset px-3 text-sm placeholder:text-secondary"
+                  className="h-11 w-full border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary"
                 />
               </div>
               <button
                 type="submit"
                 disabled={busy}
-                className="rounded-lg bg-red-fill px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-hover disabled:opacity-60"
+                className="btn-grad-red px-5 py-2.5 text-sm font-bold disabled:opacity-60"
               >
                 {busy ? "Creating…" : "Create room"}
               </button>
@@ -211,12 +211,12 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
               {f.league_id != null &&
                 f.season != null &&
                 (f.home_team_id != null || f.away_team_id != null) && (
-                  <div className="mt-1 border-t border-line/60 pt-3">
+                  <div className="mt-1 border-t border-line pt-3">
                     <p className="mb-2 font-mono text-[11px] font-bold tracking-wider text-secondary uppercase">
                       Or host the whole season
                     </p>
                     {subDone ? (
-                      <p className="rounded-lg border border-green/40 bg-inset px-3 py-2 text-sm text-primary">
+                      <p className="border border-green/40 bg-inset px-3 py-2 text-sm text-primary">
                         {subDone}
                       </p>
                     ) : (
@@ -228,7 +228,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                             onClick={() =>
                               subscribe(f, f.home_team_id!, f.home_team)
                             }
-                            className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-raised disabled:opacity-60"
+                            className="border-2 border-primary px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:text-red disabled:opacity-60"
                           >
                             {subBusy === f.home_team_id
                               ? "Scheduling…"
@@ -242,7 +242,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                             onClick={() =>
                               subscribe(f, f.away_team_id!, f.away_team)
                             }
-                            className="rounded-lg border border-line px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-raised disabled:opacity-60"
+                            className="border-2 border-primary px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:text-red disabled:opacity-60"
                           >
                             {subBusy === f.away_team_id
                               ? "Scheduling…"

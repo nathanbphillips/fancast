@@ -53,7 +53,7 @@ export function FriendButton({
         type="button"
         onClick={() => void unblock()}
         disabled={busy}
-        className="rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:bg-raised disabled:opacity-60"
+        className="border-2 border-primary px-4 py-2 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red disabled:opacity-60"
       >
         Unblock
       </button>
@@ -85,7 +85,7 @@ export function FriendButton({
           type="button"
           onClick={() => void add()}
           disabled={busy}
-          className="rounded-lg bg-red-fill px-4 py-2 text-sm font-bold text-white hover:bg-red-hover disabled:opacity-60"
+          className="btn-grad-red px-4 py-2 text-sm font-bold disabled:opacity-60"
         >
           Add friend
         </button>
@@ -95,7 +95,7 @@ export function FriendButton({
           type="button"
           onClick={() => void withdraw()}
           disabled={busy}
-          className="rounded-lg border border-line px-4 py-2 text-sm font-semibold text-secondary hover:bg-raised disabled:opacity-60"
+          className="border-2 border-primary px-4 py-2 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red disabled:opacity-60"
         >
           Requested
         </button>
@@ -106,7 +106,7 @@ export function FriendButton({
             type="button"
             onClick={() => void respond("accept")}
             disabled={busy}
-            className="rounded-lg bg-red-fill px-4 py-2 text-sm font-bold text-white hover:bg-red-hover disabled:opacity-60"
+            className="btn-grad-red px-4 py-2 text-sm font-bold disabled:opacity-60"
           >
             Accept
           </button>
@@ -114,7 +114,7 @@ export function FriendButton({
             type="button"
             onClick={() => void respond("decline")}
             disabled={busy}
-            className="rounded-lg border border-line px-3 py-2 text-sm font-semibold text-secondary hover:bg-raised disabled:opacity-60"
+            className="border border-line px-3 py-2 text-sm font-semibold text-secondary hover:bg-raised disabled:opacity-60"
           >
             Decline
           </button>
@@ -125,7 +125,7 @@ export function FriendButton({
           type="button"
           onClick={() => void unfriend()}
           disabled={busy}
-          className="rounded-lg border border-green/40 bg-green/10 px-4 py-2 text-sm font-semibold text-green hover:bg-green/20 disabled:opacity-60"
+          className="border-2 border-green px-4 py-2 font-mono text-sm font-semibold tracking-[0.08em] text-green hover:text-red disabled:opacity-60"
         >
           Friends
         </button>
@@ -136,7 +136,7 @@ export function FriendButton({
         disabled={busy}
         title="Block"
         aria-label="Block this user"
-        className="rounded-lg border border-line px-2.5 py-2 text-sm text-secondary hover:border-red/50 hover:text-red disabled:opacity-60"
+        className="border border-line px-2.5 py-2 text-sm text-secondary hover:border-red/50 hover:text-red disabled:opacity-60"
       >
         Block
       </button>

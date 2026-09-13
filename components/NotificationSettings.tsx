@@ -106,15 +106,15 @@ export function NotificationSettings({ initial }: { initial: PrefRow[] }) {
             type="button"
             onClick={() => void enablePush()}
             disabled={pushState === "working"}
-            className="shrink-0 rounded-lg border border-line px-4 py-2 text-sm font-semibold hover:bg-raised disabled:opacity-60"
+            className="shrink-0 border-2 border-primary px-4 py-2 font-mono text-sm font-semibold tracking-[0.08em] text-primary hover:text-red disabled:opacity-60"
           >
             {pushState === "working" ? "Enabling…" : "Enable push"}
           </button>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border-[0.75px] border-line">
-        <div className="flex items-center gap-3 border-b border-line bg-raised/50 px-3 py-2 font-mono text-[10px] tracking-wider text-secondary uppercase">
+      <div className="border border-line">
+        <div className="flex items-center gap-3 border-b border-line px-3 py-2 font-mono text-[10px] tracking-wider text-secondary uppercase">
           <span className="flex-1">Notification</span>
           <span className="w-14 text-center">Email</span>
           <span className="w-14 text-center">Push</span>
@@ -122,7 +122,7 @@ export function NotificationSettings({ initial }: { initial: PrefRow[] }) {
         {rows.map((r) => (
           <div
             key={r.type}
-            className="flex items-center gap-3 border-t border-line/60 px-3 py-2.5 first:border-t-0"
+            className="flex items-center gap-3 border-t border-line px-3 py-2.5 first:border-t-0"
           >
             <span className="min-w-0 flex-1">
               <span className="block text-[13px] font-semibold">{r.label}</span>

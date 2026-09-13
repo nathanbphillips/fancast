@@ -50,12 +50,15 @@ export function UsernameForm({
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-red/40 bg-surface px-3 py-2 text-sm text-red"
+          className="border border-red/40 bg-canvas px-3 py-2 text-sm text-red"
         >
           {error}
         </p>
       )}
-      <label htmlFor="username" className="block text-sm font-semibold">
+      <label
+        htmlFor="username"
+        className="block font-mono text-[11px] font-bold tracking-[0.08em] text-secondary uppercase"
+      >
         Username
       </label>
       <input
@@ -69,7 +72,7 @@ export function UsernameForm({
         onChange={(e) => setUsername(e.target.value)}
         placeholder="gunner_steve"
         autoComplete="off"
-        className="h-11 w-full rounded-lg border border-line bg-surface px-3 text-sm placeholder:text-secondary"
+        className="h-11 w-full border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary"
       />
       <p className="text-xs text-secondary">
         3-20 characters: letters, numbers, underscore. Changeable once every
@@ -78,7 +81,7 @@ export function UsernameForm({
       <button
         type="submit"
         disabled={busy}
-        className="h-11 w-full rounded-lg bg-red-fill text-sm font-semibold text-white disabled:opacity-60"
+        className="btn-grad-red h-11 w-full text-sm font-semibold disabled:opacity-60"
       >
         {busy
           ? "Saving…"

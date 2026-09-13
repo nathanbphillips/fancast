@@ -186,7 +186,7 @@ export function ProfilePopover({
       {open && (
         <div
           role="dialog"
-          className="absolute left-0 top-full z-50 mt-1 w-60 rounded-xl border border-line bg-surface p-3 shadow-raised"
+          className="absolute left-0 top-full z-50 mt-1 w-60 border-2 border-primary bg-canvas p-3"
         >
           {!card ? (
             <p className="py-4 text-center text-xs text-secondary">Loading…</p>
@@ -219,7 +219,7 @@ export function ProfilePopover({
                 {!card.signedIn ? (
                   <Link
                     href="/signin"
-                    className="flex-1 rounded-lg bg-red-fill px-3 py-1.5 text-center text-xs font-bold text-white"
+                    className="btn-grad-red flex-1 px-3 py-1.5 text-center text-xs font-bold"
                   >
                     {card.isHost ? "Sign in to follow" : "Sign in to add"}
                   </Link>
@@ -228,7 +228,7 @@ export function ProfilePopover({
                     type="button"
                     disabled={busy || card.following}
                     onClick={() => void follow()}
-                    className="flex-1 rounded-lg bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                    className="btn-grad-red flex-1 px-3 py-1.5 text-xs font-bold disabled:opacity-60"
                   >
                     {card.following ? "Following" : "Follow"}
                   </button>
@@ -237,7 +237,7 @@ export function ProfilePopover({
                     type="button"
                     disabled={busy || card.friend !== "none"}
                     onClick={() => void addFriend()}
-                    className="flex-1 rounded-lg bg-red-fill px-3 py-1.5 text-xs font-bold text-white disabled:opacity-60"
+                    className="btn-grad-red flex-1 px-3 py-1.5 text-xs font-bold disabled:opacity-60"
                   >
                     {card.friend === "friends"
                       ? "Friends"
@@ -250,7 +250,7 @@ export function ProfilePopover({
                 )}
                 <Link
                   href={`/${card.username}`}
-                  className="rounded-lg border border-line px-3 py-1.5 text-xs font-semibold hover:bg-raised"
+                  className="border-2 border-primary px-3 py-1.5 text-xs font-semibold text-primary hover:text-red"
                 >
                   View
                 </Link>
@@ -261,7 +261,7 @@ export function ProfilePopover({
                     onClick={() =>
                       setMenu((m) => (m === "none" ? "overflow" : "none"))
                     }
-                    className="rounded-lg border border-line px-2 py-1.5 text-xs font-bold text-secondary hover:bg-raised"
+                    className="border border-line px-2 py-1.5 text-xs font-bold text-secondary hover:bg-raised"
                   >
                     ⋯
                   </button>
@@ -270,11 +270,11 @@ export function ProfilePopover({
 
               {/* overflow: report (all) + block (listeners), FR-26.4 */}
               {menu === "overflow" && (
-                <div className="mt-2 space-y-1 border-t border-line/60 pt-2">
+                <div className="mt-2 space-y-1 border-t border-line pt-2">
                   <button
                     type="button"
                     onClick={() => setMenu("report")}
-                    className="block w-full rounded-md px-2 py-1.5 text-left text-xs text-secondary hover:bg-raised"
+                    className="block w-full px-2 py-1.5 text-left text-xs text-secondary hover:bg-raised"
                   >
                     Report
                   </button>
@@ -283,7 +283,7 @@ export function ProfilePopover({
                       type="button"
                       disabled={busy}
                       onClick={() => void toggleBlock()}
-                      className="block w-full rounded-md px-2 py-1.5 text-left text-xs text-red hover:bg-red/10 disabled:opacity-60"
+                      className="block w-full px-2 py-1.5 text-left text-xs text-red hover:bg-raised disabled:opacity-60"
                     >
                       {card.blocked ? "Unblock" : "Block"}
                     </button>
@@ -292,7 +292,7 @@ export function ProfilePopover({
               )}
 
               {menu === "report" && (
-                <div className="mt-2 space-y-1 border-t border-line/60 pt-2">
+                <div className="mt-2 space-y-1 border-t border-line pt-2">
                   <p className="px-2 py-1 text-[11px] text-secondary">
                     Report for:
                   </p>
@@ -308,7 +308,7 @@ export function ProfilePopover({
                       type="button"
                       disabled={busy}
                       onClick={() => void report(value)}
-                      className="block w-full rounded-md px-2 py-1.5 text-left text-xs hover:bg-raised disabled:opacity-60"
+                      className="block w-full px-2 py-1.5 text-left text-xs hover:bg-raised disabled:opacity-60"
                     >
                       {label}
                     </button>
