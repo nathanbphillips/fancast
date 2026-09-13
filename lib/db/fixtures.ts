@@ -2,6 +2,7 @@ import {
   createSupabaseServerClient,
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
+import { competitionLine } from "@/lib/strings/competition";
 import type { Fixture, RoomState } from "@/lib/db/types";
 
 /** Home-teaser fixture card shape (was in the now-removed FixtureCard). */
@@ -140,7 +141,7 @@ export async function loadFixtures(): Promise<{
       id: f.id,
       home: f.home_team,
       away: f.away_team,
-      competition: f.round ? `${f.competition} · ${f.round}` : f.competition,
+      competition: competitionLine(f.competition, f.round),
       kickoffUtc: f.kickoff_utc,
       commentator: room?.commentator?.username,
       state: cardState(room?.state),

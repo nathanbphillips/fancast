@@ -7,6 +7,7 @@ import { Waveform } from "@/components/ui/Waveform";
 import { Countdown } from "@/components/marketing/Countdown";
 import { RsvpButton } from "@/components/matches/RsvpButton";
 import { listeningLine, goingLine } from "@/lib/strings/attendance";
+import { competitionLine } from "@/lib/strings/competition";
 
 /**
  * The /matches featured hero (Matches.dc.html). When a room is genuinely LIVE
@@ -104,9 +105,10 @@ export function FeaturedRoom({
    *  only when the viewer hosts this room (or is an admin) */
   showListeners?: boolean;
 }) {
-  const comp = fixture.round
-    ? `${fixture.competition ?? "Premier League"} · ${fixture.round}`
-    : (fixture.competition ?? "Premier League");
+  const comp = competitionLine(
+    fixture.competition ?? "Premier League",
+    fixture.round,
+  );
   const listeners = preview?.listeners ?? 0;
 
   // A scheduled room's CTA flips from "RSVP for notifications" to "Join the
