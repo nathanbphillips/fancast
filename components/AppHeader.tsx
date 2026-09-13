@@ -9,23 +9,17 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { Pill } from "@/components/ui/Pill";
 import { Button } from "@/components/ui/Button";
-import { DEMO_ROOM_HREF } from "@/lib/config";
 
 type NavItem = { href: string; label: string };
 type NavEntry = NavItem | { label: string; children: NavItem[] };
 
+// Programme nav (founder 2026-09-13): the site reads as the 4-page programme;
+// the front page carries the issue index, the header keeps the three working
+// links. About lives in the footer; the demo is a CTA on pages 2-3.
 const NAV: NavEntry[] = [
   { href: "/how-it-works", label: "How it works" },
   { href: "/matches", label: "Matches" },
-  {
-    label: "Learn More",
-    children: [
-      { href: DEMO_ROOM_HREF, label: "Demo" },
-      { href: "/about", label: "About" },
-      { href: "/host", label: "Host" },
-      { href: "/creators", label: "Creators" },
-    ],
-  },
+  { href: "/host", label: "Host a room" },
 ];
 
 const ANNOUNCE_KEY = "fc_announce_dismissed";

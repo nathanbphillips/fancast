@@ -167,6 +167,13 @@ const nextConfig: NextConfig = {
         destination: "/:username",
         statusCode: 301,
       },
+      // Programme redesign (founder 2026-09-13): the creators pitch blended
+      // into the host page (mock page 3); old links follow it
+      {
+        source: "/creators",
+        destination: "/host",
+        statusCode: 301,
+      },
     ];
   },
 };

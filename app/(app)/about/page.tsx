@@ -321,10 +321,10 @@ export default function AboutPage() {
               yours.
             </p>
             <Link
-              href="/creators"
+              href="/host"
               className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-semibold text-red transition-opacity hover:opacity-80"
             >
-              For creators →
+              Run the show →
             </Link>
           </div>
         </div>
