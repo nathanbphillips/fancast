@@ -16,16 +16,16 @@ Handoff reference: the design_handoff_programme bundle (founder's archive).
 | --bg-raised | #F2E9D5 | #2A251D | the visible hover/selected tint (handoff "paper-tint") |
 | --bg2 (inset) | #FBF7EC | #242019 | quiet wells: coupons, the pitch (handoff "paper-raised") |
 | --text-primary | #1B1A15 | #F7F1E2 | ink / cream |
-| --text-secondary / --text-tertiary | ink at .75 / .55 | cream at .75 / .55 | one formula, re-resolves per theme |
+| --text-secondary / --text-tertiary | ink at .75 / .63 | cream at .75 / .63 | one formula, re-resolves per theme (.63 clears AA on every light surface) |
 | --line | ink at .3 | cream at .3 | every hairline rule |
-| --red | #A8241A | **#D8593F** | CONTEXTUAL red: text, borders, underlines, kickers. Brightens in dark for contrast |
+| --red | #A8241A | **#E2705A** | CONTEXTUAL red: text, borders, underlines, kickers. Brightens in dark to clear AA on base, raised, inset AND red-tint surfaces |
 | --red-fill + --on-red | #A8241A / #F7F1E2 | same (never brightens) | red FILLS: live lamps, ON AIR, Sync now, selection, chips. Text on them is always --on-red |
 | --red-hover | #8E1D14 | #8E1D14 | hover of red fills only |
 | --inverted-bg / --inverted-fg | #1B1A15 / #F7F1E2 | #F7F1E2 / #1B1A15 | the PRIMARY button (ink on paper; exact inversion in dark) and ink hero blocks |
 | --gold | #E8C400 | #A8241A | SPARSE, on ink/inverted fills only (countdown numerals, the hero "v"); never on the page. Dark swaps it to deep red (gold fails on cream) |
 | --navy | #023474 | #6E9FE0 | away-team signal + unknown-club fallback. NOT brand |
 | --green | #2E6B3C | #96B489 | positive / sync-confirmed states (printers' green) |
-| --placeholder | #9A927E | same | input placeholders, italic |
+| --placeholder | #6B6455 | #9A927E | input placeholders, italic (light value darkened to clear AA on paper inputs) |
 | radius tokens | all 0 | all 0 | square corners; `rounded-full` survives for genuinely circular things (dots, avatars, player discs) |
 | shadow tokens | none | none | elevation is retired; hierarchy comes from rules |
 
@@ -108,9 +108,10 @@ air) · empty home between matches · processing/downloads panel · sync sheet
 
 Motion only on state changes (lamp pulse 1 -> .35, new-message entrance),
 calm loops, full `prefers-reduced-motion` neutralization (global wildcard).
-WCAG AA both themes: contextual red on paper ~6.4:1; #D8593F on ink ~4.5:1
-(floor - never below 14px); tertiary restricted to large/incidental text;
-focus ring = 2px contextual red. 44px touch targets; keyboard operability.
+WCAG AA both themes: contextual red on paper ~6.4:1; dark #E2705A clears
+4.5:1 on base/raised/inset/red-tint; tertiary ink-at-.63 clears AA on every
+light surface; focus ring = 2px contextual red. 44px touch targets;
+keyboard operability.
 
 ## Microcopy voice
 

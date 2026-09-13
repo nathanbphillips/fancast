@@ -18,7 +18,7 @@
   --fg: 27 26 21;
   --hair: 27 26 21;
   --text-secondary: rgb(var(--fg) / 0.75);
-  --text-tertiary: rgb(var(--fg) / 0.55);
+  --text-tertiary: rgb(var(--fg) / 0.63);
   --line: rgb(var(--hair) / 0.3);
   /* surfaces (light): everything sits on the same paper; panels are
      border-boxed, not tinted. "raised" is deliberately the handoff's TINT
@@ -43,7 +43,7 @@
   --gold-bright: #e8c400; /* legacy alias */
   --navy: #023474; /* away-team signal + unknown-club fallback - NOT brand */
   --green: #2e6b3c; /* printers' green: positive/sync-confirmed states */
-  --placeholder: #9a927e;
+  --placeholder: #6b6455;
   /* inverted high-emphasis fills = the Programme primary button (ink on paper;
      cream-filled with ink text in dark = the exact "negative" inversion) */
   --inverted-bg: #1b1a15;
@@ -66,7 +66,7 @@
   --footer: #1b1a15;
   --text-primary: #f7f1e2;
   /* red-as-text brightens for contrast; fills stay deep */
-  --red: #d8593f;
+  --red: #e2705a;
   --red-hover: #8e1d14;
   --red-fill: #a8241a;
   --on-red: #f7f1e2;
@@ -121,6 +121,7 @@
   --font-weight-extrabold: 600;
   --font-weight-black: 600;
   /* square corners everywhere (rounded-full stays for dots/avatars/discs) */
+  --radius: 0; /* the deprecated bare alias, zeroed as a guard */
   --radius-xs: 0;
   --radius-sm: 0;
   --radius-md: 0;

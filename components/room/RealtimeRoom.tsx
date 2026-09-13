@@ -3311,7 +3311,7 @@ function LinkCard({
               onError={() => setImgBroken(true)}
               className="h-20 w-20 rounded-lg border border-line object-cover"
             />
-            <span className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center rounded bg-black/55 text-[10px] leading-none text-white">
+            <span className="absolute bottom-1 right-1 flex h-4 w-4 items-center justify-center bg-black/55 text-[10px] leading-none text-white">
               ↗
             </span>
           </a>

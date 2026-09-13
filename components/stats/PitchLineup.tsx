@@ -84,7 +84,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
         // their own colour (secondary when the families clash); the faint ring
         // keeps a white disc readable on the pitch
         className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums"
-        style={{ background: color.bg, color: color.fg, boxShadow: "0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.18)" }}
+        style={{ background: color.bg, color: color.fg, boxShadow: "inset 0 0 0 1.5px rgb(var(--hair) / 0.6)" }}
       >
         {p.jersey ?? ""}
       </span>

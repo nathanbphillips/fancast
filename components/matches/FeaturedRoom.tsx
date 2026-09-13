@@ -134,7 +134,7 @@ export function FeaturedRoom({
 
   // on-fill text/rule classes: paper-on-red for the live block, paper/ink for
   // the scheduled ink block (which inverts in dark)
-  const muted = live ? "text-on-red/70" : "text-inverted-fg/70";
+  const muted = live ? "text-on-red/85" : "text-inverted-fg/70";
   const rule = live ? "border-on-red/40" : "border-inverted-fg/30";
 
   return (
@@ -222,7 +222,7 @@ export function FeaturedRoom({
                   Join the room →
                 </span>
                 {showListeners && listeners > 0 && (
-                  <span className="font-mono text-[12px] text-on-red/70 tabular-nums">
+                  <span className="font-mono text-[12px] text-on-red/85 tabular-nums">
                     {listeningLine(listeners)}
                   </span>
                 )}
@@ -285,7 +285,7 @@ export function FeaturedRoom({
                 <Avatar src={null} name="Nathan" size={24} />
                 <div className="min-w-0 flex-1 text-[11px] leading-tight">
                   <span className="font-bold">Nathan</span>{" "}
-                  <span className="text-on-red/70 italic">Ødegaard, take a bow.</span>
+                  <span className="text-on-red/85 italic">Ødegaard, take a bow.</span>
                 </div>
                 <span className="shrink-0 font-mono text-[10px] font-bold text-on-red">
                   ▲142

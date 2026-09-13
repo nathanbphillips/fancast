@@ -107,8 +107,8 @@ export function lineupDiscColors(
 /** Inline style for a club-coloured stat-bar segment, momentum bar, or side
  *  dot: the club colour plus a hairline ring, because a white kit (Spurs,
  *  Fulham) vanishes on the light theme's surfaces and a black one (Newcastle)
- *  on the dark theme's without it. The discs never needed this - they sit on
- *  the pitch green. */
+ *  on the dark theme's without it. The lineup discs carry their own stronger
+ *  ring in PitchLineup - the Programme's paper pitch needs it too. */
 export function barFillStyle(c: DiscColor): { backgroundColor: string; boxShadow: string } {
   return { backgroundColor: c.bg, boxShadow: "inset 0 0 0 1px rgb(var(--hair) / 0.25)" };
 }

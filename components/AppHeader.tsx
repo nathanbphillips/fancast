@@ -223,7 +223,7 @@ export function AppHeader({
             type="button"
             onClick={dismissAnnounce}
             aria-label="Dismiss announcement"
-            className="absolute top-1/2 right-3 -translate-y-1/2 rounded p-1 text-secondary transition-colors hover:text-primary"
+            className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-secondary transition-colors hover:text-primary"
           >
             <svg
               viewBox="0 0 24 24"

@@ -42,7 +42,7 @@ export function PWASetup() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 p-3 lg:bottom-auto lg:top-16 lg:right-4 lg:left-auto lg:w-80">
-      <div className="rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-lg">
+      <div className="rounded-xl border-[0.75px] border-line bg-surface p-4">
         <p className="text-sm font-semibold">Enjoyed the show?</p>
         <p className="mt-1 text-sm text-secondary">
           Add the app to your home screen for one-tap access on match days.

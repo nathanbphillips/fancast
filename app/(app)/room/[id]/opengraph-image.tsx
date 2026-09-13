@@ -85,8 +85,8 @@ export default async function RoomOgImage({
               letterSpacing: "0.01em",
             }}
           >
-            <span style={{ color: OG.red }}>ARSE</span>
-            <span style={{ color: OG.ink }}>RADIO</span>
+            <span style={{ color: OG.red }}>{brand.logoParts.accent}</span>
+            <span style={{ color: OG.ink }}>{brand.logoParts.base}</span>
           </div>
           <div
             style={{

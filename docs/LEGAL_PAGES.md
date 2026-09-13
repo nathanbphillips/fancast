@@ -10,7 +10,7 @@ Source of truth for in-app legal/policy content. Render as static pages: `/guide
 
 **The rules:**
 
-- **Football arguments yes, personal attacks no.** Call a performance a disgrace; don't call a person one. Abuse, harassment, hate speech, slurs, or threats directed at anyone — players, refs, other fans — get messages hidden and accounts removed.
+- **Football arguments yes, personal attacks no.** Call a performance a disgrace; don't call a person one. Abuse, harassment, hate speech, slurs, or threats directed at anyone - players, refs, other fans - get messages hidden and accounts removed.
 - **No links to unauthorized streams.** One strike. Links to pirated streams are removed and repeat sharing ends your account. This rule protects the platform's existence; it is not negotiable.
 - **Rival fans are guests, not targets.** Opposition supporters are welcome. Wind-ups are football; pile-ons are not. The vote buttons exist so you can disagree without flooding the chat.
 - **Flags are for conduct, votes are for opinion.** Downvote takes you disagree with. Flag only content that breaks these rules. Coordinated false flagging is itself a violation.

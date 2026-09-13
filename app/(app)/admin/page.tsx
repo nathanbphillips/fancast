@@ -29,8 +29,8 @@ export default async function AdminPage() {
             Registrations, activity, listening time, hosts, and growth.
           </span>
         </span>
-        <span aria-hidden="true" className="text-xl">
-          📊
+        <span aria-hidden="true" className="display text-xl text-red">
+          ▸
         </span>
       </Link>
 
@@ -44,8 +44,8 @@ export default async function AdminPage() {
             Bug reports + client errors, with full device + environment info.
           </span>
         </span>
-        <span aria-hidden="true" className="text-xl">
-          🩺
+        <span aria-hidden="true" className="display text-xl text-red">
+          ▸
         </span>
       </Link>
 
@@ -59,8 +59,8 @@ export default async function AdminPage() {
             Sportmonks talking points for the upcoming fixtures.
           </span>
         </span>
-        <span aria-hidden="true" className="text-xl">
-          📋
+        <span aria-hidden="true" className="display text-xl text-red">
+          ▸
         </span>
       </Link>
 

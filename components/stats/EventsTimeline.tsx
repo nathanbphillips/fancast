@@ -22,7 +22,7 @@ function KindIcon({ kind }: { kind: EventKind }) {
       <span
         aria-hidden
         className="inline-block h-4 w-2.5"
-        style={{ background: "#e4b800" }}
+        style={{ background: "#e4b800", boxShadow: "inset 0 0 0 1px rgb(var(--hair) / 0.3)" }}
       />
     );
   if (kind === "redcard")
