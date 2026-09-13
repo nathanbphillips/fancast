@@ -7,6 +7,7 @@ import { NotifyForm } from "@/components/marketing/NotifyForm";
 import { Countdown } from "@/components/marketing/Countdown";
 import { MastheadStrip } from "@/components/marketing/MastheadStrip";
 import { TheWire } from "@/components/marketing/TheWire";
+import { loadWireEpisodes } from "@/lib/podcastWire";
 
 /**
  * The front page (Programme redesign, founder 2026-09-13: the mock's layout
@@ -68,7 +69,10 @@ function FixtureRow({ f }: { f: HomeFixture }) {
 }
 
 export default async function HomePage() {
-  const { live, upcoming } = await loadFixtures();
+  const [{ live, upcoming }, episodes] = await Promise.all([
+    loadFixtures(),
+    loadWireEpisodes(),
+  ]);
   const liveFixture = live[0] ?? null;
   // State B features the next BROADCAST (a fixture with a scheduled room and
   // a future kickoff); with no room anywhere, the next future fixture stands
@@ -227,7 +231,7 @@ export default async function HomePage() {
         </div>
 
         <div className="md:pl-7">
-          <TheWire />
+          <TheWire episodes={episodes} />
         </div>
       </div>
     </div>
