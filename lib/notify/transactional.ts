@@ -29,18 +29,18 @@ function shell(opts: {
   ctaUrl: string;
   footerHtml: string;
 }): string {
-  return `<!doctype html><html><body style="margin:0;background:#0d0d0f;font-family:Arial,Helvetica,sans-serif">
-<div style="max-width:520px;margin:0 auto;padding:32px 24px;color:#e9e9ea">
-  <p style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin:0 0 20px"><span style="color:#ef0107">ARSE</span><span style="color:#f2f2f4">RADIO</span></p>
-  <h1 style="font-size:23px;line-height:1.3;margin:0 0 14px;color:#fff">${opts.title}</h1>
+  return `<!doctype html><html><body style="margin:0;background:#F7F1E2;font-family:Georgia,'Times New Roman',serif">
+<div style="max-width:520px;margin:0 auto;padding:32px 24px;color:#1B1A15">
+  <p style="font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;margin:0 0 20px;border-top:3px solid #1B1A15;padding-top:10px"><span style="color:#A8241A">ARSE</span><span style="color:#1B1A15">RADIO</span></p>
+  <h1 style="font-size:23px;line-height:1.3;margin:0 0 14px;color:#1B1A15">${opts.title}</h1>
   ${opts.bodyHtml}
-  <a href="${opts.ctaUrl}" style="display:inline-block;background:#ef0107;color:#fff;text-decoration:none;font-weight:700;padding:12px 24px;border-radius:10px;margin-top:8px">${opts.ctaLabel}</a>
-  <p style="font-size:12px;color:#7a7a7e;margin:32px 0 0;line-height:1.6">${opts.footerHtml}</p>
+  <a href="${opts.ctaUrl}" style="display:inline-block;background:#1B1A15;color:#F7F1E2;text-decoration:none;font-weight:700;padding:12px 24px;margin-top:8px">${opts.ctaLabel}</a>
+  <p style="font-size:12px;color:#6b675c;margin:32px 0 0;line-height:1.6">${opts.footerHtml}</p>
 </div></body></html>`;
 }
 
-const P = `style="font-size:15px;line-height:1.62;color:#c7c7c9;margin:0 0 18px"`;
-const A = `style="color:#9a9a9e"`;
+const P = `style="font-size:15px;line-height:1.62;color:#4a463c;margin:0 0 18px"`;
+const A = `style="color:#6b675c"`;
 
 export function buildWelcomeEmail(username: string): BuiltEmail {
   const url = `${siteUrl()}/matches`;

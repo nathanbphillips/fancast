@@ -8,8 +8,9 @@ export default function manifest(): MetadataRoute.Manifest {
     description: brand.tagline,
     start_url: "/",
     display: "standalone",
-    background_color: "#08080a",
-    theme_color: "#08080a",
+    // Programme paper (2026-09-12): the app defaults to the light identity
+    background_color: "#F7F1E2",
+    theme_color: "#F7F1E2",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       {

@@ -2,13 +2,14 @@ import { ImageResponse } from "next/og";
 import { brand } from "@/lib/brand";
 import { createServiceClient } from "@/lib/db/server";
 import { looksLikeUuid } from "@/lib/slug";
-import { BRAND_LOGO_DATA_URI } from "@/lib/og/brandLogo";
+import { OG, ogFontOptions } from "@/lib/og/fonts";
 
 /**
- * Per-room social-share card (1200x630). Vector + text only (no crest/photo:
- * golden rule + affiliation safety). Shows the fixture and host so a shared room
- * link reads as "come listen to THIS match with us", not a generic site card.
- * Compliance: it advertises the listening room, never a broadcast of the match.
+ * Per-room social-share card (1200x630): a programme cover for THIS fixture.
+ * Paper field, ink masthead, the fixture in Anton with the red "v", the host
+ * line in Newsreader italic. Text + rules only (no crest/photo: golden rule +
+ * affiliation safety). Compliance: it advertises the listening room, never a
+ * broadcast of the match. Node runtime; real fonts via lib/og/fonts.
  */
 
 export const alt = `A ${brand.name} matchday room`;
@@ -60,80 +61,118 @@ export default async function RoomOgImage({
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "84px",
-          background: "#08080a",
-          color: "#f2f2f4",
-          fontFamily: "sans-serif",
+          background: OG.paper,
+          color: OG.ink,
+          fontFamily: "Newsreader",
+          padding: "0 72px 52px",
         }}
       >
-        {/* top: wordmark + live dot */}
-        <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
-          {/* full Arseradio wordmark (neon) — eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={BRAND_LOGO_DATA_URI}
-            width={316}
-            height={60}
-            alt={brand.name}
-            style={{ objectFit: "contain" }}
-          />
+        {/* masthead: 6px ink rule, wordmark strip, 2px rule */}
+        <div style={{ display: "flex", height: "10px", background: OG.ink, width: "100%", marginTop: "44px" }} />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "16px 4px",
+          }}
+        >
           <div
             style={{
-              marginLeft: "10px",
+              display: "flex",
+              fontFamily: "Anton",
+              fontSize: "44px",
+              letterSpacing: "0.01em",
+            }}
+          >
+            <span style={{ color: OG.red }}>ARSE</span>
+            <span style={{ color: OG.ink }}>RADIO</span>
+          </div>
+          <div
+            style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "12px",
               fontSize: "24px",
-              color: "#ef0107",
-              fontWeight: 700,
-              letterSpacing: "0.12em",
+              letterSpacing: "0.14em",
+              color: OG.red,
             }}
           >
             <div
-              style={{ width: "14px", height: "14px", borderRadius: "9999px", background: "#ef0107" }}
+              style={{
+                display: "flex",
+                width: "14px",
+                height: "14px",
+                borderRadius: "9999px",
+                background: OG.red,
+              }}
             />
             MATCHDAY ROOM
           </div>
         </div>
+        <div style={{ display: "flex", height: "2px", background: OG.ink, width: "100%" }} />
 
-        {/* middle: fixture */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
+        {/* fixture */}
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
           <div
             style={{
-              fontSize: away ? "96px" : "80px",
-              fontWeight: 800,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "baseline",
+              fontFamily: "Anton",
+              fontSize: away ? "112px" : "96px",
               lineHeight: 1.02,
-              letterSpacing: "-0.02em",
-              maxWidth: "1000px",
+              letterSpacing: "0.01em",
+              maxWidth: "1040px",
+              textTransform: "uppercase",
             }}
           >
-            {away ? `${home} vs ${away}` : home}
+            {away ? (
+              <>
+                <span>{home}</span>
+                <span style={{ color: OG.red, fontSize: "64px", padding: "0 26px" }}>v</span>
+                <span>{away}</span>
+              </>
+            ) : (
+              <span>{home}</span>
+            )}
           </div>
           <div
             style={{
-              marginTop: "28px",
-              width: "120px",
-              height: "8px",
-              borderRadius: "4px",
-              background: "#ef0107",
+              display: "flex",
+              marginTop: "26px",
+              fontStyle: "italic",
+              fontSize: "32px",
+              opacity: 0.8,
             }}
-          />
+          >
+            {host ? `Hosted by @${host} · ` : ""}Listen alongside on your own stream
+          </div>
         </div>
 
-        {/* bottom: host + pitch */}
+        {/* footer rule + compliance line */}
+        <div style={{ display: "flex", height: "2px", background: OG.ink, width: "100%" }} />
         <div
           style={{
             display: "flex",
             alignItems: "center",
             gap: "14px",
-            fontSize: "30px",
-            color: "#9ba1ac",
+            paddingTop: "20px",
+            fontSize: "24px",
+            letterSpacing: "0.14em",
           }}
         >
-          {host ? `Hosted by @${host} · ` : ""}Listen alongside on your own stream
+          FREE TO LISTEN · AUDIO ONLY, ALWAYS
         </div>
       </div>
     ),
-    size,
+    { ...size, fonts: await ogFontOptions() },
   );
 }

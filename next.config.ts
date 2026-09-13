@@ -144,6 +144,13 @@ const nextConfig: NextConfig = {
     // cron, so ITS bundle spawns ffmpeg too - same force-include or the kick
     // dies with spawn ENOENT on Vercel only
     "/api/cron/daily": ["./node_modules/ffmpeg-static/**/*"],
+    // The Programme OG cards (2026-09-12) read Anton/Newsreader TTFs from
+    // assets/fonts via fs.readFile - a runtime path string nft cannot trace,
+    // same class as ffmpeg above. Keys follow the same PAGE-path contains
+    // matching (bare, never "/route"-anchored); "/room" over-includes the
+    // ~360KB of fonts into the room's sibling bundles, which is trivial.
+    "/opengraph-image": ["./assets/fonts/**/*"],
+    "/room": ["./assets/fonts/**/*"],
   },
   images: {
     remotePatterns: avatarRemotePatterns,

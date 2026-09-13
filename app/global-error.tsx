@@ -10,25 +10,24 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
     <html lang="en">
       <body
         style={{
-          fontFamily: "system-ui, -apple-system, sans-serif",
+          fontFamily: "Georgia, 'Times New Roman', serif",
           padding: "4rem 1rem",
           textAlign: "center",
-          background: "#08080a",
-          color: "#f2f2f4",
+          background: "#F7F1E2",
+          color: "#1B1A15",
           minHeight: "100vh",
         }}
       >
-        <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>Something went wrong</h1>
-        <p style={{ marginTop: "0.5rem", color: "#9aa0a6" }}>Please try again in a moment.</p>
+        <h1 style={{ fontSize: "1.25rem", fontWeight: 600 }}>Something went wrong</h1>
+        <p style={{ marginTop: "0.5rem", opacity: 0.7 }}>Please try again in a moment.</p>
         <button
           type="button"
           onClick={reset}
           style={{
             marginTop: "1.25rem",
             padding: "0.65rem 1.25rem",
-            borderRadius: 8,
-            background: "#ef0107",
-            color: "#fff",
+            background: "#1B1A15",
+            color: "#F7F1E2",
             border: 0,
             fontWeight: 600,
             cursor: "pointer",

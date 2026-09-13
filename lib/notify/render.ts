@@ -121,15 +121,15 @@ export function renderNotification(
 
 /** Minimal, inlined-CSS HTML email with the mandatory unsubscribe footer. */
 export function emailHtml(r: Rendered, unsubscribeUrl: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#0d0d0f;font-family:Arial,Helvetica,sans-serif">
-<div style="max-width:520px;margin:0 auto;padding:32px 24px;color:#e9e9ea">
-  <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e8b54a;margin:0 0 16px">${brand.name}</p>
-  <h1 style="font-size:22px;line-height:1.3;margin:0 0 12px;color:#fff">${escapeHtml(r.title)}</h1>
-  <p style="font-size:15px;line-height:1.6;color:#c7c7c9;margin:0 0 24px">${escapeHtml(r.body)}</p>
-  <a href="${r.url}" style="display:inline-block;background:#ef0107;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:10px">Open ${brand.name}</a>
-  <p style="font-size:12px;color:#7a7a7e;margin:32px 0 0;line-height:1.6">
+  return `<!doctype html><html><body style="margin:0;background:#F7F1E2;font-family:Georgia,'Times New Roman',serif">
+<div style="max-width:520px;margin:0 auto;padding:32px 24px;color:#1B1A15">
+  <p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#A8241A;margin:0 0 16px;border-top:3px solid #1B1A15;padding-top:10px">${brand.name}</p>
+  <h1 style="font-size:22px;line-height:1.3;margin:0 0 12px;color:#1B1A15">${escapeHtml(r.title)}</h1>
+  <p style="font-size:15px;line-height:1.6;color:#4a463c;margin:0 0 24px">${escapeHtml(r.body)}</p>
+  <a href="${r.url}" style="display:inline-block;background:#1B1A15;color:#F7F1E2;text-decoration:none;font-weight:700;padding:12px 22px">Open ${brand.name}</a>
+  <p style="font-size:12px;color:#6b675c;margin:32px 0 0;line-height:1.6">
     You are getting this because of your ${brand.name} notification settings.
-    <a href="${unsubscribeUrl}" style="color:#9a9a9e">Unsubscribe from these emails</a>.
+    <a href="${unsubscribeUrl}" style="color:#6b675c">Unsubscribe from these emails</a>.
   </p>
 </div></body></html>`;
 }
