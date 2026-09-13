@@ -59,8 +59,8 @@ export function ScheduleBoard({
             aria-pressed={filter === f.id}
             className={
               filter === f.id
-                ? "rounded-[10px] bg-inverted px-4 py-2.5 text-[12px] font-bold text-inverted-fg"
-                : "rounded-[10px] border border-line bg-surface/40 px-4 py-2.5 text-[12px] font-semibold text-secondary transition-colors hover:text-primary"
+                ? "bg-inverted px-4 py-2.5 font-mono text-[12px] font-bold tracking-[0.06em] text-inverted-fg"
+                : "border border-line px-4 py-2.5 font-mono text-[12px] font-semibold tracking-[0.06em] text-secondary transition-colors hover:text-primary"
             }
           >
             {f.label}
@@ -69,73 +69,74 @@ export function ScheduleBoard({
       </div>
 
       {/* section label */}
-      <div className="mb-2 flex items-center gap-3">
-        <span className="font-mono text-[12px] tracking-[0.06em] text-secondary">
+      <div className="mb-2 flex items-center gap-3 border-b-[3px] border-double border-primary pb-2">
+        <span className="font-mono text-[12px] tracking-[0.1em] text-red">
           FULL SCHEDULE
         </span>
-        <span aria-hidden="true" className="h-px flex-1 bg-line" />
-        <span className="text-[12px] text-tertiary tabular-nums">
+        <span aria-hidden="true" className="flex-1" />
+        <span className="font-mono text-[12px] text-tertiary tabular-nums">
           {total} {total === 1 ? "fixture" : "fixtures"}
         </span>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="rounded-2xl border border-line bg-raised p-6 text-sm text-secondary">
+        <p className="border border-line bg-canvas p-6 text-sm text-secondary italic">
           Nothing matches that filter yet.
         </p>
       ) : (
         filtered.map((g) => (
           <section key={g.label} aria-label={g.label}>
-            <div className="sticky top-0 z-[3] flex items-center gap-3 bg-canvas py-2.5">
-              <h2 className="display text-[18px]">{g.label}</h2>
+            <div className="sticky top-0 z-[3] flex items-center gap-3 border-b border-line bg-canvas py-2.5">
+              <h2 className="font-mono text-[12px] tracking-[0.1em] text-red uppercase">
+                {g.label}
+              </h2>
               <span className="font-mono text-[10px] tracking-[0.04em] text-tertiary uppercase">
                 {g.fixtures.length} {g.fixtures.length === 1 ? "match" : "matches"}
               </span>
             </div>
-            <div className="mb-2 flex flex-col gap-1.5">
+            <div className="mb-2 flex flex-col">
               {g.fixtures.map((f) => {
                 const liveRoom = f.rooms.find((r) => r.state !== "scheduled");
                 const schedRoom = f.rooms.find((r) => r.state === "scheduled");
                 return (
                   <div
                     key={f.id}
-                    className="relative flex items-center gap-3 rounded-[11px] border border-line bg-surface py-3 pr-4 pl-5 transition-colors hover:border-red/30"
+                    className="relative flex items-center gap-3 border-b border-line py-3 pr-1 pl-5 transition-colors hover:bg-raised"
                   >
                     {isArsenal(f) && (
                       <span
                         aria-hidden="true"
-                        className="absolute top-2 bottom-2 left-0 w-[3px] rounded-[3px]"
-                        style={{ background: "linear-gradient(180deg,#f5211f,#c50006)" }}
+                        className="absolute top-2 bottom-2 left-0 w-[3px] bg-red-fill"
                       />
                     )}
                     <span className="w-[46px] shrink-0 font-mono text-[12px] text-secondary tabular-nums">
                       <LocalTime iso={f.kickoffUtc} />
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[15px]">
-                      <span className="font-bold">{f.home}</span>{" "}
-                      <span className="text-[12px] text-tertiary">v</span>{" "}
-                      <span className="font-bold">{f.away}</span>
+                    <span className="min-w-0 flex-1 truncate">
+                      <span className="display text-[16px]">{f.home}</span>{" "}
+                      <span className="font-mono text-[12px] text-red">v</span>{" "}
+                      <span className="display text-[16px]">{f.away}</span>
                     </span>
-                    <span className="hidden shrink-0 text-[11px] text-tertiary md:block">
+                    <span className="hidden shrink-0 text-[11px] text-tertiary italic md:block">
                       {f.competition ?? "Premier League"}
                     </span>
                     <div className="flex shrink-0 items-center gap-2.5">
                       {liveRoom ? (
                         <>
-                          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red">
+                          <span className="inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] text-red">
                             <span className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red-fill" />
                             LIVE
                           </span>
                           <Link
                             href={`/room/${liveRoom.slug}`}
-                            className="btn-grad-red rounded-[8px] px-3.5 py-2 text-[12px] font-semibold text-white"
+                            className="btn-grad-red px-3.5 py-2 text-[12px] font-semibold"
                           >
                             Join →
                           </Link>
                         </>
                       ) : schedRoom ? (
                         <>
-                          <span className="hidden text-[11px] text-secondary sm:inline">
+                          <span className="hidden text-[11px] text-secondary italic sm:inline">
                             Room scheduled
                           </span>
                           <RsvpButton
@@ -148,12 +149,12 @@ export function ScheduleBoard({
                         </>
                       ) : (
                         <>
-                          <span className="hidden text-[11px] text-tertiary sm:inline">
+                          <span className="hidden text-[11px] text-tertiary italic sm:inline">
                             No room yet
                           </span>
                           <Link
                             href="#notify"
-                            className="rounded-[8px] border border-line bg-surface/40 px-3 py-2 text-[11px] font-semibold text-secondary transition-colors hover:text-primary"
+                            className="border border-line px-3 py-2 font-mono text-[11px] tracking-[0.06em] text-secondary transition-colors hover:text-primary"
                           >
                             Notify me
                           </Link>

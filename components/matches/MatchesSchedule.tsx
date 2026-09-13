@@ -17,7 +17,7 @@ export function MatchesSchedule({
 }) {
   if (groups.length === 0) {
     return (
-      <p className="rounded-2xl border border-line bg-surface p-6 text-sm text-secondary">
+      <p className="border border-line bg-canvas p-6 text-sm text-secondary italic">
         No fixtures on the board right now. Check back soon.
       </p>
     );
@@ -27,26 +27,28 @@ export function MatchesSchedule({
     <div className="space-y-10">
       {groups.map((group) => (
         <section key={group.label} aria-label={group.label}>
-          <h2 className="mb-3 font-mono text-[12px] font-bold tracking-[0.14em] text-tertiary uppercase">
+          <h2 className="mb-3 border-b border-line pb-2 font-mono text-[12px] font-bold tracking-[0.14em] text-red uppercase">
             {group.label}
           </h2>
           <div className="space-y-3">
             {group.fixtures.map((fixture) => (
               <div
                 key={fixture.id}
-                className="overflow-hidden rounded-2xl border border-line bg-surface"
+                className="border border-line bg-canvas"
               >
                 {/* fixture header row */}
-                <div className="flex items-center gap-4 border-b border-line/60 px-4 py-3">
+                <div className="flex items-center gap-4 border-b border-line px-4 py-3">
                   <span className="w-16 shrink-0 font-mono text-[11px] leading-snug text-secondary tabular-nums">
                     <KickoffTime iso={fixture.kickoffUtc} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-extrabold tracking-[-0.01em]">
-                      {fixture.home} vs {fixture.away}
+                    <span className="block truncate">
+                      <span className="display text-[16px]">{fixture.home}</span>{" "}
+                      <span className="font-mono text-[12px] text-red">v</span>{" "}
+                      <span className="display text-[16px]">{fixture.away}</span>
                     </span>
                     {fixture.competition && (
-                      <span className="block truncate font-mono text-[10px] text-secondary uppercase">
+                      <span className="block truncate text-[10.5px] text-secondary italic">
                         {fixture.competition}
                       </span>
                     )}
@@ -55,7 +57,7 @@ export function MatchesSchedule({
 
                 {/* rooms, or a no-room note */}
                 {fixture.rooms.length > 0 ? (
-                  <div className="divide-y divide-line/40 px-4">
+                  <div className="divide-y divide-line px-4">
                     {fixture.rooms.map((room) => (
                       <RoomRow
                         key={room.id}
@@ -66,7 +68,7 @@ export function MatchesSchedule({
                     ))}
                   </div>
                 ) : (
-                  <p className="px-4 py-3 text-[12.5px] text-secondary">
+                  <p className="px-4 py-3 text-[12.5px] text-secondary italic">
                     No room yet for this fixture.
                   </p>
                 )}

@@ -64,13 +64,20 @@ export function SignInForm({
 
   if (state === "sent") {
     return (
-      <div className="rounded-xl border border-line bg-surface p-6 text-center">
-        <h2 className="display text-lg">Check your email</h2>
+      <div className="border border-primary bg-canvas p-6 text-center">
+        <h2 className="display text-lg">Posted ✓</h2>
         <p className="mt-2 text-sm text-secondary">
-          We sent a sign-in link to{" "}
+          Your link is on its way to{" "}
           <span className="font-semibold text-primary">{email}</span>. Open it on
           this device and you&apos;re in.
         </p>
+        <button
+          type="button"
+          onClick={() => setState("idle")}
+          className="mt-3 font-mono text-[12px] tracking-[0.06em] text-red hover:underline"
+        >
+          Wrong address? Try again
+        </button>
       </div>
     );
   }
@@ -80,19 +87,20 @@ export function SignInForm({
       {error && (
         <p
           role="alert"
-          className="rounded-lg border border-red/40 bg-surface px-3 py-2 text-sm text-red"
+          className="border-2 border-red bg-canvas px-3 py-2 text-sm text-red"
         >
           {error}
         </p>
       )}
 
       <form onSubmit={sendMagicLink} className="space-y-3">
-        <label
-          htmlFor="email"
-          className="block font-mono text-[11px] font-bold tracking-wider text-secondary uppercase"
-        >
-          Email
+        <label htmlFor="email" className="display block text-[18px]">
+          Post us your email
         </label>
+        <p className="text-[12.5px] text-secondary italic">
+          We return a magic link by first-class post (well - instantly). No
+          passwords on this service.
+        </p>
         <input
           id="email"
           type="email"
@@ -100,7 +108,7 @@ export function SignInForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
-          className="h-12 w-full rounded-xl border border-line bg-inset px-4 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+          className="h-12 w-full border border-primary bg-canvas px-4 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
         />
         <Button
           type="submit"
@@ -108,7 +116,7 @@ export function SignInForm({
           disabled={state === "sending"}
           className="w-full"
         >
-          {state === "sending" ? "Sending…" : "Continue with email →"}
+          {state === "sending" ? "Sending…" : "Send the magic link →"}
         </Button>
       </form>
 
@@ -121,7 +129,7 @@ export function SignInForm({
       <button
         type="button"
         onClick={signInWithGoogle}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-line bg-inset text-sm font-semibold hover:bg-raised"
+        className="flex h-12 w-full items-center justify-center gap-2 border-2 border-primary bg-canvas text-sm font-semibold hover:bg-raised"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
           <path
@@ -144,8 +152,8 @@ export function SignInForm({
         Continue with Google
       </button>
 
-      <p className="text-center text-xs text-secondary">
-        No password needed. The email link signs you in.
+      <p className="text-center text-xs text-secondary italic">
+        Under a minute, start to finish.
       </p>
     </div>
   );

@@ -101,19 +101,13 @@ export default async function MatchesPage() {
   return (
     <>
       {/* HEADER */}
-      <section
-        className="relative overflow-hidden border-b border-line"
-        style={{
-          background:
-            "radial-gradient(110% 100% at 85% -20%, rgba(239,1,7,0.14), transparent 56%), var(--bg-base)",
-        }}
-      >
-        <div className="relative mx-auto max-w-[1120px] px-5 pt-14 pb-8 sm:px-10">
-          <p className="mb-3 font-mono text-[12px] tracking-[0.06em] text-red">
+      <section className="border-b-[3px] border-double border-primary bg-canvas">
+        <div className="mx-auto max-w-[1120px] px-5 pt-14 pb-8 sm:px-10">
+          <p className="mb-3 font-mono text-[12px] tracking-[0.1em] text-red">
             FULL SCHEDULE · ARSENAL
           </p>
           <h1 className="display t-hero">What&apos;s on</h1>
-          <p className="mt-4 max-w-[520px] text-[17px] leading-[1.5] text-secondary">
+          <p className="mt-4 max-w-[520px] text-[17px] leading-[1.5] text-secondary italic">
             Every Arsenal fixture with a room, plus the whole league board. Join
             the live show when the host opens the doors. Free to listen, no
             account needed.
@@ -143,11 +137,11 @@ export default async function MatchesPage() {
                 NOTHING LIVE RIGHT NOW
               </span>
             </div>
-            <div className="relative overflow-hidden rounded-[20px] border border-line bg-surface p-7">
+            <div className="border border-line bg-canvas p-7">
               <div className="grid items-center gap-7 lg:grid-cols-[1.05fr_1fr]">
                 <div>
                   <h2 className="display t-h3">No rooms are open yet.</h2>
-                  <p className="mt-3 max-w-[440px] text-[14px] leading-[1.55] text-secondary">
+                  <p className="mt-3 max-w-[440px] text-[14px] leading-[1.55] text-secondary italic">
                     Rooms open on matchday, usually about fifteen minutes before
                     kick-off. Browse the full schedule below, or get pinged the
                     moment one opens.
@@ -155,19 +149,19 @@ export default async function MatchesPage() {
                   <div className="mt-5 flex flex-wrap gap-3">
                     <Link
                       href="#notify"
-                      className="btn-grad-red inline-flex items-center rounded-[11px] px-5 py-3 text-[13px] font-semibold text-white"
+                      className="btn-grad-red inline-flex items-center px-5 py-3 text-[13px] font-semibold"
                     >
                       Get matchday alerts →
                     </Link>
                     <Link
                       href={DEMO_ROOM_HREF}
-                      className="inline-flex items-center rounded-[11px] border border-line bg-surface/40 px-5 py-3 text-[13px] font-semibold text-primary transition-colors hover:bg-raised"
+                      className="inline-flex items-center border-2 border-primary px-5 py-3 font-mono text-[13px] font-semibold tracking-[0.08em] text-primary transition-colors hover:text-red"
                     >
                       See the demo room →
                     </Link>
                   </div>
                 </div>
-                <div className="hidden rounded-2xl border border-line bg-canvas p-4 lg:block">
+                <div className="hidden border border-line bg-inset p-4 lg:block">
                   <div className="mb-3 inline-flex items-center gap-1.5 font-mono text-[10px] text-tertiary">
                     <span className="h-1.5 w-1.5 rounded-full bg-tertiary/50" />
                     IN THE ROOM
@@ -187,10 +181,10 @@ export default async function MatchesPage() {
         {upNext.length > 0 && (
           <div className="mb-9">
             <div className="mb-3.5 flex items-center gap-2.5">
-              <span className="font-mono text-[12px] tracking-[0.06em] text-red">
+              <span className="font-mono text-[12px] tracking-[0.1em] text-red">
                 UP NEXT · ARSENAL
               </span>
-              <span className="font-mono text-[12px] text-tertiary">
+              <span className="text-[12px] text-tertiary italic">
                 rooms scheduled, save your seat
               </span>
             </div>
@@ -198,18 +192,17 @@ export default async function MatchesPage() {
               {upNext.map(({ f, dateLabel, room }) => (
                 <div
                   key={f.id}
-                  className="relative overflow-hidden rounded-2xl border border-line bg-surface p-[22px]"
-                  style={{ borderLeft: "3px solid #ef0107" }}
+                  className="relative border border-line border-l-[3px] border-l-red bg-canvas p-[22px]"
                 >
                   <div className="mb-3 font-mono text-[10px] tracking-[0.06em] text-secondary uppercase">
                     {dateLabel} · <LocalTime iso={f.kickoffUtc} />
                   </div>
                   <div className="display text-[22px]">
-                    {f.home} <span className="text-secondary">v</span> {f.away}
+                    {f.home} <span className="font-mono text-[14px] text-red normal-case">v</span> {f.away}
                   </div>
                   <div className="mt-3 mb-4 flex items-center gap-2.5">
                     <Avatar src={null} name={hostsOf(room)[0]} size={28} />
-                    <span className="text-[12px] text-secondary">
+                    <span className="text-[12px] text-secondary italic">
                       Room scheduled ·{" "}
                       {hostsOf(room).map((h, i) => (
                         <span key={h}>
@@ -247,25 +240,18 @@ export default async function MatchesPage() {
 
         {/* NOTIFY + HOST bands */}
         <div id="notify" className="mt-10 grid gap-3.5 md:grid-cols-[1.3fr_1fr]">
-          <div
-            className="relative overflow-hidden rounded-[18px] border p-[26px]"
-            style={{
-              background:
-                "linear-gradient(120deg, rgba(239,1,7,.14), transparent 55%), var(--bg-surface)",
-              borderColor: "rgba(239,1,7,.28)",
-            }}
-          >
-            <div className="mb-2.5 font-mono text-[11px] tracking-[0.06em] text-red">
+          <div className="border-2 border-primary bg-canvas p-[26px]">
+            <div className="mb-2.5 font-mono text-[11px] tracking-[0.1em] text-red">
               DON&apos;T WANT TO KEEP CHECKING BACK?
             </div>
             <h2 className="display mb-3.5 t-h3">Get pinged when rooms open.</h2>
             <NotifyForm source="matches" className="max-w-md" />
-            <p className="mt-2.5 text-[11px] text-tertiary">
+            <p className="mt-2.5 text-[11px] text-tertiary italic">
               One email when rooms open. No spam, unsubscribe any time.
             </p>
           </div>
-          <div className="flex flex-col justify-center rounded-[18px] border border-line bg-raised p-[26px]">
-            <div className="mb-2.5 font-mono text-[11px] tracking-[0.06em] text-red">
+          <div className="flex flex-col justify-center border border-line bg-canvas p-[26px]">
+            <div className="mb-2.5 font-mono text-[11px] tracking-[0.1em] text-red">
               WANT TO HOST A ROOM?
             </div>
             <div className="display t-h3">Fancy calling the match?</div>
@@ -275,7 +261,7 @@ export default async function MatchesPage() {
             </p>
             <Link
               href="/host"
-              className="btn-grad-red inline-flex w-fit items-center rounded-[11px] px-5 py-3 text-[13px] font-semibold text-white"
+              className="btn-grad-red inline-flex w-fit items-center px-5 py-3 text-[13px] font-semibold"
             >
               Start your first room →
             </Link>

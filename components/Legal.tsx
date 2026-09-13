@@ -17,8 +17,10 @@ export function LegalShell({
 }) {
   return (
     <article className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-      {lede && <p className="mt-2 text-secondary">{lede}</p>}
+      <h1 className="display t-h2 border-b-[3px] border-double border-primary pb-4">
+        {title}
+      </h1>
+      {lede && <p className="mt-3 text-secondary italic">{lede}</p>}
       <div className="mt-6 space-y-4 text-sm leading-relaxed text-secondary">
         {children}
       </div>
@@ -27,7 +29,11 @@ export function LegalShell({
 }
 
 export function H2({ children }: { children: ReactNode }) {
-  return <h2 className="pt-2 text-base font-bold text-primary">{children}</h2>;
+  return (
+    <h2 className="border-b border-line pt-2 pb-1.5 font-mono text-[13px] font-bold tracking-[0.1em] text-red uppercase">
+      {children}
+    </h2>
+  );
 }
 
 export function Strong({ children }: { children: ReactNode }) {
@@ -38,8 +44,8 @@ export function Strong({ children }: { children: ReactNode }) {
 export function Ph({ children }: { children: ReactNode }) {
   return (
     <mark
-      title="Founder placeholder — fill before launch"
-      className="rounded bg-red/20 px-1 font-medium text-red"
+      title="Founder placeholder - fill before launch"
+      className="bg-red/20 px-1 font-medium text-red"
     >
       {children}
     </mark>

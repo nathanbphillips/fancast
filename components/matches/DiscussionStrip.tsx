@@ -25,11 +25,11 @@ export function DiscussionStrip({
   return (
     <div className="mb-9">
       <div className="mb-3.5 flex items-center gap-2.5">
-        <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red">
+        <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.1em] text-red">
           <span className="h-2 w-2 animate-fc-blink rounded-full bg-red-fill" />
           ROOMS RIGHT NOW
         </span>
-        <span className="font-mono text-[12px] text-tertiary">
+        <span className="text-[12px] text-tertiary italic">
           fan discussions, on or off matchday
         </span>
       </div>
@@ -37,8 +37,7 @@ export function DiscussionStrip({
         {rooms.map((r) => (
           <div
             key={r.id}
-            className="relative overflow-hidden rounded-2xl border border-line bg-surface p-[22px]"
-            style={{ borderLeft: "3px solid #ef0107" }}
+            className="relative border border-line border-l-[3px] border-l-red bg-canvas p-[22px]"
           >
             <div className="mb-3 flex items-center justify-between gap-2">
               {r.live ? (
@@ -55,16 +54,16 @@ export function DiscussionStrip({
             <div className="display text-[20px] leading-[1.15]">{r.title}</div>
             <div className="mt-3 mb-4 flex items-center gap-2.5">
               <Avatar src={null} name={r.hostUsername} size={28} />
-              <span className="min-w-0 truncate text-[12px] text-secondary">
+              <span className="min-w-0 truncate text-[12px] text-secondary italic">
                 {r.blurb ? r.blurb : <>Hosted by @{r.hostUsername}</>}
               </span>
             </div>
             {r.live ? (
               <Link
                 href={`/room/${r.slug}`}
-                className="btn-grad-red inline-flex w-fit items-center gap-2 rounded-[10px] px-4 py-2.5 text-[13px] font-semibold text-white"
+                className="btn-grad-red inline-flex w-fit items-center gap-2 px-4 py-2.5 text-[13px] font-semibold"
               >
-                <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white" />
+                <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-inverted-fg" />
                 Join the room →
               </Link>
             ) : (

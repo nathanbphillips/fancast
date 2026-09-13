@@ -78,7 +78,7 @@ export function RoomRow({
           ))}
         </span>
         {room.blurb && (
-          <span className="block truncate text-[12.5px] text-secondary">
+          <span className="block truncate text-[12.5px] text-secondary italic">
             {room.blurb}
           </span>
         )}
@@ -104,11 +104,11 @@ export function RoomRow({
         {enterable ? (
           <Link
             href={`/room/${room.slug}`}
-            className="btn-grad-red flex shrink-0 items-center gap-1.5 rounded-[10px] px-3.5 py-2 text-[13px] font-semibold text-white"
+            className="btn-grad-red flex shrink-0 items-center gap-1.5 px-3.5 py-2 text-[13px] font-semibold"
           >
             <span
               aria-hidden="true"
-              className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white"
+              className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-inverted-fg"
             />
             Join live
           </Link>
@@ -118,18 +118,18 @@ export function RoomRow({
             onClick={() => void toggle()}
             disabled={busy}
             aria-pressed={rsvped}
-            className={`shrink-0 rounded-[10px] border px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-60 ${
+            className={`shrink-0 px-3.5 py-2 text-[13px] font-semibold transition-colors disabled:opacity-60 ${
               rsvped
-                ? "border-green bg-green/10 text-green"
-                : "border-line hover:bg-raised"
+                ? "-rotate-2 border-2 border-red text-red"
+                : "border border-line hover:bg-raised"
             }`}
           >
-            {rsvped ? "You're in ✓" : "Count me in"}
+            {rsvped ? "✓ Going" : "Count me in"}
           </button>
         ) : (
           <Link
             href={`/signin?next=${encodeURIComponent(`/room/${room.slug}`)}`}
-            className="shrink-0 rounded-lg border border-line px-3.5 py-2 text-[13px] font-semibold hover:bg-raised"
+            className="shrink-0 border border-line px-3.5 py-2 text-[13px] font-semibold hover:bg-raised"
           >
             Count me in
           </Link>

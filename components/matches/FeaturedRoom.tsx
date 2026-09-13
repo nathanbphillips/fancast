@@ -50,10 +50,13 @@ function phaseLabel(state: RoomState): string {
 }
 
 function TeamBadge({ team, away = false }: { team: string; away?: boolean }) {
+  // Only rendered on the live (red) block: home = paper-filled chip, away =
+  // paper-outline chip. Flat token colors, no club branding.
   return (
     <span
-      className="flex h-10 w-10 items-center justify-center rounded-[11px] font-mono text-[11px] font-bold text-white"
-      style={{ background: away ? "#0b6cae" : "#ef0107" }}
+      className={`flex h-10 w-10 items-center justify-center border-2 border-on-red font-mono text-[11px] font-bold ${
+        away ? "text-on-red" : "bg-on-red text-red-fill"
+      }`}
     >
       {abbr(team)}
     </span>
@@ -62,27 +65,26 @@ function TeamBadge({ team, away = false }: { team: string; away?: boolean }) {
 
 /** The featured card is a full-card link when the room is enterable (live, or
  *  the waiting room is joinable); otherwise a plain container, so the CTA (an
- *  RSVP action) isn't an illegal nested link. */
-function CardShell({ href, children }: { href: string | null; children: ReactNode }) {
-  const base = "relative block overflow-hidden rounded-[20px] border p-7";
-  const style = {
-    background:
-      "linear-gradient(120deg, rgba(239,1,7,.18), transparent 55%), var(--bg-surface)",
-    borderColor: "rgba(239,1,7,.32)",
-    boxShadow: "0 30px 60px -40px rgba(239,1,7,.5)",
-  };
+ *  RSVP action) isn't an illegal nested link. Programme treatment: live =
+ *  solid red block, scheduled = solid ink block (inverts in dark). */
+function CardShell({
+  href,
+  live,
+  children,
+}: {
+  href: string | null;
+  live: boolean;
+  children: ReactNode;
+}) {
+  const base = `relative block overflow-hidden p-7 ${
+    live ? "bg-red-fill text-on-red" : "bg-inverted text-inverted-fg"
+  }`;
   return href ? (
-    <Link
-      href={href}
-      className={`${base} transition-transform hover:-translate-y-[3px]`}
-      style={style}
-    >
+    <Link href={href} className={base}>
       {children}
     </Link>
   ) : (
-    <div className={base} style={style}>
-      {children}
-    </div>
+    <div className={base}>{children}</div>
   );
 }
 
@@ -130,26 +132,31 @@ export function FeaturedRoom({
       tiles.push({ v: String(preview.stats.shots), l: "SHOTS" });
   }
 
+  // on-fill text/rule classes: paper-on-red for the live block, paper/ink for
+  // the scheduled ink block (which inverts in dark)
+  const muted = live ? "text-on-red/70" : "text-inverted-fg/70";
+  const rule = live ? "border-on-red/40" : "border-inverted-fg/30";
+
   return (
     <div className="mb-9">
       {/* eyebrow */}
       <div className="mb-3.5 flex items-center gap-2.5">
-        <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.06em] text-red">
+        <span className="inline-flex items-center gap-2 font-mono text-[12px] tracking-[0.1em] text-red">
           <span
             className={`h-2 w-2 rounded-full bg-red-fill ${live ? "animate-fcpulse" : "animate-fc-blink"}`}
           />
           {live ? "LIVE NOW" : "NEXT UP"}
         </span>
-        <span className="font-mono text-[12px] text-tertiary">
+        <span className="text-[12px] text-tertiary italic">
           {live ? "1 room open · doors are up" : dateLabel}
         </span>
       </div>
 
-      <CardShell href={joinable ? `/room/${room.slug}` : null}>
+      <CardShell href={joinable ? `/room/${room.slug}` : null} live={live}>
         <div className="relative z-[2] grid items-center gap-7 lg:grid-cols-[1.05fr_1fr]">
           {/* LEFT */}
           <div>
-            <div className="mb-3.5 font-mono text-[11px] tracking-[0.06em] text-red uppercase">
+            <div className={`mb-3.5 font-mono text-[11px] tracking-[0.1em] uppercase ${muted}`}>
               {dateLabel} · {comp}
             </div>
 
@@ -163,7 +170,7 @@ export function FeaturedRoom({
                   </span>
                 </div>
                 <div className="text-center">
-                  <div className="font-mono text-[12px] font-bold text-red">
+                  <div className="font-mono text-[12px] font-bold tracking-[0.08em] text-on-red uppercase">
                     {phaseLabel(room.state)}
                   </div>
                 </div>
@@ -177,16 +184,23 @@ export function FeaturedRoom({
             )}
 
             <div className="display text-[30px] leading-[1.04]">
-              {fixture.home} <span className="text-secondary">v</span>{" "}
+              {fixture.home}{" "}
+              <span
+                className={`font-mono text-[18px] normal-case ${live ? "text-on-red/80" : "text-gold"}`}
+              >
+                v
+              </span>{" "}
               {fixture.away}
             </div>
 
             {/* host */}
             <div className="mt-3.5 mb-5 flex items-center gap-2.5">
               <Avatar src={null} name={hostsOf(room)[0]} size={32} />
-              <div className="text-[12.5px] text-secondary">
+              <div className={`text-[12.5px] italic ${muted}`}>
                 {room.blurb ? (
-                  <span className="text-primary">{room.blurb}</span>
+                  <span className={live ? "text-on-red" : "text-inverted-fg"}>
+                    {room.blurb}
+                  </span>
                 ) : (
                   <span>
                     Hosted by{" "}
@@ -203,23 +217,26 @@ export function FeaturedRoom({
             {/* CTA */}
             {live ? (
               <div className="flex flex-wrap items-center gap-4">
-                <span className="btn-grad-red inline-flex items-center gap-2 rounded-[11px] px-[22px] py-3 text-[14px] font-semibold text-white">
-                  <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-white" />
+                <span className="inline-flex items-center gap-2 border-2 border-on-red px-[22px] py-3 font-mono text-[14px] font-semibold tracking-[0.08em] text-on-red">
+                  <span className="h-1.5 w-1.5 animate-fcpulse rounded-full bg-on-red" />
                   Join the room →
                 </span>
                 {showListeners && listeners > 0 && (
-                  <span className="font-mono text-[12px] text-tertiary tabular-nums">
+                  <span className="font-mono text-[12px] text-on-red/70 tabular-nums">
                     {listeningLine(listeners)}
                   </span>
                 )}
               </div>
             ) : joinable ? (
               <div className="flex flex-wrap items-center gap-4">
-                <span className="btn-grad-red inline-flex items-center gap-2 rounded-[11px] px-[22px] py-3 text-[14px] font-semibold text-white">
+                <span className="inline-flex items-center gap-2 border-2 border-inverted-fg px-[22px] py-3 font-mono text-[14px] font-semibold tracking-[0.08em] text-inverted-fg">
                   Join the waiting room →
                 </span>
-                <span className="font-mono text-[12px] text-tertiary tabular-nums">
-                  <Countdown iso={fixture.kickoffUtc} /> to kickoff
+                <span className="font-mono text-[12px] text-inverted-fg/70 tabular-nums">
+                  <span className="text-gold">
+                    <Countdown iso={fixture.kickoffUtc} />
+                  </span>{" "}
+                  to kickoff
                 </span>
               </div>
             ) : (
@@ -229,28 +246,31 @@ export function FeaturedRoom({
                   slug={room.slug}
                   initialRsvped={room.viewerRsvped}
                   signedIn={signedIn}
-                  variant="primary"
+                  variant="onInk"
                   label="RSVP for notifications"
                 />
-                <span className="font-mono text-[12px] text-tertiary tabular-nums">
+                <span className="font-mono text-[12px] text-inverted-fg/70 tabular-nums">
                   We&apos;ll notify you when the room opens ·{" "}
-                  <Countdown iso={fixture.kickoffUtc} /> to kickoff
+                  <span className="text-gold">
+                    <Countdown iso={fixture.kickoffUtc} />
+                  </span>{" "}
+                  to kickoff
                 </span>
               </div>
             )}
           </div>
 
           {/* RIGHT: IN THE ROOM preview (live) or "what's inside" (next up) */}
-          <div className="hidden rounded-2xl border border-line bg-canvas p-4 lg:block">
+          <div className={`hidden border p-4 lg:block ${rule}`}>
             <div className="mb-3 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] text-red">
+              <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] ${live ? "text-on-red" : "text-inverted-fg"}`}>
                 <span
-                  className={`h-1.5 w-1.5 rounded-full bg-red-fill ${live ? "animate-fc-blink" : ""}`}
+                  className={`h-1.5 w-1.5 rounded-full ${live ? "animate-fc-blink bg-on-red" : "bg-inverted-fg"}`}
                 />
                 IN THE ROOM
               </span>
               {live && (
-                <span className="font-mono text-[10px] text-tertiary">
+                <span className={`font-mono text-[10px] ${muted}`}>
                   {phaseLabel(room.state)}
                 </span>
               )}
@@ -261,13 +281,13 @@ export function FeaturedRoom({
             {/* sample chat line (founder-authored demo; founder decision
                 2026-07-08, self-attributed so no third-party privacy issue) */}
             {live && (
-              <div className="mt-3 flex items-center gap-2 rounded-[10px] border border-line bg-surface px-3 py-2.5">
+              <div className={`mt-3 flex items-center gap-2 border px-3 py-2.5 ${rule}`}>
                 <Avatar src={null} name="Nathan" size={24} />
                 <div className="min-w-0 flex-1 text-[11px] leading-tight">
                   <span className="font-bold">Nathan</span>{" "}
-                  <span className="text-secondary">Ødegaard, take a bow.</span>
+                  <span className="text-on-red/70 italic">Ødegaard, take a bow.</span>
                 </div>
-                <span className="shrink-0 font-mono text-[10px] font-bold text-red">
+                <span className="shrink-0 font-mono text-[10px] font-bold text-on-red">
                   ▲142
                 </span>
               </div>
@@ -281,21 +301,19 @@ export function FeaturedRoom({
                 {tiles.map((t) => (
                   <div
                     key={t.l}
-                    className="rounded-[9px] bg-surface p-2.5 text-center"
+                    className={`border p-2.5 text-center ${rule}`}
                   >
-                    <div
-                      className={`display text-[16px] tabular-nums ${t.red ? "text-red" : ""}`}
-                    >
+                    <div className="display text-[16px] text-on-red tabular-nums">
                       {t.v}
                     </div>
-                    <div className="font-mono text-[9px] text-tertiary">
+                    <div className={`font-mono text-[9px] tracking-[0.08em] ${muted}`}>
                       {t.l}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="mt-3 font-mono text-[11px] leading-[1.5] text-tertiary">
+              <p className={`mt-3 text-[11px] leading-[1.5] italic ${muted}`}>
                 Live fan audio, a chat worth reading and match stats, all in sync
                 with your screen.
               </p>

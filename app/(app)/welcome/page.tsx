@@ -20,11 +20,11 @@ export default async function WelcomePage({
 
   return (
     <div className="mx-auto max-w-sm px-4 py-10">
-      <h1 className="text-2xl font-bold tracking-tight">
+      <h1 className="display t-h3 border-b-[3px] border-double border-primary pb-3">
         Welcome to {brand.name}
       </h1>
-      <p className="mt-1 mb-6 text-sm text-secondary">
-        One last thing — pick the name the room will know you by.
+      <p className="mt-3 mb-6 text-sm text-secondary italic">
+        One last thing - pick the name the room will know you by.
       </p>
       <UsernameForm mode="create" next={next} />
     </div>
