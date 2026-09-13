@@ -16,10 +16,10 @@ import type { PlayerStatus, StatOverrides } from "@/lib/statOverrides";
  */
 
 const inputCls =
-  "w-full rounded-md border border-line bg-canvas px-2 py-1 text-sm text-primary placeholder:text-secondary";
-const btnCls = "rounded-md px-3 py-1.5 text-sm font-semibold";
-const selectCls = "shrink-0 rounded-md border border-line bg-canvas px-1 py-1 text-xs";
-const removeCls = "shrink-0 rounded-md border border-line px-2 text-secondary";
+  "w-full border border-line bg-canvas px-2 py-1 text-sm text-primary placeholder:text-secondary";
+const btnCls = "px-3 py-1.5 text-sm font-semibold";
+const selectCls = "shrink-0 border border-line bg-canvas px-1 py-1 text-xs";
+const removeCls = "shrink-0 border border-line px-2 text-secondary";
 
 type NewsRow = { name: string; reason: string };
 type Edit = { name: string; jersey: string; status: PlayerStatus };
@@ -41,7 +41,7 @@ function NewsListEditor({
 }) {
   return (
     <div>
-      <p className="mb-1 text-xs font-semibold text-secondary">{label} — absences</p>
+      <p className="mb-1 text-xs font-semibold text-secondary">{label} - absences</p>
       <div className="space-y-1">
         {rows.map((r, i) => (
           <div key={i} className="flex gap-1">
@@ -200,7 +200,7 @@ function EditorActions({
       <button type="button" className={`${btnCls} border border-line text-secondary`} onClick={onClose} disabled={saving}>
         Cancel
       </button>
-      <button type="button" className={`${btnCls} bg-red-fill text-white`} onClick={onSave} disabled={saving}>
+      <button type="button" className={`${btnCls} bg-red-fill text-on-red`} onClick={onSave} disabled={saving}>
         {saving ? "Saving…" : "Save & push live"}
       </button>
     </div>
@@ -459,7 +459,7 @@ export function StatsEditor({
 }) {
   const common = { data, overrides, onSave, onClose, saving };
   return (
-    <div className="mb-3 rounded-xl border border-line bg-surface p-3">
+    <div className="mb-3 border border-line bg-canvas p-3">
       <p className="mb-2 text-sm font-bold">Edit {section === "info" ? "match info" : "line-ups"}</p>
       {section === "info" ? (
         <InfoEditor {...common} />

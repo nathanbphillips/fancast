@@ -23,10 +23,11 @@ import type { StatOverrides } from "@/lib/statOverrides";
  * loading / seed fixtures fall back to the calm zeros placeholder.
  */
 
+// gantry voice (founder 2026-09-12): the mock's names for the same tabs
 const TAB_LABELS: Record<StatTab, string> = {
-  stats: "Stats",
+  stats: "Numbers",
   events: "Timeline",
-  lineups: "Line-ups",
+  lineups: "Teams",
   info: "Info",
 };
 const TAB_ORDER_DEFAULT: StatTab[] = ["info", "stats", "events", "lineups"];
@@ -133,10 +134,10 @@ function StatSearch({
         aria-label="Search stats"
         role="combobox"
         aria-expanded={open && matches.length > 0}
-        className="h-9 w-full rounded-lg border border-line bg-inset pr-3 pl-9 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
+        className="h-9 w-full border border-line bg-inset pr-3 pl-9 text-sm placeholder:text-secondary focus:border-red focus:outline-none"
       />
       {open && matches.length > 0 && (
-        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-lg border border-line bg-surface py-1 shadow-raised">
+        <ul className="absolute z-20 mt-1 max-h-64 w-full overflow-auto border border-line bg-canvas py-1">
           {matches.map((m, i) => (
             <li key={m.code}>
               <button
@@ -384,9 +385,9 @@ export function StatsPanel({
 
   return (
     <div className="p-3">
-      <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface shadow-card">
+      <div className="overflow-hidden border border-line bg-canvas">
         <div
-          className="flex flex-wrap items-center gap-1 border-b border-line bg-inset px-2.5 py-2 font-mono text-[10px] tracking-[0.04em] lg:bg-transparent"
+          className="flex flex-wrap items-center gap-1 border-b border-line px-2"
           role="tablist"
           aria-label="Match info"
         >
@@ -401,10 +402,10 @@ export function StatsPanel({
                 aria-selected={active}
                 aria-controls="stats-tabpanel"
                 onClick={() => setOverride(t.id)}
-                className={`rounded-md px-2.5 py-1.5 uppercase transition-colors ${
+                className={`display -mb-px border-b-[3px] px-2.5 pt-2 pb-1.5 text-[11px] tracking-[0.06em] uppercase transition-colors ${
                   active
-                    ? "bg-inverted font-bold text-inverted-fg"
-                    : "text-primary lg:text-secondary hover:text-primary"
+                    ? "border-red text-primary"
+                    : "border-transparent text-secondary hover:text-primary"
                 }`}
               >
                 {t.label}
@@ -422,7 +423,7 @@ export function StatsPanel({
             <button
               type="button"
               onClick={pushCurrent}
-              className="rounded-full bg-red-fill px-2.5 py-0.5 text-xs font-semibold text-white"
+              className="bg-red-fill px-2.5 py-0.5 font-mono text-xs font-semibold tracking-[0.06em] text-on-red"
             >
               Push
             </button>
@@ -444,7 +445,7 @@ export function StatsPanel({
         >
           {comingSoon ? (
             <p className={`text-secondary ${big ? "text-base" : "text-sm"}`}>
-              Information coming soon — venue, weather, referee, and live stats
+              Information coming soon - venue, weather, referee, and live stats
               fill in automatically once they&apos;re available for this game.
             </p>
           ) : (

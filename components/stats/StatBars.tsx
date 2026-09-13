@@ -41,7 +41,7 @@ export function StatBars({
               <span className="font-semibold tabular-nums">{fmt(s.away)}</span>
             </div>
             <div
-              className={`mt-1 flex overflow-hidden rounded-full bg-raised ${big ? "h-3" : "h-1.5"}`}
+              className={`mt-1 flex overflow-hidden bg-raised ${big ? "h-3" : "h-1.5"}`}
               role="img"
               aria-label={`${s.label}: ${fmt(s.home)} home, ${fmt(s.away)} away`}
             >

@@ -83,7 +83,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
         // club colours (founder 2026-09-06): Arsenal always red, opponent in
         // their own colour (secondary when the families clash); the faint ring
         // keeps a white disc readable on the pitch
-        className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums shadow"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums"
         style={{ background: color.bg, color: color.fg, boxShadow: "0 1px 2px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(0,0,0,0.18)" }}
       >
         {p.jersey ?? ""}
@@ -92,7 +92,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
         // came-on badge: a small circle at top-right holding the number of the
         // player they replaced (green = on). Tooltip spells out the swap.
         <span
-          className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-green px-0.5 text-[8px] font-bold tabular-nums text-white shadow ring-1 ring-canvas"
+          className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-green px-0.5 text-[8px] font-bold tabular-nums text-white ring-1 ring-canvas"
           title={`On ${sub.minute}${sub.number != null ? ` for #${sub.number}` : ""}`}
         >
           {sub.number ?? "↑"}
@@ -106,7 +106,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
       target="_blank"
       rel="noopener noreferrer"
       title={p.name}
-      className="max-w-[92px] truncate rounded bg-black/55 px-1.5 py-0.5 text-[11px] font-semibold leading-tight text-white hover:underline"
+      className="max-w-[92px] truncate px-1.5 py-0.5 text-[11px] font-semibold leading-tight text-primary hover:underline"
     >
       {lastName(p.name)}
     </a>
@@ -123,7 +123,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
 }
 
 function SideHeading({ side }: { side: SideLineup | null }) {
-  if (!side) return <span className="text-secondary">—</span>;
+  if (!side) return <span className="text-secondary">·</span>;
   return (
     <span className="truncate font-semibold">
       {side.teamName}
@@ -183,18 +183,14 @@ export function PitchLineup({
       </div>
 
       <div
-        className="relative w-full overflow-hidden rounded-xl border border-line"
-        style={{
-          aspectRatio: "0.72",
-          background:
-            "repeating-linear-gradient(0deg, #15803d 0 9%, #16703a 9% 18%)",
-        }}
+        className="relative w-full overflow-hidden border border-line bg-inset"
+        style={{ aspectRatio: "0.72" }}
       >
-        {/* field markings */}
-        <div className="absolute inset-x-0 top-1/2 border-t border-white/40" />
-        <div className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/40" />
-        <div className="absolute left-1/2 top-0 h-[12%] w-[58%] -translate-x-1/2 border border-t-0 border-white/40" />
-        <div className="absolute left-1/2 bottom-0 h-[12%] w-[58%] -translate-x-1/2 border border-b-0 border-white/40" />
+        {/* field markings: paper pitch, ruled in ink hairlines */}
+        <div className="absolute inset-x-0 top-1/2 border-t-[1.5px] border-line" />
+        <div className="absolute left-1/2 top-1/2 h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] border-line" />
+        <div className="absolute left-1/2 top-0 h-[12%] w-[58%] -translate-x-1/2 border-[1.5px] border-t-0 border-line" />
+        <div className="absolute left-1/2 bottom-0 h-[12%] w-[58%] -translate-x-1/2 border-[1.5px] border-b-0 border-line" />
 
         {homeMarks.map((m) => (
           <Marker key={m.p.playerId} {...m} home color={disc.home} href={playerHref(m.p, fotmob)} />

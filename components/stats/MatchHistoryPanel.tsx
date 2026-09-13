@@ -7,15 +7,15 @@ import type { MatchHistory, TeamStanding } from "@/lib/history";
  */
 
 function FormChips({ form }: { form: ("W" | "D" | "L")[] }) {
-  if (form.length === 0) return <span className="text-secondary">—</span>;
+  if (form.length === 0) return <span className="text-secondary">·</span>;
   const tone = (r: string) =>
-    r === "W" ? "bg-green text-canvas" : r === "L" ? "bg-red-fill text-white" : "bg-raised text-secondary";
+    r === "W" ? "bg-green text-canvas" : r === "L" ? "bg-red-fill text-on-red" : "bg-raised text-secondary";
   return (
     <span className="flex gap-0.5">
       {form.map((r, i) => (
         <span
           key={i}
-          className={`inline-flex h-4 w-4 items-center justify-center rounded-sm text-[9px] font-bold ${tone(r)}`}
+          className={`inline-flex h-4 w-4 items-center justify-center text-[9px] font-bold ${tone(r)}`}
         >
           {r}
         </span>
@@ -54,11 +54,11 @@ export function MatchHistoryPanel({
   }
 
   const wdl = (t: TeamStanding | null) =>
-    t ? `${t.won}-${t.drawn}-${t.lost}` : "—";
+    t ? `${t.won}-${t.drawn}-${t.lost}` : "·";
   const gfga = (t: TeamStanding | null) =>
-    t ? `${t.goalsFor}/${t.goalsAgainst}` : "—";
+    t ? `${t.goalsFor}/${t.goalsAgainst}` : "·";
   const gd = (t: TeamStanding | null) =>
-    t == null ? "—" : t.goalDiff > 0 ? `+${t.goalDiff}` : `${t.goalDiff}`;
+    t == null ? "·" : t.goalDiff > 0 ? `+${t.goalDiff}` : `${t.goalDiff}`;
 
   const Row = ({
     label,
@@ -106,14 +106,14 @@ export function MatchHistoryPanel({
       </div>
       <Row
         label="Pos"
-        h={home?.position ?? "—"}
-        a={away?.position ?? "—"}
+        h={home?.position ?? "·"}
+        a={away?.position ?? "·"}
       />
-      <Row label="Pld" h={home?.played ?? "—"} a={away?.played ?? "—"} />
+      <Row label="Pld" h={home?.played ?? "·"} a={away?.played ?? "·"} />
       <Row label="W-D-L" h={wdl(home)} a={wdl(away)} />
       <Row label="GF/GA" h={gfga(home)} a={gfga(away)} />
       <Row label="GD" h={gd(home)} a={gd(away)} />
-      <Row label="Pts" h={home?.points ?? "—"} a={away?.points ?? "—"} />
+      <Row label="Pts" h={home?.points ?? "·"} a={away?.points ?? "·"} />
       <Row
         label="Form"
         h={<FormChips form={home?.form ?? []} />}

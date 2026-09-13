@@ -51,7 +51,7 @@ function Section({
     if (openSignal !== undefined) setOpen(true);
   }, [openSignal]);
   return (
-    <div className="overflow-hidden rounded-xl border-[0.75px] border-line bg-surface">
+    <div className="overflow-hidden border border-line bg-canvas">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -95,7 +95,7 @@ function Bar({
         <span className="text-secondary">{label}</span>
         <span className="font-semibold tabular-nums">{fmt(away)}</span>
       </div>
-      <div className={`mt-1 flex overflow-hidden rounded-full bg-raised ${big ? "h-2.5" : "h-1.5"}`}>
+      <div className={`mt-1 flex overflow-hidden bg-raised ${big ? "h-2.5" : "h-1.5"}`}>
         <span className={colors ? undefined : "bg-red-fill"} style={{ width: `${hp}%`, ...fill(colors, "home") }} />
         <span className={colors ? undefined : "bg-navy"} style={{ width: `${100 - hp}%`, ...fill(colors, "away") }} />
       </div>
@@ -108,7 +108,7 @@ function Momentum({ buckets, big, colors }: { buckets: MomentumBucket[]; big: bo
   return (
     <>
       <p className="mb-1.5 text-[11px] text-secondary">
-        Dangerous attacks by 15′ — who&apos;s on top
+        Dangerous attacks by 15′ · who&apos;s on top
       </p>
       <div className="flex items-stretch gap-1" style={{ height: big ? "60px" : "46px" }}>
         {buckets.map((b) => {
@@ -122,13 +122,13 @@ function Momentum({ buckets, big, colors }: { buckets: MomentumBucket[]; big: bo
             >
               <div className="flex flex-1 items-end">
                 <span
-                  className={`w-full rounded-sm ${colors ? "" : "bg-red-fill"}`}
+                  className={`w-full ${colors ? "" : "bg-red-fill"}`}
                   style={{ height: net > 0 ? `${h}%` : "0", ...fill(colors, "home") }}
                 />
               </div>
               <div className="flex flex-1 items-start">
                 <span
-                  className={`w-full rounded-sm ${colors ? "" : "bg-navy"}`}
+                  className={`w-full ${colors ? "" : "bg-navy"}`}
                   style={{ height: net < 0 ? `${h}%` : "0", ...fill(colors, "away") }}
                 />
               </div>
@@ -180,7 +180,7 @@ export function DeeperStats({
   if (!deep) {
     return (
       <p className={`text-secondary ${big ? "text-base" : "text-sm"}`}>
-        Deeper stats — xG, momentum, ratings — appear once the match is underway.
+        Deeper stats - xG, momentum, ratings - appear once the match is underway.
       </p>
     );
   }
@@ -269,7 +269,7 @@ export function DeeperStats({
 
       {gs && (
         <Section title="Game state" big>
-          <div className="flex h-2 overflow-hidden rounded-full bg-raised">
+          <div className="flex h-2 overflow-hidden bg-raised">
             <span
               className={colors ? undefined : "bg-red-fill"}
               style={{ width: `${(gs.homeLed / gsTotal) * 100}%`, ...fill(colors, "home") }}

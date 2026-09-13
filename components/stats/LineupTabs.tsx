@@ -40,7 +40,7 @@ export function LineupTabs({
         href={playerHref(p)}
         target="_blank"
         rel="noopener noreferrer"
-        title={`${p.name} — Fotmob profile`}
+        title={`${p.name} - Fotmob profile`}
         className="truncate hover:underline"
       >
         {p.name}

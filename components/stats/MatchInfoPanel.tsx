@@ -18,14 +18,14 @@ export function MatchInfoPanel({
   if (!info) {
     return (
       <p className="text-sm text-secondary">
-        Match info — venue, referee, weather, and team news — appears closer to
+        Match info - venue, referee, weather, and team news - appears closer to
         kickoff.
       </p>
     );
   }
 
   const cardTitle =
-    "mb-3 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase";
+    "mb-3 border-b-[3px] border-double border-primary pb-1 font-mono text-[11px] font-bold tracking-[0.14em] text-secondary uppercase";
 
   const Fact = ({
     label,
@@ -110,7 +110,7 @@ export function MatchInfoPanel({
   const both = hasNews && hasVenue;
 
   const teamNewsCard = hasNews ? (
-    <div className="rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-card">
+    <div className="border border-line bg-canvas p-4">
       <p className={cardTitle}>Team news</p>
       <div className="space-y-4">
         <NewsTeam name={homeName} rows={info.teamNews.home} tone="text-red" />
@@ -120,7 +120,7 @@ export function MatchInfoPanel({
   ) : null;
 
   const venueCard = hasVenue ? (
-    <div className="space-y-4 rounded-xl border-[0.75px] border-line bg-surface p-4 shadow-card">
+    <div className="space-y-4 border border-line bg-canvas p-4">
       <p className={cardTitle}>Match day</p>
       {info.venue && (
         <Fact

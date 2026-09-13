@@ -21,22 +21,22 @@ function KindIcon({ kind }: { kind: EventKind }) {
     return (
       <span
         aria-hidden
-        className="inline-block h-4 w-2.5 rounded-[2px]"
+        className="inline-block h-4 w-2.5"
         style={{ background: "#e4b800" }}
       />
     );
   if (kind === "redcard")
-    return <span aria-hidden className="inline-block h-4 w-2.5 rounded-[2px] bg-red-fill" />;
+    return <span aria-hidden className="inline-block h-4 w-2.5 bg-red-fill" />;
   if (kind === "substitution")
     return <span aria-hidden className="text-green">⇄</span>;
   if (kind === "var")
     return (
-      <span aria-hidden className="rounded bg-raised px-1 text-[10px] font-bold text-secondary">
+      <span aria-hidden className="border border-line px-1 text-[10px] font-bold text-secondary">
         VAR
       </span>
     );
   // goal / owngoal / penalty
-  return <span aria-hidden>⚽</span>;
+  return <span aria-hidden>◎</span>;
 }
 
 export function EventsTimeline({
@@ -50,7 +50,7 @@ export function EventsTimeline({
   if (events.length === 0) {
     return (
       <p className={`text-secondary ${big ? "text-base" : "text-sm"}`}>
-        No events yet — goals, cards, and subs appear here as they happen.
+        No events yet - goals, cards, and subs appear here as they happen.
       </p>
     );
   }
@@ -63,7 +63,7 @@ export function EventsTimeline({
         return (
           <li
             key={e.id}
-            aria-label={`${min} ${KIND_LABEL[e.kind]} — ${e.player}`}
+            aria-label={`${min} ${KIND_LABEL[e.kind]} - ${e.player}`}
             className={`flex items-start gap-2 border-l-2 pl-2 ${
               e.side === "home" ? "border-red" : "border-navy"
             } ${big ? "text-base" : "text-sm"}`}
