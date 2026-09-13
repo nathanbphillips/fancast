@@ -1,7 +1,7 @@
 /**
- * Decorative audio waveform with a sweeping playhead (Cloud Design). NOT wired
- * to real amplitude — a visual, matching the prototype. Bar heights are
- * deterministic (SSR-stable, no Math.random).
+ * Decorative audio waveform with a sweeping playhead (Programme: flat red
+ * bars, no gradients). NOT wired to real amplitude - a visual. Bar heights
+ * are deterministic (SSR-stable, no Math.random).
  */
 export function Waveform({
   bars = 40,
@@ -25,22 +25,12 @@ export function Waveform({
         {heights.map((h, i) => (
           <span
             key={i}
-            className="min-w-[2px] flex-1 rounded-full"
-            style={{
-              height: `${Math.max(12, Math.min(100, h))}%`,
-              background:
-                "linear-gradient(to top, rgba(239,1,7,0.95), rgba(239,1,7,0.18))",
-            }}
+            className="min-w-[2px] flex-1 bg-red-fill/70"
+            style={{ height: `${Math.max(12, Math.min(100, h))}%` }}
           />
         ))}
       </div>
-      <span
-        className="animate-fcsweep pointer-events-none absolute top-0 h-full w-0.5"
-        style={{
-          background:
-            "linear-gradient(to bottom, transparent, #ef0107, transparent)",
-        }}
-      />
+      <span className="animate-fcsweep pointer-events-none absolute top-0 h-full w-0.5 bg-primary/60" />
     </div>
   );
 }

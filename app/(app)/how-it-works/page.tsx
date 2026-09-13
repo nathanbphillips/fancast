@@ -82,9 +82,9 @@ export default function HowItWorksPage() {
             <span className={eyebrow}>Notes for supporters</span>
             <h1 className="display mt-[22px] t-hero">How it works</h1>
             <p className="mt-[22px] max-w-[472px] text-[18px] leading-[1.62] text-secondary italic">
-              {brand.name} sits beside the match you&apos;re already watching.
-              Here&apos;s how you pull up a seat, tap in, and line the commentary
-              up to your own feed, with a room full of fans to watch it with.
+              Listen along, in perfect sync with your screen. {brand.name} sits
+              beside the match you&apos;re already watching - it never shows the
+              game or carries broadcast audio, it rides alongside.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
