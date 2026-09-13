@@ -40,7 +40,7 @@
   --red-fill: #a8241a;
   --on-red: #f7f1e2;
   --gold: #e8c400; /* sparse: countdown numerals + the hero "v" on ink fills */
-  --gold-bright: #e8c400; /* legacy alias */
+  --gold-bright: #e8c400; /* FIXED gold for theme-constant red fills (hero blocks) */
   --navy: #023474; /* away-team signal + unknown-club fallback - NOT brand */
   --green: #2e6b3c; /* printers' green: positive/sync-confirmed states */
   --placeholder: #6b6455;
@@ -73,7 +73,9 @@
   /* gold sits on cream fills in dark mode, where it fails contrast - the
      handoff swaps it for the deep red there */
   --gold: #a8241a;
-  --gold-bright: #a8241a;
+  /* gold-bright is the FIXED gold for theme-constant RED fills (the hero
+     blocks): red-fill never brightens, so gold on it works in both themes */
+  --gold-bright: #e8c400;
   --navy: #6e9fe0;
   --green: #96b489;
   --placeholder: #9a927e;

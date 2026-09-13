@@ -19,7 +19,7 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t-[3px] border-double border-primary bg-footer">
-      <div className="mx-auto max-w-[1180px] px-5 py-14 sm:px-10">
+      <div className="mx-auto max-w-[1260px] px-5 py-14 sm:px-10">
         <div className="flex flex-col gap-10 sm:flex-row sm:justify-between">
           <div className="max-w-sm">
             <Logo />

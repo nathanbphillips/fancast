@@ -79,6 +79,35 @@ export async function loadFixtures(): Promise<{
   // schedule, which must read as "no fixtures yet")
   if (error) throw error;
 
+  // Programme front page (founder 2026-09-13): scheduled broadcasts must
+  // always surface, even when they sit beyond the 10-fixture week window -
+  // pull every future fixture that HAS an active room and merge. Same shape,
+  // same card-building below; deduped by fixture id, kickoff order kept.
+  const { data: roomedFixtures } = await supabase
+    .from("fixtures")
+    .select(
+      "*, rooms!inner(id, slug, state, postponed, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
+    )
+    .gte("kickoff_utc", new Date().toISOString())
+    .in("rooms.state", [
+      "scheduled",
+      "waiting",
+      "pregame",
+      "live_1h",
+      "halftime",
+      "live_2h",
+      "extra_time",
+      "postgame",
+    ])
+    .order("kickoff_utc", { ascending: true })
+    .limit(12)
+    .returns<FixtureWithRooms[]>();
+  const merged: FixtureWithRooms[] = [...(fixtures ?? [])];
+  for (const rf of roomedFixtures ?? []) {
+    if (!merged.some((f) => f.id === rf.id)) merged.push(rf);
+  }
+  merged.sort((a, b) => a.kickoff_utc.localeCompare(b.kickoff_utc));
+
   const { user, profile } = await getCurrentUserAndProfile();
   const followedIds = new Set<string>();
   if (user) {
@@ -91,7 +120,7 @@ export async function loadFixtures(): Promise<{
 
   const viewerIsCommentator = profile?.role === "commentator";
 
-  const withFollowed: HomeFixture[] = (fixtures ?? []).map((f) => {
+  const withFollowed: HomeFixture[] = merged.map((f) => {
     // multiple rooms per fixture are possible now (FR-19); until PRD-05's
     // multi-room cards land, the card carries the most-advanced ACTIVE room:
     // live-ish beats scheduled; canceled/postponed/no-show (unopened 15 min

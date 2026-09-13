@@ -14,7 +14,47 @@ const ACTOR = "arseradio.com";
 const PROFILE_URL = `https://bsky.app/profile/${ACTOR}`;
 const FEED_URL = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${ACTOR}&limit=8&filter=posts_no_replies`;
 
-type WirePost = { text: string; date: Date; likes: number; url: string };
+type WireImage = { thumb: string; alt: string };
+type WireExternal = { title: string; uri: string; thumb?: string };
+type WirePost = {
+  text: string;
+  date: Date;
+  likes: number;
+  url: string;
+  images: WireImage[];
+  external: WireExternal | null;
+};
+
+type EmbedView = {
+  $type?: string;
+  images?: { thumb?: string; alt?: string }[];
+  external?: { uri?: string; title?: string; thumb?: string };
+  thumbnail?: string; // video embeds carry a poster frame
+  media?: EmbedView;
+};
+
+/** post media (founder 2026-09-13): images, video poster frames and external
+ *  link cards, from the embed view; recordWithMedia nests its media a level
+ *  down. A video renders as its thumbnail - the post links out to Bluesky to
+ *  play (golden rule 1 lives elsewhere, but the wire stays a paper page). */
+function parseEmbed(embed: EmbedView | undefined): {
+  images: WireImage[];
+  external: WireExternal | null;
+} {
+  const e = embed?.media ?? embed;
+  const images = (e?.images ?? [])
+    .filter((i): i is { thumb: string; alt?: string } => !!i.thumb)
+    .map((i) => ({ thumb: i.thumb, alt: i.alt ?? "" }))
+    .slice(0, 4);
+  if (images.length === 0 && e?.thumbnail) {
+    images.push({ thumb: e.thumbnail, alt: "Video - watch on Bluesky" });
+  }
+  const external =
+    e?.external?.uri && e.external.title
+      ? { title: e.external.title, uri: e.external.uri, thumb: e.external.thumb }
+      : null;
+  return { images, external };
+}
 
 function rel(d: Date, now: number): string {
   const m = Math.max(1, Math.round((now - d.getTime()) / 60000));
@@ -36,7 +76,15 @@ export function TheWire() {
         const res = await fetch(FEED_URL);
         if (!res.ok) throw new Error(String(res.status));
         const data = (await res.json()) as {
-          feed?: { post?: { uri: string; likeCount?: number; indexedAt: string; record?: { text?: string; createdAt?: string } } }[];
+          feed?: {
+            post?: {
+              uri: string;
+              likeCount?: number;
+              indexedAt: string;
+              record?: { text?: string; createdAt?: string };
+              embed?: EmbedView;
+            };
+          }[];
         };
         const next = (data.feed ?? [])
           .map((f) => f.post)
@@ -46,8 +94,9 @@ export function TheWire() {
             date: new Date(p.record?.createdAt ?? p.indexedAt),
             likes: p.likeCount ?? 0,
             url: `${PROFILE_URL}/post/${p.uri.split("/").pop()}`,
+            ...parseEmbed(p.embed),
           }))
-          .filter((p) => p.text);
+          .filter((p) => p.text || p.images.length > 0);
         if (alive && next.length > 0) {
           setPosts(next);
           setFailed(false);
@@ -99,6 +148,50 @@ export function TheWire() {
                 </span>
               </span>
               <span className="mt-1 block text-[15.5px] leading-[1.55]">{p.text}</span>
+              {p.images.length > 0 && (
+                <span
+                  className={`mt-2.5 grid gap-1.5 ${p.images.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
+                >
+                  {p.images.map((img) => (
+                    // eslint-disable-next-line @next/next/no-img-element -- Bluesky's
+                    // CDN isn't in the pinned remotePatterns; plain img for the feed
+                    <img
+                      key={img.thumb}
+                      src={img.thumb}
+                      alt={img.alt}
+                      loading="lazy"
+                      className="max-h-[220px] w-full border border-line object-cover"
+                    />
+                  ))}
+                </span>
+              )}
+              {p.external && (
+                <span className="mt-2.5 flex items-center gap-3 border border-line p-2.5">
+                  {p.external.thumb && (
+                    // eslint-disable-next-line @next/next/no-img-element -- see above
+                    <img
+                      src={p.external.thumb}
+                      alt=""
+                      loading="lazy"
+                      className="h-12 w-12 shrink-0 border border-line object-cover"
+                    />
+                  )}
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13.5px] font-semibold">
+                      {p.external.title}
+                    </span>
+                    <span className="block truncate font-mono text-[11px] text-tertiary">
+                      {(() => {
+                        try {
+                          return new URL(p.external.uri).hostname;
+                        } catch {
+                          return p.external.uri;
+                        }
+                      })()}
+                    </span>
+                  </span>
+                </span>
+              )}
               <span className="mt-1.5 block font-mono text-[12px] tracking-[0.06em] text-tertiary">
                 {p.likes} {p.likes === 1 ? "like" : "likes"} · reply on Bluesky →
               </span>

@@ -88,7 +88,7 @@ export default async function HomePage() {
   let lastDay = "";
 
   return (
-    <div className="mx-auto max-w-[1120px] px-5 pt-6 pb-14 sm:px-10">
+    <div className="mx-auto max-w-[1260px] px-5 pt-6 pb-14 sm:px-10">
       <MastheadStrip />
 
       {/* COVER */}
@@ -99,20 +99,6 @@ export default async function HomePage() {
         </div>
         <p className="mt-3.5 text-[19px] text-secondary italic">
           The matchday programme - real supporters in your ear, never pundits.
-        </p>
-        <p className="mt-4 font-mono text-[14px] tracking-[0.08em]">
-          In this issue: Fixtures p.1 ·{" "}
-          <Link href="/how-it-works" className="border-b border-red whitespace-nowrap hover:text-red">
-            How it works p.2
-          </Link>{" "}
-          ·{" "}
-          <Link href="/host" className="border-b border-red whitespace-nowrap hover:text-red">
-            Host a room p.3
-          </Link>{" "}
-          ·{" "}
-          <Link href="/signin" className="border-b border-red whitespace-nowrap hover:text-red">
-            Sign in p.4
-          </Link>
         </p>
       </div>
 
@@ -148,25 +134,25 @@ export default async function HomePage() {
           </p>
         </Link>
       ) : nextFixture ? (
-        /* State B: the ink next-broadcast block */
-        <div className="mt-6 bg-inverted p-7 text-inverted-fg sm:px-9">
+        /* State B: the red next-broadcast block (founder 2026-09-13) */
+        <div className="mt-6 bg-red-fill p-7 text-on-red sm:px-9">
           <div className="flex flex-wrap justify-between gap-3.5 font-mono text-[13px] tracking-[0.16em]">
             <span>
               {nextBroadcast ? "Next broadcast" : "Next fixture"} -{" "}
               <KickoffTime iso={nextFixture.card.kickoffUtc} />
             </span>
-            <span className="font-mono text-gold tabular-nums whitespace-nowrap">
+            <span className="font-mono text-gold-bright tabular-nums whitespace-nowrap">
               Kicks off in <Countdown iso={nextFixture.card.kickoffUtc} />
             </span>
           </div>
           <div className="mt-3.5 flex flex-wrap items-end justify-between gap-4">
             <div className="display text-[clamp(34px,5vw,56px)] leading-[0.95]">
-              {nextFixture.card.home} <span className="text-gold">v</span>{" "}
+              {nextFixture.card.home} <span className="text-gold-bright">v</span>{" "}
               {nextFixture.card.away}
             </div>
             <Link
               href={nextFixture.card.roomHref ?? "/matches"}
-              className="border-2 border-inverted-fg px-6 py-3 font-mono text-[15px] font-semibold tracking-[0.12em] whitespace-nowrap transition-opacity hover:opacity-85"
+              className="border-2 border-on-red px-6 py-3 font-mono text-[15px] font-semibold tracking-[0.12em] whitespace-nowrap transition-opacity hover:opacity-85"
             >
               {nextFixture.card.roomHref ? "Count me in →" : "See the schedule →"}
             </Link>

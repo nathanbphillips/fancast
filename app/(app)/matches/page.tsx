@@ -102,7 +102,7 @@ export default async function MatchesPage() {
     <>
       {/* HEADER */}
       <section className="border-b-[3px] border-double border-primary bg-canvas">
-        <div className="mx-auto max-w-[1120px] px-5 pt-14 pb-8 sm:px-10">
+        <div className="mx-auto max-w-[1260px] px-5 pt-14 pb-8 sm:px-10">
           <p className="mb-3 font-mono text-[12px] tracking-[0.1em] text-red">
             FULL SCHEDULE · ARSENAL
           </p>
@@ -115,7 +115,7 @@ export default async function MatchesPage() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1120px] px-5 py-9 sm:px-10">
+      <div className="mx-auto max-w-[1260px] px-5 py-9 sm:px-10">
         {/* FEATURED HERO — real live data, gated (degrades to next-up) */}
         {hero ? (
           <FeaturedRoom

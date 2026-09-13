@@ -7,19 +7,19 @@ import { brand } from "@/lib/brand";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
-import { Pill } from "@/components/ui/Pill";
 import { Button } from "@/components/ui/Button";
+import { DEMO_ROOM_HREF } from "@/lib/config";
 
 type NavItem = { href: string; label: string };
 type NavEntry = NavItem | { label: string; children: NavItem[] };
 
-// Programme nav (founder 2026-09-13): the site reads as the 4-page programme;
-// the front page carries the issue index, the header keeps the three working
-// links. About lives in the footer; the demo is a CTA on pages 2-3.
+// Programme nav (founder 2026-09-13): All matches · How it works · Host a
+// room · View demo, then the theme toggle and auth. About lives in the footer.
 const NAV: NavEntry[] = [
+  { href: "/matches", label: "All matches" },
   { href: "/how-it-works", label: "How it works" },
-  { href: "/matches", label: "Matches" },
   { href: "/host", label: "Host a room" },
+  { href: DEMO_ROOM_HREF, label: "View demo" },
 ];
 
 const ANNOUNCE_KEY = "fc_announce_dismissed";
@@ -238,7 +238,7 @@ export function AppHeader({
       {/* masthead rules: 3px solid top, 1px solid bottom (the programme's
           page-top treatment); solid paper, no blur, no shadow */}
       <header className="sticky top-0 z-40 border-t-[3px] border-t-primary border-b border-b-primary bg-canvas">
-        <div className="mx-auto flex h-[61px] max-w-[1180px] items-center justify-between px-5 sm:px-10">
+        <div className="mx-auto flex h-[61px] max-w-[1260px] items-center justify-between px-5 sm:px-10">
           <div className="flex items-center">
             <Link href="/" aria-label={brand.name} className="flex items-center">
               <Logo priority />
@@ -273,17 +273,6 @@ export function AppHeader({
                 ),
               )}
             </nav>
-            {liveCount > 0 && (
-              <Link
-                href="/matches"
-                className="hidden sm:block"
-                aria-label={`${liveCount} live now`}
-              >
-                <Pill variant="red" live>
-                  {liveCount} LIVE
-                </Pill>
-              </Link>
-            )}
             <ThemeToggle />
             {username ? (
               <UserMenu

@@ -65,20 +65,16 @@ function TeamBadge({ team, away = false }: { team: string; away?: boolean }) {
 
 /** The featured card is a full-card link when the room is enterable (live, or
  *  the waiting room is joinable); otherwise a plain container, so the CTA (an
- *  RSVP action) isn't an illegal nested link. Programme treatment: live =
- *  solid red block, scheduled = solid ink block (inverts in dark). */
+ *  RSVP action) isn't an illegal nested link. Programme treatment: the game
+ *  bar is a solid deep-red block in both states (founder 2026-09-13). */
 function CardShell({
   href,
-  live,
   children,
 }: {
   href: string | null;
-  live: boolean;
   children: ReactNode;
 }) {
-  const base = `relative block overflow-hidden p-7 ${
-    live ? "bg-red-fill text-on-red" : "bg-inverted text-inverted-fg"
-  }`;
+  const base = "relative block overflow-hidden bg-red-fill p-7 text-on-red";
   return href ? (
     <Link href={href} className={base}>
       {children}
@@ -132,10 +128,10 @@ export function FeaturedRoom({
       tiles.push({ v: String(preview.stats.shots), l: "SHOTS" });
   }
 
-  // on-fill text/rule classes: paper-on-red for the live block, paper/ink for
-  // the scheduled ink block (which inverts in dark)
-  const muted = live ? "text-on-red/85" : "text-inverted-fg/70";
-  const rule = live ? "border-on-red/40" : "border-inverted-fg/30";
+  // on-fill classes: the hero block is deep red in BOTH states now (founder
+  // 2026-09-13), so everything on it rides the fixed on-red palette
+  const muted = "text-on-red/85";
+  const rule = "border-on-red/40";
 
   return (
     <div className="mb-9">
@@ -152,7 +148,7 @@ export function FeaturedRoom({
         </span>
       </div>
 
-      <CardShell href={joinable ? `/room/${room.slug}` : null} live={live}>
+      <CardShell href={joinable ? `/room/${room.slug}` : null}>
         <div className="relative z-[2] grid items-center gap-7 lg:grid-cols-[1.05fr_1fr]">
           {/* LEFT */}
           <div>
@@ -186,7 +182,7 @@ export function FeaturedRoom({
             <div className="display text-[30px] leading-[1.04]">
               {fixture.home}{" "}
               <span
-                className={`font-mono text-[18px] normal-case ${live ? "text-on-red/80" : "text-gold"}`}
+                className={`font-mono text-[18px] normal-case ${live ? "text-on-red/80" : "text-gold-bright"}`}
               >
                 v
               </span>{" "}
@@ -198,7 +194,7 @@ export function FeaturedRoom({
               <Avatar src={null} name={hostsOf(room)[0]} size={32} />
               <div className={`text-[12.5px] italic ${muted}`}>
                 {room.blurb ? (
-                  <span className={live ? "text-on-red" : "text-inverted-fg"}>
+                  <span className="text-on-red">
                     {room.blurb}
                   </span>
                 ) : (
@@ -229,11 +225,11 @@ export function FeaturedRoom({
               </div>
             ) : joinable ? (
               <div className="flex flex-wrap items-center gap-4">
-                <span className="inline-flex items-center gap-2 border-2 border-inverted-fg px-[22px] py-3 font-mono text-[14px] font-semibold tracking-[0.08em] text-inverted-fg">
+                <span className="inline-flex items-center gap-2 border-2 border-on-red px-[22px] py-3 font-mono text-[14px] font-semibold tracking-[0.08em] text-on-red">
                   Join the waiting room →
                 </span>
-                <span className="font-mono text-[12px] text-inverted-fg/70 tabular-nums">
-                  <span className="text-gold">
+                <span className="font-mono text-[12px] text-on-red/85 tabular-nums">
+                  <span className="text-gold-bright">
                     <Countdown iso={fixture.kickoffUtc} />
                   </span>{" "}
                   to kickoff
@@ -249,9 +245,9 @@ export function FeaturedRoom({
                   variant="onInk"
                   label="RSVP for notifications"
                 />
-                <span className="font-mono text-[12px] text-inverted-fg/70 tabular-nums">
+                <span className="font-mono text-[12px] text-on-red/85 tabular-nums">
                   We&apos;ll notify you when the room opens ·{" "}
-                  <span className="text-gold">
+                  <span className="text-gold-bright">
                     <Countdown iso={fixture.kickoffUtc} />
                   </span>{" "}
                   to kickoff
@@ -263,9 +259,9 @@ export function FeaturedRoom({
           {/* RIGHT: IN THE ROOM preview (live) or "what's inside" (next up) */}
           <div className={`hidden border p-4 lg:block ${rule}`}>
             <div className="mb-3 flex items-center justify-between">
-              <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] ${live ? "text-on-red" : "text-inverted-fg"}`}>
+              <span className={`inline-flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] ${"text-on-red"}`}>
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${live ? "animate-fc-blink bg-on-red" : "bg-inverted-fg"}`}
+                  className={`h-1.5 w-1.5 rounded-full ${live ? "animate-fc-blink bg-on-red" : "bg-on-red"}`}
                 />
                 IN THE ROOM
               </span>
