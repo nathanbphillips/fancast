@@ -75,7 +75,7 @@ function FixtureRow({ f }: { f: HomeFixture }) {
 export default async function HomePage() {
   const [{ live, upcoming }, episodes] = await Promise.all([
     loadFixtures(),
-    loadWireEpisodes(),
+    loadWireEpisodes(12),
   ]);
   const liveFixture = live[0] ?? null;
   // The loader returns ONLY fixtures with an active room (rooms-only page,
@@ -257,7 +257,9 @@ export default async function HomePage() {
         </div>
 
         <div className="md:pl-7">
-          <TheWire episodes={episodes} />
+          {/* the wire runs the same length as the fixtures column (founder
+              2026-09-14); the floor keeps it alive when the schedule is empty */}
+          <TheWire episodes={episodes} maxEntries={Math.max(listFixtures.length, 6)} />
         </div>
       </div>
     </div>

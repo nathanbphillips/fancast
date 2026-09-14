@@ -16,7 +16,7 @@ import { SPOTIFY_SHOW_URL, type WireEpisode } from "@/lib/podcastWire";
 const ACTOR = "arseradio.com";
 const PROFILE_URL = `https://bsky.app/profile/${ACTOR}`;
 const SPOTIFY_URL = SPOTIFY_SHOW_URL;
-const FEED_URL = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${ACTOR}&limit=8&filter=posts_no_replies`;
+const FEED_URL = `https://public.api.bsky.app/xrpc/app.bsky.feed.getAuthorFeed?actor=${ACTOR}&limit=18&filter=posts_no_replies`;
 
 type WireImage = { thumb: string; alt: string };
 type WireExternal = { title: string; uri: string; thumb?: string };
@@ -68,7 +68,16 @@ function rel(d: Date, now: number): string {
   return `${Math.round(h / 24)}d`;
 }
 
-export function TheWire({ episodes = [] }: { episodes?: WireEpisode[] }) {
+export function TheWire({
+  episodes = [],
+  maxEntries = 12,
+}: {
+  episodes?: WireEpisode[];
+  /** how many timeline entries to show - the front page passes the fixtures
+   *  column's row count so the two columns run the same length (founder
+   *  2026-09-14) */
+  maxEntries?: number;
+}) {
   const [posts, setPosts] = useState<WirePost[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -130,7 +139,7 @@ export function TheWire({ episodes = [] }: { episodes?: WireEpisode[] }) {
     ...episodes.map((ep): Entry => ({ kind: "spotify", date: new Date(ep.dateIso), ep })),
   ]
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 12);
+    .slice(0, maxEntries);
 
   const sourceTag = (label: string) => (
     <span className="flex items-baseline gap-2">

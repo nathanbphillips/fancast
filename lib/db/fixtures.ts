@@ -66,19 +66,23 @@ export async function loadFixtures(): Promise<{
 
   // Programme front page (founder 2026-09-13): ONLY fixtures somebody is
   // broadcasting - a game with no room does not make the page, whoever is
-  // playing - and EVERY scheduled broadcast on the books shows (the founder
-  // rooms the whole season; hiding one behind a page cap is what this change
-  // exists to stop). The 3h look-back keeps an in-play room on top; the inner
-  // join, state list and postponed filter keep dead rooms from reviving a
-  // fixture OR eating a row of the cap. The cap is a sanity backstop, far
-  // above the fixture sync's ~120-day horizon, not a paging device.
+  // playing - and every scheduled broadcast inside the page's window shows.
+  // The window is the next 3 MONTHS (founder 2026-09-14: the season-long
+  // list ran too long; /matches carries the rest). The 3h look-back keeps
+  // an in-play room on top; the inner join, state list and postponed filter
+  // keep dead rooms from reviving a fixture OR eating a row of the cap. The
+  // cap is a sanity backstop, far above a 3-month schedule, not a pager.
   const windowStart = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+  const windowEnd = new Date(
+    Date.now() + 90 * 24 * 60 * 60 * 1000,
+  ).toISOString();
   const { data: fixtures, error } = await supabase
     .from("fixtures")
     .select(
       "*, rooms!inner(id, slug, state, postponed, broadcast_start, commentator_id, commentator:profiles!rooms_commentator_id_fkey(username))",
     )
     .gte("kickoff_utc", windowStart)
+    .lte("kickoff_utc", windowEnd)
     .in("rooms.state", [
       "scheduled",
       "waiting",
