@@ -8,6 +8,7 @@ import { applyStatOverrides, type StatOverrides } from "@/lib/statOverrides";
 import type { StatTab } from "@/lib/stats";
 import * as Ably from "ably";
 import type {
+  Bulletin,
   ChatMessage,
   Link,
   MyPollVote,
@@ -26,6 +27,19 @@ import type {
 import { MatchHeader } from "@/components/MatchHeader";
 import { StatsPanel } from "@/components/StatsPanel";
 import { BugReporter } from "@/components/room/BugReporter";
+import { RoomMasthead, Scoreboard } from "./RoomHeader";
+import {
+  BulletinCard,
+  FormLastFive,
+  HeadToHead,
+  MatchStatsBlocks,
+  MiniTable,
+  MomentumStrip,
+} from "./rail/StatsRailModules";
+import { GameInfoPanel, ProductionDesk } from "./InfoRailPanels";
+import { AskGantryPanel } from "./AskGantryPanel";
+import { PitchLineup } from "@/components/stats/PitchLineup";
+import { lineupDiscColors } from "@/lib/teamColors";
 import { track } from "@/lib/track";
 import {
   deriveClock,
@@ -50,7 +64,6 @@ import { ScorePredictor } from "./ScorePredictor";
 import { PollComposer, PollWidget } from "./PollWidget";
 import { RosterPanel } from "./RosterPanel";
 import { PlayerRatings } from "./PlayerRatings";
-import { QuestionsPanel } from "./QuestionsPanel";
 import { MatchFactsPanel } from "./MatchFactsPanel";
 import { FollowButton } from "@/components/FollowButton";
 import { useToast } from "@/components/Toast";
@@ -129,6 +142,10 @@ type Props = {
   myMessageVotes: Record<string, 1 | -1>;
   myLinkVotes: Record<string, 1 | -1>;
   initialQuestions: Question[];
+  /** the viewer's own question upvotes (Ask the Gantry is public, 0054) */
+  myQuestionVotes: Record<string, 1>;
+  /** latest host-pushed team-news bulletin, null when none yet */
+  initialBulletin: Bulletin | null;
   initialTalkRequests: TalkRequest[];
   sliderAgg: SliderAggregate;
   mySliderValue: number | null;
@@ -186,6 +203,19 @@ const INPUTS_OPEN: RoomState[] = [
  * subscriber, and no Ably channel attach per listener for something that
  * nothing renders. The route + channel capability are retired alongside. */
 
+/** A match event rendered INTO the chat stream (founder 2026-09-22): derived
+ *  fresh from the stats poll + clock events every render - never stored in
+ *  the messages state, so refresh/rehydrate can't clobber or duplicate it. */
+export type MatchEventItem = {
+  id: string;
+  /** synthesized wall-clock ISO so events interleave with messages */
+  createdAt: string;
+  minuteLabel: string; // "55'", "45+2'", "HT"
+  tag: string; // "Goal", "Booking", "Half-time", ...
+  text: string;
+  emphasis: "goal" | "red" | "plain";
+};
+
 export function RealtimeRoom(props: Props) {
   const { room, viewer } = props;
   // Anytime rooms (migration 0038): a discussion room with no linked fixture
@@ -211,9 +241,18 @@ export function RealtimeRoom(props: Props) {
   const [centerTab, setCenterTab] = useState<
     "chat" | "questions" | "polls" | "facts"
   >("chat");
+  // desktop right rail for hosts: "In the stands" (the listener view) vs
+  // "The production desk" (founder 2026-09-22); hosts start at the desk
+  const [deskView, setDeskView] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [links, setLinks] = useState<Link[]>(props.initialLinks);
   const [questions, setQuestions] = useState<Question[]>(props.initialQuestions);
+  // the viewer's own question upvotes (optimistic, mirrors message votes)
+  const [myQuestionVotes, setMyQuestionVotes] = useState<Record<string, 1>>(
+    props.myQuestionVotes,
+  );
+  // latest team-news bulletin (founder 2026-09-22); DB is truth, ts-ordered
+  const [bulletin, setBulletin] = useState<Bulletin | null>(props.initialBulletin);
   const [talkRequests, setTalkRequests] = useState<TalkRequest[]>(
     props.initialTalkRequests,
   );
@@ -275,6 +314,7 @@ export function RealtimeRoom(props: Props) {
   const lastStateTsRef = useRef(""); // newest `state` event ts seen
   const lastRecordingTsRef = useRef(""); // newest `recording` event ts seen
   const lastOverrideTsRef = useRef(""); // newest `stat_overrides` event ts seen
+  const lastBulletinTsRef = useRef(""); // newest `bulletin` event ts seen
   const pendingOverrideRef = useRef(false); // an optimistic override save is in flight
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
   const rehydratingRef = useRef(false); // guard against overlapping rehydrates
@@ -474,6 +514,7 @@ export function RealtimeRoom(props: Props) {
       const tsBefore = lastStateTsRef.current;
       const ovTsBefore = lastOverrideTsRef.current;
       const recTsBefore = lastRecordingTsRef.current;
+      const bulTsBefore = lastBulletinTsRef.current;
       try {
         const res = await fetch(`/api/rooms/${room.id}/snapshot`, {
           cache: "no-store",
@@ -496,6 +537,7 @@ export function RealtimeRoom(props: Props) {
           questions: Question[];
           talkRequests: TalkRequest[];
           statOverrides: StatOverrides | null;
+          bulletin?: Bulletin | null;
         };
         // don't clobber a newer `state` control event that landed mid-fetch
         if (lastStateTsRef.current === tsBefore) setRoomState(s.state);
@@ -540,8 +582,13 @@ export function RealtimeRoom(props: Props) {
           }
           return merged;
         });
+        // questions are public now (0054): everyone re-syncs the list
+        setQuestions(s.questions ?? []);
+        // same guard as `state`: a bulletin pushed mid-fetch is newer than the
+        // snapshot that was read before it
+        if (lastBulletinTsRef.current === bulTsBefore)
+          setBulletin(s.bulletin ?? null);
         if (viewer?.isModerator) {
-          setQuestions(s.questions ?? []);
           setTalkRequests(s.talkRequests ?? []);
         }
       } catch {
@@ -622,6 +669,41 @@ export function RealtimeRoom(props: Props) {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId ? { ...m, hidden_by: hiddenBy, body: "" } : m,
+        ),
+      );
+    });
+
+    // Ask the Gantry is public (founder 2026-09-22): question events ride the
+    // chat channel so every listener - anon included - sees the list move.
+    chat.subscribe("question", (msg) => {
+      const q = msg.data as Question;
+      setQuestions((prev) =>
+        prev.some((x) => x.id === q.id) ? prev : [q, ...prev],
+      );
+    });
+    chat.subscribe("question_update", (msg) => {
+      const { questionId, status, answeredAt } = msg.data as {
+        questionId: string;
+        status: Question["status"];
+        answeredAt: string | null;
+      };
+      setQuestions((prev) =>
+        status === "dismissed"
+          ? prev.filter((q) => q.id !== questionId)
+          : prev.map((q) =>
+              q.id === questionId ? { ...q, status, answered_at: answeredAt } : q,
+            ),
+      );
+    });
+    chat.subscribe("question_vote", (msg) => {
+      const { questionId, up, score } = msg.data as {
+        questionId: string;
+        up: number;
+        score: number;
+      };
+      setQuestions((prev) =>
+        prev.map((q) =>
+          q.id === questionId ? { ...q, up_count: up, score } : q,
         ),
       );
     });
@@ -765,6 +847,15 @@ export function RealtimeRoom(props: Props) {
       setStatOverrides(overrides);
     });
 
+    // host pushed a team-news bulletin (founder 2026-09-22): persisted +
+    // ts-ordered like stat_overrides, so rewind replays can't regress it
+    control.subscribe("bulletin", (msg) => {
+      const { bulletin: b, ts } = msg.data as { bulletin: Bulletin; ts?: string };
+      if (ts && ts < lastBulletinTsRef.current) return;
+      if (ts) lastBulletinTsRef.current = ts;
+      setBulletin(b);
+    });
+
     // private channel: only the room commentator/admin holds the capability
     if (viewer?.isModerator) {
       const priv = client.channels.get(`room:${room.id}:private`, {
@@ -772,21 +863,8 @@ export function RealtimeRoom(props: Props) {
         // are replayed on reattach (M-4); the token grants history on private
         params: { rewind: "50" },
       });
-      priv.subscribe("question", (msg) => {
-        const q = msg.data as Question;
-        setQuestions((prev) =>
-          prev.some((x) => x.id === q.id) ? prev : [q, ...prev],
-        );
-      });
-      priv.subscribe("question_update", (msg) => {
-        const { questionId, status } = msg.data as {
-          questionId: string;
-          status: Question["status"];
-        };
-        setQuestions((prev) =>
-          prev.map((q) => (q.id === questionId ? { ...q, status } : q)),
-        );
-      });
+      // question events moved to the public chat channel (0054); the private
+      // channel now carries only the talk queue
       priv.subscribe("talk_request", (msg) => {
         const r = msg.data as TalkRequest;
         setTalkRequests((prev) =>
@@ -1084,6 +1162,269 @@ export function RealtimeRoom(props: Props) {
   function handleRequestHandled(id: string, _status: "accepted" | "dismissed") {
     setTalkRequests((prev) => prev.filter((r) => r.id !== id));
   }
+
+  // ------- Ask the Gantry (public questions, founder 2026-09-22) -------
+
+  /** Match minute at a wall-clock instant, from the event-sourced clock
+   *  (client-side derivation - golden rule 6). Null when the clock wasn't
+   *  running then. */
+  const minuteAt = useCallback(
+    (iso: string): string | null => {
+      const at = new Date(iso).getTime();
+      if (Number.isNaN(at)) return null;
+      const d = deriveClock(clockEvents, at);
+      return d.running ? `${Math.floor(d.elapsedSeconds / 60)}'` : null;
+    },
+    [clockEvents],
+  );
+
+  const voteQuestion = (questionId: string, value: 1 | 0) => {
+    if (!viewer) return;
+    // optimistic, with rollback on failure (the vote() pattern)
+    const prevVotes = myQuestionVotes;
+    const delta = value === 1 ? 1 : -1;
+    setMyQuestionVotes((prev) => {
+      const next = { ...prev };
+      if (value === 1) next[questionId] = 1;
+      else delete next[questionId];
+      return next;
+    });
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.id === questionId
+          ? { ...q, up_count: Math.max(0, q.up_count + delta) }
+          : q,
+      ),
+    );
+    void fetch("/api/questions/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId, value }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("vote failed");
+      })
+      .catch(() => {
+        setMyQuestionVotes(prevVotes);
+        setQuestions((prev) =>
+          prev.map((q) =>
+            q.id === questionId
+              ? { ...q, up_count: Math.max(0, q.up_count - delta) }
+              : q,
+          ),
+        );
+      });
+  };
+
+  const askQuestion = async (body: string): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomId: room.id, body }),
+      });
+      if (!res.ok) return false;
+      const { question } = (await res.json()) as { question: Question };
+      setQuestions((prev) =>
+        prev.some((x) => x.id === question.id) ? prev : [question, ...prev],
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const setQuestionStatus = (
+    questionId: string,
+    status: "acknowledged" | "dismissed",
+  ) => {
+    // optimistic; the chat-channel echo confirms for everyone else
+    setQuestions((prev) =>
+      status === "dismissed"
+        ? prev.filter((q) => q.id !== questionId)
+        : prev.map((q) =>
+            q.id === questionId
+              ? { ...q, status, answered_at: new Date().toISOString() }
+              : q,
+          ),
+    );
+    void fetch("/api/questions", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionId, status }),
+    }).catch(() => {});
+  };
+
+  const pushBulletin = async (body: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/rooms/${room.id}/bulletin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body }),
+      });
+      if (!res.ok) return false;
+      const { bulletin: b } = (await res.json()) as { bulletin: Bulletin };
+      if (b.createdAt > lastBulletinTsRef.current)
+        lastBulletinTsRef.current = b.createdAt;
+      setBulletin(b);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  // ------- match events -> chat stream (founder 2026-09-22) -------
+
+  /** Wall-clock instant for a match minute, inverted from the event-sourced
+   *  clock: each period's start event anchors minute -> server time. Events
+   *  before any clock (or in rooms with no clock) fall back to the stats
+   *  fetch time so they still land in the feed, honestly late. */
+  const wallTimeForMinute = useCallback(
+    (minute: number, extraMinute: number | null): string | null => {
+      const starts = clockEvents.filter((e) =>
+        ["start1h", "start2h", "start_et"].includes(e.action),
+      );
+      if (starts.length === 0) return null;
+      const base =
+        minute > 90 && starts.some((e) => e.action === "start_et")
+          ? { action: "start_et", offset: 90 * 60 }
+          : minute > 45 && starts.some((e) => e.action === "start2h")
+            ? { action: "start2h", offset: 45 * 60 }
+            : { action: "start1h", offset: 0 };
+      const start = starts.find((e) => e.action === base.action);
+      if (!start) return null;
+      const secondsIntoPeriod =
+        (minute + (extraMinute ?? 0)) * 60 - base.offset - (start.offset_seconds ?? 0);
+      const wall =
+        new Date(start.server_ts).getTime() + Math.max(0, secondsIntoPeriod) * 1000;
+      return new Date(Math.min(wall, Date.now())).toISOString();
+    },
+    [clockEvents],
+  );
+
+  /** Goals, cards and subs from the (corrected) stats payload plus the room's
+   *  own clock landmarks (kick-off, half-time, full time), each with a
+   *  synthesized wall time, ready to interleave into the stream. Recomputed
+   *  from the CURRENT arrays every time, so provider re-stamps can't
+   *  double-post and nothing needs to survive a snapshot refresh. */
+  const matchEventItems = useMemo<MatchEventItem[]>(() => {
+    if (isDiscussion) return [];
+    const out: MatchEventItem[] = [];
+    const homeName = displayStats?.home.name ?? room.home;
+    const awayName = displayStats?.away.name ?? room.away;
+
+    const scoreText = (result: string | null): string | null => {
+      const m = result?.match(/^(\d+)\s*-\s*(\d+)$/);
+      return m ? `${homeName} ${m[1]}, ${awayName} ${m[2]}` : null;
+    };
+
+    for (const ev of displayStats?.events ?? []) {
+      const createdAt =
+        wallTimeForMinute(ev.minute, ev.extraMinute) ??
+        displayStats?.fetchedAt ??
+        new Date(0).toISOString();
+      const minuteLabel = `${ev.minute}${ev.extraMinute ? `+${ev.extraMinute}` : ""}'`;
+      const who = ev.player || (ev.side === "home" ? homeName : awayName);
+      let tag: string;
+      let text: string;
+      let emphasis: MatchEventItem["emphasis"] = "plain";
+      switch (ev.kind) {
+        case "goal":
+        case "penalty":
+        case "owngoal": {
+          tag =
+            ev.kind === "penalty"
+              ? "Goal, penalty"
+              : ev.kind === "owngoal"
+                ? "Own goal"
+                : "Goal";
+          emphasis = "goal";
+          const score = scoreText(ev.result);
+          text = `${who}${
+            ev.kind === "goal" && ev.relatedPlayer ? `, assist ${ev.relatedPlayer}` : ""
+          }${score ? `. ${score}` : ""}`;
+          break;
+        }
+        case "yellowcard":
+          tag = "Booking";
+          text = `${who}${ev.info ? `, ${ev.info.toLowerCase()}` : ""}`;
+          break;
+        case "redcard":
+          tag = "Red card";
+          emphasis = "red";
+          text = who;
+          break;
+        // substitutions and VAR checks stay on the Timeline tab; in the feed
+        // they would drown the takes (a match brings ~10 subs in 20 minutes)
+        default:
+          continue;
+      }
+      out.push({ id: `ev:${ev.id}`, createdAt, minuteLabel, tag, text, emphasis });
+    }
+
+    // clock landmarks come from the room's OWN state machine, with real wall
+    // timestamps (the provider label lags; golden rule 6 lives client-side)
+    const goals = out
+      .filter((e) => e.emphasis === "goal")
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const scoreAt = (iso: string): string => {
+      const last = [...goals].reverse().find((g) => g.createdAt <= iso);
+      const m = last?.text.match(/(\d+), .* (\d+)$/);
+      return m
+        ? `${homeName} ${m[1]}, ${awayName} ${m[2]}`
+        : `${homeName} 0, ${awayName} 0`;
+    };
+    for (const ce of clockEvents) {
+      if (ce.action === "start1h")
+        out.push({
+          id: "ck:start1h",
+          createdAt: ce.server_ts,
+          minuteLabel: "1'",
+          tag: "Kick-off",
+          text: `${homeName} v ${awayName}`,
+          emphasis: "plain",
+        });
+      if (ce.action === "stop1h")
+        out.push({
+          id: "ck:stop1h",
+          createdAt: ce.server_ts,
+          minuteLabel: "HT",
+          tag: "Half-time",
+          text: scoreAt(ce.server_ts),
+          emphasis: "plain",
+        });
+      if (ce.action === "stop2h")
+        out.push({
+          id: "ck:stop2h",
+          createdAt: ce.server_ts,
+          minuteLabel: "FT",
+          tag: "Full time",
+          text: scoreAt(ce.server_ts),
+          emphasis: "plain",
+        });
+    }
+    return out;
+  }, [displayStats, clockEvents, isDiscussion, room.home, room.away, wallTimeForMinute]);
+
+  // scorers lines for the scoreboard (goal/penalty/own-goal, per side)
+  const scorersLine = useCallback(
+    (side: "home" | "away"): string | null => {
+      const parts = (displayStats?.events ?? [])
+        .filter(
+          (e) =>
+            e.side === side &&
+            (e.kind === "goal" || e.kind === "penalty" || e.kind === "owngoal"),
+        )
+        .map(
+          (e) =>
+            `${e.player || "Goal"} ${e.minute}${e.extraMinute ? `+${e.extraMinute}` : ""}'${
+              e.kind === "penalty" ? " pen" : e.kind === "owngoal" ? " og" : ""
+            }`,
+        );
+      return parts.length > 0 ? parts.join(" · ") : null;
+    },
+    [displayStats],
+  );
 
   type TabId = "chat" | "stats" | "questions" | "callin" | "polls" | "facts";
   // Mobile room sections (Cloud Design): CHAT / STATS / CALL IN in a bottom
@@ -1444,18 +1785,35 @@ export function RealtimeRoom(props: Props) {
       chatOpen={chatOpen}
       onComposerFocus={setComposerFocused}
       primeMic={audio.primeMicPermission}
+      matchEvents={matchEventItems}
     />
   );
 
-  const questionsPanel = (
-    <QuestionsPanel
-      questions={questions}
-      onStatusChange={(id, status) =>
-        setQuestions((prev) =>
-          prev.map((q) => (q.id === id ? { ...q, status } : q)),
-        )
-      }
-    />
+  // ASK THE GANTRY - public since 2026-09-22 (was the host's private inbox).
+  // One panel serves listeners (read + vote + ask) and hosts (+ mark answered).
+  const canAskQuestions =
+    !!viewer && INPUTS_OPEN.includes(roomState) && !room.demo;
+  const askPanel = (
+    <div className="px-3 pb-4">
+      <AskGantryPanel
+        questions={questions}
+        myVotes={myQuestionVotes}
+        onVote={voteQuestion}
+        canVote={!!viewer && !room.demo}
+        canAsk={canAskQuestions}
+        askDisabledNote={
+          room.demo
+            ? null
+            : !viewer
+              ? "Sign in to ask the gantry."
+              : "Questions open when the broadcast starts."
+        }
+        onAsk={askQuestion}
+        isHost={viewer?.isModerator ?? false}
+        onSetStatus={setQuestionStatus}
+        answeredMinute={minuteAt}
+      />
+    </div>
   );
 
   // Interactive widgets (founder 2026-07-02): desktop gets a dedicated Polls
@@ -1629,6 +1987,90 @@ export function RealtimeRoom(props: Props) {
       <HowThisWorks open={helpOpen} onClose={() => setHelpOpen(false)} />
       {/* short-term in-room bug reporter (testing/pre-launch) */}
       <BugReporter roomId={room.id} roomState={roomState} />
+
+      {/* DESKTOP header (ESPN-format Programme room, founder 2026-09-22):
+          masthead strip + scoreboard + the transport strip. The clock string
+          is derived client-side upstream (golden rule 6); scorers come from
+          the corrected stats payload. Mobile keeps MatchHeader + its own
+          transport untouched below. */}
+      <div className="hidden shrink-0 lg:block">
+        <RoomMasthead
+          leaveHref="/matches"
+          onAir={audioLive}
+          listeners={isRoomCommentator ? (watching ?? undefined) : undefined}
+          themeToggle={<ThemeToggle />}
+          share={<ShareButton />}
+          help={
+            isRoomCommentator ? undefined : (
+              <button
+                type="button"
+                onClick={() => setHelpOpen(true)}
+                className="border-b border-red font-mono text-[13px] text-primary hover:text-red"
+              >
+                How this works
+              </button>
+            )
+          }
+          userMenu={
+            viewer ? (
+              <UserMenu
+                username={viewer.username}
+                avatarUrl={viewer.avatarUrl}
+                admin={viewer.role === "admin"}
+              />
+            ) : (
+              <NextLink
+                href={signinHref}
+                className="font-mono text-[13px] text-primary hover:text-red"
+              >
+                Sign in
+              </NextLink>
+            )
+          }
+        />
+        <Scoreboard
+          kicker={
+            isDiscussion
+              ? `${audioLive ? "Live from the gantry" : "From the gantry"} - @${room.hosts
+                  .map((h) => h.username)
+                  .join(" & @")}`
+              : `${audioLive ? "Live from the gantry" : "From the gantry"} - @${room.hosts
+                  .map((h) => h.username)
+                  .join(" & @")}${room.competition ? ` · ${room.competition}` : ""}`
+          }
+          home={room.home}
+          away={room.away}
+          homeScore={liveHome}
+          awayScore={liveAway}
+          homeScorers={scorersLine("home")}
+          awayScorers={scorersLine("away")}
+          clock={clockText}
+          clockSub={(() => {
+            const d = deriveClock(clockEvents, Date.now());
+            return d.running
+              ? `minute ${Math.floor(d.elapsedSeconds / 60)}`
+              : undefined;
+          })()}
+          stateLabel={
+            roomState === "waiting"
+              ? "Doors are open"
+              : roomState === "pregame"
+                ? "Kick-off soon"
+                : roomState === "halftime"
+                  ? "Half-time"
+                  : roomState === "postgame" || roomState === "wrapped"
+                    ? "Full-time"
+                    : undefined
+          }
+          discussion={isDiscussion}
+          title={room.title}
+        />
+        {/* the transport strip: listeners get play/sync/radio/volume, hosts
+            their command strip - same components as before, new position */}
+        <div className="border-b border-primary">{bar}</div>
+      </div>
+
+      <div className="lg:hidden">
       <MatchHeader
         home={room.home}
         away={room.away}
@@ -1690,9 +2132,10 @@ export function RealtimeRoom(props: Props) {
           )
         }
       />
+      </div>
 
-      {/* mobile: the sync transport sits at the very top (the desktop match bar
-          is lg-only). The listener transport paints its own surface; the
+      {/* mobile: the sync transport sits at the very top (the desktop header
+          above is lg-only). The listener transport paints its own surface; the
           commentator bar keeps the plain strip. */}
       <div
         className={`lg:hidden shrink-0 ${isRoomCommentator ? "border-b border-line bg-canvas" : ""}`}
@@ -1703,61 +2146,179 @@ export function RealtimeRoom(props: Props) {
       <div
         onTouchStart={onPanelTouchStart}
         onTouchEnd={onPanelTouchEnd}
-        className={`flex min-h-0 flex-1 flex-col ${showStats ? "lg:grid lg:w-full lg:grid-cols-[2fr_1fr]" : ""}`}
+        className={`flex min-h-0 flex-1 flex-col ${
+          showStats
+            ? "lg:grid lg:w-full lg:grid-cols-[minmax(230px,300px)_minmax(0,1fr)_minmax(280px,340px)]"
+            : "lg:grid lg:w-full lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
+        }`}
       >
         {showStats && (
         <aside
           aria-label="Stats"
-          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto overscroll-contain lg:order-2 lg:block`}
+          className={`${tab === "stats" ? "block" : "hidden"} min-h-0 overflow-y-auto overscroll-contain lg:order-1 lg:block lg:border-r lg:border-line`}
         >
-          <StatsPanel
-            data={displayStats}
-            radio={audio.radioActive}
-            isRoomCommentator={isRoomCommentator}
-            roomId={room.id}
-            overrides={statOverrides}
-            onSaveOverrides={saveStatOverrides}
-            rawLineups={matchStats?.lineups}
-            pushedTab={pushedStatsTab}
-            pushNonce={statsPushNonce}
-            onPushTab={pushStatsTab}
-            expanded
-            outage={statsOutage}
-            history={matchHistory}
-            historyLoading={historyLoading}
-            comingSoon={room.comingSoon}
-            fotmob={fotmobLinks}
-            defaultTab={
-              room.demo
-                ? "stats"
-                : roomState === "waiting" || roomState === "pregame"
-                  ? "info"
-                  : "stats"
-            }
-            demo={room.demo}
-          />
-          {/* player ratings moved to the mobile Polls tab (founder 2026-08-05);
-              STATS no longer carries them on mobile */}
+          {/* MOBILE keeps the full tabbed StatsPanel untouched; the bulletin
+              card rides above it so phones see the push too */}
+          <div className="lg:hidden">
+            {bulletin && (
+              <div className="px-3 pt-3">
+                <BulletinCard
+                  bulletin={bulletin}
+                  minuteLabel={minuteAt(bulletin.createdAt)}
+                />
+              </div>
+            )}
+            <StatsPanel
+              data={displayStats}
+              radio={audio.radioActive}
+              isRoomCommentator={isRoomCommentator}
+              roomId={room.id}
+              overrides={statOverrides}
+              onSaveOverrides={saveStatOverrides}
+              rawLineups={matchStats?.lineups}
+              pushedTab={pushedStatsTab}
+              pushNonce={statsPushNonce}
+              onPushTab={pushStatsTab}
+              expanded
+              outage={statsOutage}
+              history={matchHistory}
+              historyLoading={historyLoading}
+              comingSoon={room.comingSoon}
+              fotmob={fotmobLinks}
+              defaultTab={
+                room.demo
+                  ? "stats"
+                  : roomState === "waiting" || roomState === "pregame"
+                    ? "info"
+                    : "stats"
+              }
+              demo={room.demo}
+            />
+            {/* player ratings moved to the mobile Polls tab (founder 2026-08-05);
+                STATS no longer carries them on mobile */}
+          </div>
+
+          {/* DESKTOP stats rail (founder 2026-09-22, ESPN format): printed
+              number grids + table + form + head-to-head; the club-coloured
+              bar panel survives inside "The full numbers" so no depth is
+              lost. Every module renders only when its data exists. */}
+          <div className="hidden px-4 py-4 lg:block">
+            {/* the bulletin is host content, not provider data - it renders
+                even when the fixture has no Sportmonks link */}
+            {room.comingSoon && (
+              <BulletinCard
+                bulletin={bulletin}
+                minuteLabel={bulletin ? minuteAt(bulletin.createdAt) : null}
+              />
+            )}
+            {room.comingSoon ? (
+              <p className="mt-4 text-[14px] leading-[1.6] text-secondary italic">
+                Information coming soon for this game.
+              </p>
+            ) : (
+              <>
+                <MatchStatsBlocks
+                  stats={displayStats?.stats ?? []}
+                  xg={
+                    displayStats?.deep
+                      ? {
+                          home: displayStats.deep.xg.home,
+                          away: displayStats.deep.xg.away,
+                        }
+                      : null
+                  }
+                />
+                <MomentumStrip
+                  momentum={displayStats?.deep?.momentum}
+                  colors={lineupDiscColors(
+                    displayStats?.home.name ?? room.home,
+                    displayStats?.away.name ?? room.away,
+                  )}
+                />
+                <BulletinCard
+                  bulletin={bulletin}
+                  minuteLabel={bulletin ? minuteAt(bulletin.createdAt) : null}
+                />
+                <details className="group mt-4 border-y border-line py-2">
+                  <summary className="cursor-pointer list-none font-mono text-[13px] tracking-[0.08em] text-secondary hover:text-red">
+                    <span className="group-open:hidden">The full numbers ▸</span>
+                    <span className="hidden group-open:inline">The full numbers ▾</span>
+                  </summary>
+                  <div className="mt-2">
+                    <StatsPanel
+                      data={displayStats}
+                      radio={audio.radioActive}
+                      isRoomCommentator={isRoomCommentator}
+                      roomId={room.id}
+                      overrides={statOverrides}
+                      onSaveOverrides={saveStatOverrides}
+                      rawLineups={matchStats?.lineups}
+                      pushedTab={pushedStatsTab}
+                      pushNonce={statsPushNonce}
+                      onPushTab={pushStatsTab}
+                      expanded
+                      outage={statsOutage}
+                      history={matchHistory}
+                      historyLoading={historyLoading}
+                      comingSoon={room.comingSoon}
+                      fotmob={fotmobLinks}
+                      defaultTab="stats"
+                      demo={room.demo}
+                    />
+                  </div>
+                </details>
+                <MiniTable
+                  table={matchHistory?.table ?? []}
+                  homeTeamId={matchHistory?.home?.teamId ?? null}
+                  awayTeamId={matchHistory?.away?.teamId ?? null}
+                  competition={room.competition || "League"}
+                  roundLabel={null}
+                />
+                <FormLastFive
+                  rows={[
+                    ...(matchHistory?.home
+                      ? [
+                          {
+                            team: displayStats?.home.name ?? room.home,
+                            form: matchHistory.home.form,
+                          },
+                        ]
+                      : []),
+                    ...(matchHistory?.away
+                      ? [
+                          {
+                            team: displayStats?.away.name ?? room.away,
+                            form: matchHistory.away.form,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+                <HeadToHead
+                  h2h={matchHistory?.h2h ?? null}
+                  homeName={displayStats?.home.name ?? room.home}
+                  awayName={displayStats?.away.name ?? room.away}
+                />
+              </>
+            )}
+          </div>
         </aside>
         )}
 
         <section
           aria-label="Chat"
-          className={`${tab === "chat" || tab === "questions" || tab === "facts" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-1 lg:flex ${showStats ? "lg:border-r lg:border-line" : ""}`}
+          className={`${tab === "chat" || tab === "questions" || tab === "facts" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-2 lg:flex`}
         >
           <div className="hidden border-b border-line bg-canvas lg:flex">
             {[
               { id: "chat" as const, label: "From the stands", badge: 0 },
               { id: "polls" as const, label: "The polls", badge: pollsBadge },
-              ...(isRoomCommentator
-                ? [
-                    {
-                      id: "questions" as const,
-                      label: "Ask the gantry",
-                      badge: newQuestionCount,
-                    },
-                  ]
-                : []),
+              // public since 2026-09-22; the unread badge stays a host signal
+              {
+                id: "questions" as const,
+                label: "Ask the gantry",
+                badge: isRoomCommentator ? newQuestionCount : 0,
+              },
               // Host-only talking points from the Sportmonks add-on. Gated on a
               // real fixture the same way the stats aside is: with none, this
               // could only ever say "no facts yet", about a kickoff the room
@@ -1799,15 +2360,15 @@ export function RealtimeRoom(props: Props) {
                   : "flex flex-col"
             } lg:hidden`}
           >
-            {tab === "questions" ? questionsPanel : chatPanel}
+            {tab === "questions" ? askPanel : chatPanel}
           </div>
           <div
             className={`hidden min-h-0 flex-1 ${centerTab === "questions" ? "overflow-y-auto" : ""} ${
               centerTab === "facts" ? "lg:hidden" : "lg:flex"
             } lg:flex-col`}
           >
-            {centerTab === "questions" && isRoomCommentator
-              ? questionsPanel
+            {centerTab === "questions"
+              ? askPanel
               : centerTab === "polls"
                 ? pollsPanel
                 : chatPanel}
@@ -2020,9 +2581,183 @@ export function RealtimeRoom(props: Props) {
                     </div>
                   ))}
               </div>
+
+              {/* public questions on mobile live here with the other gantry
+                  interactions (founder 2026-09-22); the phone keeps its
+                  structure, the list just joins the Call in tab */}
+              <div className="mt-8">
+                <h3 className="display border-b-[3px] border-double border-primary pb-2 text-[18px]">
+                  Ask the gantry
+                </h3>
+                {askPanel}
+              </div>
             </div>
           </section>
         )}
+
+        {/* INFO RAIL (desktop only): call-in / line-ups / game information for
+            listeners; hosts flip it to the production desk (founder
+            2026-09-22). Mobile keeps its tabs - this aside never shows there. */}
+        <aside
+          aria-label="Match information"
+          className="hidden min-h-0 overflow-y-auto overscroll-contain border-l border-line px-4 py-4 lg:order-3 lg:block"
+        >
+          {isRoomCommentator && (
+            <div className="mb-4 flex justify-center gap-0">
+              {(
+                [
+                  { desk: false, label: "In the stands" },
+                  { desk: true, label: "The production desk" },
+                ] as const
+              ).map((v) => (
+                <button
+                  key={v.label}
+                  type="button"
+                  onClick={() => setDeskView(v.desk)}
+                  aria-pressed={deskView === v.desk}
+                  className={`border-[1.5px] border-primary px-4 py-2 font-mono text-[13.5px] tracking-[0.08em] whitespace-nowrap ${
+                    deskView === v.desk
+                      ? "bg-inverted text-inverted-fg"
+                      : "bg-transparent text-primary hover:text-red"
+                  }`}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {isRoomCommentator && deskView ? (
+            <ProductionDesk
+              roomId={room.id}
+              broadcastControls={null}
+              micControls={null}
+              callerQueue={null}
+              pollStatus={
+                activePoll
+                  ? `Poll: ${activePoll.status === "open" ? "live" : "closed"} - ${activePoll.total} ${
+                      activePoll.total === 1 ? "vote" : "votes"
+                    }`
+                  : null
+              }
+              onPushBulletin={pushBulletin}
+              lastBulletin={bulletin}
+              rsvpCount={null}
+            />
+          ) : (
+            <div className="space-y-7">
+              {!isRoomCommentator && (
+                <div className="border-2 border-primary p-4">
+                  <h3 className="display text-[19px]">Call the gantry</h3>
+                  <p className="mt-2 text-[14.5px] leading-[1.55] text-secondary">
+                    Request the mic and the host brings you on air. Leave any
+                    time with one tap.
+                  </p>
+                  <div className="mt-3">
+                    {onAirElsewhere && audio.micStatus !== "live" ? (
+                      <p className="text-[13px] text-secondary italic">
+                        You&apos;re on air on another device.
+                      </p>
+                    ) : audio.micStatus === "live" ? (
+                      <div className="border-2 border-red p-3 text-center">
+                        <p className="display flex items-center justify-center gap-2 text-[20px] leading-none text-red">
+                          <span
+                            aria-hidden="true"
+                            className="h-2 w-2 animate-live-pulse rounded-full bg-red-fill"
+                          />
+                          YOU ARE LIVE
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void leaveAir()}
+                          className="mt-3 h-11 w-full bg-red-fill text-sm font-bold text-on-red"
+                        >
+                          Leave the air
+                        </button>
+                      </div>
+                    ) : !viewer ? (
+                      <a
+                        href={signinHref}
+                        className="inline-flex h-10 items-center bg-red-fill px-4 text-sm font-semibold text-on-red"
+                      >
+                        Sign in to call in
+                      </a>
+                    ) : queuePosition != null ? (
+                      <div className="text-center">
+                        <p className="display text-[30px] leading-none tabular-nums">
+                          #{queuePosition}
+                        </p>
+                        <p className="mt-1 text-[12.5px] text-secondary">
+                          You&apos;re in the queue. Keep listening.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => void leaveQueue()}
+                          disabled={leavingQueue}
+                          className="mt-2 border border-line px-3 py-1.5 text-[12.5px] font-bold text-secondary hover:border-red/50 hover:text-red disabled:opacity-60"
+                        >
+                          {leavingQueue ? "Leaving…" : "Leave queue"}
+                        </button>
+                      </div>
+                    ) : (
+                      <InteractionButtons
+                        roomId={room.id}
+                        consentGiven={props.talkConsentGiven}
+                        hasPendingTalk={props.hasPendingTalk}
+                        resolvedSignal={talkResolvedSignal}
+                        queuePosition={queuePosition}
+                        primeMic={audio.primeMicPermission}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {showStats && (displayStats?.lineups.home || displayStats?.lineups.away) && (
+                <div>
+                  <h3 className="display border-b-[3px] border-double border-primary pb-2 text-[18px]">
+                    Line-ups
+                  </h3>
+                  <div className="mt-3">
+                    <PitchLineup
+                      home={displayStats?.lineups.home ?? null}
+                      away={displayStats?.lineups.away ?? null}
+                      fotmob={fotmobLinks}
+                    />
+                  </div>
+                  <p className="mt-2 text-[13px] text-tertiary italic">
+                    Team news pushed by the host lands here and in the stats.
+                  </p>
+                </div>
+              )}
+
+              {!isDiscussion && (
+                <GameInfoPanel
+                  competition={room.competition || null}
+                  venue={
+                    displayStats?.info?.venue
+                      ? {
+                          name: displayStats.info.venue.name,
+                          city: displayStats.info.venue.city,
+                        }
+                      : null
+                  }
+                  kickoffLabel={`${new Date(room.scheduledKickoff).toLocaleString("en-GB", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/London",
+                  })} UK`}
+                  referee={displayStats?.info?.referees[0]?.name ?? null}
+                  attendance={displayStats?.info?.attendance ?? null}
+                  hostLine={`@${room.hosts.map((h) => h.username).join(" & @")} - a real supporter, never a pundit`}
+                />
+              )}
+            </div>
+          )}
+        </aside>
       </div>
 
       {/* mobile: bottom segmented bar (Cloud Design) — CHAT / STATS / CALL IN */}
@@ -2078,10 +2813,8 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      {/* desktop: in-flow audio dock at the base of the h-dvh flex column */}
-      <div className="hidden flex-none border-t border-primary bg-canvas lg:block">
-        {bar}
-      </div>
+      {/* the desktop transport now lives under the scoreboard (founder
+          2026-09-22 ESPN header); the old bottom dock is gone */}
 
       {!isRoomCommentator && (
         <SyncSheet
@@ -2141,6 +2874,34 @@ function VoteArrows({
   );
 }
 
+/** A match event inside the stream (founder 2026-09-22): Anton minute, a
+ *  small-caps tag, then the line. Goals get the red edge on raised paper;
+ *  everything else stays quiet so the takes keep the stage. */
+function EventRow({ ev }: { ev: MatchEventItem }) {
+  const goal = ev.emphasis === "goal";
+  return (
+    <li
+      className={`flex items-baseline gap-3 border-b border-line ${
+        goal ? "border-l-[3px] border-l-red bg-inset py-2.5 pr-2 pl-3.5" : "px-0.5 py-2.5 opacity-85"
+      }`}
+    >
+      <span className="display min-w-[34px] shrink-0 text-right text-[15px]">
+        {ev.minuteLabel}
+      </span>
+      <span className="text-[14.5px] leading-[1.5]">
+        <span
+          className={`font-mono font-semibold tracking-[0.06em] ${
+            goal || ev.emphasis === "red" ? "text-red" : "text-tertiary"
+          }`}
+        >
+          {ev.tag}
+        </span>{" "}
+        - {ev.text}
+      </span>
+    </li>
+  );
+}
+
 /** Compact relative time for chat message stamps (e.g. "now", "2m", "3h"). */
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -2177,7 +2938,10 @@ function LinkThumb({ src }: { src: string }) {
  *  narrows to chat-only / links-only / blended (default). */
 type StreamItem =
   | { kind: "message"; id: string; createdAt: string; msg: ChatMessage }
-  | { kind: "link"; id: string; createdAt: string; lnk: Link };
+  | { kind: "link"; id: string; createdAt: string; lnk: Link }
+  // match events drop into the feed as they happen (founder 2026-09-22);
+  // derived per render from the stats poll, never stored in messages state
+  | { kind: "event"; id: string; createdAt: string; ev: MatchEventItem };
 
 type StreamFilter = "blended" | "chat" | "links";
 type SortMode = "new" | "top" | "controversial";
@@ -2234,6 +2998,7 @@ function LiveChat({
   chatOpen,
   onComposerFocus,
   primeMic,
+  matchEvents,
 }: {
   room: RoomInfo;
   roomState: RoomState;
@@ -2268,6 +3033,8 @@ function LiveChat({
   onComposerFocus?: (focused: boolean) => void;
   /** grabs mic permission inside the request tap (see InteractionButtons) */
   primeMic?: () => Promise<boolean>;
+  /** goals/cards/subs + clock landmarks, pre-stamped with wall times */
+  matchEvents: MatchEventItem[];
 }) {
   const pathname = usePathname();
   const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
@@ -2372,15 +3139,20 @@ function LiveChat({
   const streamItems = useMemo<StreamItem[]>(() => {
     // links are retired (they render inline in chat now) — the stream is chat
     // top-level items only; replies hang off their root via childrenByParent.
+    // Match events interleave by their synthesized wall time (founder
+    // 2026-09-22); they come from props each render, so a snapshot refresh
+    // can never drop or duplicate them.
     const items: StreamItem[] = [];
     for (const m of messages)
       if (!m.parent_id || !messageIds.has(m.parent_id))
         items.push({ kind: "message", id: m.id, createdAt: m.created_at, msg: m });
+    for (const ev of matchEvents)
+      items.push({ kind: "event", id: ev.id, createdAt: ev.createdAt, ev });
     items.sort((a, b) =>
       a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0,
     );
     return items;
-  }, [messages, messageIds]);
+  }, [messages, messageIds, matchEvents]);
 
   // parent id -> its direct replies, each list chronological (Slice 3; vote-sort
   // comes in Slice 4). Rebuilt whenever a message/reply arrives.
@@ -2409,6 +3181,9 @@ function LiveChat({
   }, [messages, sortMode]);
 
   const itemRank = (it: StreamItem, mode: Exclude<SortMode, "new">) => {
+    // events carry no votes: rank them below any zero-score take (the ranked
+    // modes are about opinions; chronology lives in "New")
+    if (it.kind === "event") return -0.5;
     const up = it.kind === "message" ? it.msg.up_count : it.lnk.up_count;
     const down = it.kind === "message" ? it.msg.down_count : it.lnk.down_count;
     // score is a Postgres numeric, which hydrates as a string on the SSR path
@@ -2513,7 +3288,11 @@ function LiveChat({
     if (!el || streamItems.length <= prevLen) return; // only react to growth
     const newest = streamItems[streamItems.length - 1];
     const newestUser =
-      newest?.kind === "message" ? newest.msg.user_id : newest?.lnk.user_id;
+      newest?.kind === "message"
+        ? newest.msg.user_id
+        : newest?.kind === "link"
+          ? newest.lnk.user_id
+          : undefined;
     const isOwn = newestUser === viewer?.userId;
     const visible = el.clientHeight > 0; // chat tab hidden on mobile -> 0
     if (isOwn || (visible && pinnedRef.current)) {
@@ -3025,6 +3804,8 @@ function LiveChat({
               canVote={viewer !== null}
               onVote={(v) => linkVote(item.id, v)}
             />
+          ) : item.kind === "event" ? (
+            <EventRow key={item.id} ev={item.ev} />
           ) : (
             renderNode(item.msg, 0)
           ),

@@ -83,6 +83,7 @@ export const statOverridesSchema = z.object({
 
 const EMPTY_INFO: MatchInfo = {
   venue: null,
+  attendance: null,
   referees: [],
   weather: null,
   teamNews: { home: [], away: [] },
@@ -92,6 +93,7 @@ function mergeInfo(info: MatchInfo | null, ov: NonNullable<StatOverrides["info"]
   const base: MatchInfo = info ?? EMPTY_INFO;
   const next: MatchInfo = {
     venue: base.venue,
+    attendance: base.attendance,
     referees: base.referees,
     weather: base.weather,
     teamNews: { home: base.teamNews.home, away: base.teamNews.away },

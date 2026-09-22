@@ -156,7 +156,7 @@ function SyncControls({
         onClick={onOpenSync}
         aria-label="Sync to my TV"
         title="Sync to my TV"
-        className="flex h-11 flex-1 items-center justify-center gap-1.5 btn-grad-red px-4 font-mono text-[10px] font-bold tracking-[0.06em]"
+        className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-red-fill px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-on-red transition-opacity hover:opacity-90"
       >
         ◎ Sync now
         {syncRequested > 0 && (

@@ -22,6 +22,7 @@ import {
   getCurrentUserAndProfile,
 } from "@/lib/db/server";
 import type {
+  Bulletin,
   ChatMessage,
   Fixture,
   Link,
@@ -277,33 +278,60 @@ export default async function RoomPage({
         }
       : null;
 
-  // commentator-only initial data (questions + pending talk requests)
-  let initialQuestions: Question[] = [];
+  // questions are PUBLIC now (Ask the Gantry, founder 2026-09-22): everyone
+  // gets the non-dismissed list; only pending talk requests stay host-only.
+  // The latest team-news bulletin is public too (the stats-rail card).
+  const [{ data: qs }, { data: bulletinRow }] = await Promise.all([
+    service
+      .from("questions")
+      .select("*, author:profiles!questions_user_id_fkey(username, role, avatar_url)")
+      .eq("room_id", room.id)
+      .neq("status", "dismissed")
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .returns<Question[]>(),
+    service
+      .from("room_bulletins")
+      .select("id, body, created_at")
+      .eq("room_id", room.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string; body: string; created_at: string }>(),
+  ]);
+  const initialQuestions: Question[] = qs ?? [];
+  const initialBulletin: Bulletin | null = bulletinRow
+    ? { id: bulletinRow.id, body: bulletinRow.body, createdAt: bulletinRow.created_at }
+    : null;
+
   let initialTalkRequests: TalkRequest[] = [];
   if (isModerator) {
-    const [{ data: qs }, { data: trs }] = await Promise.all([
-      service
-        .from("questions")
-        .select("*, author:profiles!questions_user_id_fkey(username, role, avatar_url)")
-        .eq("room_id", room.id)
-        .order("created_at", { ascending: false })
-        .limit(100)
-        .returns<Question[]>(),
-      service
-        .from("talk_requests")
-        .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
-        .eq("room_id", room.id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: true })
-        .returns<TalkRequest[]>(),
-    ]);
-    initialQuestions = qs ?? [];
+    const { data: trs } = await service
+      .from("talk_requests")
+      .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
+      .eq("room_id", room.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .returns<TalkRequest[]>();
     initialTalkRequests = await Promise.all(
       (trs ?? []).map(async (tr) => ({
         ...tr,
         caller_flags: await callerFlagSummary(service, tr.user_id),
       })),
     );
+  }
+
+  // the viewer's own question upvotes (mirrors myMessageVotes)
+  const myQuestionVotes: Record<string, 1> = {};
+  if (user && initialQuestions.length > 0) {
+    const { data: qv } = await supabase
+      .from("question_votes")
+      .select("question_id")
+      .eq("user_id", user.id)
+      .in(
+        "question_id",
+        initialQuestions.map((q) => q.id),
+      );
+    qv?.forEach((v) => (myQuestionVotes[v.question_id as string] = 1));
   }
 
   // slider: public aggregate (service — individual rows are RLS-private),
@@ -474,6 +502,8 @@ export default async function RoomPage({
       myMessageVotes={myMessageVotes}
       myLinkVotes={myLinkVotes}
       initialQuestions={initialQuestions}
+      myQuestionVotes={myQuestionVotes}
+      initialBulletin={initialBulletin}
       initialTalkRequests={initialTalkRequests}
       sliderAgg={sliderAgg}
       mySliderValue={mySliderValue}

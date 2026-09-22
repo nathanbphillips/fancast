@@ -8,8 +8,11 @@ import { config } from "@/lib/config";
  * upcoming season's table is all-zeros until kickoff, so we fall back to the
  * last finished season until the new one has played games.
  *
- * Confirmed available on the account's plan (probed 2026-06-24); head-to-head is
- * gated and deferred.
+ * Programme room rebuild (founder 2026-09-22): the SAME standings call now also
+ * yields a mini-table slice (top 4 + both teams) for the stats rail, and the
+ * payload gains head-to-head - re-probed 2026-09-22 and NO LONGER GATED on the
+ * plan (it was when first probed 2026-06-24). H2H failures degrade to null so
+ * the table/form half never dies with them.
  */
 
 export type TeamStanding = {
@@ -28,10 +31,34 @@ export type TeamStanding = {
   form: ("W" | "D" | "L")[];
 };
 
+/** One mini-table row (stats rail): top 4 + both teams, position order. */
+export type TableRow = {
+  teamId: number;
+  name: string;
+  position: number;
+  played: number;
+  goalDiff: number;
+  points: number;
+};
+
+/** Head-to-head between the two sides, finished meetings only. */
+export type HeadToHeadSummary = {
+  /** wins for the fixture's HOME side across the returned meetings */
+  homeWins: number;
+  draws: number;
+  awayWins: number;
+  total: number;
+  /** newest first, capped for display */
+  meetings: { whenLabel: string; result: string }[];
+};
+
 export type MatchHistory = {
   seasonName: string | null;
   home: TeamStanding | null;
   away: TeamStanding | null;
+  /** mini-table slice: top 4 + both teams (position order, gaps implied) */
+  table: TableRow[];
+  h2h: HeadToHeadSummary | null;
   stale?: boolean;
 };
 
@@ -39,6 +66,8 @@ export const emptyHistory: MatchHistory = {
   seasonName: null,
   home: null,
   away: null,
+  table: [],
+  h2h: null,
 };
 
 // ---- Sportmonks shapes (only the fields we read) ----
@@ -139,6 +168,111 @@ function rowToStanding(teamId: number, row: SmStandingRow): TeamStanding {
   };
 }
 
+/** Mini-table slice from the full standings: top 4 plus both sides, position
+ *  order. The UI draws a "···" gap wherever positions jump. */
+function tableSlice(
+  rows: SmStandingRow[],
+  homeTeamId: number,
+  awayTeamId: number,
+): TableRow[] {
+  const toRow = (r: SmStandingRow): TableRow | null => {
+    if (r.participant_id == null || r.position == null) return null;
+    return {
+      teamId: r.participant_id,
+      name: r.participant?.name ?? "",
+      position: r.position,
+      played: detailValue(r.details, DETAIL.played),
+      goalDiff: detailValue(r.details, DETAIL.goalDiff),
+      points: detailValue(r.details, DETAIL.points),
+    };
+  };
+  const all = rows
+    .map(toRow)
+    .filter((r): r is TableRow => r !== null && r.name !== "")
+    .sort((a, b) => a.position - b.position);
+  const keep = new Set<number>();
+  for (const r of all) {
+    if (r.position <= 4 || r.teamId === homeTeamId || r.teamId === awayTeamId)
+      keep.add(r.teamId);
+  }
+  return all.filter((r) => keep.has(r.teamId));
+}
+
+// ---- head-to-head (re-probed available 2026-09-22) ----
+type SmH2hFixture = {
+  id: number;
+  starting_at?: string | null;
+  participants?: { id: number; name?: string; meta?: { location?: string } }[];
+  scores?: {
+    description?: string;
+    score?: { participant?: string; goals?: number };
+  }[];
+};
+
+/** Finished meetings between the two sides, tallied for the fixture's home
+ *  team. A fetch/parse failure returns null - the caller degrades gracefully. */
+async function fetchHeadToHead(
+  homeTeamId: number,
+  awayTeamId: number,
+): Promise<HeadToHeadSummary | null> {
+  try {
+    const payload = (await smGet(
+      `/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?include=participants;scores`,
+    )) as { data?: SmH2hFixture[] };
+    const now = Date.now();
+    const meetings: {
+      at: number;
+      whenLabel: string;
+      result: string;
+      winner: number | null; // team id, null = draw
+    }[] = [];
+    for (const f of payload.data ?? []) {
+      const at = f.starting_at ? new Date(`${f.starting_at.replace(" ", "T")}Z`).getTime() : NaN;
+      if (Number.isNaN(at) || at > now) continue; // future or undated
+      const home = f.participants?.find((p) => p.meta?.location === "home");
+      const away = f.participants?.find((p) => p.meta?.location === "away");
+      if (!home || !away) continue;
+      const current = (f.scores ?? []).filter((s) => s.description === "CURRENT");
+      const goals = (loc: "home" | "away") =>
+        current.find((s) => s.score?.participant === loc)?.score?.goals;
+      const hg = goals("home");
+      const ag = goals("away");
+      if (hg == null || ag == null) continue; // never finished / no score
+      meetings.push({
+        at,
+        whenLabel: new Date(at).toLocaleDateString("en-GB", {
+          month: "short",
+          year: "numeric",
+          timeZone: "Europe/London",
+        }),
+        result: `${home.name ?? "Home"} ${hg}-${ag} ${away.name ?? "Away"}`,
+        winner: hg === ag ? null : hg > ag ? home.id : away.id,
+      });
+    }
+    if (meetings.length === 0) return null;
+    meetings.sort((a, b) => b.at - a.at);
+    let homeWins = 0;
+    let awayWins = 0;
+    let draws = 0;
+    for (const m of meetings) {
+      if (m.winner === homeTeamId) homeWins += 1;
+      else if (m.winner === awayTeamId) awayWins += 1;
+      else draws += 1;
+    }
+    return {
+      homeWins,
+      draws,
+      awayWins,
+      total: meetings.length,
+      meetings: meetings
+        .slice(0, 3)
+        .map(({ whenLabel, result }) => ({ whenLabel, result })),
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function fetchHistoryRaw(
   homeTeamId: number,
   awayTeamId: number,
@@ -146,9 +280,12 @@ async function fetchHistoryRaw(
   const season = await resolveSeason();
   if (!season) return emptyHistory;
 
-  const payload = (await smGet(
-    `/standings/seasons/${season.id}?include=participant;details.type;form`,
-  )) as { data?: SmStandingRow[] };
+  const [payload, h2h] = await Promise.all([
+    smGet(
+      `/standings/seasons/${season.id}?include=participant;details.type;form`,
+    ) as Promise<{ data?: SmStandingRow[] }>,
+    fetchHeadToHead(homeTeamId, awayTeamId),
+  ]);
   const rows = payload.data ?? [];
   const homeRow = rows.find((r) => r.participant_id === homeTeamId);
   const awayRow = rows.find((r) => r.participant_id === awayTeamId);
@@ -156,6 +293,8 @@ async function fetchHistoryRaw(
     seasonName: season.name,
     home: homeRow ? rowToStanding(homeTeamId, homeRow) : null,
     away: awayRow ? rowToStanding(awayTeamId, awayRow) : null,
+    table: tableSlice(rows, homeTeamId, awayTeamId),
+    h2h,
   };
 }
 

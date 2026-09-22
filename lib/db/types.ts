@@ -125,9 +125,23 @@ export type Question = {
   room_id: string;
   user_id: string;
   body: string;
+  /** 'acknowledged' = answered on air (badge + answered_at stamp) */
   status: "new" | "acknowledged" | "dismissed";
+  /** raw upvote count for display (migration 0054) */
+  up_count: number;
+  /** weighted vote score, drives the public ranking (numeric: string on wire) */
+  score: number | string;
+  answered_at: string | null;
   created_at: string;
   author?: Pick<Profile, "username" | "role" | "avatar_url">;
+};
+
+/** Host-pushed team-news line (migration 0054); the latest one is the card
+ *  every listener's stats rail shows. */
+export type Bulletin = {
+  id: string;
+  body: string;
+  createdAt: string;
 };
 
 export type TalkRequest = {

@@ -4,6 +4,7 @@ import { channels, publish } from "@/lib/ably";
 import { requireParticipant } from "@/lib/api";
 import { createServiceClient } from "@/lib/db/server";
 import type { Question, RoomState } from "@/lib/db/types";
+import { rateLimit } from "@/lib/ratelimit";
 import { isAdmin } from "@/lib/roles";
 import { isRoomHost } from "@/lib/roomHosts";
 
@@ -26,10 +27,21 @@ const updateSchema = z.object({
   status: z.enum(["acknowledged", "dismissed"]),
 });
 
-/** Ask a question (FR-10.1) — private to author + commentator. */
+/** Ask a question (FR-10.1). PUBLIC since the Programme room rebuild (founder
+ *  2026-09-22): every non-dismissed question is visible to the whole room, so
+ *  question events ride the public chat channel, not room:{id}:private. */
 export async function POST(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
+
+  // questions are now a public, ranked list, which makes flooding rewarding;
+  // a real supporter asks a handful per match, not a stream
+  if (!rateLimit(`question:${caller.userId}`, 6, 10 * 60_000)) {
+    return NextResponse.json(
+      { error: "Slow down, one question at a time." },
+      { status: 429 },
+    );
+  }
 
   const parsed = submitSchema.safeParse(await request.json().catch(() => ({})));
   if (!parsed.success) {
@@ -65,11 +77,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await publish(`room:${room.id}:private`, "question", question);
+  await publish(channels.chat(room.id), "question", question);
   return NextResponse.json({ question }, { status: 201 });
 }
 
-/** Acknowledge/dismiss (commentator or admin). */
+/** Acknowledge (= answered on air, stamps answered_at) or dismiss - host or
+ *  admin. Dismissals broadcast only the id + status so the content drops out
+ *  of every public list; answers broadcast the badge. */
 export async function PATCH(request: NextRequest) {
   const caller = await requireParticipant();
   if (caller.error) return caller.error;
@@ -98,17 +112,20 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Not allowed." }, { status: 403 });
   }
 
+  const answeredAt =
+    parsed.data.status === "acknowledged" ? new Date().toISOString() : null;
   const { error } = await service
     .from("questions")
-    .update({ status: parsed.data.status })
+    .update({ status: parsed.data.status, answered_at: answeredAt })
     .eq("id", question.id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  await publish(`room:${question.room_id}:private`, "question_update", {
+  await publish(channels.chat(question.room_id), "question_update", {
     questionId: question.id,
     status: parsed.data.status,
+    answeredAt,
   });
   return NextResponse.json({ ok: true });
 }

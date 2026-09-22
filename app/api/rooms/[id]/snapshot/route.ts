@@ -104,26 +104,36 @@ export async function GET(
     !!user &&
     ((await isRoomHost(service, user.id, id)) || isAdmin(user.id, profile));
 
-  let questions: Question[] = [];
+  // questions are PUBLIC now (founder 2026-09-22): everyone recovers the
+  // non-dismissed list; only pending talk requests stay moderator-only
+  const [{ data: qs }, { data: bulletinRow }] = await Promise.all([
+    service
+      .from("questions")
+      .select("*, author:profiles!questions_user_id_fkey(username, role, avatar_url)")
+      .eq("room_id", id)
+      .neq("status", "dismissed")
+      .order("created_at", { ascending: false })
+      .limit(100)
+      .returns<Question[]>(),
+    service
+      .from("room_bulletins")
+      .select("id, body, created_at")
+      .eq("room_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle<{ id: string; body: string; created_at: string }>(),
+  ]);
+  const questions: Question[] = qs ?? [];
+
   let talkRequests: TalkRequest[] = [];
   if (isModerator) {
-    const [{ data: qs }, { data: trs }] = await Promise.all([
-      service
-        .from("questions")
-        .select("*, author:profiles!questions_user_id_fkey(username, role, avatar_url)")
-        .eq("room_id", id)
-        .order("created_at", { ascending: false })
-        .limit(100)
-        .returns<Question[]>(),
-      service
-        .from("talk_requests")
-        .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
-        .eq("room_id", id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: true })
-        .returns<TalkRequest[]>(),
-    ]);
-    questions = qs ?? [];
+    const { data: trs } = await service
+      .from("talk_requests")
+      .select("*, author:profiles!talk_requests_user_id_fkey(username, role, avatar_url)")
+      .eq("room_id", id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: true })
+      .returns<TalkRequest[]>();
     talkRequests = await Promise.all(
       (trs ?? []).map(async (tr) => ({
         ...tr,
@@ -150,5 +160,14 @@ export async function GET(
     questions,
     talkRequests,
     statOverrides: ovRow?.overrides ?? null,
+    // latest team-news bulletin (founder 2026-09-22): the card everyone's
+    // stats rail shows, recovered like recording/stat_overrides
+    bulletin: bulletinRow
+      ? {
+          id: bulletinRow.id,
+          body: bulletinRow.body,
+          createdAt: bulletinRow.created_at,
+        }
+      : null,
   });
 }

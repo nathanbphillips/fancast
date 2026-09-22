@@ -91,6 +91,9 @@ export type GameState = { homeLed: number; level: number; awayLed: number };
  *  and team news (sidelined players). Distilled server-side. */
 export type MatchInfo = {
   venue: { name: string; city: string | null; capacity: number | null } | null;
+  /** official attendance from fixture metadata; appears around/after kickoff
+   *  and is simply absent before then (render nothing, never a placeholder) */
+  attendance: number | null;
   // full match-official team, ordered head referee → assistants → 4th → VAR
   referees: { role: string; name: string }[];
   weather: {
@@ -190,6 +193,8 @@ export type SmFixtureDetail = {
     player?: { display_name?: string | null; name?: string | null };
     type?: { name?: string | null };
   }[];
+  // fixture metadata (attendance and friends); values shape varies per type
+  metadata?: { type?: { code?: string | null }; values?: unknown }[];
   // Sportmonks returns the weatherReport include under the lowercase key
   weatherreport?: {
     description?: string | null;
@@ -498,6 +503,17 @@ function normalizeInfo(
 
   const weather = normalizeWeather(raw.weatherreport, started);
 
+  // official attendance rides fixture metadata as {"attendance": N}; probed
+  // 2026-09-22 - it lands around/after kickoff, so null is the normal pre-game
+  // state, never a fault
+  let attendance: number | null = null;
+  for (const m of raw.metadata ?? []) {
+    if (m.type?.code !== "attendance") continue;
+    const v = (m.values as { attendance?: unknown } | null)?.attendance;
+    const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
+    if (Number.isFinite(n) && n > 0) attendance = Math.round(n);
+  }
+
   const teamNews: MatchInfo["teamNews"] = { home: [], away: [] };
   for (const s of raw.sidelined ?? []) {
     const side: Side | null =
@@ -510,6 +526,7 @@ function normalizeInfo(
 
   if (
     !venue &&
+    attendance == null &&
     referees.length === 0 &&
     !weather &&
     teamNews.home.length === 0 &&
@@ -517,7 +534,7 @@ function normalizeInfo(
   ) {
     return null;
   }
-  return { venue, referees, weather, teamNews };
+  return { venue, attendance, referees, weather, teamNews };
 }
 
 export function normalize(raw: SmFixtureDetail): FixtureStats {
@@ -737,7 +754,7 @@ async function fetchFixtureRaw(id: number): Promise<SmFixtureDetail> {
   const base = process.env.SPORTMONKS_BASE ?? "https://api.sportmonks.com/v3/football";
   // include set is HARDCODED — never accept an include/URL from the client
   const include =
-    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type;venue;referees.referee;referees.type;sidelined.player;sidelined.type;weatherReport";
+    "statistics.type;events.type;lineups.player;lineups.type;lineups.details.type;formations;participants;scores;state;trends.type;periods.statistics.type;venue;referees.referee;referees.type;sidelined.player;sidelined.type;weatherReport;metadata.type";
   const res = await fetch(`${base}/fixtures/${id}?include=${include}`, {
     headers: { Authorization: token },
     cache: "no-store",
