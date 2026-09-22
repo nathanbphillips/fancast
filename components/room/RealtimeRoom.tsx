@@ -315,6 +315,7 @@ export function RealtimeRoom(props: Props) {
   const lastRecordingTsRef = useRef(""); // newest `recording` event ts seen
   const lastOverrideTsRef = useRef(""); // newest `stat_overrides` event ts seen
   const lastBulletinTsRef = useRef(""); // newest `bulletin` event ts seen
+  const lastQuestionTsRef = useRef(0); // newest question event Ably timestamp
   const pendingOverrideRef = useRef(false); // an optimistic override save is in flight
   const hasConnectedRef = useRef(false); // skip rehydrate on the first connect
   const rehydratingRef = useRef(false); // guard against overlapping rehydrates
@@ -515,6 +516,7 @@ export function RealtimeRoom(props: Props) {
       const ovTsBefore = lastOverrideTsRef.current;
       const recTsBefore = lastRecordingTsRef.current;
       const bulTsBefore = lastBulletinTsRef.current;
+      const qTsBefore = lastQuestionTsRef.current;
       try {
         const res = await fetch(`/api/rooms/${room.id}/snapshot`, {
           cache: "no-store",
@@ -582,8 +584,12 @@ export function RealtimeRoom(props: Props) {
           }
           return merged;
         });
-        // questions are public now (0054): everyone re-syncs the list
-        setQuestions(s.questions ?? []);
+        // questions are public now (0054): everyone re-syncs the list - but
+        // only when no live question event landed mid-fetch (the same guard
+        // the bulletin gets below; a snapshot read before the event is older
+        // than the state it would replace, review finding)
+        if (lastQuestionTsRef.current === qTsBefore)
+          setQuestions(s.questions ?? []);
         // same guard as `state`: a bulletin pushed mid-fetch is newer than the
         // snapshot that was read before it
         if (lastBulletinTsRef.current === bulTsBefore)
@@ -675,13 +681,23 @@ export function RealtimeRoom(props: Props) {
 
     // Ask the Gantry is public (founder 2026-09-22): question events ride the
     // chat channel so every listener - anon included - sees the list move.
+    // Every handler stamps lastQuestionTsRef so a rehydrate whose fetch raced
+    // one of these events can tell its snapshot is already stale.
     chat.subscribe("question", (msg) => {
+      lastQuestionTsRef.current = Math.max(
+        lastQuestionTsRef.current,
+        msg.timestamp ?? 0,
+      );
       const q = msg.data as Question;
       setQuestions((prev) =>
         prev.some((x) => x.id === q.id) ? prev : [q, ...prev],
       );
     });
     chat.subscribe("question_update", (msg) => {
+      lastQuestionTsRef.current = Math.max(
+        lastQuestionTsRef.current,
+        msg.timestamp ?? 0,
+      );
       const { questionId, status, answeredAt } = msg.data as {
         questionId: string;
         status: Question["status"];
@@ -696,6 +712,10 @@ export function RealtimeRoom(props: Props) {
       );
     });
     chat.subscribe("question_vote", (msg) => {
+      lastQuestionTsRef.current = Math.max(
+        lastQuestionTsRef.current,
+        msg.timestamp ?? 0,
+      );
       const { questionId, up, score } = msg.data as {
         questionId: string;
         up: number;
@@ -1166,13 +1186,19 @@ export function RealtimeRoom(props: Props) {
   // ------- Ask the Gantry (public questions, founder 2026-09-22) -------
 
   /** Match minute at a wall-clock instant, from the event-sourced clock
-   *  (client-side derivation - golden rule 6). Null when the clock wasn't
-   *  running then. */
+   *  (client-side derivation - golden rule 6). Only events BEFORE the instant
+   *  count - deriveClock over the full list would let a later period (or the
+   *  final whistle) rewrite history: every 1H badge would read 45' after 2H
+   *  started and every minute would vanish at full time (review finding).
+   *  Null when the clock wasn't running then. */
   const minuteAt = useCallback(
     (iso: string): string | null => {
       const at = new Date(iso).getTime();
       if (Number.isNaN(at)) return null;
-      const d = deriveClock(clockEvents, at);
+      const prior = clockEvents.filter(
+        (e) => new Date(e.server_ts).getTime() <= at,
+      );
+      const d = deriveClock(prior, at);
       return d.running ? `${Math.floor(d.elapsedSeconds / 60)}'` : null;
     },
     [clockEvents],
@@ -1238,21 +1264,30 @@ export function RealtimeRoom(props: Props) {
     questionId: string,
     status: "acknowledged" | "dismissed",
   ) => {
-    // optimistic; the chat-channel echo confirms for everyone else
-    setQuestions((prev) =>
-      status === "dismissed"
+    // optimistic with ROLLBACK (the voteQuestion pattern): a failed PATCH
+    // must not leave the host's list silently out of sync with the room
+    let rollback: Question[] | null = null;
+    setQuestions((prev) => {
+      rollback = prev;
+      return status === "dismissed"
         ? prev.filter((q) => q.id !== questionId)
         : prev.map((q) =>
             q.id === questionId
               ? { ...q, status, answered_at: new Date().toISOString() }
               : q,
-          ),
-    );
+          );
+    });
     void fetch("/api/questions", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questionId, status }),
-    }).catch(() => {});
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("status change failed");
+      })
+      .catch(() => {
+        if (rollback) setQuestions(rollback);
+      });
   };
 
   const pushBulletin = async (body: string): Promise<boolean> => {
@@ -1276,12 +1311,21 @@ export function RealtimeRoom(props: Props) {
   // ------- match events -> chat stream (founder 2026-09-22) -------
 
   /** Wall-clock instant for a match minute, inverted from the event-sourced
-   *  clock: each period's start event anchors minute -> server time. Events
-   *  before any clock (or in rooms with no clock) fall back to the stats
-   *  fetch time so they still land in the feed, honestly late. */
+   *  clock. Mirrors deriveClock exactly (review findings): display elapsed T
+   *  = base + (wall - periodStart)/1000 + adjustSum, so wall = periodStart +
+   *  (T - base - adjustSum)*1000, where adjustSum counts only the adjust
+   *  events INSIDE the anchoring period. Minute M covers elapsed
+   *  [(M-1)*60, M*60) - anchor at the minute's START, or a 45+2 goal would
+   *  sort after the half-time whistle it beat. Returns null (caller falls
+   *  back to a STABLE first-seen stamp) when there is no clock yet or the
+   *  minute lies ahead of the room clock - never a moving Date.now() clamp,
+   *  which re-stamped items every poll and made them leapfrog the stream. */
   const wallTimeForMinute = useCallback(
     (minute: number, extraMinute: number | null): string | null => {
-      const starts = clockEvents.filter((e) =>
+      const ordered = [...clockEvents].sort((a, b) =>
+        a.server_ts.localeCompare(b.server_ts),
+      );
+      const starts = ordered.filter((e) =>
         ["start1h", "start2h", "start_et"].includes(e.action),
       );
       if (starts.length === 0) return null;
@@ -1293,14 +1337,29 @@ export function RealtimeRoom(props: Props) {
             : { action: "start1h", offset: 0 };
       const start = starts.find((e) => e.action === base.action);
       if (!start) return null;
-      const secondsIntoPeriod =
-        (minute + (extraMinute ?? 0)) * 60 - base.offset - (start.offset_seconds ?? 0);
+      const nextStart = starts.find((e) => e.server_ts > start.server_ts);
+      const adjustSum = ordered
+        .filter(
+          (e) =>
+            e.action === "adjust" &&
+            e.server_ts > start.server_ts &&
+            (!nextStart || e.server_ts < nextStart.server_ts),
+        )
+        .reduce((s, e) => s + (e.offset_seconds ?? 0), 0);
+      const targetElapsed = (minute + (extraMinute ?? 0) - 1) * 60;
+      const secondsIntoPeriod = targetElapsed - base.offset - adjustSum;
       const wall =
         new Date(start.server_ts).getTime() + Math.max(0, secondsIntoPeriod) * 1000;
-      return new Date(Math.min(wall, Date.now())).toISOString();
+      if (wall > Date.now()) return null;
+      return new Date(wall).toISOString();
     },
     [clockEvents],
   );
+
+  // stable first-seen stamps for events the clock can't place (no kick-off
+  // tapped yet, or the provider minute runs ahead of the room clock): assigned
+  // once per event and reused, so items never re-stamp and leapfrog the feed
+  const eventFallbackRef = useRef<Map<string, string>>(new Map());
 
   /** Goals, cards and subs from the (corrected) stats payload plus the room's
    *  own clock landmarks (kick-off, half-time, full time), each with a
@@ -1310,19 +1369,30 @@ export function RealtimeRoom(props: Props) {
   const matchEventItems = useMemo<MatchEventItem[]>(() => {
     if (isDiscussion) return [];
     const out: MatchEventItem[] = [];
-    const homeName = displayStats?.home.name ?? room.home;
-    const awayName = displayStats?.away.name ?? room.away;
+    // room names first (the zeros contract's placeholders are literal
+    // "Home"/"Away"); a linked discussion room has empty room names, so the
+    // provider's real names take over there (review findings)
+    const homeName = room.home || displayStats?.home.name || "Home";
+    const awayName = room.away || displayStats?.away.name || "Away";
 
     const scoreText = (result: string | null): string | null => {
       const m = result?.match(/^(\d+)\s*-\s*(\d+)$/);
       return m ? `${homeName} ${m[1]}, ${awayName} ${m[2]}` : null;
     };
 
+    const stableFallback = (key: string): string => {
+      const cache = eventFallbackRef.current;
+      const hit = cache.get(key);
+      if (hit) return hit;
+      const iso = new Date().toISOString();
+      cache.set(key, iso);
+      return iso;
+    };
+
     for (const ev of displayStats?.events ?? []) {
       const createdAt =
         wallTimeForMinute(ev.minute, ev.extraMinute) ??
-        displayStats?.fetchedAt ??
-        new Date(0).toISOString();
+        stableFallback(`${ev.kind}:${ev.player}:${ev.minute}`);
       const minuteLabel = `${ev.minute}${ev.extraMinute ? `+${ev.extraMinute}` : ""}'`;
       const who = ev.player || (ev.side === "home" ? homeName : awayName);
       let tag: string;
@@ -1368,11 +1438,15 @@ export function RealtimeRoom(props: Props) {
       .filter((e) => e.emphasis === "goal")
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     const scoreAt = (iso: string): string => {
-      const last = [...goals].reverse().find((g) => g.createdAt <= iso);
-      const m = last?.text.match(/(\d+), .* (\d+)$/);
-      return m
-        ? `${homeName} ${m[1]}, ${awayName} ${m[2]}`
-        : `${homeName} 0, ${awayName} 0`;
+      // newest goal before the instant whose text carries a parseable running
+      // score - a provider row with result null must not reset the line to
+      // 0-0 when an earlier goal knew the score (review finding)
+      for (const g of [...goals].reverse()) {
+        if (g.createdAt > iso) continue;
+        const m = g.text.match(/(\d+), .* (\d+)$/);
+        if (m) return `${homeName} ${m[1]}, ${awayName} ${m[2]}`;
+      }
+      return `${homeName} 0, ${awayName} 0`;
     };
     for (const ce of clockEvents) {
       if (ce.action === "start1h")
@@ -1425,6 +1499,15 @@ export function RealtimeRoom(props: Props) {
     },
     [displayStats],
   );
+
+  // Rail display names: room names first (the zeros contract's placeholders
+  // are the literal strings "Home"/"Away"), then the standings participant,
+  // then the provider - so a linked discussion room (empty room names) still
+  // labels its form/head-to-head rows (review findings).
+  const railHomeName =
+    room.home || matchHistory?.home?.name || displayStats?.home.name || "Home";
+  const railAwayName =
+    room.away || matchHistory?.away?.name || displayStats?.away.name || "Away";
 
   type TabId = "chat" | "stats" | "questions" | "callin" | "polls" | "facts";
   // Mobile room sections (Cloud Design): CHAT / STATS / CALL IN in a bottom
@@ -1777,14 +1860,9 @@ export function RealtimeRoom(props: Props) {
       myPrediction={props.myPrediction}
       activePoll={activePoll}
       myPollVote={props.myPollVote}
-      talkConsentGiven={props.talkConsentGiven}
-      hasPendingTalk={props.hasPendingTalk}
-      talkResolvedSignal={talkResolvedSignal}
-      queuePosition={queuePosition}
       broadcastStart={broadcastStart}
       chatOpen={chatOpen}
       onComposerFocus={setComposerFocused}
-      primeMic={audio.primeMicPermission}
       matchEvents={matchEventItems}
     />
   );
@@ -1804,9 +1882,11 @@ export function RealtimeRoom(props: Props) {
         askDisabledNote={
           room.demo
             ? null
-            : !viewer
-              ? "Sign in to ask the gantry."
-              : "Questions open when the broadcast starts."
+            : roomState === "wrapped"
+              ? "The show has wrapped - questions are closed."
+              : !INPUTS_OPEN.includes(roomState)
+                ? "Questions open when the broadcast starts."
+                : "Sign in to ask the gantry."
         }
         onAsk={askQuestion}
         isHost={viewer?.isModerator ?? false}
@@ -2217,6 +2297,13 @@ export function RealtimeRoom(props: Props) {
               </p>
             ) : (
               <>
+                {/* a live outage must be visible on the rail itself, not only
+                    inside the collapsed full panel (review finding) */}
+                {statsOutage && (
+                  <p className="mb-2 font-mono text-[12px] tracking-[0.06em] text-red">
+                    Live numbers interrupted - showing the last good set.
+                  </p>
+                )}
                 <MatchStatsBlocks
                   stats={displayStats?.stats ?? []}
                   xg={
@@ -2230,10 +2317,7 @@ export function RealtimeRoom(props: Props) {
                 />
                 <MomentumStrip
                   momentum={displayStats?.deep?.momentum}
-                  colors={lineupDiscColors(
-                    displayStats?.home.name ?? room.home,
-                    displayStats?.away.name ?? room.away,
-                  )}
+                  colors={lineupDiscColors(railHomeName, railAwayName)}
                 />
                 <BulletinCard
                   bulletin={bulletin}
@@ -2277,27 +2361,17 @@ export function RealtimeRoom(props: Props) {
                 <FormLastFive
                   rows={[
                     ...(matchHistory?.home
-                      ? [
-                          {
-                            team: displayStats?.home.name ?? room.home,
-                            form: matchHistory.home.form,
-                          },
-                        ]
+                      ? [{ team: railHomeName, form: matchHistory.home.form }]
                       : []),
                     ...(matchHistory?.away
-                      ? [
-                          {
-                            team: displayStats?.away.name ?? room.away,
-                            form: matchHistory.away.form,
-                          },
-                        ]
+                      ? [{ team: railAwayName, form: matchHistory.away.form }]
                       : []),
                   ]}
                 />
                 <HeadToHead
                   h2h={matchHistory?.h2h ?? null}
-                  homeName={displayStats?.home.name ?? room.home}
-                  awayName={displayStats?.away.name ?? room.away}
+                  homeName={railHomeName}
+                  awayName={railAwayName}
                 />
               </>
             )}
@@ -2309,6 +2383,17 @@ export function RealtimeRoom(props: Props) {
           aria-label="Chat"
           className={`${tab === "chat" || tab === "questions" || tab === "facts" ? "flex" : "hidden"} min-h-0 flex-1 flex-col lg:order-2 lg:flex`}
         >
+          {/* rooms with no stats rail (unlinked discussion) still need a
+              bulletin surface, or the host pushes into the void (review
+              finding): pin the card above the stream on both breakpoints */}
+          {!showStats && bulletin && (
+            <div className="shrink-0 px-3 pb-2">
+              <BulletinCard
+                bulletin={bulletin}
+                minuteLabel={minuteAt(bulletin.createdAt)}
+              />
+            </div>
+          )}
           <div className="hidden border-b border-line bg-canvas lg:flex">
             {[
               { id: "chat" as const, label: "From the stands", badge: 0 },
@@ -2752,7 +2837,11 @@ export function RealtimeRoom(props: Props) {
                   })} UK`}
                   referee={displayStats?.info?.referees[0]?.name ?? null}
                   attendance={displayStats?.info?.attendance ?? null}
-                  hostLine={`@${room.hosts.map((h) => h.username).join(" & @")} - a real supporter, never a pundit`}
+                  hostLine={`@${room.hosts.map((h) => h.username).join(" & @")} - ${
+                    room.hosts.length > 1
+                      ? "real supporters, never pundits"
+                      : "a real supporter, never a pundit"
+                  }`}
                 />
               )}
             </div>
@@ -2990,14 +3079,9 @@ function LiveChat({
   myPrediction,
   activePoll,
   myPollVote,
-  talkConsentGiven,
-  hasPendingTalk,
-  talkResolvedSignal,
-  queuePosition,
   broadcastStart,
   chatOpen,
   onComposerFocus,
-  primeMic,
   matchEvents,
 }: {
   room: RoomInfo;
@@ -3022,27 +3106,18 @@ function LiveChat({
   myPrediction: MyPrediction;
   activePoll: PollState;
   myPollVote: MyPollVote;
-  talkConsentGiven: boolean;
-  hasPendingTalk: boolean;
-  talkResolvedSignal: number;
-  queuePosition: number | null;
   broadcastStart: string | null;
   chatOpen: boolean;
   /** the chat input gained/lost focus — the room hides the mobile tab bar while
    *  typing so only the composer sits above the keyboard (founder 2026-08-05) */
   onComposerFocus?: (focused: boolean) => void;
-  /** grabs mic permission inside the request tap (see InteractionButtons) */
-  primeMic?: () => Promise<boolean>;
-  /** goals/cards/subs + clock landmarks, pre-stamped with wall times */
+  /** goals/cards + clock landmarks, pre-stamped with wall times */
   matchEvents: MatchEventItem[];
 }) {
   const pathname = usePathname();
   const signinHref = `/signin?next=${encodeURIComponent(pathname ?? "")}`;
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
-  // "Ask the host" pill on the reactions row → opens the question form inside
-  // InteractionButtons (one implementation; founder 2026-07-02)
-  const [askSignal, setAskSignal] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [votes, setVotes] = useState(myVotes);
   const [flagged, setFlagged] = useState<Set<string>>(new Set());
@@ -3293,7 +3368,10 @@ function LiveChat({
         : newest?.kind === "link"
           ? newest.lnk.user_id
           : undefined;
-    const isOwn = newestUser === viewer?.userId;
+    // an event item has no author and an anon viewer has no id: undefined ===
+    // undefined must NOT read as "own message" and yank the reader to the
+    // bottom on every goal (review finding)
+    const isOwn = newestUser !== undefined && newestUser === viewer?.userId;
     const visible = el.clientHeight > 0; // chat tab hidden on mobile -> 0
     if (isOwn || (visible && pinnedRef.current)) {
       requestAnimationFrame(() => {
@@ -3955,26 +4033,11 @@ function LiveChat({
               </span>
             </button>
           </form>
-          {inputsOpen && !isRoomCommentator && (
-            <>
-              {/* desktop: full Ask + Request-to-talk + sentiment slider inline */}
-              <div className="hidden lg:block">
-                <InteractionButtons
-                  roomId={room.id}
-                  consentGiven={talkConsentGiven}
-                  hasPendingTalk={hasPendingTalk}
-                  resolvedSignal={talkResolvedSignal}
-                  queuePosition={queuePosition}
-                  askSignal={askSignal}
-                  primeMic={primeMic}
-                />
-              </div>
-              {/* mobile carries NOTHING here: Ask Question + Request to Talk
-                  both live on the Call In tab, and the commentary/discussion
-                  slider lives on Polls — so the mobile chat footer is just the
-                  composer, sitting directly above the tab bar (2026-08-05) */}
-            </>
-          )}
+          {/* desktop Ask + Request-to-talk moved to the info rail's CALL THE
+              GANTRY box (founder 2026-09-22 ESPN layout) - a second instance
+              here desynced against it (review finding). Mobile carries
+              NOTHING here either: both live on the Call In tab (2026-08-05),
+              so the chat footer is just the composer on every breakpoint. */}
           {inputsOpen && isRoomCommentator && (
             <div className="mt-1">
               <AggregateMeter agg={sliderAgg} />

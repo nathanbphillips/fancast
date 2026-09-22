@@ -78,9 +78,32 @@ The sign-in coupon doubles its frame: `border-2` plus a 1px outline at
 
 - Marketing pages carry the masthead strip (Vol · Season · Price 10p-struck
   £0, `components/marketing/MastheadStrip.tsx`) as decorative chrome.
-- Desktop room: stats 1/3 left, merged chat stream 2/3 right; persistent
-  bottom audio dock. Mobile: bottom tab bar (gantry voice: STANDS · POLLS ·
-  CALL IN · NUMBERS, + FAQ / GANTRY / FACTS by role).
+- Desktop room (ESPN format, founder 2026-09-22): masthead strip ("← All
+  matches / {brand} · the live edition / lamp + On air [+ count, host only]")
+  over the Anton scoreboard (team names clamp 24-40px, score clamp 40-60px
+  tabular, red small-caps kicker, italic scorer lines, clock "MM:SS · minute
+  N" or a state label), then the transport strip, then three columns:
+  stats rail (min 230 / max 300px) · chat center (all spare width) · info
+  rail (min 280 / max 340px). Rails scroll independently inside the h-dvh
+  screen; chat keeps the live-chat feel (bottom-anchored, "N new" pill).
+  Stats rail modules top to bottom: Match stats (three printed 1fr/auto/1fr
+  number grids, red small-caps sub-headers) · momentum strip (club colours
+  via barFillStyle) · bulletin card (ink fill, gold lead, minute-stamped) ·
+  "The full numbers" collapsible (the complete club-coloured StatsPanel) ·
+  The table (top 4 + both sides, "···" gap rows, sides on bg-raised) ·
+  Form - last 5 (20px chips: W ink fill, L red fill, D outline, oldest
+  first) · Head-to-head. Info rail: Call the gantry (2px ink box) ·
+  Line-ups (PitchLineup, club-coloured discs) · Game information (kv grid
+  110px/1fr; rows without data do not render). Hosts toggle the info rail
+  to THE PRODUCTION DESK (2px RED box: bulletin composer, RSVP name list,
+  poll status); broadcast/mic/clock controls stay in the host strip.
+- Match events render inside the chat stream: Anton minute (min-w 34px,
+  right-aligned) + small-caps tag + line; goals get a 3px red left edge on
+  inset paper, bookings sit at 85% opacity; subs and VAR stay on Timeline.
+- Mobile room: unchanged structure - top transport, bottom tab bar (gantry
+  voice: STANDS · POLLS · CALL IN · NUMBERS, + FAQ / GANTRY / FACTS by
+  role); the bulletin card rides above the mobile stats panel; the public
+  Ask the gantry list joins the Call in tab.
 - Spacing on a 4px grid; corners square; panels ruled, not shadowed.
 
 ## The clock/state unit (signature component)

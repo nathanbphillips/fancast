@@ -133,7 +133,10 @@ export function AskGantryPanel({
                     <span className="fv-normal">
                       {q.author?.username ?? "someone"}
                     </span>{" "}
-                    &middot; {timeAgo(q.created_at)}
+                    {/* SSR and hydration can land in different minute
+                        buckets; same suppression the chat stamps use */}
+                    &middot;{" "}
+                    <span suppressHydrationWarning>{timeAgo(q.created_at)}</span>
                     {q.status === "acknowledged" ? (
                       <span className="text-red">
                         {" "}

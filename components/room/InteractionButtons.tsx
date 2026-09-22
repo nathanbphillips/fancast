@@ -234,17 +234,20 @@ export function InteractionButtons({
         <form onSubmit={submitQuestion} className="mt-2 space-y-2">
           {questionSent ? (
             <p className="border border-line bg-canvas px-3 py-2 text-sm text-green">
-              Sent to the commentator.
+              Posted to Ask the gantry.
             </p>
           ) : (
             <>
+              {/* questions are PUBLIC since 2026-09-22 (Ask the Gantry): the
+                  copy must say so - the old "only the commentator sees it"
+                  promise would be a lie exactly where consent matters */}
               <textarea
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 maxLength={280}
                 rows={2}
                 required
-                placeholder="Your question - only the commentator sees it"
+                placeholder="Your question - everyone in the room can read it"
                 aria-label="Your question"
                 className="w-full border border-line bg-canvas px-3 py-2 text-sm placeholder:text-secondary"
               />

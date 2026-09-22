@@ -111,6 +111,7 @@ export function ProductionDesk({
 }: ProductionDeskProps) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [pushError, setPushError] = useState(false);
   const [rsvps, setRsvps] = useState<{ names: string[]; count: number } | null>(
     null,
   );
@@ -137,9 +138,13 @@ export function ProductionDesk({
     const trimmed = draft.trim();
     if (!trimmed || sending) return;
     setSending(true);
+    setPushError(false);
     try {
       const ok = await onPushBulletin(trimmed);
       if (ok) setDraft("");
+      // a silent failure reads as a dead button (review finding): say so -
+      // the usual cause is a closed room (wrapped) or the push rate limit
+      else setPushError(true);
     } finally {
       setSending(false);
     }
@@ -195,6 +200,12 @@ export function ProductionDesk({
           Push bulletin
         </button>
       </form>
+      {pushError ? (
+        <div role="alert" className="text-[12.5px] text-red mt-1.5">
+          That didn&apos;t go out - the room may be closed, or give the last
+          push a minute.
+        </div>
+      ) : null}
       {lastBulletin ? (
         <div className="font-mono text-[12.5px] text-tertiary mt-1.5">
           Pushed &#10003;{" "}

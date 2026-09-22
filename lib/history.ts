@@ -202,12 +202,18 @@ function tableSlice(
 type SmH2hFixture = {
   id: number;
   starting_at?: string | null;
+  state?: { short_name?: string | null; state?: string | null };
   participants?: { id: number; name?: string; meta?: { location?: string } }[];
   scores?: {
     description?: string;
     score?: { participant?: string; goals?: number };
   }[];
 };
+
+/** Finished-match state codes (Sportmonks short names vary; match the known
+ *  full-time family). Tonight's IN-PLAY meeting must never count as a result
+ *  - it would list the half-played game as history and flip mid-show. */
+const FINISHED_STATES = new Set(["FT", "AET", "FT_PEN", "PEN", "AFTER_PENALTIES"]);
 
 /** Finished meetings between the two sides, tallied for the fixture's home
  *  team. A fetch/parse failure returns null - the caller degrades gracefully. */
@@ -217,7 +223,7 @@ async function fetchHeadToHead(
 ): Promise<HeadToHeadSummary | null> {
   try {
     const payload = (await smGet(
-      `/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?include=participants;scores`,
+      `/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?include=participants;scores;state`,
     )) as { data?: SmH2hFixture[] };
     const now = Date.now();
     const meetings: {
@@ -229,6 +235,13 @@ async function fetchHeadToHead(
     for (const f of payload.data ?? []) {
       const at = f.starting_at ? new Date(`${f.starting_at.replace(" ", "T")}Z`).getTime() : NaN;
       if (Number.isNaN(at) || at > now) continue; // future or undated
+      // only FINISHED meetings count; when the state include is missing,
+      // require the kickoff to be safely in the past (a live game is not)
+      const short = f.state?.short_name ?? f.state?.state ?? null;
+      const finished = short
+        ? FINISHED_STATES.has(short.toUpperCase())
+        : at < now - 6 * 3600_000;
+      if (!finished) continue;
       const home = f.participants?.find((p) => p.meta?.location === "home");
       const away = f.participants?.find((p) => p.meta?.location === "away");
       if (!home || !away) continue;

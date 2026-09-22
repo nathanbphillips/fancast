@@ -105,7 +105,7 @@ export function Scoreboard({
       ) : (
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[clamp(14px,3vw,40px)] mt-3.5">
           <div className="text-right">
-            <h2 className="display text-[clamp(24px,3.2vw,40px)] leading-none">
+            <h2 className="display text-[clamp(26px,3.4vw,42px)] leading-none">
               {home}
             </h2>
             {homeScorers ? (
@@ -115,7 +115,7 @@ export function Scoreboard({
             ) : null}
           </div>
           <div>
-            <div className="display text-[clamp(40px,5.5vw,60px)] leading-[0.9] tabular-nums">
+            <div className="display text-[clamp(44px,6vw,66px)] leading-[0.9] tabular-nums">
               {homeScore} - {awayScore}
             </div>
             <p className="font-mono text-[13.5px] tracking-[0.12em] text-red mt-1.5 tabular-nums min-h-[1.25em]">
@@ -125,7 +125,7 @@ export function Scoreboard({
             </p>
           </div>
           <div className="text-left">
-            <h2 className="display text-[clamp(24px,3.2vw,40px)] leading-none">
+            <h2 className="display text-[clamp(26px,3.4vw,42px)] leading-none">
               {away}
             </h2>
             {awayScorers ? (
