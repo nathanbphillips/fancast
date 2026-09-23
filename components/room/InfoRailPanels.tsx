@@ -13,7 +13,9 @@ type GameInfoPanelProps = {
   competition: string | null;
   venue: { name: string; city: string | null } | null;
   kickoffLabel: string;
-  referee: string | null;
+  /** the FULL officiating team, head referee first (VAR included) - founder
+   *  2026-09-22: every official gets a row */
+  referees: { role: string; name: string }[];
   attendance: number | null;
   hostLine: string;
 };
@@ -37,7 +39,7 @@ export function GameInfoPanel({
   competition,
   venue,
   kickoffLabel,
-  referee,
+  referees,
   attendance,
   hostLine,
 }: GameInfoPanelProps) {
@@ -46,7 +48,7 @@ export function GameInfoPanel({
       <h3 className="display text-[18px] border-b-[3px] border-double border-primary pb-2">
         Game information
       </h3>
-      <div className="grid grid-cols-[110px_1fr] gap-x-3.5 gap-y-1.5 text-[14.5px] leading-[1.6] mt-3">
+      <div className="grid grid-cols-[110px_1fr] gap-x-3.5 gap-y-1.5 text-[15px] leading-[1.6] mt-3">
         {competition ? <InfoRow label="Competition">{competition}</InfoRow> : null}
         {venue ? (
           <InfoRow label="Venue">
@@ -54,7 +56,11 @@ export function GameInfoPanel({
           </InfoRow>
         ) : null}
         <InfoRow label="Kick-off">{kickoffLabel}</InfoRow>
-        {referee ? <InfoRow label="Referee">{referee}</InfoRow> : null}
+        {referees.map((r) => (
+          <InfoRow key={`${r.role}-${r.name}`} label={r.role}>
+            {r.name}
+          </InfoRow>
+        ))}
         {attendance != null ? (
           <InfoRow label="Attendance">
             <span className="tabular-nums">
@@ -63,8 +69,6 @@ export function GameInfoPanel({
           </InfoRow>
         ) : null}
         <InfoRow label="Host">{hostLine}</InfoRow>
-        <InfoRow label="Listening">Free, no account needed</InfoRow>
-        <InfoRow label="One rule">Audio only, always</InfoRow>
       </div>
     </section>
   );

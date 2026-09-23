@@ -1480,26 +1480,6 @@ export function RealtimeRoom(props: Props) {
     return out;
   }, [displayStats, clockEvents, isDiscussion, room.home, room.away, wallTimeForMinute]);
 
-  // scorers lines for the scoreboard (goal/penalty/own-goal, per side)
-  const scorersLine = useCallback(
-    (side: "home" | "away"): string | null => {
-      const parts = (displayStats?.events ?? [])
-        .filter(
-          (e) =>
-            e.side === side &&
-            (e.kind === "goal" || e.kind === "penalty" || e.kind === "owngoal"),
-        )
-        .map(
-          (e) =>
-            `${e.player || "Goal"} ${e.minute}${e.extraMinute ? `+${e.extraMinute}` : ""}'${
-              e.kind === "penalty" ? " pen" : e.kind === "owngoal" ? " og" : ""
-            }`,
-        );
-      return parts.length > 0 ? parts.join(" · ") : null;
-    },
-    [displayStats],
-  );
-
   // Rail display names: room names first (the zeros contract's placeholders
   // are the literal strings "Home"/"Away"), then the standings participant,
   // then the provider - so a linked discussion room (empty room names) still
@@ -2108,46 +2088,16 @@ export function RealtimeRoom(props: Props) {
             )
           }
         />
+        {/* minimal scoreboard (founder 2026-09-22): names + score only; the
+            clock rides the transport dock, scorers live in the stream */}
         <Scoreboard
-          kicker={
-            isDiscussion
-              ? `${audioLive ? "Live from the gantry" : "From the gantry"} - @${room.hosts
-                  .map((h) => h.username)
-                  .join(" & @")}`
-              : `${audioLive ? "Live from the gantry" : "From the gantry"} - @${room.hosts
-                  .map((h) => h.username)
-                  .join(" & @")}${room.competition ? ` · ${room.competition}` : ""}`
-          }
           home={room.home}
           away={room.away}
           homeScore={liveHome}
           awayScore={liveAway}
-          homeScorers={scorersLine("home")}
-          awayScorers={scorersLine("away")}
-          clock={clockText}
-          clockSub={(() => {
-            const d = deriveClock(clockEvents, Date.now());
-            return d.running
-              ? `minute ${Math.floor(d.elapsedSeconds / 60)}`
-              : undefined;
-          })()}
-          stateLabel={
-            roomState === "waiting"
-              ? "Doors are open"
-              : roomState === "pregame"
-                ? "Kick-off soon"
-                : roomState === "halftime"
-                  ? "Half-time"
-                  : roomState === "postgame" || roomState === "wrapped"
-                    ? "Full-time"
-                    : undefined
-          }
           discussion={isDiscussion}
           title={room.title}
         />
-        {/* the transport strip: listeners get play/sync/radio/volume, hosts
-            their command strip - same components as before, new position */}
-        <div className="border-b border-primary">{bar}</div>
       </div>
 
       <div className="lg:hidden">
@@ -2228,8 +2178,8 @@ export function RealtimeRoom(props: Props) {
         onTouchEnd={onPanelTouchEnd}
         className={`flex min-h-0 flex-1 flex-col ${
           showStats
-            ? "lg:grid lg:w-full lg:grid-cols-[minmax(230px,300px)_minmax(0,1fr)_minmax(280px,340px)]"
-            : "lg:grid lg:w-full lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)]"
+            ? "lg:grid lg:w-full lg:grid-cols-[minmax(230px,300px)_minmax(0,1fr)_minmax(350px,425px)]"
+            : "lg:grid lg:w-full lg:grid-cols-[minmax(0,1fr)_minmax(350px,425px)]"
         }`}
       >
         {showStats && (
@@ -2314,6 +2264,8 @@ export function RealtimeRoom(props: Props) {
                         }
                       : null
                   }
+                  homeName={railHomeName}
+                  awayName={railAwayName}
                 />
                 <MomentumStrip
                   momentum={displayStats?.deep?.momentum}
@@ -2359,14 +2311,20 @@ export function RealtimeRoom(props: Props) {
                   roundLabel={null}
                 />
                 <FormLastFive
-                  rows={[
-                    ...(matchHistory?.home
-                      ? [{ team: railHomeName, form: matchHistory.home.form }]
-                      : []),
-                    ...(matchHistory?.away
-                      ? [{ team: railAwayName, form: matchHistory.away.form }]
-                      : []),
-                  ]}
+                  rows={
+                    matchHistory?.home || matchHistory?.away
+                      ? [
+                          {
+                            team: railHomeName,
+                            form: matchHistory?.home?.form ?? [],
+                          },
+                          {
+                            team: railAwayName,
+                            form: matchHistory?.away?.form ?? [],
+                          },
+                        ]
+                      : []
+                  }
                 />
                 <HeadToHead
                   h2h={matchHistory?.h2h ?? null}
@@ -2835,7 +2793,7 @@ export function RealtimeRoom(props: Props) {
                     minute: "2-digit",
                     timeZone: "Europe/London",
                   })} UK`}
-                  referee={displayStats?.info?.referees[0]?.name ?? null}
+                  referees={displayStats?.info?.referees ?? []}
                   attendance={displayStats?.info?.attendance ?? null}
                   hostLine={`@${room.hosts.map((h) => h.username).join(" & @")} - ${
                     room.hosts.length > 1
@@ -2902,8 +2860,13 @@ export function RealtimeRoom(props: Props) {
         ))}
       </nav>
 
-      {/* the desktop transport now lives under the scoreboard (founder
-          2026-09-22 ESPN header); the old bottom dock is gone */}
+      {/* desktop: the transport dock is BACK at the base of the h-dvh column
+          (founder 2026-09-22 feedback), now on the deep red ground - the
+          on-red-scope remaps every token inside, so the listener transport,
+          the commentator strip and all their controls restyle themselves */}
+      <div className="on-red-scope hidden flex-none border-t-[3px] border-t-primary lg:block">
+        {bar}
+      </div>
 
       {!isRoomCommentator && (
         <SyncSheet
@@ -2974,10 +2937,10 @@ function EventRow({ ev }: { ev: MatchEventItem }) {
         goal ? "border-l-[3px] border-l-red bg-inset py-2.5 pr-2 pl-3.5" : "px-0.5 py-2.5 opacity-85"
       }`}
     >
-      <span className="display min-w-[34px] shrink-0 text-right text-[15px]">
+      <span className="display min-w-[38px] shrink-0 text-right text-[17px]">
         {ev.minuteLabel}
       </span>
-      <span className="text-[14.5px] leading-[1.5]">
+      <span className="text-[16px] leading-[1.5]">
         <span
           className={`font-mono font-semibold tracking-[0.06em] ${
             goal || ev.emphasis === "red" ? "text-red" : "text-tertiary"
@@ -3615,18 +3578,18 @@ function LiveChat({
                 {/* header: name · host badge · time · (mod actions) */}
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-[13px] font-extrabold ${isCommentator ? "text-red" : ""}`}
+                    className={`text-[15px] font-extrabold ${isCommentator ? "text-red" : ""}`}
                   >
                     {m.author?.username ?? "…"}
                   </span>
                   {isCommentator && (
-                    <span className="border border-red/50 px-1.5 py-0.5 font-mono text-[8.5px] tracking-[0.1em] text-red uppercase">
+                    <span className="border border-red/50 px-1.5 py-0.5 font-mono text-[10px] tracking-[0.1em] text-red uppercase">
                       Host
                     </span>
                   )}
                   <span
                     suppressHydrationWarning
-                    className="font-mono text-[10px] text-secondary tabular-nums"
+                    className="font-mono text-[12px] text-secondary tabular-nums"
                   >
                     {timeAgo(m.created_at)}
                   </span>
@@ -3655,8 +3618,8 @@ function LiveChat({
                     )}
                   </span>
                 </div>
-                {/* body */}
-                <p className="mt-0.5 text-[13px] leading-snug lg:leading-relaxed">{displayBody}</p>
+                {/* body (16px since founder 2026-09-22: 13px was much too small) */}
+                <p className="mt-0.5 text-[16px] leading-snug lg:leading-[1.5]">{displayBody}</p>
                 {/* inline link card */}
                 {m.link_url && (
                   <a
@@ -3666,10 +3629,10 @@ function LiveChat({
                     className="mt-2 flex gap-2 border border-line bg-canvas p-1.5 hover:bg-raised"
                   >
                     <span className="flex min-w-0 flex-1 flex-col justify-center">
-                      <span className="line-clamp-2 text-xs font-semibold leading-snug hover:underline">
+                      <span className="line-clamp-2 text-[13.5px] font-semibold leading-snug hover:underline">
                         {m.link_title ?? m.link_url}
                       </span>
-                      <span className="mt-0.5 truncate text-[11px] text-secondary">
+                      <span className="mt-0.5 truncate text-[12px] text-secondary">
                         {m.link_domain ?? ""}
                       </span>
                     </span>

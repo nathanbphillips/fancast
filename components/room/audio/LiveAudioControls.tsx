@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { RadioToggle } from "@/components/RadioToggle";
-import { Waveform } from "@/components/ui/Waveform";
 import { CallerActions } from "../CallerActions";
 import type { ListenStatus, MicStatus, Speaker } from "./useRoomAudio";
 
@@ -505,12 +504,9 @@ export function ListenerBar({
             </div>
           </div>
         )}
-        {/* decorative broadcast waveform fills the dock's center on wide
-            screens (Cloud Design); clips first, never the controls */}
-        <div className="hidden min-w-0 flex-1 xl:block">
-          <Waveform bars={40} height={26} />
-        </div>
-        <div className="min-w-0 flex-1 xl:hidden" />
+        {/* the decorative waveform is gone (founder 2026-09-22: it read as a
+            scrolling bar) - the dock's center is quiet space */}
+        <div className="min-w-0 flex-1" />
         {goOnAir}
         {liveBadge}
         {hlsSupported && radioToggle}

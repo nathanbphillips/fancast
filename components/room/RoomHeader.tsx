@@ -65,75 +65,43 @@ export function RoomMasthead({
 }
 
 type ScoreboardProps = {
-  kicker: string;
   home: string;
   away: string;
   homeScore: number;
   awayScore: number;
-  homeScorers: string | null;
-  awayScorers: string | null;
-  clock?: string;
-  clockSub?: string;
   discussion?: boolean;
   title?: string;
-  stateLabel?: string;
 };
 
+/** Minimal scoreboard (founder 2026-09-22 feedback): team names and the
+ *  score, nothing else, in the least vertical space that still lands - the
+ *  kicker, scorers and clock line were removed on request. The clock lives
+ *  with the transport; scorers live in the stream and the stats. */
 export function Scoreboard({
-  kicker,
   home,
   away,
   homeScore,
   awayScore,
-  homeScorers,
-  awayScorers,
-  clock,
-  clockSub,
   discussion,
   title,
-  stateLabel,
 }: ScoreboardProps) {
   return (
-    <div className="py-5 border-b border-primary text-center">
-      <p className="font-mono text-[13.5px] tracking-[0.18em] text-red">
-        {kicker}
-      </p>
+    <div className="border-b border-primary py-2.5 text-center">
       {discussion ? (
-        <h1 className="display text-[clamp(26px,3.4vw,42px)] leading-none mt-3">
+        <h1 className="display text-[clamp(24px,3vw,36px)] leading-none">
           {title}
         </h1>
       ) : (
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-[clamp(14px,3vw,40px)] mt-3.5">
-          <div className="text-right">
-            <h2 className="display text-[clamp(26px,3.4vw,42px)] leading-none">
-              {home}
-            </h2>
-            {homeScorers ? (
-              <p className="italic text-[13.5px] text-secondary mt-1.5 leading-snug">
-                {homeScorers}
-              </p>
-            ) : null}
+        <div className="flex items-baseline justify-center gap-[clamp(14px,2.5vw,32px)]">
+          <h2 className="display min-w-0 truncate text-[clamp(24px,3vw,38px)] leading-none">
+            {home}
+          </h2>
+          <div className="display shrink-0 text-[clamp(30px,3.8vw,48px)] leading-none tabular-nums">
+            {homeScore} - {awayScore}
           </div>
-          <div>
-            <div className="display text-[clamp(44px,6vw,66px)] leading-[0.9] tabular-nums">
-              {homeScore} - {awayScore}
-            </div>
-            <p className="font-mono text-[13.5px] tracking-[0.12em] text-red mt-1.5 tabular-nums min-h-[1.25em]">
-              {clock
-                ? `${clock}${clockSub ? ` · ${clockSub}` : ""}`
-                : stateLabel ?? null}
-            </p>
-          </div>
-          <div className="text-left">
-            <h2 className="display text-[clamp(26px,3.4vw,42px)] leading-none">
-              {away}
-            </h2>
-            {awayScorers ? (
-              <p className="italic text-[13.5px] text-secondary mt-1.5 leading-snug">
-                {awayScorers}
-              </p>
-            ) : null}
-          </div>
+          <h2 className="display min-w-0 truncate text-[clamp(24px,3vw,38px)] leading-none">
+            {away}
+          </h2>
         </div>
       )}
     </div>

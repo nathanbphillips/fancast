@@ -42,14 +42,14 @@ function StatSubBlock({ title, rows }: { title: string; rows: StatRow[] }) {
   if (rows.length === 0) return null;
   return (
     <div>
-      <div className="font-mono text-[13px] tracking-[0.12em] text-red font-semibold border-b border-line pb-1 mt-4">
+      <div className="font-mono text-[14.5px] tracking-[0.12em] text-red font-semibold border-b border-line pb-1 mt-4">
         {title}
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-[5px] text-[15px] tabular-nums mt-2">
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-[6px] text-[16.5px] tabular-nums mt-2">
         {rows.map((r) => (
           <Fragment key={r.key}>
             <div className="text-right font-semibold">{r.home}</div>
-            <div className="font-mono text-[13px] text-tertiary text-center whitespace-nowrap">
+            <div className="font-mono text-[14px] text-tertiary text-center whitespace-nowrap self-center">
               {r.label}
             </div>
             <div className="text-left">{r.away}</div>
@@ -60,13 +60,19 @@ function StatSubBlock({ title, rows }: { title: string; rows: StatRow[] }) {
   );
 }
 
-/** Grouped match stats: Attacking / Possession & passing / Defending & discipline. */
+/** Grouped match stats: Attacking / Possession & passing / Defending &
+ *  discipline. Team names head the two value columns (founder 2026-09-22:
+ *  "impossible to know who is who" without them). */
 export function MatchStatsBlocks({
   stats,
   xg,
+  homeName,
+  awayName,
 }: {
   stats: StatBar[];
   xg: { home: number; away: number } | null;
+  homeName: string;
+  awayName: string;
 }) {
   const attacking: StatRow[] = [
     ...buildRows(stats, [
@@ -111,11 +117,21 @@ export function MatchStatsBlocks({
         Match stats
       </div>
       {empty ? (
-        <div className="text-[13px] text-tertiary italic mt-3">
+        <div className="text-[14.5px] text-tertiary italic mt-3">
           Numbers arrive at kick-off.
         </div>
       ) : (
         <>
+          {/* who is who: home reads the LEFT column, away the RIGHT */}
+          <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 mt-3">
+            <div className="min-w-0 truncate text-right font-mono text-[14.5px] font-semibold">
+              {homeName}
+            </div>
+            <div className="font-mono text-[13px] text-tertiary self-center">v</div>
+            <div className="min-w-0 truncate text-left font-mono text-[14.5px] font-semibold">
+              {awayName}
+            </div>
+          </div>
           <StatSubBlock title="Attacking" rows={attacking} />
           <StatSubBlock title="Possession &amp; passing" rows={possession} />
           <StatSubBlock title="Defending &amp; discipline" rows={defending} />
@@ -147,7 +163,7 @@ export function MomentumStrip({
 
   return (
     <div>
-      <div className="font-mono text-[13px] text-tertiary mt-4">
+      <div className="font-mono text-[14px] text-tertiary mt-4">
         Momentum, last 15&#39;
       </div>
       <div className="flex gap-[3px] h-[10px] mt-1.5">
@@ -168,8 +184,8 @@ export function BulletinCard({
 }) {
   if (!bulletin) return null;
   return (
-    <div className="bg-inverted text-inverted-fg px-3 py-2.5 mt-4 text-[14.5px] leading-[1.5]">
-      <span className="font-mono text-[13px] tracking-[0.08em] text-gold">
+    <div className="bg-inverted text-inverted-fg px-3 py-2.5 mt-4 text-[15.5px] leading-[1.5]">
+      <span className="font-mono text-[14px] tracking-[0.08em] text-gold">
         Bulletin
         {minuteLabel ? `, ${minuteLabel}` : ""}
       </span>
@@ -224,14 +240,14 @@ export function MiniTable({
     rows.push(
       <div
         key={row.teamId}
-        className={`grid grid-cols-[26px_1fr_30px_36px_36px] gap-x-2 text-[14px] tabular-nums py-1.5 border-b border-line${
+        className={`grid grid-cols-[26px_1fr_30px_36px_36px] gap-x-2 text-[15px] tabular-nums py-1.5 border-b border-line${
           highlighted ? " bg-raised" : ""
         }`}
       >
         <div className={highlighted ? "text-red font-semibold" : undefined}>
           {row.position}
         </div>
-        <div className={`font-mono text-[14px]${highlighted ? " font-semibold" : ""}`}>
+        <div className={`font-mono text-[15px]${highlighted ? " font-semibold" : ""}`}>
           {row.name}
         </div>
         <div className="text-right">{row.played}</div>
@@ -247,7 +263,7 @@ export function MiniTable({
       <div className="display text-[18px] border-b-[3px] border-double border-primary pb-2 mt-7">
         The table
       </div>
-      <div className="grid grid-cols-[26px_1fr_30px_36px_36px] gap-x-2 font-mono text-[12px] tracking-[0.06em] text-tertiary mt-3 pb-1 border-b border-line">
+      <div className="grid grid-cols-[26px_1fr_30px_36px_36px] gap-x-2 font-mono text-[13px] tracking-[0.06em] text-tertiary mt-3 pb-1 border-b border-line">
         <div>Pos</div>
         <div>Club</div>
         <div className="text-right">P</div>
@@ -255,7 +271,7 @@ export function MiniTable({
         <div className="text-right">Pts</div>
       </div>
       {rows}
-      <div className="text-[13px] text-tertiary italic mt-2.5">
+      <div className="text-[14px] text-tertiary italic mt-2.5">
         {competition}
         {roundLabel ? ` · ${roundLabel}` : ""}.
       </div>
@@ -263,13 +279,15 @@ export function MiniTable({
   );
 }
 
-/** Last-five form chips per side, oldest to newest. */
+/** Last-five form chips per side, oldest to newest. BOTH teams always show
+ *  when either has data (founder 2026-09-22: clearly designated) - a side
+ *  with no recent form says so honestly instead of vanishing. */
 export function FormLastFive({
   rows,
 }: {
   rows: { team: string; form: ("W" | "D" | "L")[] }[];
 }) {
-  if (rows.every((r) => r.form.length === 0)) return null;
+  if (rows.length === 0 || rows.every((r) => r.form.length === 0)) return null;
 
   const chipClass = (result: "W" | "D" | "L"): string => {
     if (result === "W") return "bg-inverted text-inverted-fg";
@@ -284,20 +302,28 @@ export function FormLastFive({
       </div>
       {rows.map((row) => (
         <div key={row.team} className="flex justify-between items-center gap-3 mt-3">
-          <div className="font-mono text-[14px] font-semibold">{row.team}</div>
-          <div className="flex gap-1">
-            {[...row.form].reverse().map((result, i) => (
-              <span
-                key={i}
-                className={`w-5 h-5 inline-flex items-center justify-center font-mono text-[12.5px] font-semibold ${chipClass(result)}`}
-              >
-                {result}
-              </span>
-            ))}
+          <div className="min-w-0 truncate font-mono text-[15px] font-semibold">
+            {row.team}
           </div>
+          {row.form.length > 0 ? (
+            <div className="flex shrink-0 gap-1">
+              {[...row.form].reverse().map((result, i) => (
+                <span
+                  key={i}
+                  className={`inline-flex h-[22px] w-[22px] items-center justify-center font-mono text-[13.5px] font-semibold ${chipClass(result)}`}
+                >
+                  {result}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="shrink-0 text-[13.5px] text-tertiary italic">
+              no league form yet
+            </div>
+          )}
         </div>
       ))}
-      <div className="text-[12.5px] text-tertiary italic mt-2">
+      <div className="text-[14px] text-tertiary italic mt-2">
         Oldest to newest, league games.
       </div>
     </div>
@@ -327,7 +353,7 @@ export function HeadToHead({
       <div className="display text-[18px] border-b-[3px] border-double border-primary pb-2 mt-7">
         Head-to-head
       </div>
-      <div className="font-mono text-[14px] mt-2.5">
+      <div className="font-mono text-[15px] mt-2.5">
         Last {h2h.total}:{" "}
         <span className="text-red font-semibold">
           {homeName} {h2h.homeWins}
@@ -337,10 +363,11 @@ export function HeadToHead({
         {" · "}
         {awayName} {h2h.awayWins}
       </div>
-      {h2h.meetings.slice(0, 3).map((meeting, i) => (
+      {/* last 5 meetings (founder 2026-09-22, was 3) */}
+      {h2h.meetings.slice(0, 5).map((meeting, i) => (
         <div
           key={i}
-          className="flex justify-between gap-2.5 py-2 border-b border-line text-[14px]"
+          className="flex justify-between gap-2.5 py-2 border-b border-line text-[15px]"
         >
           <span className="font-mono text-tertiary whitespace-nowrap">
             {meeting.whenLabel}

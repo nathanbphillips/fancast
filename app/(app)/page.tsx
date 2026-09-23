@@ -5,7 +5,6 @@ import { loadFixtures, type HomeFixture } from "@/lib/db/fixtures";
 import { KickoffTime, LocalTime } from "@/components/KickoffTime";
 import { NotifyForm } from "@/components/marketing/NotifyForm";
 import { Countdown } from "@/components/marketing/Countdown";
-import { MastheadStrip } from "@/components/marketing/MastheadStrip";
 import { TheWire } from "@/components/marketing/TheWire";
 import {
   AMAZON_MUSIC_SHOW_URL,
@@ -50,10 +49,10 @@ function FixtureRow({ f }: { f: HomeFixture }) {
         <LocalTime iso={card.kickoffUtc} />
       </div>
       <div>
-        <div className="display text-[clamp(20px,2.2vw,26px)] leading-none">
+        <div className="display text-[clamp(21px,2.3vw,28px)] leading-none">
           {card.home} <span className="text-red">v</span> {card.away}
         </div>
-        <div className="mt-1.5 text-[14.5px] text-secondary italic">
+        <div className="mt-1.5 text-[16px] text-secondary italic">
           {card.competition}
           {hasRoom
             ? ` - room scheduled${card.commentator ? ` with @${card.commentator}` : ""}`
@@ -62,7 +61,7 @@ function FixtureRow({ f }: { f: HomeFixture }) {
         {hasRoom && (
           <Link
             href={card.roomHref!}
-            className="mt-2.5 inline-block border border-primary px-4 py-2 font-mono text-[13px] font-semibold tracking-[0.1em] text-primary transition-colors hover:text-red"
+            className="mt-2.5 inline-block border border-primary px-4 py-2 font-mono text-[14.5px] font-semibold tracking-[0.1em] text-primary transition-colors hover:text-red"
           >
             {card.state === "scheduled" ? "Count me in →" : "Join the room →"}
           </Link>
@@ -97,8 +96,9 @@ export default async function HomePage() {
   let lastDay = "";
 
   return (
-    <div className="mx-auto max-w-[1260px] px-5 pt-6 pb-14 sm:px-10">
-      <MastheadStrip />
+    <div className="mx-auto max-w-[1260px] px-5 pt-2 pb-14 sm:px-10">
+      {/* the masthead strip is global chrome now (AppHeader, founder
+          2026-09-22) - the cover starts straight away */}
 
       {/* COVER */}
       <div className="border-b border-primary py-7 text-center">
@@ -138,7 +138,7 @@ export default async function HomePage() {
           href={liveFixture.card.roomHref ?? "/matches"}
           className="mt-6 block bg-red-fill p-7 text-on-red transition-opacity hover:opacity-95 sm:px-9"
         >
-          <div className="flex flex-wrap justify-between gap-3.5 font-mono text-[13px] tracking-[0.16em]">
+          <div className="flex flex-wrap justify-between gap-3.5 font-mono text-[14.5px] tracking-[0.16em]">
             <span className="flex items-center gap-2.5">
               <span className="h-[9px] w-[9px] animate-fcpulse rounded-full bg-on-red" />
               On air now - live from the gantry
@@ -165,7 +165,7 @@ export default async function HomePage() {
       ) : nextFixture ? (
         /* State B: the red next-broadcast block (founder 2026-09-13) */
         <div className="mt-6 bg-red-fill p-7 text-on-red sm:px-9">
-          <div className="flex flex-wrap justify-between gap-3.5 font-mono text-[13px] tracking-[0.16em]">
+          <div className="flex flex-wrap justify-between gap-3.5 font-mono text-[14.5px] tracking-[0.16em]">
             <span>
               {nextBroadcast ? "Next broadcast" : "Next fixture"} -{" "}
               <KickoffTime iso={nextFixture.card.kickoffUtc} />
@@ -186,7 +186,7 @@ export default async function HomePage() {
               {nextFixture.card.roomHref ? "Count me in →" : "See the schedule →"}
             </Link>
           </div>
-          <p className="mt-2.5 text-[16px] italic opacity-80">
+          <p className="mt-2.5 text-[17px] italic opacity-80">
             {nextFixture.card.competition}
             {nextFixture.card.roomHref
               ? nextFixture.card.commentator
@@ -235,7 +235,7 @@ export default async function HomePage() {
               return (
                 <div key={f.card.id}>
                   {showDay && (
-                    <p className="mt-5 font-mono text-[13px] tracking-[0.14em] text-red">
+                    <p className="mt-5 font-mono text-[14.5px] tracking-[0.14em] text-red">
                       - {day} -
                     </p>
                   )}

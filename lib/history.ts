@@ -277,8 +277,9 @@ async function fetchHeadToHead(
       draws,
       awayWins,
       total: meetings.length,
+      // last 5 for the rail (founder 2026-09-22)
       meetings: meetings
-        .slice(0, 3)
+        .slice(0, 5)
         .map(({ whenLabel, result }) => ({ whenLabel, result })),
     };
   } catch {

@@ -8,6 +8,7 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { UserMenu } from "@/components/UserMenu";
 import { Button } from "@/components/ui/Button";
+import { MastheadStrip } from "@/components/marketing/MastheadStrip";
 import { DEMO_ROOM_HREF } from "@/lib/config";
 
 type NavItem = { href: string; label: string };
@@ -21,8 +22,6 @@ const NAV: NavEntry[] = [
   { href: "/host", label: "Host a room" },
   { href: DEMO_ROOM_HREF, label: "View demo" },
 ];
-
-const ANNOUNCE_KEY = "fc_announce_dismissed";
 
 /** Desktop nav dropdown (hover + click + keyboard). Groups secondary links
  *  (About / Host / Creators) under one "Learn More" trigger. */
@@ -118,11 +117,12 @@ function NavDropdown({
 }
 
 /**
- * Sticky top nav (Matchday redesign). A dismissible early-access announcement
- * bar sits above it; the "N room(s) live now" clause is wired to the real live
- * count (never a fabricated number). Self-hides inside the immersive room
- * (/room/[id]) — the room renders its own bar. Auth state is server-computed
- * and passed as props (no-flash / server-auth model).
+ * Sticky top nav. The programme masthead strip (Vol · date · Price) sits
+ * above it at the very top of every page and scrolls away naturally while
+ * the nav stays sticky (founder 2026-09-22 - replaced the early-access
+ * announcement bar). Self-hides inside the immersive room (/room/[id]) — the
+ * room renders its own masthead. Auth state is server-computed and passed as
+ * props (no-flash / server-auth model).
  */
 export function AppHeader({
   username,
@@ -142,16 +142,6 @@ export function AppHeader({
 }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  // default shown (SSR-rendered, no pop-in); hide only if this device dismissed it
-  const [announceDismissed, setAnnounceDismissed] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(ANNOUNCE_KEY) === "1") setAnnounceDismissed(true);
-    } catch {
-      /* private mode — leave shown */
-    }
-  }, []);
 
   // close the mobile menu on navigation and on Escape
   useEffect(() => {
@@ -168,15 +158,6 @@ export function AppHeader({
 
   if (pathname?.startsWith("/room/")) return null;
 
-  function dismissAnnounce() {
-    setAnnounceDismissed(true);
-    try {
-      localStorage.setItem(ANNOUNCE_KEY, "1");
-    } catch {
-      /* private mode — dismiss for this session only */
-    }
-  }
-
   // programme nav voice: Newsreader small caps, gently tracked (font-mono is
   // the small-caps utility since the Programme redesign)
   const navLink =
@@ -186,58 +167,13 @@ export function AppHeader({
 
   return (
     <>
-      {!announceDismissed && (
-        <div className="relative flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-line bg-raised px-10 py-2 text-center text-[12px] font-semibold text-secondary">
-          <span className="hidden items-center gap-1.5 font-mono text-[10px] font-bold tracking-[0.1em] text-red uppercase sm:inline-flex">
-            <span
-              aria-hidden="true"
-              className="h-1.5 w-1.5 animate-fc-blink rounded-full bg-red-fill"
-            />
-            Early access
-          </span>
-          <span>
-            Arsenal first
-            {liveCount > 0 ? (
-              <>
-                ,{" "}
-                <strong className="font-bold text-primary">
-                  {liveCount} room{liveCount > 1 ? "s" : ""} live now
-                </strong>
-              </>
-            ) : null}
-            , more clubs on the way
-          </span>
-          <Link
-            href="/signin"
-            className="font-bold text-red transition-opacity hover:opacity-80"
-          >
-            Get matchday alerts →
-          </Link>
-          <button
-            type="button"
-            onClick={dismissAnnounce}
-            aria-label="Dismiss announcement"
-            className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-secondary transition-colors hover:text-primary"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-              className="h-3.5 w-3.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.2}
-              strokeLinecap="round"
-            >
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          </button>
-        </div>
-      )}
+      {/* the programme masthead at the very top; in normal flow, so it
+          scrolls away while the nav below stays sticky (founder 2026-09-22) */}
+      <MastheadStrip />
 
-      {/* masthead rules: 3px solid top, 1px solid bottom (the programme's
-          page-top treatment); solid paper, no blur, no shadow */}
-      <header className="sticky top-0 z-40 border-t-[3px] border-t-primary border-b border-b-primary bg-canvas">
+      {/* nav keeps the 1px bottom rule; the 3px page-top rule now lives on
+          the masthead strip above */}
+      <header className="sticky top-0 z-40 border-b border-b-primary bg-canvas">
         <div className="mx-auto flex h-[61px] max-w-[1260px] items-center justify-between px-5 sm:px-10">
           <div className="flex items-center">
             <Link href="/" aria-label={brand.name} className="flex items-center">

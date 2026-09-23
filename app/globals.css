@@ -243,6 +243,33 @@ body {
   font-variant-caps: normal;
 }
 
+/* The red transport dock (founder 2026-09-22): the host/audio bar returns to
+   the bottom of the room on a deep red ground. Rather than threading an
+   "onRed" variant through every control, this scope REMAPS the raw tokens so
+   everything inside re-resolves: paper text on red, hairlines in paper, red
+   accents become the fixed gold (readable on red), and red FILLS invert to
+   paper-with-red-text - the on-red CTA treatment the hero blocks use. Same
+   values in both themes: the dock is theme-constant deep red. */
+.on-red-scope {
+  background: #a8241a;
+  --fg: 247 241 226;
+  --hair: 247 241 226;
+  --bg-base: #a8241a;
+  --bg-surface: #a8241a;
+  --bg-raised: #8e1d14;
+  --bg2: #8e1d14;
+  --text-primary: #f7f1e2;
+  --red: #e8c400;
+  --red-hover: #d9dcc2;
+  --red-fill: #f7f1e2;
+  --on-red: #a8241a;
+  --gold: #e8c400;
+  --green: #f7f1e2;
+  --placeholder: #e6d9b8;
+  --inverted-bg: #f7f1e2;
+  --inverted-fg: #a8241a;
+}
+
 /* Visible focus everywhere (WCAG); the contextual red reads in both themes
    (deep red on paper, brightened red on ink). */
 :focus-visible {
