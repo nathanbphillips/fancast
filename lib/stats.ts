@@ -584,8 +584,10 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
       extraMinute: e.extra_minute ?? null,
       side,
       kind,
-      player: e.player_name ?? "",
-      relatedPlayer: e.related_player_name ?? null,
+      // the provider pads some names ("Martin Ødegaard "), which read as a
+      // stray space before the comma in the chat's goal lines
+      player: (e.player_name ?? "").trim(),
+      relatedPlayer: e.related_player_name?.trim() || null,
       result: e.result ?? null,
       info: e.info ?? null,
       sortOrder: e.sort_order ?? 0,
@@ -616,7 +618,7 @@ export function normalize(raw: SmFixtureDetail): FixtureStats {
       minute: minLabel(e.minute, e.extra_minute),
       sortKey: e.minute * 100 + (e.extra_minute ?? 0),
       onId: e.player_id as number,
-      onName: e.player_name ?? "",
+      onName: (e.player_name ?? "").trim(),
       offId: e.related_player_id ?? null,
     }))
     .sort((a, b) => a.sortKey - b.sortKey);
