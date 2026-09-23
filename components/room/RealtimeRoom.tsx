@@ -1542,7 +1542,7 @@ export function RealtimeRoom(props: Props) {
       ? [
           {
             id: "questions" as const,
-            label: "Gantry",
+            label: "Host",
             badge: newQuestionCount,
             icon: tabIcon(
               <>
@@ -1850,7 +1850,7 @@ export function RealtimeRoom(props: Props) {
     />
   );
 
-  // ASK THE GANTRY - public since 2026-09-22 (was the host's private inbox).
+  // ASK THE HOST - public since 2026-09-22 (was the host's private inbox).
   // One panel serves listeners (read + vote + ask) and hosts (+ mark answered).
   const canAskQuestions =
     !!viewer && INPUTS_OPEN.includes(roomState) && !room.demo;
@@ -1869,7 +1869,7 @@ export function RealtimeRoom(props: Props) {
               ? "The show has wrapped - questions are closed."
               : !INPUTS_OPEN.includes(roomState)
                 ? "Questions open when the broadcast starts."
-                : "Sign in to ask the gantry."
+                : "Sign in to ask the host."
         }
         onAsk={askQuestion}
         isHost={viewer?.isModerator ?? false}
@@ -2362,7 +2362,7 @@ export function RealtimeRoom(props: Props) {
               // public since 2026-09-22; the unread badge stays a host signal
               {
                 id: "questions" as const,
-                label: "Ask the gantry",
+                label: "Ask the host",
                 badge: isRoomCommentator ? newQuestionCount : 0,
               },
               // Host-only talking points from the Sportmonks add-on. Gated on a
@@ -2474,7 +2474,7 @@ export function RealtimeRoom(props: Props) {
                   </svg>
                 </span>
                 <h2 className="display mb-2 text-[26px] leading-none">
-                  Call the gantry
+                  Call the host
                 </h2>
                 <p className="mx-auto max-w-[280px] text-[13.5px] leading-normal text-secondary">
                   Request the mic and {room.commentatorUsername} brings you on
@@ -2628,12 +2628,12 @@ export function RealtimeRoom(props: Props) {
                   ))}
               </div>
 
-              {/* public questions on mobile live here with the other gantry
+              {/* public questions on mobile live here with the other host
                   interactions (founder 2026-09-22); the phone keeps its
                   structure, the list just joins the Call in tab */}
               <div className="mt-8">
                 <h3 className="display border-b-[3px] border-double border-primary pb-2 text-[18px]">
-                  Ask the gantry
+                  Ask the host
                 </h3>
                 {askPanel}
               </div>
@@ -2694,7 +2694,7 @@ export function RealtimeRoom(props: Props) {
             <div className="space-y-7">
               {!isRoomCommentator && (
                 <div className="border-2 border-primary p-4">
-                  <h3 className="display text-[19px]">Call the gantry</h3>
+                  <h3 className="display text-[19px]">Call the host</h3>
                   <p className="mt-2 text-[14.5px] leading-[1.55] text-secondary">
                     Request the mic and the host brings you on air. Leave any
                     time with one tap.
@@ -4001,7 +4001,7 @@ function LiveChat({
             </button>
           </form>
           {/* desktop Ask + Request-to-talk moved to the info rail's CALL THE
-              GANTRY box (founder 2026-09-22 ESPN layout) - a second instance
+              HOST box (founder 2026-09-22 ESPN layout) - a second instance
               here desynced against it (review finding). Mobile carries
               NOTHING here either: both live on the Call In tab (2026-08-05),
               so the chat footer is just the composer on every breakpoint. */}

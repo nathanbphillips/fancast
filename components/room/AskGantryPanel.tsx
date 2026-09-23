@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * ASK THE GANTRY - the public question panel for the live room.
+ * ASK THE HOST - the public question panel for the live room. (Shipped as
+ * "Ask the gantry"; every gantry label became "host" on 2026-09-23, founder.)
  *
  * Public since founder 2026-09-22 (supersedes the private host inbox surface):
  * everyone reads the list, signed-in listeners upvote (votes are weighted

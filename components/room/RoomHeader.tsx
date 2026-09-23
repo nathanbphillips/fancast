@@ -37,7 +37,7 @@ export function RoomMasthead({
           href={leaveHref}
           className="text-primary hover:text-red whitespace-nowrap"
         >
-          &larr; All matches
+          &larr; Fixtures
         </Link>
         <span className="hidden sm:block text-secondary">
           {brand.name} &middot; the live edition

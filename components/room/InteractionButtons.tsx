@@ -234,7 +234,7 @@ export function InteractionButtons({
         <form onSubmit={submitQuestion} className="mt-2 space-y-2">
           {questionSent ? (
             <p className="border border-line bg-canvas px-3 py-2 text-sm text-green">
-              Posted to Ask the gantry.
+              Posted to Ask the host.
             </p>
           ) : (
             <>

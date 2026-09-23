@@ -30,7 +30,7 @@ import { LocalTime } from "@/components/KickoffTime";
  * Viewer-specific (RSVP), so dynamic per request.
  */
 
-export const metadata: Metadata = { title: "Matches" };
+export const metadata: Metadata = { title: "Fixtures" };
 
 const hostsOf = (r: ScheduleRoom) =>
   r.hostUsernames.length > 0 ? r.hostUsernames : [r.hostUsername];

@@ -14,12 +14,13 @@ import { DEMO_ROOM_HREF } from "@/lib/config";
 type NavItem = { href: string; label: string };
 type NavEntry = NavItem | { label: string; children: NavItem[] };
 
-// Programme nav (founder 2026-09-13): All matches · How it works · Host a
-// room · View demo, then the theme toggle and auth. About lives in the footer.
+// Programme nav (founder 2026-09-23): Fixtures · Extra Extra! (the About
+// page) · Host · View demo, then the theme toggle and auth. How it works lives
+// in the footer.
 const NAV: NavEntry[] = [
-  { href: "/matches", label: "All matches" },
-  { href: "/how-it-works", label: "How it works" },
-  { href: "/host", label: "Host a room" },
+  { href: "/matches", label: "Fixtures" },
+  { href: "/about", label: "Extra Extra!" },
+  { href: "/host", label: "Host" },
   { href: DEMO_ROOM_HREF, label: "View demo" },
 ];
 

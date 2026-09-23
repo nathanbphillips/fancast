@@ -44,7 +44,7 @@ export function SiteFooter() {
             <nav className="flex flex-col gap-3" aria-label="Platform">
               <p className={heading}>Platform</p>
               <Link href="/matches" className={link}>
-                Matches
+                Fixtures
               </Link>
               <Link href="/how-it-works" className={link}>
                 How it works
@@ -53,7 +53,7 @@ export function SiteFooter() {
                 Host a room
               </Link>
               <Link href="/about" className={link}>
-                Voices
+                About us
               </Link>
               <Link href="/signin" className={link}>
                 Sign in

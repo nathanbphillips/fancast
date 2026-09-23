@@ -141,7 +141,7 @@ export default async function HomePage() {
           <div className="flex flex-wrap justify-between gap-3.5 font-mono text-[14.5px] tracking-[0.16em]">
             <span className="flex items-center gap-2.5">
               <span className="h-[9px] w-[9px] animate-fcpulse rounded-full bg-on-red" />
-              On air now - live from the gantry
+              On air now - live from the host
             </span>
             {liveFixture.card.commentator && (
               <span className="whitespace-nowrap">
