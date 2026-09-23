@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { KickoffTime } from "@/components/KickoffTime";
 import { CustomRoomForm } from "@/components/host/CustomRoomForm";
@@ -33,7 +33,21 @@ function toLocalInputValue(iso: string): string {
     .slice(0, 16);
 }
 
-export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
+/** The default broadcast start: kickoff minus 15 minutes, in local time. */
+function defaultStart(kickoffUtc: string): string {
+  return toLocalInputValue(
+    new Date(new Date(kickoffUtc).getTime() - 15 * 60 * 1000).toISOString(),
+  );
+}
+
+export function RoomCreatePicker({
+  fixtures,
+  initialFixtureId = null,
+}: {
+  fixtures: PickerFixture[];
+  /** open this match on arrival (Fixtures' "Host a room", founder 2026-09-23) */
+  initialFixtureId?: number | null;
+}) {
   const router = useRouter();
   const [openId, setOpenId] = useState<number | null>(null);
   const [start, setStart] = useState("");
@@ -42,6 +56,19 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
   const [error, setError] = useState<string | null>(null);
   const [subBusy, setSubBusy] = useState<number | null>(null);
   const [subDone, setSubDone] = useState<string | null>(null);
+
+  // open the requested match once, in the browser: the default start is LOCAL
+  // time, so it can't be computed during the server render
+  const autoOpened = useRef(false);
+  useEffect(() => {
+    if (autoOpened.current || initialFixtureId == null) return;
+    const f = fixtures.find((x) => x.id === initialFixtureId);
+    if (!f) return;
+    autoOpened.current = true;
+    setOpenId(f.id);
+    setStart(defaultStart(f.kickoff_utc));
+    document.getElementById(`fixture-${f.id}`)?.scrollIntoView({ block: "center" });
+  }, [initialFixtureId, fixtures]);
 
   function toggle(f: PickerFixture) {
     setError(null);
@@ -52,13 +79,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
       return;
     }
     setOpenId(f.id);
-    setStart(
-      toLocalInputValue(
-        new Date(
-          new Date(f.kickoff_utc).getTime() - 15 * 60 * 1000,
-        ).toISOString(),
-      ),
-    );
+    setStart(defaultStart(f.kickoff_utc));
   }
 
   async function create(e: React.FormEvent, fixtureId: number) {
@@ -102,7 +123,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
     }
     const body = await res.json().catch(() => ({ roomsCreated: 0 }));
     setSubDone(
-      `Hosting all ${teamName} games this season: ${body.roomsCreated} room${body.roomsCreated === 1 ? "" : "s"} scheduled.`,
+      `Hosting all ${teamName} matches this season: ${body.roomsCreated} room${body.roomsCreated === 1 ? "" : "s"} scheduled.`,
     );
     router.refresh();
   }
@@ -112,7 +133,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
       <div>
         <CustomRoomForm />
         <p className="border border-dashed border-line bg-canvas p-6 text-sm text-secondary">
-          No upcoming fixtures you don&apos;t already host. New games appear
+          No upcoming fixtures you don&apos;t already host. New matches appear
           here as the schedule fills in, or create your own room above.
         </p>
       </div>
@@ -124,7 +145,11 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
     <CustomRoomForm />
     <div className="border-y border-line">
       {fixtures.map((f) => (
-        <div key={f.id} className="border-t border-line first:border-t-0">
+        <div
+          key={f.id}
+          id={`fixture-${f.id}`}
+          className="border-t border-line first:border-t-0"
+        >
           <button
             type="button"
             onClick={() => toggle(f)}
@@ -232,7 +257,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                           >
                             {subBusy === f.home_team_id
                               ? "Scheduling…"
-                              : `Host all ${f.home_team} games`}
+                              : `Host all ${f.home_team} matches`}
                           </button>
                         )}
                         {f.away_team_id != null && (
@@ -246,7 +271,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                           >
                             {subBusy === f.away_team_id
                               ? "Scheduling…"
-                              : `Host all ${f.away_team} games`}
+                              : `Host all ${f.away_team} matches`}
                           </button>
                         )}
                       </div>

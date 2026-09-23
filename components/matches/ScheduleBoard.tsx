@@ -10,7 +10,7 @@ import { LocalTime } from "@/components/KickoffTime";
  * The full schedule (Matchday design): client-side filter pills (All fixtures /
  * Arsenal only / With a room) over date-grouped flat fixture rows. Each row's
  * action reflects real room state — live → Join, scheduled → Count me in
- * (RSVP), none → Notify me. No fabricated counts. Filtering is purely local
+ * (RSVP), none → Notify me + Host a room. No fabricated counts. Filtering is purely local
  * (the founder's earlier "defer filters" note is superseded by this design).
  */
 
@@ -157,6 +157,15 @@ export function ScheduleBoard({
                             className="border border-line px-3 py-2 font-mono text-[11px] tracking-[0.06em] text-secondary transition-colors hover:text-primary"
                           >
                             Notify me
+                          </Link>
+                          {/* no host yet: anyone can take it (founder
+                              2026-09-23); host setup opens on this match and
+                              routes signed-out/listener visitors as usual */}
+                          <Link
+                            href={`/host/new?fixture=${f.id}`}
+                            className="inline-flex shrink-0 items-center border border-line px-3.5 py-2 text-[12px] font-semibold text-primary transition-colors hover:bg-raised"
+                          >
+                            Host a room
                           </Link>
                         </>
                       )}

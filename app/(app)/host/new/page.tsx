@@ -18,11 +18,23 @@ export const metadata: Metadata = { title: "Create room" };
 /**
  * Fixture picker (FR-19.1): chronological upcoming games from the fixtures
  * cache; past games and fixtures the caller already hosts are excluded. The
- * picker is the only path to a room (FR-19.8).
+ * picker is the only path to a room (FR-19.8). Fixtures' "Host a room" lands
+ * here with ?fixture=<id> (founder 2026-09-23): that match opens ready to
+ * create, and a signed-out visitor comes back to it after signing in.
  */
-export default async function CreateRoomPage() {
+export default async function CreateRoomPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fixture?: string }>;
+}) {
+  const { fixture: rawFixture } = await searchParams;
+  const wanted = Number(rawFixture);
+  const wantedId = Number.isSafeInteger(wanted) && wanted > 0 ? wanted : null;
   const { user, profile } = await getCurrentUserAndProfile();
-  if (!user) redirect("/signin");
+  if (!user) {
+    const back = wantedId ? `/host/new?fixture=${wantedId}` : "/host/new";
+    redirect(`/signin?next=${encodeURIComponent(back)}`);
+  }
   if (!profile) redirect("/welcome");
   if (profile.role === "listener") redirect("/settings");
 
@@ -84,11 +96,14 @@ export default async function CreateRoomPage() {
       <h1 className="display text-4xl">Create a room</h1>
       <p className="mt-3 max-w-lg text-sm text-secondary">
         Pick a fixture and set when your show starts (plus an optional blurb),
-        or create your own room for any game we don&apos;t list yet.
+        or create your own room for any match we don&apos;t list yet.
       </p>
 
       <div className="mt-8">
-        <RoomCreatePicker fixtures={pickable} />
+        <RoomCreatePicker
+          fixtures={pickable}
+          initialFixtureId={pickable.some((f) => f.id === wantedId) ? wantedId : null}
+        />
       </div>
 
       <p className="mt-6">
