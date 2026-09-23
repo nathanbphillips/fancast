@@ -92,18 +92,21 @@ The sign-in coupon doubles its frame: `border-2` plus a 1px outline at
   "The full numbers" collapsible (the complete club-coloured StatsPanel) ·
   The table (top 4 + both sides, "···" gap rows, sides on bg-raised) ·
   Form - last 5 (20px chips: W ink fill, L red fill, D outline, oldest
-  first) · Head-to-head. Info rail: Call the gantry (2px ink box) ·
-  Line-ups (PitchLineup, club-coloured discs) · Game information (kv grid
+  first) · Head-to-head. Info rail: Call the host (2px ink box) ·
+  Line-ups (PitchLineup, club-coloured discs) · Match information (kv grid
   110px/1fr; rows without data do not render). Hosts toggle the info rail
   to THE PRODUCTION DESK (2px RED box: bulletin composer, RSVP name list,
   poll status); broadcast/mic/clock controls stay in the host strip.
 - Match events render inside the chat stream: Anton minute (min-w 34px,
   right-aligned) + small-caps tag + line; goals get a 3px red left edge on
   inset paper, bookings sit at 85% opacity; subs and VAR stay on Timeline.
-- Mobile room: unchanged structure - top transport, bottom tab bar (gantry
-  voice: STANDS · POLLS · CALL IN · NUMBERS, + FAQ / GANTRY / FACTS by
+- Mobile room: unchanged structure - top transport, bottom tab bar (room
+  voice: STANDS · POLLS · CALL IN · NUMBERS, + FAQ / HOST / FACTS by
   role); the bulletin card rides above the mobile stats panel; the public
-  Ask the gantry list joins the Call in tab.
+  Ask the host list joins the Call in tab.
+- Ended show (room wrapped): the listener transport reads "Show has ended",
+  the play button greys out, and an "RSVP for future matches" box (same box
+  as the host card) links to Fixtures.
 - Spacing on a 4px grid; corners square; panels ruled, not shadowed.
 
 ## The clock/state unit (signature component)
@@ -112,10 +115,11 @@ The sign-in coupon doubles its frame: `border-2` plus a 1px outline at
 - Otherwise the entire unit is replaced by PRE-GAME / HALFTIME / POST-GAME /
   FULL TIME. Never both, never a zeroed clock. font-mono (tabular smallcaps).
 
-## Gantry voice (labels, founder decision 5)
+## Room voice (labels, founder decision 5)
 
+"Gantry" became "host" in every label on 2026-09-23 (founder).
 Chat tab "From the stands" · stats "Numbers" · timeline "Timeline" · lineups
-"Teams" · call-in "Call the gantry" · questions "Ask the gantry" · sync
+"Teams" · call-in "Call the host" · questions "Ask the host" · sync
 "Get in step" / "In step · -N.Ns" / "◎ Sync now". Labels never imply
 unbuilt features. NO EM DASHES in any user-facing string, ever ("-" or "·").
 
