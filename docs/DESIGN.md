@@ -106,7 +106,8 @@ The sign-in coupon doubles its frame: `border-2` plus a 1px outline at
   Ask the host list joins the Call in tab.
 - Ended show (room wrapped): the listener transport reads "Show has ended",
   the play button greys out, and an "RSVP for future matches" box (same box
-  as the host card) links to Fixtures.
+  as the host card) links to Fixtures. Outside the demo room, the sync
+  controls and Call the host (desktop box, mobile Call in tab) are hidden.
 - Spacing on a 4px grid; corners square; panels ruled, not shadowed.
 
 ## The clock/state unit (signature component)

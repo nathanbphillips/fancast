@@ -1507,6 +1507,15 @@ export function RealtimeRoom(props: Props) {
       {paths}
     </svg>
   );
+  // An ended show drops the tools that only work live: sync and calling in
+  // (founder 2026-09-23). The demo keeps them on show.
+  const liveToolsHidden = roomState === "wrapped" && !room.demo;
+  // the Call in tab goes when the show ends; a listener parked on it lands
+  // back in the chat rather than on a blank panel
+  useEffect(() => {
+    if (liveToolsHidden && tab === "callin") setTab("chat");
+  }, [liveToolsHidden, tab]);
+
   // mobile Polls badge — active poll, pregame predictor, or an open ratings
   // window (ratings now live in this tab too, founder 2026-08-05). Mirrors the
   // desktop pollsBadge.
@@ -1555,7 +1564,7 @@ export function RealtimeRoom(props: Props) {
         ]
       : []),
     // Call In sits before Stats (founder 2026-08-05: swapped)
-    ...(!isRoomCommentator
+    ...(!isRoomCommentator && !liveToolsHidden
       ? [
           {
             id: "callin" as const,
@@ -1707,6 +1716,7 @@ export function RealtimeRoom(props: Props) {
       away={room.away}
       discussion={isDiscussion}
       ended={roomState === "wrapped"}
+      hideSync={liveToolsHidden}
       live={audioLive}
       listenStatus={audio.listenStatus}
       onStart={() => void audio.startListening()}
@@ -2449,8 +2459,9 @@ export function RealtimeRoom(props: Props) {
         </section>
 
         {/* CALL IN (mobile listeners only — the commentator is already on air;
-            desktop keeps request-to-talk inline in chat) */}
-        {!isRoomCommentator && (
+            desktop keeps request-to-talk inline in chat). Gone once the show
+            has ended, except in the demo. */}
+        {!isRoomCommentator && !liveToolsHidden && (
           <section
             aria-label="Call in"
             className={`${tab === "callin" ? "block" : "hidden"} min-h-0 flex-1 overflow-y-auto overscroll-contain lg:hidden`}
@@ -2607,7 +2618,11 @@ export function RealtimeRoom(props: Props) {
                         </span>
                       </p>
                       <p className="font-mono text-[9px] text-secondary">
-                        {audioLive ? "speaking" : "show hasn't started"}
+                        {audioLive
+                          ? "speaking"
+                          : roomState === "wrapped"
+                            ? "show has ended"
+                            : "show hasn't started"}
                       </p>
                     </div>
                   </div>
@@ -2692,7 +2707,7 @@ export function RealtimeRoom(props: Props) {
             />
           ) : (
             <div className="space-y-7">
-              {!isRoomCommentator && (
+              {!isRoomCommentator && !liveToolsHidden && (
                 <div className="border-2 border-primary p-4">
                   <h3 className="display text-[19px]">Call the host</h3>
                   <p className="mt-2 text-[14.5px] leading-[1.55] text-secondary">

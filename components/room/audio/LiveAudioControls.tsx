@@ -255,6 +255,7 @@ export function ListenerBar({
   speakers = [],
   discussion = false,
   ended = false,
+  hideSync = false,
 }: {
   commentator: string;
   /** team names for the transport's score readout (mobile) */
@@ -303,6 +304,9 @@ export function ListenerBar({
   /** the host ended the broadcast (room wrapped): the bar says so and points
    *  to future matches instead of waiting for a show (founder 2026-09-23) */
   ended?: boolean;
+  /** drop the sync controls: an ended show has nothing to sync to (founder
+   *  2026-09-23; the demo room keeps them on show, so it is its own flag) */
+  hideSync?: boolean;
 }) {
   const onAir = canPublish && micStatus === "live";
   // other people currently on air (guests/co-hosts) — shown so listeners can
@@ -541,7 +545,7 @@ export function ListenerBar({
         {goOnAir}
         {liveBadge}
         {hlsSupported && radioToggle}
-        {sync}
+        {!hideSync && sync}
         <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-28 shrink-0 lg:w-44" />
       </div>
 
@@ -671,7 +675,7 @@ export function ListenerBar({
             {goOnAir && <div className="mb-3 flex">{goOnAir}</div>}
 
             {/* sync transport (a discussion room has no match to sync to) */}
-            {!radioActive && syncSupported && !discussion && (
+            {!radioActive && syncSupported && !discussion && !hideSync && (
               <SyncControls
                 syncRequested={syncRequested}
                 syncEffective={syncEffective}
@@ -701,7 +705,7 @@ export function ListenerBar({
               aria-label="Collapse audio controls"
               className="mt-2.5 w-full py-1 text-center font-mono text-[9.5px] tracking-[0.03em] text-secondary transition-colors hover:text-primary"
             >
-              {discussion
+              {discussion || hideSync
                 ? "Tap here to collapse the controls."
                 : "Tap Sync now when your screen matches the match clock. Click here to collapse."}
             </button>
