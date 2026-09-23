@@ -174,6 +174,14 @@ const nextConfig: NextConfig = {
         destination: "/host",
         statusCode: 301,
       },
+      // the demo moved to Arsenal 2-1 Chelsea (founder 2026-09-23); the old
+      // Burnley demo's address follows it (DEMO_ROOM_SLUGS in lib/config.ts).
+      // Temporary, since the demo can move again
+      {
+        source: "/room/arsenal-vs-burnley-test-01-jul-2026-nathan",
+        destination: "/room/arsenal-vs-chelsea-06-sept-2026-demo",
+        permanent: false,
+      },
     ];
   },
 };

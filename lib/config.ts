@@ -21,9 +21,16 @@ export const config = {
  * and "show starts soon" waiting banner are dropped so nothing obscures the
  * view, and polls open to guests (local-only voting). Set up directly in the DB
  * (not via a seed), so identified here by slug.
+ *
+ * Since 2026-09-23 (founder) the demo is Arsenal 2-1 Chelsea (6 Sept 2026) as
+ * an ENDED show: its own copy of the fixture (synthetic id, linked to the real
+ * Sportmonks match so stats/line-ups/table are genuine), the room's clock on
+ * the official whistle times, and sample chat/poll/questions threaded between
+ * the match events. The old Burnley demo was ended and its address redirects
+ * here (next.config.ts).
  */
 export const DEMO_ROOM_SLUGS: string[] = [
-  "arsenal-vs-burnley-test-01-jul-2026-nathan",
+  "arsenal-vs-chelsea-06-sept-2026-demo",
 ];
 
 /** Canonical path to the primary public demo room, for hero/marketing CTAs. */
