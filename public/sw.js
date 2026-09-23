@@ -1,6 +1,6 @@
 /* Arseradio service worker (FR-5.2): offline shell for home, built
  * push-ready for v1.1 web push. Audio streams are never cached. */
-const CACHE = "arse-shell-v1";
+const CACHE = "arse-shell-v2";
 const SHELL = ["/", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
