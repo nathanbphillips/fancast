@@ -194,7 +194,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                   value={blurb}
                   onChange={(e) => setBlurb(e.target.value)}
                   maxLength={140}
-                  placeholder="Your angle on the game, one line"
+                  placeholder="Your angle on the match, one line"
                   className="h-11 w-full border-2 border-primary bg-canvas px-3 text-sm placeholder:text-secondary"
                 />
               </div>
@@ -253,7 +253,7 @@ export function RoomCreatePicker({ fixtures }: { fixtures: PickerFixture[] }) {
                     )}
                     {f.competition && !subDone && (
                       <p className="mt-1.5 text-xs text-secondary">
-                        Every {f.competition} game this season, now and as new
+                        Every {f.competition} match this season, now and as new
                         fixtures appear.
                       </p>
                     )}

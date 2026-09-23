@@ -46,7 +46,7 @@ export function GameInfoPanel({
   return (
     <section>
       <h3 className="display text-[18px] border-b-[3px] border-double border-primary pb-2">
-        Game information
+        Match information
       </h3>
       <div className="grid grid-cols-[110px_1fr] gap-x-3.5 gap-y-1.5 text-[15px] leading-[1.6] mt-3">
         {competition ? <InfoRow label="Competition">{competition}</InfoRow> : null}

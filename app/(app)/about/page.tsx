@@ -25,7 +25,7 @@ const STORY = [
   },
   {
     h: "THE IDEA",
-    p: "Keep your own stream. Add a live fan host, a chat worth reading, and the stats on tap, all synced to your screen with one tap. We don't show the game; we sit beside it.",
+    p: "Keep your own stream. Add a live fan host, a chat worth reading, and the stats on tap, all synced to your screen with one tap. We don't show the match; we sit beside it.",
   },
   {
     h: "WHAT WE'RE BUILDING",
@@ -46,7 +46,7 @@ const PRINCIPLES = [
     d: "Every room is hosted by a supporter who actually cares about the result. No neutral takes, no broadcast script, just someone on your side.",
   },
   {
-    k: "We sit beside the game",
+    k: "We sit beside the match",
     d: `${brand.name} never streams the match. You bring your own feed; we bring the voice, the chat and the stats that ride alongside it.`,
   },
   {
@@ -301,7 +301,7 @@ export default function AboutPage() {
               Host a matchday room
             </h3>
             <p className="mt-2 flex-1 text-[14px] leading-[1.6] text-secondary">
-              Know the club and can hold a mic? Open a room for a game, bring the
+              Know the club and can hold a mic? Open a room for a match, bring the
               chat and the call-ins, and keep every recording.
             </p>
             <Link

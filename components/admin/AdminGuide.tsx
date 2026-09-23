@@ -51,7 +51,7 @@ export function AdminGuide() {
       <div className="space-y-2">
         <Section title="Creating a room" open>
           <p>
-            The form above makes a room for <em>any</em> game from just{" "}
+            The form above makes a room for <em>any</em> match from just{" "}
             <B>Home team</B>, <B>Away team</B>, and <B>Kickoff</B> (entered in
             your local time). The room&apos;s title is always just
             “Home&nbsp;vs&nbsp;Away” -there are no custom titles or other knobs
@@ -65,7 +65,7 @@ export function AdminGuide() {
           </p>
           <p>
             Venue, weather, referee, stats and the league table fill in
-            automatically once Sportmonks has the game (see the next section).
+            automatically once Sportmonks has the match (see the next section).
           </p>
         </Section>
 
@@ -83,7 +83,7 @@ export function AdminGuide() {
             name + date. To match one immediately, click{" "}
             <B>Run match check</B> above. Once matched, the Info tab shows
             venue/referee/weather, the History pane shows both teams&apos; table
-            position + last-5 form, and live stats flow during the game.
+            position + last-5 form, and live stats flow during the match.
           </p>
           <p className="text-[11px]">
             Tip: enter clean team names (“Burnley”, not “Burnley FC (test)”) so
@@ -190,7 +190,7 @@ export function AdminGuide() {
             </li>
             <li>
               <B>Stats panel</B> (left) -pre-game <B>Info | History</B> split;
-              live stats / events / line-ups during the game. You can{" "}
+              live stats / events / line-ups during the match. You can{" "}
               <B>push</B> a stats tab to everyone&apos;s screen.
             </li>
             <li>

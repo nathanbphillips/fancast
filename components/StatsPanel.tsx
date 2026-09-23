@@ -446,7 +446,7 @@ export function StatsPanel({
           {comingSoon ? (
             <p className={`text-secondary ${big ? "text-base" : "text-sm"}`}>
               Information coming soon - venue, weather, referee, and live stats
-              fill in automatically once they&apos;re available for this game.
+              fill in automatically once they&apos;re available for this match.
             </p>
           ) : (
           <>

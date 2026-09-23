@@ -80,12 +80,12 @@ export function PollWidget({
   return (
     <div className="mt-3 border-2 border-primary bg-canvas p-3">
       <div className="flex items-start justify-between gap-2 border-b-[3px] border-double border-primary pb-2">
-        <p className="display text-sm">{poll.question}</p>
-        <span className="shrink-0 font-mono text-[11px] tabular-nums text-secondary">
+        <p className="display text-[19px]">{poll.question}</p>
+        <span className="shrink-0 font-mono text-[13px] tabular-nums text-secondary">
           {open ? "live" : "closed"} · {total}
         </span>
       </div>
-      <ul className="mt-2 space-y-1.5">
+      <ul className="mt-2.5 space-y-2">
         {poll.options.map((opt, i) => {
           const count = results[i] ?? 0;
           const pct = total ? Math.round((count / total) * 100) : 0;
@@ -98,7 +98,7 @@ export function PollWidget({
                 disabled={!tappable || busy}
                 onClick={() => vote(i)}
                 aria-pressed={isMine}
-                className={`relative block w-full overflow-hidden border px-3 py-1.5 text-left text-xs ${
+                className={`relative block w-full overflow-hidden border px-3 py-2.5 text-left text-[15.5px] ${
                   isMine ? "border-primary bg-inverted text-inverted-fg" : "border-line"
                 } ${tappable && !isMine ? "hover:bg-raised" : ""} ${tappable ? "" : "cursor-default"}`}
               >
@@ -121,13 +121,13 @@ export function PollWidget({
           type="button"
           onClick={close}
           disabled={busy}
-          className="mt-2 w-full border border-line py-1.5 text-xs font-semibold text-secondary hover:bg-raised disabled:opacity-60"
+          className="mt-2 w-full border border-line py-2 text-[14px] font-semibold text-secondary hover:bg-raised disabled:opacity-60"
         >
           Close poll
         </button>
       )}
       {open && !votable && !isCommentator && (
-        <p className="mt-1 text-[11px] text-secondary">Sign in to vote.</p>
+        <p className="mt-1.5 text-[13.5px] text-secondary">Sign in to vote.</p>
       )}
     </div>
   );

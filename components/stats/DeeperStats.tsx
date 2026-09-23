@@ -268,7 +268,7 @@ export function DeeperStats({
       )}
 
       {gs && (
-        <Section title="Game state" big>
+        <Section title="Match state" big>
           <div className="flex h-2 overflow-hidden bg-raised">
             <span
               className={colors ? undefined : "bg-red-fill"}

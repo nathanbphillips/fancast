@@ -2243,7 +2243,7 @@ export function RealtimeRoom(props: Props) {
             )}
             {room.comingSoon ? (
               <p className="mt-4 text-[14px] leading-[1.6] text-secondary italic">
-                Information coming soon for this game.
+                Information coming soon for this match.
               </p>
             ) : (
               <>
@@ -2375,7 +2375,7 @@ export function RealtimeRoom(props: Props) {
                 type="button"
                 onClick={() => setCenterTab(t.id)}
                 aria-current={centerTab === t.id ? "page" : undefined}
-                className={`display relative h-10 px-4 text-[15px] ${
+                className={`display relative h-12 px-4 text-[19px] ${
                   centerTab === t.id
                     ? "border-b-[3px] border-red text-primary"
                     : "text-secondary hover:text-primary"

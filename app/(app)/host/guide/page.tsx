@@ -196,7 +196,7 @@ export default function HostGuidePage() {
             </p>
             <p>
               <B>Host a whole season:</B> in the fixture picker, <B>Or host the
-              whole season</B> schedules a room for every game your team plays
+              whole season</B> schedules a room for every match your team plays
               in that competition this season, and new fixtures get their room
               automatically as they appear. Unsubscribing cancels the future
               rooms it created.

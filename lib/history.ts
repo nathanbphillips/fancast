@@ -222,8 +222,11 @@ async function fetchHeadToHead(
   awayTeamId: number,
 ): Promise<HeadToHeadSummary | null> {
   try {
+    // per_page raised so enough FINISHED meetings survive the filters to fill
+    // five display rows (founder 2026-09-23); the plan's history depth is the
+    // hard ceiling on how far back this can reach
     const payload = (await smGet(
-      `/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?include=participants;scores;state`,
+      `/fixtures/head-to-head/${homeTeamId}/${awayTeamId}?include=participants;scores;state&per_page=50`,
     )) as { data?: SmH2hFixture[] };
     const now = Date.now();
     const meetings: {

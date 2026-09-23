@@ -658,7 +658,7 @@ export function ListenerBar({
             >
               {discussion
                 ? "Tap here to collapse the controls."
-                : "Tap Sync now when your screen matches the game time. Click here to collapse."}
+                : "Tap Sync now when your screen matches the match clock. Click here to collapse."}
             </button>
           </div>
         ) : (

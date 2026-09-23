@@ -49,9 +49,10 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
       .slice()
       .sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99) || (a.jersey ?? 99) - (b.jersey ?? 99));
     const frac = maxLine > 1 ? (l - 1) / (maxLine - 1) : 0; // 0 keeper … 1 forwards
-    // keeper 7% from own end → forwards stop ~44% (12% no-man's-land at centre);
-    // the taller pitch (founder 2026-09-23) gives every line breathing room
-    const y = home ? 7 + frac * 37 : 93 - frac * 37;
+    // keeper 6% from own end → forwards stop ~46% (8% no-man's-land). Sized
+    // for the worst case: a 4-2-3-1 puts FIVE rows in one half, and each row
+    // needs disc + name + air (founder 2026-09-23: "not acceptable" cramped)
+    const y = home ? 6 + frac * 40 : 94 - frac * 40;
     row.forEach((p, i) => {
       placed.push({ p, x: ((i + 1) / (row.length + 1)) * 100, y });
     });
@@ -186,9 +187,11 @@ export function PitchLineup({
 
       <div
         className="relative w-full overflow-hidden border border-line bg-inset"
-        // taller pitch (founder 2026-09-23): the extra height keeps discs and
-        // names from crowding each other in the rail
-        style={{ aspectRatio: "0.6" }}
+        // 0.46 (founder 2026-09-23, round three): a five-row half (4-2-3-1)
+        // needs ~85px row pitch at rail width - each row is a 48px disc plus
+        // an 18px name plus air, and the away side's names hang BELOW discs,
+        // so anything tighter crops names under the next row
+        style={{ aspectRatio: "0.46" }}
       >
         {/* field markings: paper pitch, ruled in ink hairlines */}
         <div className="absolute inset-x-0 top-1/2 border-t-[1.5px] border-line" />

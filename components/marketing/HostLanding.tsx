@@ -110,7 +110,7 @@ export function HostLanding({
             The one rule
           </span>
           <span>
-            Audio only, always. Never the game itself, never broadcast feed.
+            Audio only, always. Never the match itself, never broadcast feed.
           </span>
         </div>
         <p className="mt-4 border-t border-line pt-3.5 text-[14.5px] text-secondary italic">

@@ -39,11 +39,24 @@ function buildRows(
   return rows;
 }
 
-function StatSubBlock({ title, rows }: { title: string; rows: StatRow[] }) {
+function StatSubBlock({
+  title,
+  rows,
+  tight = false,
+}: {
+  title: string;
+  rows: StatRow[];
+  /** first block hugs the team-name row (founder 2026-09-23) */
+  tight?: boolean;
+}) {
   if (rows.length === 0) return null;
   return (
     <div>
-      <div className="font-mono text-[14.5px] tracking-[0.12em] text-red font-semibold border-b border-line pb-1 mt-4">
+      <div
+        className={`font-mono text-[14px] tracking-[0.12em] text-red font-semibold border-b border-line pb-1 text-center ${
+          tight ? "mt-1" : "mt-4"
+        }`}
+      >
         {title}
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 gap-y-[6px] text-[16.5px] tabular-nums mt-2">
@@ -125,18 +138,18 @@ export function MatchStatsBlocks({
         </div>
       ) : (
         <>
-          {/* who is who: home owns the LEFT column, away the RIGHT - names
-              outrank the section headers and sit hard against their edges
-              (founder 2026-09-23), abbreviated when long (Man City) */}
-          <div className="mt-3 flex items-baseline justify-between gap-3">
-            <div className="min-w-0 truncate text-left font-mono text-[17px] font-semibold">
+          {/* who is who: home owns the LEFT column, away the RIGHT - 22px
+              names outrank the 14px centered section headers, and Attacking
+              hugs the name row (founder 2026-09-23) */}
+          <div className="mt-2.5 flex items-baseline justify-between gap-3">
+            <div className="min-w-0 truncate text-left font-mono text-[22px] font-semibold leading-none">
               {shortTeamName(homeName)}
             </div>
-            <div className="min-w-0 truncate text-right font-mono text-[17px] font-semibold">
+            <div className="min-w-0 truncate text-right font-mono text-[22px] font-semibold leading-none">
               {shortTeamName(awayName)}
             </div>
           </div>
-          <StatSubBlock title="Attacking" rows={attacking} />
+          <StatSubBlock title="Attacking" rows={attacking} tight />
           <StatSubBlock title="Possession &amp; passing" rows={possession} />
           <StatSubBlock title="Defending &amp; discipline" rows={defending} />
         </>
@@ -328,7 +341,7 @@ export function FormLastFive({
         </div>
       ))}
       <div className="text-[14px] text-tertiary italic mt-2">
-        Oldest to newest, league games.
+        Oldest to newest, league matches.
       </div>
     </div>
   );

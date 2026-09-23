@@ -138,7 +138,7 @@ export default function DevDocsPage() {
             <UL>
               <li>
                 <b className="text-primary">What it is:</b> a fan hosts a live audio show for a
-                football match; listeners watch the game on their own TV or stream and listen to the
+                football match; listeners watch the match on their own TV or stream and listen to the
                 fan commentary alongside it. The hard problem the product solves: every viewer&apos;s
                 feed has a different delay, so each listener <em>syncs the audio to their own
                 screen</em> (a Web Audio ring buffer with a tap-to-calibrate offset). Everything else -

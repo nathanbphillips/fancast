@@ -90,13 +90,13 @@ export function AskGantryPanel({
 
   return (
     <div>
-      <p className="italic text-[14px] text-tertiary mt-2.5">
+      <p className="italic text-[15.5px] text-tertiary mt-2.5">
         Question the commentator. Votes push it up the host&apos;s list -
         answered on air.
       </p>
 
       {visible.length === 0 ? (
-        <p className="italic text-[14px] text-tertiary mt-4">
+        <p className="italic text-[15.5px] text-tertiary mt-4">
           No questions yet. Ask the first one.
         </p>
       ) : (
@@ -119,7 +119,7 @@ export function AskGantryPanel({
                   onClick={
                     canVote ? () => onVote(q.id, voted ? 0 : 1) : undefined
                   }
-                  className={`font-mono text-[14px] px-3 py-1 whitespace-nowrap shrink-0 border-[1.5px] tabular-nums ${
+                  className={`font-mono text-[15.5px] px-3.5 py-1.5 whitespace-nowrap shrink-0 border-[1.5px] tabular-nums ${
                     voted
                       ? "border-red bg-red-fill text-on-red"
                       : "border-red text-red bg-transparent"
@@ -128,8 +128,8 @@ export function AskGantryPanel({
                   &#9650; {q.up_count}
                 </button>
                 <div className="min-w-0">
-                  <p className="text-[16px] leading-[1.5]">{q.body}</p>
-                  <p className="font-mono text-[13px] text-tertiary mt-0.5">
+                  <p className="text-[17px] leading-[1.5]">{q.body}</p>
+                  <p className="font-mono text-[14px] text-secondary mt-0.5">
                     <span className="fv-normal">
                       {q.author?.username ?? "someone"}
                     </span>{" "}
@@ -152,7 +152,7 @@ export function AskGantryPanel({
                       <button
                         type="button"
                         onClick={() => onSetStatus(q.id, "acknowledged")}
-                        className="font-mono text-[12.5px] text-red cursor-pointer border-b border-red bg-transparent p-0"
+                        className="font-mono text-[14px] text-red cursor-pointer border-b border-red bg-transparent p-0"
                       >
                         Mark answered
                       </button>
@@ -160,7 +160,7 @@ export function AskGantryPanel({
                     <button
                       type="button"
                       onClick={() => onSetStatus(q.id, "dismissed")}
-                      className="font-mono text-[12.5px] text-red cursor-pointer border-b border-red bg-transparent p-0"
+                      className="font-mono text-[14px] text-red cursor-pointer border-b border-red bg-transparent p-0"
                     >
                       Dismiss
                     </button>
@@ -183,18 +183,18 @@ export function AskGantryPanel({
             onChange={(e) => setDraft(e.target.value)}
             maxLength={280}
             placeholder="Ask the host anything&hellip;"
-            className="flex-1 min-w-0 bg-transparent text-[16px] py-2 px-1 outline-none placeholder:italic"
+            className="flex-1 min-w-0 bg-transparent text-[17px] py-2 px-1 outline-none placeholder:italic"
           />
           <button
             type="submit"
             disabled={sending}
-            className="bg-red-fill text-on-red font-mono text-[14px] tracking-[0.1em] px-5 py-1.5 whitespace-nowrap cursor-pointer"
+            className="bg-red-fill text-on-red font-mono text-[15.5px] tracking-[0.1em] px-5 py-2 whitespace-nowrap cursor-pointer"
           >
             Ask &rarr;
           </button>
         </form>
       ) : askDisabledNote !== null ? (
-        <p className="italic text-[13.5px] text-tertiary mt-4">
+        <p className="italic text-[15px] text-tertiary mt-4">
           {askDisabledNote}
         </p>
       ) : null}

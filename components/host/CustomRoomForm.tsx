@@ -404,7 +404,7 @@ export function CustomRoomForm() {
               htmlFor="custom-link"
               className="mb-1.5 block font-mono text-[11px] font-bold tracking-wider text-secondary uppercase"
             >
-              Talking about a game?{" "}
+              Talking about a match?{" "}
               <span className="font-normal normal-case">
                 (optional - pulls in live stats)
               </span>

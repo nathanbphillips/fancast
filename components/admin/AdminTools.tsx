@@ -150,7 +150,7 @@ export function AdminTools() {
         </button>
         <p className="text-[11px] text-secondary">
           Title shows only the teams. Venue, weather, referee, and live stats
-          fill in automatically once Sportmonks has the game (covered
+          fill in automatically once Sportmonks has the match (covered
           competitions only) - otherwise the room shows “Information coming soon”.
         </p>
       </form>
