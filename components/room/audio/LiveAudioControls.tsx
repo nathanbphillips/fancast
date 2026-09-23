@@ -17,19 +17,25 @@ function PlayStopButton({
   status,
   onStart,
   onStop,
+  ended = false,
 }: {
   status: ListenStatus;
   onStart: () => void;
   onStop: () => void;
+  /** the show is over: nothing to play, so the button goes inert (a tap would
+   *  only swap "Show has ended" for a connection error) */
+  ended?: boolean;
 }) {
   const listening = status === "live";
   return (
     <button
       type="button"
-      aria-label={listening ? "Stop listening" : "Tap to listen"}
+      aria-label={ended ? "The show has ended" : listening ? "Stop listening" : "Tap to listen"}
       onClick={listening ? onStop : onStart}
-      disabled={status === "connecting"}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-on-red disabled:opacity-60 lg:h-14 lg:w-14"
+      disabled={status === "connecting" || ended}
+      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-on-red lg:h-14 lg:w-14 ${
+        ended ? "disabled:cursor-not-allowed disabled:opacity-40" : "disabled:opacity-60"
+      }`}
     >
       {status === "connecting" ? (
         <span className="h-4 w-4 animate-live-pulse rounded-full bg-on-red/70 lg:h-5 lg:w-5" aria-hidden="true" />
@@ -248,6 +254,7 @@ export function ListenerBar({
   syncedClock,
   speakers = [],
   discussion = false,
+  ended = false,
 }: {
   commentator: string;
   /** team names for the transport's score readout (mobile) */
@@ -293,6 +300,9 @@ export function ListenerBar({
   syncedClock?: string;
   /** discussion (non-match) room: hide the scoreboard + sync-to-TV bits */
   discussion?: boolean;
+  /** the host ended the broadcast (room wrapped): the bar says so and points
+   *  to future matches instead of waiting for a show (founder 2026-09-23) */
+  ended?: boolean;
 }) {
   const onAir = canPublish && micStatus === "live";
   // other people currently on air (guests/co-hosts) — shown so listeners can
@@ -319,17 +329,19 @@ export function ListenerBar({
     } catch {}
   }, []);
 
-  const statusLine = radioActive
-    ? "Radio mode · a few seconds behind live"
-    : listenStatus === "live"
-      ? "Live commentary"
-      : listenStatus === "connecting"
-        ? "Connecting…"
-        : listenStatus === "error"
-          ? "Couldn't connect · tap to retry"
-          : live
-            ? "Tap to listen"
-            : "Waiting for the show to start";
+  const statusLine = ended
+    ? "Show has ended"
+    : radioActive
+      ? "Radio mode · a few seconds behind live"
+      : listenStatus === "live"
+        ? "Live commentary"
+        : listenStatus === "connecting"
+          ? "Connecting…"
+          : listenStatus === "error"
+            ? "Couldn't connect · tap to retry"
+            : live
+              ? "Tap to listen"
+              : "Waiting for the show to start";
 
   // Auto-expand the transport when the commentator elevates this listener
   // (canPublish flips true) so the "Go on air" CTA is never hidden behind a
@@ -401,8 +413,12 @@ export function ListenerBar({
       </svg>
     </button>
   ) : (
-    <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} />
+    <PlayStopButton status={listenStatus} onStart={onStart} onStop={onStop} ended={ended} />
   );
+
+  // expired shows point listeners at the next ones (founder 2026-09-23); a
+  // plain <a> like the Leave link, so the room tears down on the way out
+  const rsvpLabel = "RSVP for future matches";
 
   // An accepted caller goes on air INSTANTLY — no "Go on air" step (founder
   // 2026-08-05). Three states remain:
@@ -504,6 +520,21 @@ export function ListenerBar({
             </div>
           </div>
         )}
+        {/* same box as the host card beside it; stretches to the bar's row so
+            the two boxes always share a height */}
+        {ended && (
+          <a
+            href="/matches"
+            className="flex shrink-0 items-center gap-2.5 self-stretch border border-line bg-canvas px-4 py-2 transition-colors hover:bg-raised"
+          >
+            <span className="text-[15.5px] font-extrabold">
+              {rsvpLabel}
+            </span>
+            <span aria-hidden="true" className="text-[15.5px]">
+              →
+            </span>
+          </a>
+        )}
         {/* the decorative waveform is gone (founder 2026-09-22: it read as a
             scrolling bar) - the dock's center is quiet space */}
         <div className="min-w-0 flex-1" />
@@ -574,15 +605,19 @@ export function ListenerBar({
                 <span className="display text-[17px] tracking-[0.03em]">{abbr3(away)}</span>
               </div>
               <div className="flex flex-col items-center justify-center">
+                {/* an ended show reads FULL TIME, the design system's word for
+                    a wrapped room (components/ClockState.tsx) */}
                 <span
                   className={`text-[28px] leading-none font-bold tabular-nums ${
-                    syncedClock ? "" : "text-secondary"
+                    syncedClock || ended ? "" : "text-secondary"
                   }`}
                 >
-                  {syncedClock ?? "--:--"}
+                  {ended ? "FT" : (syncedClock ?? "--:--")}
                 </span>
                 <span className="mt-1 font-mono text-[9px] tracking-[0.08em] text-secondary uppercase">
-                  {syncedClock
+                  {ended
+                    ? "Full time"
+                    : syncedClock
                     ? syncRequested > 0
                       ? `In step · −${
                           Number.isInteger(syncRequested)
@@ -621,6 +656,16 @@ export function ListenerBar({
                 </div>
                 {listenStatus === "live" && !radioActive && <EqTicks />}
               </div>
+            )}
+
+            {ended && (
+              <a
+                href="/matches"
+                className="mb-3 flex items-center justify-center gap-2 border border-line bg-canvas px-3 py-2.5 text-[13px] font-extrabold transition-colors hover:bg-raised"
+              >
+                {rsvpLabel}
+                <span aria-hidden="true">→</span>
+              </a>
             )}
 
             {goOnAir && <div className="mb-3 flex">{goOnAir}</div>}
@@ -710,7 +755,9 @@ export function ListenerBar({
                   techDifficulties && !radioActive && !breakNotice ? "text-red" : "text-secondary"
                 }`}
               >
-                {breakNotice
+                {ended
+                  ? "Show has ended ▼"
+                  : breakNotice
                   ? "Back shortly ▼"
                   : techDifficulties && !radioActive
                   ? "Tech difficulties ▼"

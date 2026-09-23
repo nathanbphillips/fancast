@@ -1706,6 +1706,7 @@ export function RealtimeRoom(props: Props) {
       home={room.home}
       away={room.away}
       discussion={isDiscussion}
+      ended={roomState === "wrapped"}
       live={audioLive}
       listenStatus={audio.listenStatus}
       onStart={() => void audio.startListening()}
@@ -1755,8 +1756,10 @@ export function RealtimeRoom(props: Props) {
     />
   );
 
-  // wrapped + room commentator: the center becomes the downloads panel
-  const showDownloads = roomState === "wrapped" && isRoomCommentator;
+  // wrapped + room commentator: the center becomes the downloads panel. Never
+  // in a demo room: it has no recording, and its host needs to see the chat
+  // exactly as visitors do
+  const showDownloads = roomState === "wrapped" && isRoomCommentator && !room.demo;
 
   // manual chat refresh (founder 2026-06-29): re-pull complete threads from the
   // DB snapshot and merge — a fallback if a realtime message was missed.
