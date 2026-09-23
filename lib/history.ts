@@ -13,6 +13,12 @@ import { config } from "@/lib/config";
  * payload gains head-to-head - re-probed 2026-09-22 and NO LONGER GATED on the
  * plan (it was when first probed 2026-06-24). H2H failures degrade to null so
  * the table/form half never dies with them.
+ *
+ * Finished matches (founder 2026-09-23: "the table at that time, at the end of
+ * the game"): a FINISHED Premier League fixture shows the standings after its
+ * own matchday (Sportmonks' by-round table, whose form is as of that round too)
+ * and head-to-head stops at that meeting, so an old room never shows today's
+ * table. Exact at full time whenever the match closed its round.
  */
 
 export type TeamStanding = {
@@ -212,14 +218,18 @@ type SmH2hFixture = {
 
 /** Finished-match state codes (Sportmonks short names vary; match the known
  *  full-time family). Tonight's IN-PLAY meeting must never count as a result
- *  - it would list the half-played game as history and flip mid-show. */
-const FINISHED_STATES = new Set(["FT", "AET", "FT_PEN", "PEN", "AFTER_PENALTIES"]);
+ *  - it would list the half-played game as history and flip mid-show. The
+ *  fixtures table stores the same short names, so the history route reuses it. */
+export const FINISHED_STATES = new Set(["FT", "AET", "FT_PEN", "PEN", "AFTER_PENALTIES"]);
 
 /** Finished meetings between the two sides, tallied for the fixture's home
- *  team. A fetch/parse failure returns null - the caller degrades gracefully. */
+ *  team. `untilMs` (a finished match's kickoff) drops any later meeting, so an
+ *  old room's list ends at its own match. A fetch/parse failure returns null -
+ *  the caller degrades gracefully. */
 async function fetchHeadToHead(
   homeTeamId: number,
   awayTeamId: number,
+  untilMs: number | null = null,
 ): Promise<HeadToHeadSummary | null> {
   try {
     // per_page raised so enough FINISHED meetings survive the filters to fill
@@ -238,6 +248,7 @@ async function fetchHeadToHead(
     for (const f of payload.data ?? []) {
       const at = f.starting_at ? new Date(`${f.starting_at.replace(" ", "T")}Z`).getTime() : NaN;
       if (Number.isNaN(at) || at > now) continue; // future or undated
+      if (untilMs !== null && at > untilMs) continue; // after this room's match
       // only FINISHED meetings count; when the state include is missing,
       // require the kickoff to be safely in the past (a live game is not)
       const short = f.state?.short_name ?? f.state?.state ?? null;
@@ -290,18 +301,63 @@ async function fetchHeadToHead(
   }
 }
 
+/** A finished league match's matchday: the round whose table to show, its
+ *  kickoff (the head-to-head cutoff) and its season. */
+type AsOfRound = {
+  roundId: number;
+  kickoffMs: number;
+  season: { id: number; name: string | null };
+};
+
+/** For a FINISHED Premier League fixture, the round it belongs to. Other
+ *  competitions (cups, Europe) return null and keep today's league table: their
+ *  own round tables are a different league entirely. */
+async function finishedLeagueRound(smFixtureId: number): Promise<AsOfRound | null> {
+  const payload = (await smGet(`/fixtures/${smFixtureId}?include=season`)) as {
+    data?: {
+      league_id?: number;
+      round_id?: number | null;
+      starting_at?: string | null;
+      season?: { id: number; name?: string };
+    };
+  };
+  const f = payload.data;
+  if (
+    !f ||
+    f.league_id !== config.premierLeagueId ||
+    !f.round_id ||
+    !f.starting_at ||
+    !f.season
+  ) {
+    return null;
+  }
+  const kickoffMs = new Date(`${f.starting_at.replace(" ", "T")}Z`).getTime();
+  if (Number.isNaN(kickoffMs)) return null;
+  return {
+    roundId: f.round_id,
+    kickoffMs,
+    season: { id: f.season.id, name: f.season.name ?? null },
+  };
+}
+
 async function fetchHistoryRaw(
   homeTeamId: number,
   awayTeamId: number,
+  finishedSmFixtureId: number | null,
 ): Promise<MatchHistory> {
-  const season = await resolveSeason();
+  const asOf = finishedSmFixtureId
+    ? await finishedLeagueRound(finishedSmFixtureId)
+    : null;
+  const season = asOf ? asOf.season : await resolveSeason();
   if (!season) return emptyHistory;
 
   const [payload, h2h] = await Promise.all([
     smGet(
-      `/standings/seasons/${season.id}?include=participant;details.type;form`,
+      asOf
+        ? `/standings/rounds/${asOf.roundId}?include=participant;details.type;form`
+        : `/standings/seasons/${season.id}?include=participant;details.type;form`,
     ) as Promise<{ data?: SmStandingRow[] }>,
-    fetchHeadToHead(homeTeamId, awayTeamId),
+    fetchHeadToHead(homeTeamId, awayTeamId, asOf?.kickoffMs ?? null),
   ]);
   const rows = payload.data ?? [];
   const homeRow = rows.find((r) => r.participant_id === homeTeamId);
@@ -333,11 +389,14 @@ function inflightStore(): Map<number, Promise<MatchHistory>> {
 }
 
 /** Cached pre-game history keyed by fixture id. Serves last-good (stale) on
- *  upstream error; returns the empty contract when team ids are missing. */
+ *  upstream error; returns the empty contract when team ids are missing.
+ *  `finishedSmFixtureId` is set only for a FINISHED fixture: the table is then
+ *  the one after its matchday instead of today's. */
 export async function getMatchHistory(
   fixtureId: number,
   homeTeamId: number | null,
   awayTeamId: number | null,
+  finishedSmFixtureId: number | null = null,
 ): Promise<MatchHistory> {
   if (fixtureId <= 0 || homeTeamId == null || awayTeamId == null) {
     return emptyHistory;
@@ -352,7 +411,7 @@ export async function getMatchHistory(
 
   const p = (async () => {
     try {
-      const data = await fetchHistoryRaw(homeTeamId, awayTeamId);
+      const data = await fetchHistoryRaw(homeTeamId, awayTeamId, finishedSmFixtureId);
       cache.set(fixtureId, { at: Date.now(), data });
       return data;
     } catch (err) {

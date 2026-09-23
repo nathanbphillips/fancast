@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
-import { emptyHistory, getMatchHistory } from "@/lib/history";
+import { FINISHED_STATES, emptyHistory, getMatchHistory } from "@/lib/history";
 import { createSupabaseServerClient } from "@/lib/db/server";
 
 export const maxDuration = 30;
@@ -11,6 +11,9 @@ export const maxDuration = 30;
  * integer fixtureId present in our synced `fixtures` table reaches Sportmonks;
  * the team ids come from that row (never the client). Cached long (lib/history)
  * since standings change slowly. Seed/unknown id → empty contract, no call.
+ * A FINISHED fixture gets the table as it stood after its matchday (founder
+ * 2026-09-23), keyed off the provider link, so a demo room's copy of a real
+ * fixture resolves to the same match.
  */
 export async function GET(
   _req: NextRequest,
@@ -27,19 +30,27 @@ export async function GET(
   const supabase = await createSupabaseServerClient();
   const { data: fixture } = await supabase
     .from("fixtures")
-    .select("id, home_team_id, away_team_id")
+    .select("id, home_team_id, away_team_id, sportmonks_fixture_id, status")
     .eq("id", id)
-    .maybeSingle<{ id: number; home_team_id: number | null; away_team_id: number | null }>();
+    .maybeSingle<{
+      id: number;
+      home_team_id: number | null;
+      away_team_id: number | null;
+      sportmonks_fixture_id: number | null;
+      status: string | null;
+    }>();
   if (!fixture) {
     return NextResponse.json(emptyHistory, {
       headers: { "Cache-Control": "no-store" },
     });
   }
   try {
+    const finished = FINISHED_STATES.has((fixture.status ?? "").toUpperCase());
     const history = await getMatchHistory(
       id,
       fixture.home_team_id,
       fixture.away_team_id,
+      finished ? fixture.sportmonks_fixture_id : null,
     );
     return NextResponse.json(history, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
