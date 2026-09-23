@@ -29,17 +29,17 @@ function PlayStopButton({
       aria-label={listening ? "Stop listening" : "Tap to listen"}
       onClick={listening ? onStop : onStart}
       disabled={status === "connecting"}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-on-red disabled:opacity-60"
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-fill text-on-red disabled:opacity-60 lg:h-14 lg:w-14"
     >
       {status === "connecting" ? (
-        <span className="h-4 w-4 animate-live-pulse rounded-full bg-on-red/70" aria-hidden="true" />
+        <span className="h-4 w-4 animate-live-pulse rounded-full bg-on-red/70 lg:h-5 lg:w-5" aria-hidden="true" />
       ) : listening ? (
-        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current">
+        <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 fill-current lg:h-5 lg:w-5">
           <rect x="3" y="3" width="4" height="10" rx="1" />
           <rect x="9" y="3" width="4" height="10" rx="1" />
         </svg>
       ) : (
-        <svg aria-hidden="true" viewBox="0 0 16 16" className="ml-0.5 h-4 w-4 fill-current">
+        <svg aria-hidden="true" viewBox="0 0 16 16" className="ml-0.5 h-4 w-4 fill-current lg:h-5 lg:w-5">
           <path d="M4 2.5v11l9-5.5-9-5.5z" />
         </svg>
       )}
@@ -112,7 +112,7 @@ function VolumeSlider({
         value={volume}
         onChange={(e) => onChange(Number(e.target.value))}
         aria-label="Volume"
-        className="h-1 flex-1 cursor-pointer accent-red"
+        className="h-1 flex-1 cursor-pointer accent-red lg:h-1.5"
       />
     </span>
   );
@@ -146,7 +146,7 @@ function SyncControls({
         type="button"
         onClick={() => onSyncAdjust(-0.5)}
         aria-label="Half a second less delay"
-        className="h-11 shrink-0 border border-line px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
+        className="h-11 shrink-0 border border-line px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary lg:h-12 lg:px-4 lg:text-[14px]"
       >
         −0.5s
       </button>
@@ -155,7 +155,7 @@ function SyncControls({
         onClick={onOpenSync}
         aria-label="Sync to my TV"
         title="Sync to my TV"
-        className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-red-fill px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-on-red transition-opacity hover:opacity-90"
+        className="flex h-11 flex-1 items-center justify-center gap-1.5 bg-red-fill px-4 font-mono text-[10px] font-bold tracking-[0.06em] text-on-red transition-opacity hover:opacity-90 lg:h-12 lg:px-6 lg:text-[14px]"
       >
         ◎ Sync now
         {syncRequested > 0 && (
@@ -169,7 +169,7 @@ function SyncControls({
         type="button"
         onClick={() => onSyncAdjust(0.5)}
         aria-label="Half a second more delay"
-        className="h-11 shrink-0 border border-line px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary"
+        className="h-11 shrink-0 border border-line px-3 font-mono text-[10px] tabular-nums text-secondary transition-colors hover:border-red hover:text-primary lg:h-12 lg:px-4 lg:text-[14px]"
       >
         +0.5s
       </button>
@@ -179,7 +179,7 @@ function SyncControls({
           onClick={() => onSyncAdjust(-syncRequested)}
           aria-label="Jump back to live"
           title="Drop the delay and jump to the live edge"
-          className="flex h-11 shrink-0 items-center gap-1.5 border border-red px-2.5 font-mono text-[10px] tracking-[0.06em] text-red transition-colors hover:bg-raised"
+          className="flex h-11 shrink-0 items-center gap-1.5 border border-red px-2.5 font-mono text-[10px] tracking-[0.06em] text-red transition-colors hover:bg-raised lg:h-12 lg:px-3.5 lg:text-[13px]"
         >
           <span
             aria-hidden="true"
@@ -361,25 +361,25 @@ export function ListenerBar({
             )}
           </div>
         )}
-        <div className="flex items-center gap-3 border-2 border-red bg-canvas px-4 py-2">
-        <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-xs font-bold tracking-[0.08em] text-on-red">
+        <div className="flex items-center gap-3 border-2 border-red bg-canvas px-4 py-2 lg:py-2.5">
+        <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-xs font-bold tracking-[0.08em] text-on-red lg:px-3 lg:py-1.5 lg:text-[13px]">
           <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-on-red" />
           ON AIR
         </span>
-        <p className="min-w-0 flex-1 truncate text-sm">
+        <p className="min-w-0 flex-1 truncate text-sm lg:text-[15.5px]">
           The room hears you{micMuted ? " (muted)" : ""}.
         </p>
         <button
           type="button"
           onClick={onToggleMute}
-          className="h-11 shrink-0 border border-line px-3 text-sm font-semibold hover:bg-raised"
+          className="h-11 shrink-0 border border-line px-3 text-sm font-semibold hover:bg-raised lg:h-12 lg:px-4 lg:text-[15px]"
         >
           {micMuted ? "Unmute" : "Mute"}
         </button>
         <button
           type="button"
           onClick={onLeaveAir}
-          className="h-11 shrink-0 bg-red-fill px-5 text-sm font-bold text-on-red"
+          className="h-11 shrink-0 bg-red-fill px-5 text-sm font-bold text-on-red lg:h-12 lg:px-6 lg:text-[15px]"
         >
           Leave Air
         </button>
@@ -418,16 +418,16 @@ export function ListenerBar({
           <button
             type="button"
             onClick={onGoOnAir}
-            className="btn-grad-red h-11 shrink-0 px-4 text-sm font-bold"
+            className="btn-grad-red h-11 shrink-0 px-4 text-sm font-bold lg:h-12 lg:px-5 lg:text-[15px]"
           >
             Tap to go on air
           </button>
-          <p className="max-w-[240px] text-[11px] leading-snug text-red">
+          <p className="max-w-[240px] text-[11px] leading-snug text-red lg:text-[12.5px]">
             {micError}
           </p>
         </div>
       ) : micStatus === "starting" || autoOnAir ? (
-        <span className="flex shrink-0 items-center gap-2 border border-red px-3 py-2 text-sm font-bold text-red">
+        <span className="flex shrink-0 items-center gap-2 border border-red px-3 py-2 text-sm font-bold text-red lg:text-[15px]">
           <span
             aria-hidden="true"
             className="h-2 w-2 animate-live-pulse rounded-full bg-red-fill"
@@ -438,7 +438,7 @@ export function ListenerBar({
         <button
           type="button"
           onClick={onGoOnAir}
-          className="btn-grad-red h-11 shrink-0 px-4 text-sm font-bold"
+          className="btn-grad-red h-11 shrink-0 px-4 text-sm font-bold lg:h-12 lg:px-5 lg:text-[15px]"
         >
           Go on air
         </button>
@@ -447,7 +447,7 @@ export function ListenerBar({
 
   const liveBadge =
     live && !techDifficulties ? (
-      <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-xs font-bold tracking-[0.08em] text-on-red">
+      <span className="flex shrink-0 items-center gap-1.5 bg-red-fill px-2 py-1 font-mono text-xs font-bold tracking-[0.08em] text-on-red lg:px-3 lg:py-1.5 lg:text-[13px]">
         <span className="h-1.5 w-1.5 animate-live-pulse rounded-full bg-on-red" />
         LIVE
       </span>
@@ -482,21 +482,21 @@ export function ListenerBar({
           /* on-air card (Cloud Design, founder 2026-07-02): who's speaking —
              host avatar with a red ring, HOST badge, EQ while playing, and the
              on-air guests/co-hosts on the second line */
-          <div className="flex min-w-0 shrink-0 items-center gap-2.5 border border-line bg-canvas py-1.5 pr-3.5 pl-1.5">
+          <div className="flex min-w-0 shrink-0 items-center gap-3 border border-line bg-canvas py-2 pr-4 pl-2">
             <Avatar
               name={commentator}
-              size={32}
+              size={40}
               className="border-2 border-red"
             />
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[12.5px] font-extrabold">
+              <p className="flex items-center gap-2 text-[15.5px] font-extrabold">
                 <span className="truncate">{commentator}</span>
-                <span className="shrink-0 border border-red px-1 py-0.5 font-mono text-[8px] tracking-[0.1em] text-red uppercase">
+                <span className="shrink-0 border border-red px-1.5 py-0.5 font-mono text-[10px] tracking-[0.1em] text-red uppercase">
                   Host
                 </span>
               </p>
-              <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[8.5px] text-secondary">
-                {listenStatus === "live" && !radioActive && <EqTicks h={8} />}
+              <p className="mt-0.5 flex items-center gap-1.5 font-mono text-[12px] text-secondary">
+                {listenStatus === "live" && !radioActive && <EqTicks h={11} />}
                 <span className="truncate">
                   {guestNames ? `${guestNames} · on air` : statusLine}
                 </span>
@@ -511,7 +511,7 @@ export function ListenerBar({
         {liveBadge}
         {hlsSupported && radioToggle}
         {sync}
-        <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-28 shrink-0" />
+        <VolumeSlider volume={volume} onChange={onVolumeChange} className="w-28 shrink-0 lg:w-44" />
       </div>
 
       {/* MOBILE: sync transport (Cloud Design) — a rich expanded state (score,

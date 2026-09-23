@@ -49,8 +49,9 @@ function placeSide(starters: LineupPlayer[], home: boolean): Placed[] {
       .slice()
       .sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99) || (a.jersey ?? 99) - (b.jersey ?? 99));
     const frac = maxLine > 1 ? (l - 1) / (maxLine - 1) : 0; // 0 keeper … 1 forwards
-    // keeper 8% from own end → forwards stop ~42% (16% no-man's-land at centre)
-    const y = home ? 8 + frac * 34 : 92 - frac * 34;
+    // keeper 7% from own end → forwards stop ~44% (12% no-man's-land at centre);
+    // the taller pitch (founder 2026-09-23) gives every line breathing room
+    const y = home ? 7 + frac * 37 : 93 - frac * 37;
     row.forEach((p, i) => {
       placed.push({ p, x: ((i + 1) / (row.length + 1)) * 100, y });
     });
@@ -82,8 +83,9 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
       <span
         // club colours (founder 2026-09-06): Arsenal always red, opponent in
         // their own colour (secondary when the families clash); the faint ring
-        // keeps a white disc readable on the pitch
-        className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-bold tabular-nums"
+        // keeps a white disc readable on the pitch. Bigger discs with numbers
+        // that nearly fill them (founder 2026-09-23).
+        className="flex h-12 w-12 items-center justify-center rounded-full text-[20px] font-bold tabular-nums"
         style={{ background: color.bg, color: color.fg, boxShadow: "inset 0 0 0 1.5px rgb(var(--hair) / 0.6)" }}
       >
         {p.jersey ?? ""}
@@ -92,7 +94,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
         // came-on badge: a small circle at top-right holding the number of the
         // player they replaced (green = on). Tooltip spells out the swap.
         <span
-          className="absolute -right-1.5 -top-1.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-green px-0.5 text-[8px] font-bold tabular-nums text-white ring-1 ring-canvas"
+          className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-green px-0.5 text-[10px] font-bold tabular-nums text-white ring-1 ring-canvas"
           title={`On ${sub.minute}${sub.number != null ? ` for #${sub.number}` : ""}`}
         >
           {sub.number ?? "↑"}
@@ -106,7 +108,7 @@ function Marker({ p, x, y, home, href, color }: Placed & { home: boolean; href: 
       target="_blank"
       rel="noopener noreferrer"
       title={p.name}
-      className="max-w-[92px] truncate px-1.5 py-0.5 text-[11px] font-semibold leading-tight text-primary hover:underline"
+      className="max-w-[110px] truncate px-1.5 py-0.5 text-[13.5px] font-semibold leading-tight text-primary hover:underline"
     >
       {lastName(p.name)}
     </a>
@@ -184,7 +186,9 @@ export function PitchLineup({
 
       <div
         className="relative w-full overflow-hidden border border-line bg-inset"
-        style={{ aspectRatio: "0.72" }}
+        // taller pitch (founder 2026-09-23): the extra height keeps discs and
+        // names from crowding each other in the rail
+        style={{ aspectRatio: "0.6" }}
       >
         {/* field markings: paper pitch, ruled in ink hairlines */}
         <div className="absolute inset-x-0 top-1/2 border-t-[1.5px] border-line" />

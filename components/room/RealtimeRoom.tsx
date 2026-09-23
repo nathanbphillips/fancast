@@ -3618,8 +3618,9 @@ function LiveChat({
                     )}
                   </span>
                 </div>
-                {/* body (16px since founder 2026-09-22: 13px was much too small) */}
-                <p className="mt-0.5 text-[16px] leading-snug lg:leading-[1.5]">{displayBody}</p>
+                {/* body 17px (founder 2026-09-23: the message text itself must
+                    be bigger; usernames stay as they are) */}
+                <p className="mt-0.5 text-[17px] leading-snug lg:leading-[1.5]">{displayBody}</p>
                 {/* inline link card */}
                 {m.link_url && (
                   <a

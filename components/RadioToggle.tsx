@@ -24,7 +24,7 @@ export function RadioToggle({
           ? "Radio mode: steadier playback for background listening (a few seconds behind)"
           : "Radio mode becomes available when the broadcast starts"
       }
-      className={`flex h-11 shrink-0 items-center gap-1.5 border px-3 text-xs font-semibold disabled:opacity-50 ${
+      className={`flex h-11 shrink-0 items-center gap-1.5 border px-3 text-xs font-semibold disabled:opacity-50 lg:h-12 lg:px-4 lg:text-[14px] ${
         active
           ? "border-red text-red"
           : "border-line bg-canvas text-secondary hover:bg-raised"

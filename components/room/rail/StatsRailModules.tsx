@@ -12,6 +12,7 @@
 import { Fragment } from "react";
 import type { StatBar } from "@/lib/stats";
 import { barFillStyle } from "@/lib/teamColors";
+import { shortTeamName } from "@/lib/teamNames";
 
 type StatRow = { key: string; label: string; home: string; away: string };
 
@@ -49,7 +50,9 @@ function StatSubBlock({ title, rows }: { title: string; rows: StatRow[] }) {
         {rows.map((r) => (
           <Fragment key={r.key}>
             <div className="text-right font-semibold">{r.home}</div>
-            <div className="font-mono text-[14px] text-tertiary text-center whitespace-nowrap self-center">
+            {/* secondary, not tertiary: the stat identifiers were too faint
+                in both themes (founder 2026-09-23) */}
+            <div className="font-mono text-[14px] text-secondary text-center whitespace-nowrap self-center">
               {r.label}
             </div>
             <div className="text-left">{r.away}</div>
@@ -122,14 +125,15 @@ export function MatchStatsBlocks({
         </div>
       ) : (
         <>
-          {/* who is who: home reads the LEFT column, away the RIGHT */}
-          <div className="grid grid-cols-[1fr_auto_1fr] gap-x-3 mt-3">
-            <div className="min-w-0 truncate text-right font-mono text-[14.5px] font-semibold">
-              {homeName}
+          {/* who is who: home owns the LEFT column, away the RIGHT - names
+              outrank the section headers and sit hard against their edges
+              (founder 2026-09-23), abbreviated when long (Man City) */}
+          <div className="mt-3 flex items-baseline justify-between gap-3">
+            <div className="min-w-0 truncate text-left font-mono text-[17px] font-semibold">
+              {shortTeamName(homeName)}
             </div>
-            <div className="font-mono text-[13px] text-tertiary self-center">v</div>
-            <div className="min-w-0 truncate text-left font-mono text-[14.5px] font-semibold">
-              {awayName}
+            <div className="min-w-0 truncate text-right font-mono text-[17px] font-semibold">
+              {shortTeamName(awayName)}
             </div>
           </div>
           <StatSubBlock title="Attacking" rows={attacking} />

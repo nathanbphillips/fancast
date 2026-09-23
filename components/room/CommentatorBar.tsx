@@ -185,17 +185,17 @@ export function CommentatorBar({
   return (
     <div className="flex min-h-[70px] flex-wrap items-center gap-3 px-4 py-2">
       <div className="shrink-0">
-        <p className="font-mono text-[11px] font-bold tracking-[0.1em] text-secondary uppercase">
+        <p className="font-mono text-[11px] font-bold tracking-[0.1em] text-secondary uppercase lg:text-[12.5px]">
           Status
         </p>
-        <p className="flex items-center gap-2 text-sm font-semibold">
+        <p className="flex items-center gap-2 text-sm font-semibold lg:text-[16px]">
           <span className="font-display text-red uppercase">Commentator</span>
-          <span className="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-green uppercase">
+          <span className="inline-flex items-center gap-1 text-[11px] font-bold tracking-wide text-green uppercase lg:text-[12.5px]">
             <span className="h-1.5 w-1.5 rounded-full bg-green" />
             Connected
           </span>
         </p>
-        <p className="text-xs text-secondary">{STATUS_LABEL[state] ?? state}</p>
+        <p className="text-xs text-secondary lg:text-[13.5px]">{STATUS_LABEL[state] ?? state}</p>
         {error && <p className="text-xs text-red">{error}</p>}
       </div>
 
@@ -282,7 +282,7 @@ export function CommentatorBar({
               className="flex shrink-0 items-center gap-2 border border-line bg-canvas px-3 py-1.5"
             >
               <div className="max-w-[200px]">
-                <p className="truncate text-xs font-semibold">
+                <p className="truncate text-xs font-semibold lg:text-[13.5px]">
                   {r.author?.username}
                   {(r.caller_flags?.count ?? 0) > 0 && (
                     <span
@@ -295,7 +295,7 @@ export function CommentatorBar({
                     </span>
                   )}
                 </p>
-                <p className="truncate text-xs text-secondary">{r.topic}</p>
+                <p className="truncate text-xs text-secondary lg:text-[13px]">{r.topic}</p>
                 {(r.caller_flags?.count ?? 0) > 0 && r.caller_flags!.notes[0] && (
                   <p className="truncate text-[10px] text-red">
                     “{r.caller_flags!.notes[0].note ?? "flagged"}” ·{" "}
@@ -307,7 +307,7 @@ export function CommentatorBar({
                 type="button"
                 disabled={busyReqId === r.id}
                 onClick={() => handleRequest(r.id, "accepted")}
-                className="h-9 bg-green px-2.5 text-xs font-bold text-canvas disabled:opacity-60"
+                className="h-9 bg-green px-2.5 text-xs font-bold text-canvas disabled:opacity-60 lg:h-10 lg:px-3 lg:text-[13.5px]"
               >
                 Accept
               </button>
@@ -316,7 +316,7 @@ export function CommentatorBar({
                 disabled={busyReqId === r.id}
                 onClick={() => handleRequest(r.id, "dismissed")}
                 aria-label={`Dismiss request from ${r.author?.username}`}
-                className="h-9 border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60"
+                className="h-9 border border-line px-2.5 text-xs font-semibold text-secondary hover:text-primary disabled:opacity-60 lg:h-10 lg:px-3 lg:text-[13.5px]"
               >
                 Dismiss
               </button>
@@ -345,7 +345,7 @@ export function CommentatorBar({
                 ? "Start your mic first - the broadcast needs a live mic (FR-3.3)"
                 : "Opens chat, links, and questions for everyone"
             }
-            className="h-11 bg-red-fill px-5 text-sm font-bold text-on-red disabled:opacity-60"
+            className="h-11 bg-red-fill px-5 text-sm font-bold text-on-red disabled:opacity-60 lg:h-12 lg:px-6 lg:text-[15px]"
           >
             Start Broadcast
           </button>
@@ -357,14 +357,14 @@ export function CommentatorBar({
                 type="button"
                 disabled={busy}
                 onClick={() => transition("end")}
-                className="h-11 bg-red-fill px-4 text-sm font-bold text-on-red disabled:opacity-60"
+                className="h-11 bg-red-fill px-4 text-sm font-bold text-on-red disabled:opacity-60 lg:h-12 lg:px-5 lg:text-[15px]"
               >
                 Confirm end
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmEnd(false)}
-                className="h-11 border border-line px-3 text-sm"
+                className="h-11 border border-line px-3 text-sm lg:h-12 lg:px-4 lg:text-[15px]"
               >
                 Keep going
               </button>
@@ -373,7 +373,7 @@ export function CommentatorBar({
             <button
               type="button"
               onClick={() => setConfirmEnd(true)}
-              className="h-11 border border-line px-5 text-sm font-semibold hover:bg-raised"
+              className="h-11 border border-line px-5 text-sm font-semibold hover:bg-raised lg:h-12 lg:px-6 lg:text-[15px]"
             >
               End Broadcast
             </button>
